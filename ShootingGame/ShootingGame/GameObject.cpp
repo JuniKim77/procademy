@@ -12,21 +12,11 @@ bool initialize_global_unit_data()
 	char* file_memory;
 
 	fopen_s(&fin, unit_list_file, "r");
-	if (fin == nullptr)
-	{
-		printf("%s is not found.\n", unit_list_file);
-		return false;
-	}
 
 	fseek(fin, 0, SEEK_END);
 	int file_size = ftell(fin) + 1;
 
 	file_memory = (char*)malloc(file_size);
-	if (file_memory == nullptr)
-	{
-		printf("Failed file_memory malloc.\n");
-		return false;
-	}
 
 	fseek(fin, 0, SEEK_SET);
 	fread_s(file_memory, file_size, file_size, 1, fin);
@@ -88,12 +78,6 @@ void make_setting_files()
 	FILE* fin;
 	fopen_s(&fin, "scene_stage1.txt", "w");
 
-	if (fin == nullptr)
-	{
-		printf("fopen scene_stage1.txt error\n");
-		return;
-	}
-	
 	const char init[] = "Enter unit initial positions following below order\nx y type\n=====\n";
 
 	if (fwrite(init, sizeof(init) - 1, 1, fin) != 1)
@@ -122,7 +106,7 @@ void make_setting_files()
 			memcpy_s(buffer + count++ * strlen(temp), sizeof(buffer), temp, sizeof(temp));
 		}
 	}
-	if (fwrite(buffer, strlen(buffer), 1, fin) != 1)
+	if (fwrite(buffer, strlen(buffer) - 1, 1, fin) != 1)
 	{
 		printf("fwrite error\n");
 		return;
@@ -132,35 +116,31 @@ void make_setting_files()
 
 	fopen_s(&fin, "scene_stage2.txt", "w");
 
-	if (fin == nullptr)
-	{
-		printf("fopen scene_stage1.txt error\n");
-		return;
-	}
-
 	if (fwrite(init, sizeof(init) - 1, 1, fin) != 1)
 	{
 		printf("fwrite error\n");
 		return;
 	}
 
-	char buffer2[1024];
-	int count2 = 0;
+	memset(buffer, 0, sizeof(buffer));
+	count = 0;
 
 	for (int i = 0; i < row_num; ++i)
 	{
+		char temp[16];
+
+		sprintf_s(temp, "%d %d %d\n", 40, row_begin + 2 * i, 2);
+		memcpy_s(buffer + count++ * strlen(temp), sizeof(buffer), temp, sizeof(temp));
 		for (int j = 1; j <= col_num; ++j)
 		{
-			char temp[16];
 			sprintf_s(temp, "%d %d %d\n", 40 + 5 * j, row_begin + 2 * i, 2);
-			memcpy_s(buffer + count * strlen(temp), sizeof(buffer), temp, sizeof(temp));
+			memcpy_s(buffer + count++ * strlen(temp), sizeof(buffer), temp, sizeof(temp));
 			sprintf_s(temp, "%d %d %d\n", 40 - 5 * j, row_begin + 2 * i, 2);
-			memcpy_s(buffer + count * strlen(temp), sizeof(buffer), temp, sizeof(temp));
-			count++;
+			memcpy_s(buffer + count++ * strlen(temp), sizeof(buffer), temp, sizeof(temp));
 		}
 	}
 
-	if (fwrite(buffer, strlen(buffer), 1, fin) != 1)
+	if (fwrite(buffer, strlen(buffer) - 1, 1, fin) != 1)
 	{
 		printf("fwrite error\n");
 		return;

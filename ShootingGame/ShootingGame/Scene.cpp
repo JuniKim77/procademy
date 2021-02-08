@@ -11,21 +11,11 @@ bool initialize_global_scene_data()
 	char* file_memory;
 
 	fopen_s(&fin, file_list, "r");
-	if (fin == nullptr)
-	{
-		printf("%s is not found.\n", file_list);
-		return false;
-	}
 
 	fseek(fin, 0, SEEK_END);
 	int file_size = ftell(fin) + 1;
 
 	file_memory = (char*)malloc(file_size);
-	if (file_memory == nullptr)
-	{
-		printf("Failed file_memory malloc.\n");
-		return false;
-	}
 	
 	fseek(fin, 0, SEEK_SET);
 	fread_s(file_memory, file_size, file_size, 1, fin);
@@ -328,21 +318,11 @@ bool load_loading_scene()
 {
 	FILE* fin;
 	fopen_s(&fin, load_files[g_stage], "r");
-	if (fin == nullptr)
-	{
-		printf("Failed open file, %s.\n", load_files[g_stage]);
-		return false;
-	}
 
 	fseek(fin, 0, SEEK_END);
 	int file_size = ftell(fin) + 1;
 	char* file_memory = (char*)malloc(file_size);
 
-	if (file_memory == nullptr)
-	{
-		printf("Failed buffer malloc.\n");
-		return false;
-	}
 	fseek(fin, 0, SEEK_SET);
 	fread_s(file_memory, file_size, file_size, 1, fin);
 
