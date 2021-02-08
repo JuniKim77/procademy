@@ -1,0 +1,5 @@
+4
+scene_entry.txt
+scene_stage1.txt
+scene_stage2.txt
+scene_end.txt
