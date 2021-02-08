@@ -2,6 +2,7 @@
 
 int g_scene;
 int g_stage;
+bool gb_user_bullet;
 static char load_files[FILE_MAX_NUM][FILE_NAME_SIZE];
 
 bool initialize_global_scene_data()
@@ -47,6 +48,7 @@ bool initialize_global_scene_data()
 
 	g_scene = SCENE_LOADING;
 	g_stage = 0;
+	gb_user_bullet = false;
 
 	return true;
 }
@@ -99,19 +101,24 @@ bool get_key_change_play()
 
 	if (GetAsyncKeyState(VK_SPACE) & 0x8001)
 	{
-		for (int i = 0; i < MAX_BULLET; ++i)
+		if (!gb_user_bullet)
 		{
-			if (!g_bullet[i].bIsAlive)
+			for (int i = 0; i < MAX_BULLET; ++i)
 			{
-				g_bullet[i].dir = DIRECTION_UP;
-				g_bullet[i].x = g_player.x;
-				g_bullet[i].y = g_player.y - 1;
-				g_bullet[i].bIsAlive = true;
-				g_bullet[i].speed = 2;
-				g_bullet[i].damage = 1;
-				g_bullet[i].bIsEnemy = false;
-				g_bullet[i].prev_time = cur_time;
-				break;
+				if (!g_bullet[i].bIsAlive)
+				{
+					g_bullet[i].dir = DIRECTION_UP;
+					g_bullet[i].x = g_player.x;
+					g_bullet[i].y = g_player.y - 1;
+					g_bullet[i].bIsAlive = true;
+					g_bullet[i].speed = 2;
+					g_bullet[i].damage = 1;
+					g_bullet[i].bIsEnemy = false;
+					g_bullet[i].prev_time = cur_time;
+
+					gb_user_bullet = true;
+					break;
+				}
 			}
 		}
 	}
@@ -119,18 +126,22 @@ bool get_key_change_play()
 	if (GetAsyncKeyState(VK_UP) & 0x8001)
 	{
 		g_player.y = max(0, g_player.y - 1);
+		gb_user_bullet = false;
 	}
 	if (GetAsyncKeyState(VK_DOWN) & 0x8001)
 	{
 		g_player.y = min(dfSCREEN_HEIGHT - 1, g_player.y + 1);
+		gb_user_bullet = false;
 	}
 	if (GetAsyncKeyState(VK_RIGHT) & 0x8001)
 	{
 		g_player.x = min(dfSCREEN_WIDTH - 2, g_player.x + 1);
+		gb_user_bullet = false;
 	}
 	if (GetAsyncKeyState(VK_LEFT) & 0x8001)
 	{
 		g_player.x = max(0, g_player.x - 1);
+		gb_user_bullet = false;
 	}
 
 	if (GetAsyncKeyState(VK_ESCAPE) & 0x8001)
@@ -256,6 +267,10 @@ bool process_play_logic()
 			{
 				g_bullet[i].x -= 1;
 			}
+			if (g_bullet[i].bIsEnemy == false)
+			{
+				gb_user_bullet = false;
+			}
 
 			// 총알 충돌 처리
 			Bullet cur_bullet = g_bullet[i];
@@ -301,6 +316,11 @@ bool process_play_logic()
 		}
 	}
 
+	return false;
+}
+
+bool load_end_scene()
+{
 	return false;
 }
 
