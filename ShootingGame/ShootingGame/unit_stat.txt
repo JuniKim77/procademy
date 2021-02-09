@@ -1,5 +1,5 @@
 Enter unit stats following order
-name type HP speed image
+name type HP damage image
 =====
 TYPE_PLAYER 0 5 1 ^
 TYPE_WEAK_ENEMY 1 2 1 V

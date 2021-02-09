@@ -25,7 +25,6 @@ static const char file_list[32] = "file_list.txt";
 static int s_file_num;
 extern int g_scene;
 extern int g_stage;
-extern bool gb_user_bullet;
 extern char szScreenBuffer[dfSCREEN_HEIGHT][dfSCREEN_WIDTH];
 extern char szScreenBufferForCopy[dfSCREEN_HEIGHT][dfSCREEN_WIDTH];
 

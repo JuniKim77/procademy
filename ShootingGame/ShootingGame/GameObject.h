@@ -32,10 +32,9 @@ struct Bullet
 	BYTE dir;
 	char x;
 	char y;
-	BYTE speed;
 	BYTE damage;
+	char image;
 	bool bIsEnemy;
-	DWORD prev_time;
 };
 
 struct Unit
@@ -49,7 +48,7 @@ struct Unit
 struct Unit_Stat
 {
 	BYTE HP;
-	BYTE speed;
+	BYTE damage;
 	char image;
 };
 

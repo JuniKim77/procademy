@@ -47,7 +47,7 @@ bool initialize_global_unit_data()
 		g_unit_stat[type].HP = atoi(data);
 
 		data = strtok_s(nullptr, " ", &buffer);
-		g_unit_stat[type].speed = atoi(data);
+		g_unit_stat[type].damage = atoi(data);
 
 		data = strtok_s(nullptr, " ", &buffer);
 		g_unit_stat[type].image = *data;
