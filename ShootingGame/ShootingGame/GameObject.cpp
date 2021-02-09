@@ -50,7 +50,10 @@ bool initialize_global_unit_data()
 		g_unit_stat[type].damage = atoi(data);
 
 		data = strtok_s(nullptr, " ", &buffer);
-		g_unit_stat[type].image = *data;
+		g_unit_stat[type].unit_image = *data;
+
+		data = strtok_s(nullptr, " ", &buffer);
+		g_unit_stat[type].attack_image = *data;
 	}
 
 	free(file_memory);
@@ -86,7 +89,7 @@ void make_setting_files()
 		return;
 	}
 
-	const int col_num = 5;
+	const int col_num = 1;
 	const int row_num = 3;
 	const int row_begin = 1;
 	char buffer[1024];

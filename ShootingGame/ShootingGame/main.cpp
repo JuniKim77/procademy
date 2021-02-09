@@ -72,6 +72,9 @@ int main(void)
 	initialize_global_unit_data();
 	make_setting_files();
 
+	bool b_game_over = false;
+	bool b_game_exit = false;
+
 	while (1)
 	{
 		// 스크린 버퍼를 지움
@@ -80,24 +83,28 @@ int main(void)
 		switch (g_scene)
 		{
 		case SCENE_ENTRY:
-			get_key_change_entry();
+			b_game_exit = get_key_change_entry();
 			load_entry_scene();
 			break;
 		case SCENE_PLAY:
-			if (get_key_change_play())
-			{
-				goto EXIT;
-			}
-			process_play_logic();
+			b_game_exit = get_key_change_play();
+			b_game_over = process_play_logic();
 			load_play_scene();
 			break;
 		case SCENE_END:
+			b_game_exit = get_key_change_end();
+			load_end_scene();
 			break;
 		case SCENE_LOADING:
 			load_loading_scene();
 			break;
 		default:
 			break;
+		}
+
+		if (b_game_exit | b_game_over)
+		{
+			goto EXIT;
 		}
 
 		// 스크린 버퍼를 화면으로 출력

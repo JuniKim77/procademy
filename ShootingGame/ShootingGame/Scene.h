@@ -43,6 +43,9 @@ bool process_play_logic();
 
 // 엔딩
 bool load_end_scene();
+bool get_key_change_end();
+
+// 로딩
 bool load_loading_scene();
 
 

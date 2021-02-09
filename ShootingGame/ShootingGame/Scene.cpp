@@ -77,6 +77,10 @@ bool get_key_change_entry()
 	{
 		g_scene = SCENE_LOADING;
 		g_stage++;
+	}
+
+	if (GetAsyncKeyState(VK_ESCAPE) & 0x8001)
+	{
 		return true;
 	}
 
@@ -98,7 +102,7 @@ bool get_key_change_play()
 				g_bullet[i].y = g_player.y - 1;
 				g_bullet[i].bIsAlive = true;
 				g_bullet[i].damage = g_unit_stat[TYPE_PLAYER].damage;
-				g_bullet[i].image = '*';
+				g_bullet[i].image = g_unit_stat[TYPE_PLAYER].attack_image;
 				g_bullet[i].bIsEnemy = false;
 
 				break;
@@ -125,7 +129,6 @@ bool get_key_change_play()
 
 	if (GetAsyncKeyState(VK_ESCAPE) & 0x8001)
 	{
-
 		return true;
 	}
 
@@ -136,7 +139,7 @@ bool load_play_scene()
 {
 	if (g_player.HP > 0)
 	{
-		szScreenBuffer[g_player.y][g_player.x] = g_unit_stat[TYPE_PLAYER].image;
+		szScreenBuffer[g_player.y][g_player.x] = g_unit_stat[TYPE_PLAYER].unit_image;
 	}
 
 	for (int i = 0; i < MAX_ENEMY; ++i)
@@ -145,7 +148,7 @@ bool load_play_scene()
 
 		if (enemy.HP > 0)
 		{
-			szScreenBuffer[enemy.y][enemy.x] = g_unit_stat[enemy.type].image;
+			szScreenBuffer[enemy.y][enemy.x] = g_unit_stat[enemy.type].unit_image;
 		}
 	}
 
@@ -174,7 +177,7 @@ bool process_play_logic()
 		{DIRECTION_LEFT, DIRECTION_LEFT, DIRECTION_RIGHT, DIRECTION_RIGHT, DIRECTION_RIGHT, DIRECTION_RIGHT, DIRECTION_LEFT, DIRECTION_LEFT},
 		{DIRECTION_UP | DIRECTION_LEFT, DIRECTION_RIGHT, DIRECTION_RIGHT, DIRECTION_DOWN, DIRECTION_DOWN, DIRECTION_LEFT, DIRECTION_LEFT, DIRECTION_UP | DIRECTION_RIGHT}
 	};
-	if (tick == 10)
+	if (tick == 100)
 	{
 		tick = 0;
 
@@ -202,9 +205,34 @@ bool process_play_logic()
 				g_enemy[i].x -= 1;
 			}
 		}
+		movement = (movement + 1) % 8;
 	}
 
-	movement = (movement + 1) % 8;
+	// 적 유닛 공격
+	if (tick == 10)
+	{
+		for (int i = 0; i < MAX_ENEMY; ++i)
+		{
+			if (g_enemy[i].HP == 0)
+				continue;
+
+			for (int j = 0; j < MAX_BULLET; ++j)
+			{
+				if (g_bullet[j].bIsAlive == false)
+				{
+					g_bullet[j].bIsAlive = true;
+					g_bullet[j].bIsEnemy = true;
+					g_bullet[j].damage = g_unit_stat[g_enemy[i].type].damage;
+					g_bullet[j].image = g_unit_stat[g_enemy[i].type].attack_image;
+					g_bullet[j].x = g_enemy[i].x;
+					g_bullet[j].y = g_enemy[i].y;
+					g_bullet[j].dir = DIRECTION_DOWN;
+					break;
+				}
+			}
+		}
+	}
+	
 	// 총알 제어
 
 	for (int i = 0; i < MAX_BULLET; ++i)
@@ -214,9 +242,32 @@ bool process_play_logic()
 			continue;
 		}
 
+		// 적군 총알 제어
+		if (g_bullet[i].bIsEnemy == true)
+		{
+			g_bullet[i].dir = DIRECTION_DOWN;
+
+			if (g_bullet[i].x < g_player.x)
+			{
+				g_bullet[i].dir |= DIRECTION_RIGHT;
+			}
+			else if (g_bullet[i].x > g_player.x)
+			{
+				g_bullet[i].dir |= DIRECTION_LEFT;
+			}
+		}
+
 		BYTE dir = g_bullet[i].dir;
 
 		// 총알 움직임
+		// 적군 총알 속도 제어
+		if (g_bullet[i].bIsEnemy)
+		{
+			if (tick % 2 != 0)
+			{
+				continue;
+			}
+		}
 
 		if (dir & DIRECTION_UP)
 		{
@@ -250,7 +301,7 @@ bool process_play_logic()
 		{
 			if (g_player.x == cur_bullet.x && g_player.y == cur_bullet.y)
 			{
-				g_player.HP--;
+				g_player.HP = max(0, g_player.HP - 1);
 				g_bullet[i].bIsAlive = false;
 				g_bullet[i].x = -1;
 				g_bullet[i].y = -1;
@@ -283,12 +334,82 @@ bool process_play_logic()
 			}
 		}
 	}
+	bool b_stage_clear = true;
 
-	return false;
+	// 체크 스테이지 클리어
+	for (int i = 0; i < MAX_ENEMY; ++i)
+	{
+		if (g_enemy[i].HP > 0)
+		{
+			b_stage_clear = false;
+			break;
+		}
+	}
+
+	if (b_stage_clear)
+	{
+		// 남은 총알 제거
+		for (int i = 0; i < MAX_BULLET; ++i)
+		{
+			if (g_bullet[i].bIsAlive)
+			{
+				g_bullet[i].bIsAlive = false;
+			}
+		}
+
+		g_scene = SCENE_LOADING;
+		g_stage++;
+	}
+
+	return g_player.HP == 0;
 }
 
 bool load_end_scene()
 {
+	static bool message_on = true;
+	static int prev_time = timeGetTime();
+
+	int cur_time = timeGetTime();
+
+	if (cur_time - prev_time >= 1000)
+	{
+		if (message_on)
+		{
+			char start_str[] = "Press F5 to restart the game ...";
+			sprintf_s(szScreenBufferForCopy[18] + 25, dfSCREEN_WIDTH - 25, start_str);
+			szScreenBufferForCopy[18][strlen(start_str) + 25] = ' ';
+			message_on = false;
+		}
+		else
+		{
+			memset(szScreenBufferForCopy[18], ' ', dfSCREEN_WIDTH);
+			szScreenBufferForCopy[18][dfSCREEN_WIDTH - 1] = '\0';
+			message_on = true;
+		}
+		prev_time = cur_time;
+	}
+
+	memcpy_s(szScreenBuffer, sizeof(szScreenBuffer), szScreenBufferForCopy, sizeof(szScreenBufferForCopy));
+
+	return true;
+}
+
+bool get_key_change_end()
+{
+	if (GetAsyncKeyState(VK_ESCAPE) & 0x8001)
+	{
+		return true;
+	}
+
+	if (GetAsyncKeyState(VK_F5) & 0x8001)
+	{
+		g_scene = SCENE_LOADING;
+		g_stage = 0;
+		g_player.HP = g_unit_stat[TYPE_PLAYER].HP;
+		g_player.x = 40;
+		g_player.y = 21;
+	}
+
 	return false;
 }
 
@@ -337,6 +458,26 @@ bool load_loading_scene()
 	}
 	else if (g_stage == s_file_num - 1) // End Scene
 	{
+		memset(szScreenBufferForCopy, ' ', sizeof(szScreenBufferForCopy));
+		for (int i = 0; i < dfSCREEN_HEIGHT; ++i)
+		{
+			szScreenBufferForCopy[i][dfSCREEN_WIDTH - 1] = '\0';
+		}
+
+		while (1)
+		{
+			buffer = strtok_s(nullptr, "\n", &p_file_memeory);
+			if (buffer == nullptr)
+			{
+				break;
+			}
+
+			int x = atoi(strtok_s(buffer, " ", &buffer));
+			int y = atoi(strtok_s(nullptr, " ", &buffer));
+
+			szScreenBufferForCopy[y][x] = *strtok_s(nullptr, " ", &buffer);
+		}
+
 		g_scene = SCENE_END;
 	}
 	else // Play Scene

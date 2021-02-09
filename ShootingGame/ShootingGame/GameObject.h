@@ -49,7 +49,8 @@ struct Unit_Stat
 {
 	BYTE HP;
 	BYTE damage;
-	char image;
+	char unit_image;
+	char attack_image;
 };
 
 static const char unit_list_file[32] = "unit_stat.txt";
