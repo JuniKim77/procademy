@@ -416,10 +416,10 @@ bool get_key_change_end()
 bool load_loading_scene()
 {
 	FILE* fin;
-	fopen_s(&fin, load_files[g_stage], "r");
+	fopen_s(&fin, load_files[g_stage], "rb");
 
 	fseek(fin, 0, SEEK_END);
-	int file_size = ftell(fin) + 1;
+	int file_size = ftell(fin);
 	char* file_memory = (char*)malloc(file_size);
 
 	fseek(fin, 0, SEEK_SET);
@@ -484,7 +484,7 @@ bool load_loading_scene()
 	{
 		while (1)
 		{
-			buffer = strtok_s(nullptr, "\n", &p_file_memeory);
+			buffer = strtok_s(nullptr, "\n\x4", &p_file_memeory);
 			if (buffer == nullptr)
 			{
 				break;
