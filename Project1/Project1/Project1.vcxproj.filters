@@ -24,12 +24,30 @@
     <ClCompile Include="gun.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="animal.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="dog.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="york.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gun.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="police.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="animal.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="dog.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="york.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
