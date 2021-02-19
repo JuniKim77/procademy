@@ -1,4 +1,5 @@
 #include "police.h"
+#include "gun.h"
 
 void police::movingShot()
 {

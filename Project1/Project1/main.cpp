@@ -1,3 +1,4 @@
+#include "gun.h"
 #include "police.h"
 
 int main()
@@ -9,7 +10,6 @@ int main()
 	police1.movingShot();
 	police1.movingShot();
 	police1.movingShot();
-
 
 	return 0;
 }

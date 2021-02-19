@@ -1,6 +1,5 @@
 #pragma once
 #include <iostream>
-#include "gun.h"
 
 class gun;
 class police
