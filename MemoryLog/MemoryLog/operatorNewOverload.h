@@ -97,7 +97,6 @@ void operator delete (void* p)
 
 void operator delete[] (void* p)
 {
-	printf("dfdf");
 	// 해당 주소 서칭
 	for (int i = 0; i < MAX_SIZE; ++i)
 	{
