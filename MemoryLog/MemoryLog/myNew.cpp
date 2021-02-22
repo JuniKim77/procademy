@@ -1,11 +1,11 @@
 #pragma once
-#include "myNew.h"
 #include "logging.h"
+#include "myNew.h"
 
 myNew::~myNew()
 {
 	if (mAddr != nullptr)
 	{
-		writeLog(LOG_TYPE_LEAK, mAddr);
+		writeLog(LOG_TYPE_LEAK, this);
 	}
 }
