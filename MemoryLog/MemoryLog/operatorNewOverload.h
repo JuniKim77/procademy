@@ -2,130 +2,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "logging.h"
-#define MAX_SIZE (100)
+#include "myNew.h"
 
-extern myNew gMemoryPool[MAX_SIZE];
+myNew gMemoryPool;
 
 void* operator new (size_t size, const char* File, int Line)
 {
-	for (int i = 0; i < MAX_SIZE; ++i)
-	{
-		myNew* pMemory = &gMemoryPool[i];
+	void* p;
+	gMemoryPool.newAlloc(&p, File, Line, size);
 
-		if (pMemory->mAddr == nullptr)
-		{
-			void* ret = malloc(size);
-
-			pMemory->mAddr = ret;
-			memcpy(pMemory->mFileName, File, strlen(File) + 1);
-			pMemory->mLine = Line;
-			pMemory->mSize = size;
-			pMemory->mIsArray = false;
-
-			return ret;
-		}
-	}
-
-	return nullptr;
+	return p;
 }
 
 void* operator new[] (size_t size, const char* File, int Line)
 {
-	for (int i = 0; i < MAX_SIZE; ++i)
-	{
-		myNew* pMemory = &gMemoryPool[i];
+	void* p;
+	gMemoryPool.newAlloc(&p, File, Line, size, true);
 
-		if (pMemory->mAddr == nullptr)
-		{
-			void* ret = malloc(size);
-
-			pMemory->mAddr = ret;
-			memcpy(pMemory->mFileName, File, strlen(File) + 1);
-			pMemory->mLine = Line;
-			pMemory->mSize = size;
-			pMemory->mIsArray = true;
-
-			return ret;
-		}
-	}
-
-	return nullptr;
+	return p;
 }
 
 void operator delete (void* p)
 {
-	// 해당 주소 서칭
-	for (int i = 0; i < MAX_SIZE; ++i)
+	if (gMemoryPool.deleteAlloc(p))
 	{
-		myNew* pMemory = &gMemoryPool[i];
-
-		if (pMemory->mAddr == p)
-		{
-			if (pMemory->mIsArray == false)
-			{
-				pMemory->mAddr = nullptr;
-
-				return;
-			}
-			else
-			{
-				writeLog(LOG_TYPE_ARRAY, pMemory);
-
-				return;
-			}
-		}
+		free(p);
 	}
-
-	// 배열을 delete로 해제한 경우 고려 서칭
-	void* correctedAddr = (char*)p - sizeof(void*);
-	for (int i = 0; i < MAX_SIZE; ++i)
-	{
-		myNew* pMemory = &gMemoryPool[i];
-
-		if (pMemory->mAddr == correctedAddr && pMemory->mIsArray == true)
-		{
-			writeLog(LOG_TYPE_ARRAY, pMemory);
-
-			return;
-		}
-	}
-
-	// 할당하지 않은 메모리를 해제한 경우
-	writeLog(LOG_TYPE_NOALLOC, p);
 }
 
 void operator delete[] (void* p)
 {
-	// 해당 주소 서칭
-	for (int i = 0; i < MAX_SIZE; ++i)
+	if (gMemoryPool.deleteAlloc(p, true))
 	{
-		myNew* pMemory = &gMemoryPool[i];
-
-		if (pMemory->mAddr == p && pMemory->mIsArray == true)
-		{
-			pMemory->mAddr = nullptr;
-
-			return;
-		}
+		free(p);
 	}
-
-	// delete 배열로 잘못 해제한 경우 고려 서칭
-	void* correctedAddr = (char*)p - sizeof(void*);
-	for (int i = 0; i < MAX_SIZE; ++i)
-	{
-		myNew* pMemory = &gMemoryPool[i];
-
-		if (pMemory->mAddr == correctedAddr && pMemory->mIsArray == false)
-		{
-			writeLog(LOG_TYPE_ARRAY, pMemory);
-
-			return;
-		}
-	}
-
-	// 할당하지 않은 메모리를 해제한 경우
-	writeLog(LOG_TYPE_NOALLOC, p);
 }
 
 void operator delete (void* p, const char* File, int Line)

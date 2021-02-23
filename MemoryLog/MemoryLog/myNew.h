@@ -1,4 +1,3 @@
-enum logType;
 class myNew
 {
 public:
@@ -6,13 +5,35 @@ public:
 	friend void* operator new[] (size_t size, const char* File, int Line);
 	friend void operator delete (void* p);
 	friend void operator delete[] (void* p);
-	friend void writeLog(logType type, void* pMemory);
+	myNew(const char* fileName = "ALLOC");
 	~myNew();
 
+	enum
+	{
+		FILE_NAME_LENGTH = 128,
+		ALLOC_MAX = 100
+	};
+	enum logType
+	{
+		LOG_TYPE_NOALLOC,
+		LOG_TYPE_ARRAY,
+		LOG_TYPE_LEAK
+	};
+
+	struct stMemory_Info
+	{
+		void* mAddr;
+		size_t mSize;
+		char mFileName[FILE_NAME_LENGTH];
+		int mLine;
+		bool mIsArray;
+	};
+
 private:
-	void* mAddr;
-	size_t mSize;
-	char mFileName[256];
-	int mLine;
-	bool mIsArray;
+	stMemory_Info mMemory[ALLOC_MAX];
+	char mLogFileName[FILE_NAME_LENGTH];
+
+	void writeLog(logType type, void* pMemory);
+	bool newAlloc(void** pPtr, const char* fileName, int line, size_t size, bool bArray = false);
+	bool deleteAlloc(void* pPtr, bool bArray = false);
 };

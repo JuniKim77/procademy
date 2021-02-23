@@ -21,18 +21,12 @@
     <ClCompile Include="myNew.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="logging.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="myNew.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="operatorNewOverload.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="logging.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

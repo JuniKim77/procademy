@@ -141,12 +141,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="logging.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="myNew.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="logging.h" />
     <ClInclude Include="myNew.h" />
     <ClInclude Include="operatorNewOverload.h" />
   </ItemGroup>
