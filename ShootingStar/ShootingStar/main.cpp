@@ -1,3 +1,4 @@
+#pragma once
 #include "Process.h"
 #include <Windows.h>
 
@@ -12,7 +13,7 @@ int main()
 		system("cls");
 		Render();
 
-		Sleep(30);
+		Sleep(50);
 	}
 
 	return 0;
