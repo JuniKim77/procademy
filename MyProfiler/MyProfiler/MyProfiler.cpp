@@ -87,7 +87,7 @@ void ProfileDataOutText(const WCHAR* szFileName)
 	fwprintf_s(fout, L"%ls\n", div);
 
 	WCHAR tableName[NAME_MAX];
-	swprintf_s(tableName, _countof(tableName), L"%20ls%15ls%15ls%15ls%13ls",
+	swprintf_s(tableName, _countof(tableName), L"%19ls%16ls%16ls%16ls%11ls",
 		L"Name  |",
 		L"Average  |",
 		L"Min   |",
@@ -107,6 +107,8 @@ void ProfileDataOutText(const WCHAR* szFileName)
 		
 		QueryPerformanceFrequency(&f);
 		__int64 time = gProfiles[i].iTotalTime;
+		double avg;
+		double freq = f.QuadPart / 1000000.0;
 		
 		if (gProfiles[i].iCall > 2)
 		{
@@ -115,19 +117,39 @@ void ProfileDataOutText(const WCHAR* szFileName)
 				time -= gProfiles[i].iMax[i];
 				time -= gProfiles[i].iMin[i];
 			}
-		}
-		double freq = f.QuadPart / 1000000.0;
-		double avg = time / freq / (gProfiles[i].iCall - 2);
 
-		swprintf_s(line, _countof(line), L"%20ls|%10.3f|%10.3lf|%10.3lf|%10.3lld",
-			gProfiles[i].szName,
-			avg,
-			gProfiles[i].iMin[0] / freq,
-			gProfiles[i].iMax[0] / freq,
-			gProfiles[i].iCall);
+			avg = time / freq / (gProfiles[i].iCall - 4);
+		}
+		else
+		{
+			avg = time / freq / (gProfiles[i].iCall);
+		}
+		
+		
+
+		WCHAR nameTxt[32];
+		WCHAR avgTxt[32];
+		WCHAR minTxt[32];
+		WCHAR maxTxt[32];
+		WCHAR callTxt[32];
+
+		swprintf_s(nameTxt, _countof(nameTxt), L"%s |", gProfiles[i].szName);
+		swprintf_s(avgTxt, _countof(avgTxt), L"%.4lfus |", avg);
+		swprintf_s(minTxt, _countof(minTxt), L"%.4lfus |", gProfiles[i].iMin[0] / freq);
+		swprintf_s(maxTxt, _countof(maxTxt), L"%.4lfus |", gProfiles[i].iMax[0] / freq);
+		swprintf_s(callTxt, _countof(callTxt), L"%lld |", gProfiles[i].iCall);
+
+		swprintf_s(line, _countof(line), L"%19ls%16ls%16ls%16ls%11ls",
+			nameTxt,
+			avgTxt,
+			minTxt,
+			maxTxt,
+			callTxt);
 
 		fwprintf_s(fout, L"%ls\n", line);
 	}
+	fwprintf_s(fout, L"\n");
+	fwprintf_s(fout, L"%ls", div);
 
 	fclose(fout);
 }
