@@ -27,23 +27,25 @@ extern int g_scene;
 extern int g_stage;
 extern char szScreenBuffer[dfSCREEN_HEIGHT][dfSCREEN_WIDTH];
 extern char szScreenBufferForCopy[dfSCREEN_HEIGHT][dfSCREEN_WIDTH];
+extern bool b_game_over;
+extern bool b_game_exit;
 
 // 전역 변수 세팅
 bool initialize_global_scene_data();
 void destroy_global_scene_data();
 
 // 엔트리
-bool load_entry_scene();
-bool get_key_change_entry();
+void render_entry_scene();
+void get_key_change_entry();
 
 // 게임 플레이
-bool load_play_scene();
-bool get_key_change_play();
-bool process_play_logic();
+void load_play_scene();
+void get_key_change_play();
+void process_play_logic();
 
 // 엔딩
-bool load_end_scene();
-bool get_key_change_end();
+void load_end_scene();
+void get_key_change_end();
 
 // 로딩
 bool load_loading_scene();

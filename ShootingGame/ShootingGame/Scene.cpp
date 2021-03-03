@@ -3,6 +3,8 @@
 int g_scene;
 int g_stage;
 static char load_files[FILE_MAX_NUM][FILE_NAME_SIZE];
+bool b_game_over = false;
+bool b_game_exit = false;
 
 bool initialize_global_scene_data()
 {
@@ -41,7 +43,7 @@ bool initialize_global_scene_data()
 	return true;
 }
 
-bool load_entry_scene()
+void render_entry_scene()
 {
 	static bool message_on = true;
 	static int prev_time = timeGetTime();
@@ -67,11 +69,9 @@ bool load_entry_scene()
 	}
 
 	memcpy_s(szScreenBuffer, sizeof(szScreenBuffer), szScreenBufferForCopy, sizeof(szScreenBufferForCopy));
-
-	return true;
 }
 
-bool get_key_change_entry()
+void get_key_change_entry()
 {
 	if (GetAsyncKeyState(VK_RETURN) & 0x8001)
 	{
@@ -81,13 +81,11 @@ bool get_key_change_entry()
 
 	if (GetAsyncKeyState(VK_ESCAPE) & 0x8001)
 	{
-		return true;
+		b_game_exit = true;
 	}
-
-	return false;
 }
 
-bool get_key_change_play()
+void get_key_change_play()
 {
 	DWORD cur_time = timeGetTime();
 
@@ -129,13 +127,11 @@ bool get_key_change_play()
 
 	if (GetAsyncKeyState(VK_ESCAPE) & 0x8001)
 	{
-		return true;
+		b_game_exit = true;
 	}
-
-	return false;
 }
 
-bool load_play_scene()
+void load_play_scene()
 {
 	if (g_player.HP > 0)
 	{
@@ -161,11 +157,9 @@ bool load_play_scene()
 			szScreenBuffer[bullet.y][bullet.x] = bullet.image;
 		}
 	}
-
-	return true;
 }
 
-bool process_play_logic()
+void process_play_logic()
 {
 	static int movement = 0;
 	static int tick = 0;
@@ -308,7 +302,8 @@ bool process_play_logic()
 
 				if (g_player.HP == 0)
 				{
-					return true;
+					b_game_over = true;
+					return;
 				}
 
 				continue;
@@ -361,10 +356,10 @@ bool process_play_logic()
 		g_stage++;
 	}
 
-	return g_player.HP == 0;
+	b_game_over = g_player.HP == 0;
 }
 
-bool load_end_scene()
+void load_end_scene()
 {
 	static bool message_on = true;
 	static int prev_time = timeGetTime();
@@ -390,15 +385,14 @@ bool load_end_scene()
 	}
 
 	memcpy_s(szScreenBuffer, sizeof(szScreenBuffer), szScreenBufferForCopy, sizeof(szScreenBufferForCopy));
-
-	return true;
 }
 
-bool get_key_change_end()
+void get_key_change_end()
 {
 	if (GetAsyncKeyState(VK_ESCAPE) & 0x8001)
 	{
-		return true;
+		b_game_exit = true;
+		return;
 	}
 
 	if (GetAsyncKeyState(VK_F5) & 0x8001)
@@ -409,8 +403,6 @@ bool get_key_change_end()
 		g_player.x = 40;
 		g_player.y = 21;
 	}
-
-	return false;
 }
 
 bool load_loading_scene()
