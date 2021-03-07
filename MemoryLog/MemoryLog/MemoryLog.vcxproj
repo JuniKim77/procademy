@@ -143,6 +143,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="myNew.cpp" />
+    <ClCompile Include="operatorNewOverload.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="myNew.h" />

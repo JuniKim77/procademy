@@ -11,7 +11,7 @@ public:
 	enum
 	{
 		FILE_NAME_LENGTH = 128,
-		ALLOC_MAX = 100
+		ALLOC_MAX = 1500
 	};
 	enum logType
 	{

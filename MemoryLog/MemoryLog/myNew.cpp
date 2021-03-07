@@ -55,13 +55,13 @@ void myNew::writeLog(logType type, void* pMemory)
 		break;
 	case LOG_TYPE_ARRAY:
 		pInfo = (stMemory_Info*)pMemory;
-		sprintf_s(buffer, sizeof(buffer), "ARRAY [0x%p][%4d] %s : %d\n", pInfo->mAddr, pInfo->mSize, pInfo->mFileName, pInfo->mLine);
+		sprintf_s(buffer, sizeof(buffer), "ARRAY [0x%p][%4zd] %s : %d\n", pInfo->mAddr, pInfo->mSize, pInfo->mFileName, pInfo->mLine);
 
 		fwrite(buffer, strlen(buffer), 1, fout);
 		break;
 	case LOG_TYPE_LEAK:
 		pInfo = (stMemory_Info*)pMemory;
-		sprintf_s(buffer, sizeof(buffer), "LEAK [0x%p][%4d] %s : %d\n", pInfo->mAddr, pInfo->mSize, pInfo->mFileName, pInfo->mLine);
+		sprintf_s(buffer, sizeof(buffer), "LEAK [0x%p][%4zd] %s : %d\n", pInfo->mAddr, pInfo->mSize, pInfo->mFileName, pInfo->mLine);
 
 		fwrite(buffer, strlen(buffer), 1, fout);
 		break;

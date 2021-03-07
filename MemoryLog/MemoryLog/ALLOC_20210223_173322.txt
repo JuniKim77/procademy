@@ -1,6 +1,0 @@
-NOALLOC [0x014A5BA9]
-ARRAY [0x014A5BA8][   4] D:\Procademy\MemoryLog\MemoryLog\main.cpp : 17
-ARRAY [0x014ADFD8][  20] D:\Procademy\MemoryLog\MemoryLog\main.cpp : 18
-ARRAY [0x014ADFD8][  20] D:\Procademy\MemoryLog\MemoryLog\main.cpp : 18
-LEAK [0x014AD2E0][  16] D:\Procademy\MemoryLog\MemoryLog\main.cpp : 16
-LEAK [0x014A5BA8][   4] D:\Procademy\MemoryLog\MemoryLog\main.cpp : 17
