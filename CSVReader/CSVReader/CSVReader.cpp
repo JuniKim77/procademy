@@ -5,23 +5,19 @@
 
 CSVFile::CSVFile(const char* fileName)
 	: mFileName(fileName)
-	, mLineLength(0)
-	, mMemory(nullptr)
+	, mBuffer(nullptr)
 {
 	
 }
 
 CSVFile::~CSVFile()
 {
-	if (mMemory == nullptr)
+	if (mBuffer == nullptr)
 	{
 		return;
 	}
 
-	for (int i = 0; i < mLineLength; ++i)
-	{
-		delete[] mMemory[i];
-	}
+	delete[] mBuffer;
 }
 
 void CSVFile::readFile()
@@ -32,20 +28,51 @@ void CSVFile::readFile()
 	fseek(fin, 0, SEEK_END);
 
 	int size = ftell(fin);
-	char* buffer = new char[size];
-	memset(buffer, 0, size);
+	mBuffer = new char[size];
+	memset(mBuffer, 0, size);
 	fseek(fin, 0, SEEK_SET);
-	fread_s(buffer, size, size, 1, fin);
+	int test = fread_s(mBuffer, size, size, 1, fin);
 
-	int lineSize = countLine(buffer);
+	mRowSize = countRow(mBuffer);
+	mColSize = countCol(mBuffer);
 
-
-
-	delete[] buffer;
 	fclose(fin);
 }
 
-int CSVFile::countLine(const char* buffer) const
+const char* CSVFile::GetRowAddress(int line)
+{
+	if (line < 1 || line > mRowSize)
+		return nullptr;
+
+	char* pBuf = mBuffer;
+	int count = 0;
+
+	while (count < line)
+	{
+		while (*pBuf != '\n')
+		{
+			++pBuf;
+		}
+		++pBuf;
+		++count;
+	}
+
+	return pBuf;
+}
+
+const char* CSVFile::GetTitleAddress()
+{
+	char* pBuf = mBuffer;
+
+	while (*pBuf < 0)
+	{
+		++pBuf;
+	}
+
+	return pBuf;
+}
+
+int CSVFile::countRow(const char* buffer) const
 {
 	const char* pBuf = buffer;
 	int count = 0;
@@ -58,5 +85,21 @@ int CSVFile::countLine(const char* buffer) const
 		++pBuf;
 	}
 
-	return count;
+	return count - 1;
+}
+
+int CSVFile::countCol(const char* buffer) const
+{
+	const char* pBuf = buffer;
+	int count = 0;
+
+	while (*pBuf != '\n')
+	{
+		if (*pBuf == ',')
+			++count;
+
+		++pBuf;
+	}
+
+	return count + 1;
 }

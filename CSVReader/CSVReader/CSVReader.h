@@ -4,11 +4,18 @@ public:
 	CSVFile(const char* fileName);
 	~CSVFile();
 	void readFile();
-	const char** mMemory;
-	int mLineLength;
+	int GetRow() { return mRowSize; }
+	int GetCol() { return mColSize; }
+	const char* GetRowAddress(int num);
+	const char* GetTitleAddress();
 
 private:
-	int countLine(const char* buffer) const;
+	int countRow(const char* buffer) const;
+	int countCol(const char* buffer) const;
 
+private:
+	int mRowSize;
+	int mColSize;
 	const char* mFileName;
+	char* mBuffer;
 };
