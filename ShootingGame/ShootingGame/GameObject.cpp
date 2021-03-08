@@ -1,4 +1,6 @@
+#pragma once
 #include "GameObject.h"
+//#include "operatorNewOverload.h"
 
 Unit g_player;
 Unit_Stat g_unit_stat[MAX_ENEMY_NUMBER];
@@ -16,7 +18,7 @@ bool initialize_global_unit_data()
 	fseek(fin, 0, SEEK_END);
 	int file_size = ftell(fin) + 1;
 
-	file_memory = (char*)malloc(file_size);
+	file_memory = new char[file_size];
 
 	fseek(fin, 0, SEEK_SET);
 	fread_s(file_memory, file_size, file_size, 1, fin);
@@ -56,7 +58,7 @@ bool initialize_global_unit_data()
 		g_unit_stat[type].attack_image = *data;
 	}
 
-	free(file_memory);
+	delete[] file_memory;
 	fclose(fin);
 
 	// 플레이어 데이터 초기화

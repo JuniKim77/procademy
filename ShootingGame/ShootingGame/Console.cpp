@@ -66,7 +66,6 @@ void cs_MoveCursor(int iPosX, int iPosY)
 //-------------------------------------------------------------
 void cs_ClearScreen(void)
 {
-	int iCountX, iCountY;
 	DWORD dw;
 
 	FillConsoleOutputCharacter(GetStdHandle(STD_OUTPUT_HANDLE), ' ', 100*100, { 0, 0 }, &dw);

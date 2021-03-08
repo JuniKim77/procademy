@@ -1,3 +1,4 @@
+#pragma once
 #include <stdio.h>
 #include <memory.h>
 #include <Windows.h>
@@ -69,7 +70,6 @@ int main(void)
 
 	initialize_global_scene_data();
 	initialize_global_unit_data();
-	make_setting_files();
 
 	while (1)
 	{
@@ -159,7 +159,3 @@ void Sprite_Draw(int iX, int iY, char chSprite)
 {
 	szScreenBuffer[iY][iX] = chSprite;
 }
-
-
-
-

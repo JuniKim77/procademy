@@ -1,5 +1,6 @@
+#pragma once
 #include "Scene.h"
-
+//#include "operatorNewOverload.h"
 int g_scene;
 int g_stage;
 static char load_files[FILE_MAX_NUM][FILE_NAME_SIZE];
@@ -16,7 +17,7 @@ bool initialize_global_scene_data()
 	fseek(fin, 0, SEEK_END);
 	int file_size = ftell(fin) + 1;
 
-	file_memory = (char*)malloc(file_size);
+	file_memory = new char[file_size];
 
 	fseek(fin, 0, SEEK_SET);
 	fread_s(file_memory, file_size, file_size, 1, fin);
@@ -34,7 +35,7 @@ bool initialize_global_scene_data()
 		memcpy(load_files[i], buffer, FILE_NAME_SIZE);
 	}
 
-	free(file_memory);
+	delete[] file_memory;
 	fclose(fin);
 
 	g_scene = SCENE_LOADING;
@@ -409,10 +410,9 @@ bool load_loading_scene()
 {
 	FILE* fin;
 	fopen_s(&fin, load_files[g_stage], "rb");
-
 	fseek(fin, 0, SEEK_END);
 	int file_size = ftell(fin);
-	char* file_memory = (char*)malloc(file_size);
+	char* file_memory = new char(file_size);
 
 	fseek(fin, 0, SEEK_SET);
 	fread_s(file_memory, file_size, file_size, 1, fin);
@@ -503,7 +503,7 @@ bool load_loading_scene()
 	}
 
 	fclose(fin);
-	free(file_memory);
+	delete[] file_memory;
 
 	return true;
 }
