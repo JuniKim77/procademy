@@ -1,3 +1,6 @@
+#ifndef MYNEW
+#define MYNEW
+
 class myNew
 {
 public:
@@ -37,3 +40,5 @@ private:
 	bool newAlloc(void** pPtr, const char* fileName, int line, size_t size, bool bArray = false);
 	bool deleteAlloc(void* pPtr, bool bArray = false);
 };
+
+#endif

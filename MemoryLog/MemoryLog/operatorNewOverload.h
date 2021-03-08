@@ -1,4 +1,6 @@
-#pragma once
+#ifndef OPERATORNEWOVERLOAD
+#define OPERATORNEWOVERLOAD
+
 #include "myNew.h"
 
 extern myNew gMemoryPool;
@@ -12,3 +14,5 @@ void operator delete (void* p, const char* File, int Line);
 void operator delete[](void* p, const char* File, int Line);
 
 #define new new(__FILE__, __LINE__)
+
+#endif
