@@ -1,11 +1,11 @@
-#ifndef SCENETITLE
-#define SCENETITLE
+#ifndef SCENEVICTORY
+#define SCENEVICTORY
 #include "SceneProcess.h"
 
-class SceneTitle : public SceneProcess
+class SceneVictory : public SceneProcess
 {
 public:
-	SceneTitle();
+	SceneVictory();
 	// Scene을(를) 통해 상속됨
 	virtual void GetKeyChange() override;
 };

@@ -1,5 +1,11 @@
 #pragma once
 #include "Scene.h"
+#include "SceneType.h"
+
+Scene::Scene(SceneType type)
+	: mSceneType(type)
+{
+}
 
 void Scene::RenderCSVFileData(int line, const char** pBuf)
 {

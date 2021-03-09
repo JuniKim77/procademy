@@ -145,13 +145,19 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="myNew.cpp" />
     <ClCompile Include="ObjectBase.cpp" />
+    <ClCompile Include="ObjectBullet.cpp" />
+    <ClCompile Include="ObjectEnemy.cpp" />
     <ClCompile Include="ObjectManager.cpp" />
+    <ClCompile Include="ObjectPlayer.cpp" />
     <ClCompile Include="operatorNewOverload.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneEnd.cpp" />
     <ClCompile Include="SceneManager.cpp" />
+    <ClCompile Include="SceneOver.cpp" />
     <ClCompile Include="ScenePlay.cpp" />
+    <ClCompile Include="SceneProcess.cpp" />
     <ClCompile Include="SceneTitle.cpp" />
+    <ClCompile Include="SceneVictory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Console.h" />
@@ -159,14 +165,20 @@
     <ClInclude Include="myList.h" />
     <ClInclude Include="myNew.h" />
     <ClInclude Include="ObjectBase.h" />
+    <ClInclude Include="ObjectBullet.h" />
+    <ClInclude Include="ObjectEnemy.h" />
     <ClInclude Include="ObjectManager.h" />
+    <ClInclude Include="ObjectPlayer.h" />
     <ClInclude Include="operatorNewOverload.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneEnd.h" />
     <ClInclude Include="SceneManager.h" />
+    <ClInclude Include="SceneOver.h" />
     <ClInclude Include="ScenePlay.h" />
+    <ClInclude Include="SceneProcess.h" />
     <ClInclude Include="SceneTitle.h" />
     <ClInclude Include="SceneType.h" />
+    <ClInclude Include="SceneVictory.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

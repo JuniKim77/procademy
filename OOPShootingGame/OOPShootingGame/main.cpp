@@ -68,7 +68,7 @@ int main(void)
 
 	Init();
 
-	while (1)
+	while (!SceneManager::mbExit)
 	{
 		// 스크린 버퍼를 지움
 		Buffer_Clear();

@@ -1,17 +1,17 @@
 #pragma once
-#include "SceneTitle.h"
+#include "SceneOver.h"
 #include <Windows.h>
 #include "SceneManager.h"
 #include <stdio.h>
 #include "SceneType.h"
 
-SceneTitle::SceneTitle()
-	: SceneProcess(SceneType::SCENE_TITLE, "Press enter to start game ...")
+SceneOver::SceneOver()
+	: SceneProcess(SceneType::SCENE_OVER, "Press enter to restart game ...")
 {
 	LoadCSVFile();
 }
 
-void SceneTitle::GetKeyChange()
+void SceneOver::GetKeyChange()
 {
 	if (GetAsyncKeyState(VK_RETURN) & 0x8001) // Enter key
 	{

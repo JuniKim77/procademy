@@ -1,7 +1,6 @@
 #ifndef SCENEEND
 #define SCENEEND
 #include "Scene.h"
-#include "CSVReader.h"
 
 class SceneEnd : public Scene
 {
@@ -13,12 +12,10 @@ public:
 	virtual void Render() override;
 
 private:
-	void LoadCSVFile();
+	virtual void LoadCSVFile() override;
 
 private:
-	int mPrevTime;
-	bool mbMessageOn;
-	CSVFile* mCSVReader;
+	CSVFile* mCSVReader = nullptr;
 };
 
 #endif

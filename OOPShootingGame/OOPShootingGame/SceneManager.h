@@ -14,8 +14,11 @@ public:
 
 public:
 	static bool mbChangeScene;
+	static bool mbExit;
 	static SceneType mNextSceneType;
-	static char** mFileNameArray;
+	static char** mProcessFileNameArray;
+	static char** mStageFileNameArray;
+	static int mCurrentStage;
 
 private:
 	~SceneManager();
@@ -30,7 +33,8 @@ private:
 	static SceneManager* mManager;
 	Scene* mpScene;	
 	const char* mFileList = "file_list.txt";
-	int mFileListSize;
+	int mProcessFileListSize;
+	int mStageFileListSize;
 };
 
 #endif
