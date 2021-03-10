@@ -1,7 +1,8 @@
 #ifndef OBJECTMANAGER
 #define OBJECTMANAGER
 #include "myList.h"
-#include "ObjectBase.h"
+
+class ObjectBase;
 
 class ObjectManager
 {

@@ -2,6 +2,12 @@
 #include "Scene.h"
 #include "SceneType.h"
 
+Scene::~Scene()
+{
+	if (mCSVReader != nullptr)
+		delete mCSVReader;
+}
+
 Scene::Scene(SceneType type)
 	: mSceneType(type)
 {

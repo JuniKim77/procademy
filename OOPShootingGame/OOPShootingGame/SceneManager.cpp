@@ -6,6 +6,7 @@
 #include "SceneOver.h"
 #include "SceneVictory.h"
 #include "SceneType.h"
+#include "ScenePlay.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -129,6 +130,7 @@ void SceneManager::Run()
 {
 	if (mbChangeScene == true)
 	{
+		delete mpScene;
 		LoadScene();
 	}
 	mpScene->GetKeyChange();
@@ -146,7 +148,9 @@ void SceneManager::LoadScene()
 		mbChangeScene = false;
 		break;
 	case SceneType::SCENE_PLAY:
-		
+		mpScene = new ScenePlay();
+		mNextSceneType = SceneType::SCENE_PLAY;
+		mbChangeScene = false;
 		break;
 	case SceneType::SCENE_VICTORY:
 		mpScene = new SceneVictory();

@@ -12,6 +12,7 @@ extern myList<ObjectBase*> gObjectList;
 class Scene
 {
 public:
+	virtual ~Scene();
 	virtual void GetKeyChange() = 0;
 	virtual void Update() = 0;
 	virtual void Render() = 0;

@@ -1,5 +1,6 @@
 #pragma once
 #include "ObjectManager.h"
+#include "ObjectBase.h"
 #include "operatorNewOverload.h"
 
 ObjectManager* ObjectManager::mManager = nullptr;
@@ -31,6 +32,22 @@ void ObjectManager::ClearObjects()
 
 void ObjectManager::Update()
 {
+	// Delete
+	for (myList<ObjectBase*>::iterator iter = mObjectList.begin(); iter != mObjectList.end();)
+	{
+		if ((*iter)->GetIsLive() == false)
+		{
+			ObjectBase* pObj = *iter;
+			iter = mObjectList.erase(iter);
+			delete pObj;
+		}
+		else
+		{
+			++iter;
+		}
+	}
+
+	// Update
 	for (myList<ObjectBase*>::iterator iter = mObjectList.begin(); iter != mObjectList.end(); ++iter)
 	{
 		(*iter)->Update();
@@ -47,6 +64,12 @@ void ObjectManager::Render()
 
 ObjectManager::~ObjectManager()
 {
+	while (mObjectList.empty() == false)
+	{
+		ObjectBase* cur = mObjectList.pop_front();
+		delete cur;
+	}
+
 	if (mManager != nullptr)
 		delete mManager;
 }
