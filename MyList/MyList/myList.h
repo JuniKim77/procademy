@@ -1,3 +1,6 @@
+#pragma once
+#include "operatorNewOverload.h"
+
 template <typename T>
 class myList
 {
@@ -11,9 +14,8 @@ public:
 
 	class iterator
 	{
-	private:
-		Node* _node;
 	public:
+		friend class myList;
 		iterator(Node* node = nullptr)
 			: _node(node)
 		{
@@ -60,6 +62,9 @@ public:
 		{
 			return _node != other._node;
 		}
+
+	private:
+		Node* _node;
 	};
 
 public:
@@ -99,6 +104,7 @@ public:
 		cur->next->prev = cur->prev;
 		Node* next = cur->next;
 		delete cur;
+		--_size;
 		
 		return iterator(next);
 	}

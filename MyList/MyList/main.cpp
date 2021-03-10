@@ -1,6 +1,8 @@
+#pragma once
 #include "myList.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "operatorNewOverload.h"
 
 class CPlayer
 {
@@ -32,17 +34,33 @@ int main()
 		printf("%d\n", *iter);
 	}
 
+	ListInt.clear();
+
 	myList<CPlayer*> ListPlayer;
 
-	ListPlayer.push_back(new CPlayer(1,1));
-	ListPlayer.push_back(new CPlayer(2, 2));
-	ListPlayer.push_back(new CPlayer(3, 3));
-	ListPlayer.push_back(new CPlayer(4, 4));
+	CPlayer* p1 = new CPlayer(1, 1);
+	CPlayer* p2 = new CPlayer(2, 2);
+	CPlayer* p3 = new CPlayer(3, 3);
+	CPlayer* p4 = new CPlayer(4, 4);
+
+	ListPlayer.push_back(p1);
+	ListPlayer.push_back(p2);
+	ListPlayer.push_back(p3);
+	ListPlayer.push_back(p4);
 
 	for (myList<CPlayer*>::iterator iter = ListPlayer.begin(); iter != ListPlayer.end(); ++iter)
 	{
 		CPlayer* p = *iter;
 		printf("%d %d\n", p->_x, p->_y);
+	}
+
+	CPlayer* cur = ListPlayer.pop_front();
+	delete cur;
+
+	for (auto iter = ListPlayer.begin(); iter != ListPlayer.end(); )
+	{
+		delete *iter;
+		iter = ListPlayer.erase(iter);
 	}
 
 	return 0;

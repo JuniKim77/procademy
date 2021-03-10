@@ -142,9 +142,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="myNew.cpp" />
+    <ClCompile Include="operatorNewOverload.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="myList.h" />
+    <ClInclude Include="myNew.h" />
+    <ClInclude Include="operatorNewOverload.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
