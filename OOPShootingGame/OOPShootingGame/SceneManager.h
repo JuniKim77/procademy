@@ -24,7 +24,6 @@ private:
 	~SceneManager();
 	SceneManager();
 	void LoadFileNameList();
-	void GetNextLine(char** pBegin, char** pEnd, char* buffer);
 
 private:
 	enum {
