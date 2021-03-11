@@ -11,6 +11,7 @@ public:
 	int GetCol() { return mColSize; }
 	const char* GetRowAddress(int line);
 	const char* GetTitleAddress();
+	void GetNextComma(const char** pBuf);
 
 private:
 	int countRow(const char* buffer) const;

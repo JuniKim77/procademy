@@ -72,6 +72,14 @@ const char* CSVFile::GetTitleAddress()
 	return pBuf;
 }
 
+void CSVFile::GetNextComma(const char** pBuf)
+{
+	while (**pBuf != ',' && **pBuf != '\0')
+	{
+		++(*pBuf);
+	}
+}
+
 int CSVFile::countRow(const char* buffer) const
 {
 	const char* pBuf = buffer;

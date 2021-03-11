@@ -12,11 +12,11 @@ ObjectEnemy::ObjectEnemy(int x, int y)
 	, mMoveTimer(10)
 	, mAttackTimer(5)
 {
+	
 }
 
 bool ObjectEnemy::Update()
 {
-	//++mMoveCounter;
 	++mAttackCount;
 
 	Move();

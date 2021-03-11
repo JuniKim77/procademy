@@ -11,7 +11,8 @@ ScenePlay::ScenePlay()
 	: Scene(SceneType::SCENE_PLAY)
 {
 	ObjectManager::GetInstance()->AddObject(new ObjectPlayer(40, 20));
-	ObjectManager::GetInstance()->AddObject(new ObjectEnemy(40, 4));
+
+	LoadCSVFile();
 }
 
 void ScenePlay::GetKeyChange()
@@ -35,4 +36,11 @@ void ScenePlay::Render()
 
 void ScenePlay::LoadCSVFile()
 {
+	CSVFile csvFile(SceneManager::mStageFileNameArray[SceneManager::mCurrentStage - 1]);
+
+	const char* pBegin = csvFile.GetRowAddress(1);
+	const char* pEnd = pBegin;
+
+	
+
 }
