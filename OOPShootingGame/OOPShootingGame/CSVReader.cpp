@@ -80,6 +80,31 @@ void CSVFile::GetNextComma(const char** pBuf)
 	}
 }
 
+bool CSVFile::CopyToNextComma(char* buffer, const char** pBegin)
+{
+	const char* pEnd = *pBegin;
+
+	while (*pEnd != ',' && *pEnd != '\n' && *pEnd != '\0')
+	{
+		++pEnd;
+	}
+
+	int size = pEnd - *pBegin;
+
+	if (size == 0)
+	{
+		*pBegin = pEnd + 1;
+		return false;
+	}
+		
+	memcpy(buffer, *pBegin, size);
+	buffer[size] = '\0';
+
+	*pBegin = pEnd + 1;
+
+	return true;
+}
+
 int CSVFile::countRow(const char* buffer) const
 {
 	const char* pBuf = buffer;

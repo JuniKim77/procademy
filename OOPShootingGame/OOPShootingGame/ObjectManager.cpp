@@ -5,6 +5,8 @@
 #include "CSVReader.h"
 #include <memory.h>
 #include <stdlib.h>
+#include "ObjectType.h"
+#include "SceneManager.h"
 
 ObjectManager* ObjectManager::mManager = nullptr;
 ObjectStat* ObjectManager::mObjectStats = nullptr;
@@ -24,6 +26,19 @@ void ObjectManager::AddObject(ObjectBase* object)
 	mObjectList.push_back(object);
 }
 
+ObjectBase* ObjectManager::GetUnitAt(int x, int y, ObjectType type)
+{
+	for (myList<ObjectBase*>::iterator iter = mObjectList.begin(); iter != mObjectList.end(); ++iter)
+	{
+		if ((*iter)->mX == x && (*iter)->mY == y && (*iter)->mType == type)
+		{
+			return *iter;
+		}
+	}
+
+	return nullptr;
+}
+
 void ObjectManager::ClearObjects()
 {
 	while (mObjectList.empty() == false)
@@ -36,6 +51,12 @@ void ObjectManager::ClearObjects()
 
 void ObjectManager::Update()
 {
+	// Update
+	for (myList<ObjectBase*>::iterator iter = mObjectList.begin(); iter != mObjectList.end(); ++iter)
+	{
+		(*iter)->Update();
+	}
+
 	// Delete
 	for (myList<ObjectBase*>::iterator iter = mObjectList.begin(); iter != mObjectList.end();)
 	{
@@ -43,6 +64,13 @@ void ObjectManager::Update()
 		{
 			ObjectBase* pObj = *iter;
 			iter = mObjectList.erase(iter);
+
+			if (pObj->mType == ObjectType::PLAYER)
+			{
+				SceneManager::mbChangeScene = true;
+				SceneManager::mNextSceneType = SceneType::SCENE_OVER;
+			}
+
 			delete pObj;
 		}
 		else
@@ -51,10 +79,20 @@ void ObjectManager::Update()
 		}
 	}
 
-	// Update
+	// Count Enemy
+	int count = 0;
+
 	for (myList<ObjectBase*>::iterator iter = mObjectList.begin(); iter != mObjectList.end(); ++iter)
 	{
-		(*iter)->Update();
+		if ((*iter)->mType == ObjectType::ENEMY)
+		{
+			++count;
+		}
+	}
+
+	if (count == 0)
+	{
+		SceneManager::mbNextStage = true;
 	}
 }
 
@@ -135,5 +173,19 @@ void ObjectManager::LoadCSVFile(const char* fileName)
 
 		pEnd += 2;
 		pBegin = pEnd;
+	}
+}
+
+void ObjectManager::ClearNonePlayerObjects()
+{
+	for (myList<ObjectBase*>::iterator iter = mObjectList.begin(); iter != mObjectList.end(); ++iter)
+	{
+		if ((*iter)->mType != ObjectType::PLAYER)
+		{
+			ObjectBase* pObj = *iter;
+			mObjectList.erase(iter);
+
+			delete pObj;
+		}
 	}
 }

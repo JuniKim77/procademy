@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include "SceneManager.h"
 #include <stdio.h>
+#include "CSVReader.h"
 
 void SceneProcess::Update()
 {

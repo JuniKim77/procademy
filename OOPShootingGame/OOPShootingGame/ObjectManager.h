@@ -4,6 +4,7 @@
 
 class ObjectBase;
 class CSVFile;
+enum class ObjectType;
 
 #define NAME_SIZE (64)
 
@@ -21,7 +22,9 @@ public:
 	static ObjectManager* GetInstance();
 	static ObjectStat* mObjectStats;
 	void AddObject(ObjectBase* object);
+	ObjectBase* GetUnitAt(int x, int y, ObjectType type);
 	void ClearObjects();
+	void ClearNonePlayerObjects();
 	void Update();
 	void Render();
 

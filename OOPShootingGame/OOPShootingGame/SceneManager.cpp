@@ -12,9 +12,11 @@
 #include <memory.h>
 #include <string.h>
 #include "TxtReader.h"
+#include "ObjectManager.h"
 
 SceneManager* SceneManager::mManager = nullptr;
 bool SceneManager::mbChangeScene = true;
+bool SceneManager::mbNextStage = false;
 bool SceneManager::mbExit = false;
 SceneType SceneManager::mNextSceneType = SceneType::SCENE_TITLE;
 char** SceneManager::mProcessFileNameArray = nullptr;
@@ -79,6 +81,24 @@ void SceneManager::Run()
 	mpScene->GetKeyChange();
 	mpScene->Update();
 	mpScene->Render();
+
+	if (mbNextStage == true)
+	{
+		++mCurrentStage;
+		mbNextStage = false;
+
+		if (mCurrentStage > mStageFileListSize)
+		{
+			mbChangeScene = true;
+			mNextSceneType = SceneType::SCENE_VICTORY;
+			ObjectManager::GetInstance()->ClearObjects();
+		}
+		else
+		{
+			mpScene->LoadCSVFile();
+		}
+		
+	}
 }
 
 void SceneManager::LoadScene()
@@ -107,7 +127,6 @@ void SceneManager::LoadScene()
 		break;
 	case SceneType::SCENE_END:
 		mpScene = new SceneEnd();
-		mNextSceneType = SceneType::SCENE_END;
 		mbChangeScene = false;
 		break;
 	default:

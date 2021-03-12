@@ -1,10 +1,11 @@
 #pragma once
 #include "ObjectBase.h"
 #include "ObjectBullet.h"
+#include "ObjectManager.h"
+#include "ObjectType.h"
 
 ObjectBullet::ObjectBullet(int x, int y, int damage, bool isEnemy)
-	: ObjectBase(x, y, '*', ObjectType::BULLET)
-	, mDamage(damage)
+	: ObjectBase(x, y, 0, damage, isEnemy ? '+' : '*', ObjectType::BULLET)
 	, mbEnemy(isEnemy)
 {
 }
@@ -44,4 +45,11 @@ void ObjectBullet::Collision()
 	}
 
 	// To other Object
+	ObjectBase* target = ObjectManager::GetInstance()->GetUnitAt(mX, mY, mbEnemy ? ObjectType::PLAYER : ObjectType::ENEMY);
+
+	if (target != nullptr)
+	{
+		target->TakeDamage(mAttack);
+		mbLive = false;
+	}
 }

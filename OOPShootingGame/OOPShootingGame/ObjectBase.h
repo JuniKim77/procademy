@@ -14,24 +14,25 @@
 
 extern char szScreenBuffer[dfSCREEN_HEIGHT][dfSCREEN_WIDTH];
 
+enum class ObjectType;
+
 class ObjectBase
 {
 public:
-	enum class ObjectType {
-		PLAYER,
-		ENEMY,
-		BULLET
-	};
-	ObjectBase(int x, int y, char image, ObjectType type);
+	friend class ObjectManager;
+	ObjectBase(int x, int y, int hp, int damage, char image, ObjectType type);
 	virtual ~ObjectBase();
 	virtual bool Update() = 0;
 	virtual void Render() = 0;
 	virtual void Move() = 0;
 	bool GetIsLive() { return mbLive; }
+	void TakeDamage(int damage);
 
 protected:
 	int mX;
 	int mY;
+	int mAttack;
+	int mHp;
 	ObjectType mType;
 	char mImage;
 	bool mbLive = true;

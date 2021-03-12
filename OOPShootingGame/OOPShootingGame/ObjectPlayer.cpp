@@ -5,11 +5,14 @@
 #include "ObjectManager.h"
 #include "ObjectBullet.h"
 #include "operatorNewOverload.h"
+#include "ObjectType.h"
 
 ObjectPlayer::ObjectPlayer(int x, int y)
-	: ObjectBase(x, y, '^', ObjectType::PLAYER)
-	, mHp(5)
-	, mAttack(1)
+	: ObjectBase(x, y, 
+		ObjectManager::mObjectStats[(int)ObjectType::PLAYER].hp,
+		ObjectManager::mObjectStats[(int)ObjectType::PLAYER].damage,
+		ObjectManager::mObjectStats[(int)ObjectType::PLAYER].image,
+		ObjectType::PLAYER)
 {
 }
 
@@ -20,7 +23,7 @@ bool ObjectPlayer::Update()
 	if (GetAsyncKeyState(VK_SPACE) & 0x8001)
 	{
 		// ÃÑ¾Ë ¹ß»ç
-		ObjectManager::GetInstance()->AddObject(new ObjectBullet(mX, mY - -1, mAttack, false));
+		ObjectManager::GetInstance()->AddObject(new ObjectBullet(mX, mY, mAttack, false));
 	}
 
 	return false;

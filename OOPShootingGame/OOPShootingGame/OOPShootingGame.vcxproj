@@ -170,6 +170,7 @@
     <ClInclude Include="ObjectEnemy.h" />
     <ClInclude Include="ObjectManager.h" />
     <ClInclude Include="ObjectPlayer.h" />
+    <ClInclude Include="ObjectType.h" />
     <ClInclude Include="operatorNewOverload.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneEnd.h" />

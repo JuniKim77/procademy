@@ -12,6 +12,7 @@ public:
 	const char* GetRowAddress(int line);
 	const char* GetTitleAddress();
 	void GetNextComma(const char** pBuf);
+	bool CopyToNextComma(char* buffer, const char** pBegin);
 
 private:
 	int countRow(const char* buffer) const;

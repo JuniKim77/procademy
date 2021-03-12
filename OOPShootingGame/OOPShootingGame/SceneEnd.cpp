@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include "SceneManager.h"
 #include <stdio.h>
+#include "CSVReader.h"
 
 SceneEnd::SceneEnd()
 	: Scene(SceneType::SCENE_END)

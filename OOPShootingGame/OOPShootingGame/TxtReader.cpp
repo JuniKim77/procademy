@@ -37,11 +37,11 @@ void TxtReader::ReadNextParagraph(char** pBegin, char** pEnd, int* lineSize, cha
 	char buffer[FILE_NAME_SIZE] = { 0, };
 
 	GetNextLine(pBegin, pEnd, buffer);
-	int FileListSize = atoi(buffer);
+	*lineSize = atoi(buffer);
 
-	*dest = (char**)(new char* [FileListSize]);
+	*dest = (char**)(new char* [*lineSize]);
 
-	for (int i = 0; i < FileListSize; ++i)
+	for (int i = 0; i < *lineSize; ++i)
 	{
 		*pBegin = *pEnd;
 		GetNextLine(pBegin, pEnd, buffer);

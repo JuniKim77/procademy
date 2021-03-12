@@ -4,13 +4,15 @@
 #include "ObjectManager.h"
 #include "ObjectBullet.h"
 #include "operatorNewOverload.h"
+#include "ObjectType.h"
 
-ObjectEnemy::ObjectEnemy(int x, int y)
-	: ObjectBase(x, y, '#', ObjectType::ENEMY)
-	, mHp(2)
-	, mAttack(2)
-	, mMoveTimer(10)
-	, mAttackTimer(5)
+ObjectEnemy::ObjectEnemy(int x, int y, int type)
+	: ObjectBase(x, y, 
+		ObjectManager::mObjectStats[type].hp,
+		ObjectManager::mObjectStats[type].damage,
+		ObjectManager::mObjectStats[type].image, ObjectType::ENEMY)
+	, mMoveTimer(20)
+	, mAttackTimer(50)
 {
 	
 }
@@ -18,6 +20,7 @@ ObjectEnemy::ObjectEnemy(int x, int y)
 bool ObjectEnemy::Update()
 {
 	++mAttackCount;
+	++mMoveCounter;
 
 	Move();
 
@@ -33,7 +36,16 @@ void ObjectEnemy::Render()
 
 void ObjectEnemy::Move()
 {
-	
+	if (mMoveCounter % mMoveTimer == 0)
+	{
+		mX += mMoveDir;
+	}
+
+	if (mMoveCounter / mMoveTimer == 3)
+	{
+		mMoveDir = -mMoveDir;
+		mMoveCounter = 0;
+	}
 }
 
 void ObjectEnemy::Attack()

@@ -14,7 +14,6 @@ public:
 	void Collision();
 
 private:
-	int mDamage;
 	bool mbEnemy;
 };
 

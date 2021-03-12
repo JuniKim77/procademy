@@ -1,10 +1,11 @@
 #ifndef SCENE
 #define SCENE
 #include "myList.h"
-#include "ObjectBase.h"
 #include "Console.h"
-#include "CSVReader.h"
-#include "SceneType.h"
+
+enum class SceneType;
+class CSVFile;
+class ObjectBase;
 
 extern char szScreenBuffer[dfSCREEN_HEIGHT][dfSCREEN_WIDTH];
 extern myList<ObjectBase*> gObjectList;
@@ -12,6 +13,7 @@ extern myList<ObjectBase*> gObjectList;
 class Scene
 {
 public:
+	friend class SceneManager;
 	virtual ~Scene();
 	virtual void GetKeyChange() = 0;
 	virtual void Update() = 0;

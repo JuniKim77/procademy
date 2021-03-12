@@ -19,6 +19,7 @@ public:
 	static char** mProcessFileNameArray;
 	static char** mStageFileNameArray;
 	static int mCurrentStage;
+	static bool mbNextStage;
 
 private:
 	~SceneManager();
