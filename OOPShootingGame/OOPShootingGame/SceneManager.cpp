@@ -126,6 +126,7 @@ void SceneManager::LoadScene()
 		mbChangeScene = false;
 		break;
 	case SceneType::SCENE_END:
+		ObjectManager::GetInstance()->ClearObjects();
 		mpScene = new SceneEnd();
 		mbChangeScene = false;
 		break;

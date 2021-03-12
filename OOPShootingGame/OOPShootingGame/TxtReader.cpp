@@ -17,7 +17,10 @@ TxtReader::TxtReader(const char* fileName)
 TxtReader::~TxtReader()
 {
 	if (mBuffer != nullptr)
+	{
 		delete[] mBuffer;
+	}
+		
 }
 
 void TxtReader::GetNextLine(char** pBegin, char** pEnd, char* buffer)

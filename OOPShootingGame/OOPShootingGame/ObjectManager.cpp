@@ -134,45 +134,30 @@ void ObjectManager::LoadCSVFile(const char* fileName)
 	mObjectStats = new ObjectStat[mObjectSize];
 
 	const char* pBegin = csvFile.GetRowAddress(1);
-	const char* pEnd = pBegin;
 
 	for (int i = 0; i < mObjectSize; ++i)
 	{
-		csvFile.GetNextComma(&pEnd);
-		int size = pEnd - pBegin;
-		char buffer[64];
+		char buffer[64] = { 0, };
 
-		memcpy(mObjectStats[i].name, pBegin, size);
-		mObjectStats[i].name[size] = '\0';
+		if (csvFile.CopyToNextComma(buffer, &pBegin) == true)
+		{
+			memcpy(mObjectStats[i].name, buffer, sizeof(buffer));
+		}
 
-		++pEnd;
-		pBegin = pEnd;
+		if (csvFile.CopyToNextComma(buffer, &pBegin) == true)
+		{
+			mObjectStats[i].hp = atoi(buffer);
+		}
 
-		csvFile.GetNextComma(&pEnd);
+		if (csvFile.CopyToNextComma(buffer, &pBegin) == true)
+		{
+			mObjectStats[i].damage = atoi(buffer);
+		}
 
-		size = pEnd - pBegin;
-		memcpy(buffer, pBegin, size);
-		buffer[size] = '\0';
-
-		mObjectStats[i].hp = atoi(buffer);
-
-		++pEnd;
-		pBegin = pEnd;
-
-		csvFile.GetNextComma(&pEnd);
-
-		size = pEnd - pBegin;
-		memcpy(buffer, pBegin, size);
-		buffer[size] = '\0';
-
-		mObjectStats[i].damage = atoi(buffer);
-
-		++pEnd;
-
-		mObjectStats[i].image = *pEnd;
-
-		pEnd += 2;
-		pBegin = pEnd;
+		if (csvFile.CopyToNextComma(buffer, &pBegin) == true)
+		{
+			mObjectStats[i].image = *buffer;
+		}
 	}
 }
 
