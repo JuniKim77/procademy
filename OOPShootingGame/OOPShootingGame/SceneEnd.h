@@ -10,7 +10,6 @@ public:
 	virtual void GetKeyChange() override;
 	virtual void Update() override;
 	virtual void Render() override;
-	virtual ~SceneEnd();
 
 private:
 	virtual void LoadCSVFile() override;

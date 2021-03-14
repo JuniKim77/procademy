@@ -33,10 +33,6 @@ void SceneProcess::Render()
 	}
 }
 
-SceneProcess::~SceneProcess()
-{
-}
-
 SceneProcess::SceneProcess(SceneType type, const char* message)
 	: Scene(type)
 	, mPrevTime(timeGetTime())

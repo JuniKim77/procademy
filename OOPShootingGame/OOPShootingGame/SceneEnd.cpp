@@ -31,10 +31,6 @@ void SceneEnd::Render()
 	}
 }
 
-SceneEnd::~SceneEnd()
-{
-}
-
 void SceneEnd::LoadCSVFile()
 {
 	mCSVReader = new CSVFile(GameGlobalData::GetInstance()->GetProcessFileNameArray()[(int)mSceneType]);
