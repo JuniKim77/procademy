@@ -104,6 +104,12 @@ void ObjectManager::Render()
 	}
 }
 
+void ObjectManager::Destroy()
+{
+	if (mManager != nullptr)
+		delete mManager;
+}
+
 ObjectManager::~ObjectManager()
 {
 	while (mObjectList.empty() == false)
@@ -111,9 +117,6 @@ ObjectManager::~ObjectManager()
 		ObjectBase* cur = mObjectList.pop_front();
 		delete cur;
 	}
-
-	if (mManager != nullptr)
-		delete mManager;
 
 	if (mObjectStats != nullptr)
 		delete[] mObjectStats;

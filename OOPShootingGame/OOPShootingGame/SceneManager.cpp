@@ -44,9 +44,6 @@ void SceneManager::LoadFileNameList()
 
 SceneManager::~SceneManager()
 {
-	if (mManager != nullptr)
-		delete mManager;
-
 	for (int i = 0; i < mProcessFileListSize; ++i)
 	{
 		delete[] mProcessFileNameArray[i];
@@ -60,6 +57,9 @@ SceneManager::~SceneManager()
 	}
 
 	delete[] mStageFileNameArray;
+
+	if (mpScene != nullptr)
+		delete mpScene;
 }
 
 SceneManager* SceneManager::GetInstance()
@@ -138,4 +138,10 @@ void SceneManager::LoadScene()
 void SceneManager::Init()
 {
 	LoadFileNameList();
+}
+
+void SceneManager::Destroy()
+{
+	if (mManager != nullptr)
+		delete mManager;
 }

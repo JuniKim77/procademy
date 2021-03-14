@@ -11,6 +11,7 @@ public:
 	void Run();
 	void LoadScene();
 	void Init();
+	void Destroy();
 
 public:
 	static bool mbChangeScene;

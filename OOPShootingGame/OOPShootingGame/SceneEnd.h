@@ -15,7 +15,6 @@ private:
 	virtual void LoadCSVFile() override;
 
 private:
-	CSVFile* mCSVReader = nullptr;
 };
 
 #endif

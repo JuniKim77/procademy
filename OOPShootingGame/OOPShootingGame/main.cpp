@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include "Console.h"
 #include "SceneManager.h"
+#include "ObjectManager.h"
 
 #pragma comment(lib, "winmm.lib")
 
@@ -56,24 +57,18 @@ void Buffer_Clear(void);
 //--------------------------------------------------------------------
 void Sprite_Draw(int iX, int iY, char chSprite);
 
-void Init();
-
-SceneManager* gSceneManager = nullptr;
-
 int main(void)
 {
 	timeBeginPeriod(1);
 	cs_Initial();
 	Buffer_Clear();
 
-	Init();
-
 	while (!SceneManager::mbExit)
 	{
 		// 스크린 버퍼를 지움
 		Buffer_Clear();
 
-		gSceneManager->Run();
+		SceneManager::GetInstance()->Run();
 
 		// 스크린 버퍼를 화면으로 출력
 		Buffer_Flip();
@@ -81,6 +76,8 @@ int main(void)
 		Sleep(100);
 	}
 
+	SceneManager::GetInstance()->Destroy();
+	ObjectManager::GetInstance()->Destroy();
 	timeEndPeriod(1);
 
 	return 0;
@@ -129,11 +126,3 @@ void Sprite_Draw(int iX, int iY, char chSprite)
 {
 	szScreenBuffer[iY][iX] = chSprite;
 }
-
-void Init()
-{
-	gSceneManager = SceneManager::GetInstance();
-}
-
-
-
