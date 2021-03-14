@@ -13,51 +13,18 @@
 #include <string.h>
 #include "TxtReader.h"
 #include "ObjectManager.h"
+#include "GameGlobalData.h"
 
 SceneManager* SceneManager::mManager = nullptr;
-bool SceneManager::mbChangeScene = true;
-bool SceneManager::mbNextStage = false;
-bool SceneManager::mbExit = false;
-SceneType SceneManager::mNextSceneType = SceneType::SCENE_TITLE;
-char** SceneManager::mProcessFileNameArray = nullptr;
-char** SceneManager::mStageFileNameArray = nullptr;
-int SceneManager::mCurrentStage = 1;
 
 SceneManager::SceneManager()
 	: mpScene(nullptr)
 {
-	Init();
 	LoadScene();
-}
-
-void SceneManager::LoadFileNameList()
-{
-	TxtReader txtReader(mFileList);
-
-	char* pBegin = txtReader.getBuffer();
-	char* pEnd = pBegin;
-	txtReader.ReadNextParagraph(&pBegin, &pEnd, &mProcessFileListSize, &mProcessFileNameArray);
-
-	pBegin = pEnd;
-	txtReader.ReadNextParagraph(&pBegin, &pEnd, &mStageFileListSize, &mStageFileNameArray);
 }
 
 SceneManager::~SceneManager()
 {
-	for (int i = 0; i < mProcessFileListSize; ++i)
-	{
-		delete[] mProcessFileNameArray[i];
-	}
-
-	delete[] mProcessFileNameArray;
-
-	for (int i = 0; i < mStageFileListSize; ++i)
-	{
-		delete[] mStageFileNameArray[i];
-	}
-
-	delete[] mStageFileNameArray;
-
 	if (mpScene != nullptr)
 		delete mpScene;
 }
@@ -73,7 +40,9 @@ SceneManager* SceneManager::GetInstance()
 
 void SceneManager::Run()
 {
-	if (mbChangeScene == true)
+	GameGlobalData* pGlobalData = GameGlobalData::GetInstance();
+
+	if (pGlobalData->mbChangeScene == true)
 	{
 		delete mpScene;
 		LoadScene();
@@ -82,15 +51,15 @@ void SceneManager::Run()
 	mpScene->Update();
 	mpScene->Render();
 
-	if (mbNextStage == true)
+	if (pGlobalData->mbNextStage == true)
 	{
-		++mCurrentStage;
-		mbNextStage = false;
+		++pGlobalData->mCurrentStage;
+		pGlobalData->mbNextStage = false;
 
-		if (mCurrentStage > mStageFileListSize)
+		if (pGlobalData->mCurrentStage > pGlobalData->mStageFileListSize)
 		{
-			mbChangeScene = true;
-			mNextSceneType = SceneType::SCENE_VICTORY;
+			pGlobalData->mbChangeScene = true;
+			pGlobalData->mNextSceneType = SceneType::SCENE_VICTORY;
 			ObjectManager::GetInstance()->ClearObjects();
 		}
 		else
@@ -103,41 +72,38 @@ void SceneManager::Run()
 
 void SceneManager::LoadScene()
 {
-	switch (mNextSceneType)
+	GameGlobalData* pGlobalData = GameGlobalData::GetInstance();
+
+	switch (pGlobalData->mNextSceneType)
 	{
 	case SceneType::SCENE_TITLE:
 		mpScene = new SceneTitle();
-		mNextSceneType = SceneType::SCENE_PLAY;
-		mbChangeScene = false;
+		pGlobalData->mNextSceneType = SceneType::SCENE_PLAY;
+		pGlobalData->mbChangeScene = false;
 		break;
 	case SceneType::SCENE_PLAY:
 		mpScene = new ScenePlay();
-		mNextSceneType = SceneType::SCENE_PLAY;
-		mbChangeScene = false;
+		pGlobalData->mNextSceneType = SceneType::SCENE_PLAY;
+		pGlobalData->mbChangeScene = false;
 		break;
 	case SceneType::SCENE_VICTORY:
 		mpScene = new SceneVictory();
-		mNextSceneType = SceneType::SCENE_END;
-		mbChangeScene = false;
+		pGlobalData->mNextSceneType = SceneType::SCENE_END;
+		pGlobalData->mbChangeScene = false;
 		break;
 	case SceneType::SCENE_OVER:
 		mpScene = new SceneOver();
-		mNextSceneType = SceneType::SCENE_END;
-		mbChangeScene = false;
+		pGlobalData->mNextSceneType = SceneType::SCENE_END;
+		pGlobalData->mbChangeScene = false;
 		break;
 	case SceneType::SCENE_END:
 		ObjectManager::GetInstance()->ClearObjects();
 		mpScene = new SceneEnd();
-		mbChangeScene = false;
+		pGlobalData->mbChangeScene = false;
 		break;
 	default:
 		break;
 	}
-}
-
-void SceneManager::Init()
-{
-	LoadFileNameList();
 }
 
 void SceneManager::Destroy()

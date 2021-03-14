@@ -5,7 +5,10 @@
 Scene::~Scene()
 {
 	if (mCSVReader != nullptr)
+	{
 		delete mCSVReader;
+		mCSVReader = nullptr;
+	}
 }
 
 Scene::Scene(SceneType type)

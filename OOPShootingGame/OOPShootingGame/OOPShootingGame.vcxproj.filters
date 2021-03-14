@@ -31,6 +31,12 @@
     <Filter Include="헤더 파일\Tool">
       <UniqueIdentifier>{c3038198-7a7c-4155-bb85-fec203fd44ea}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Global">
+      <UniqueIdentifier>{2d47ba06-cb06-4a6b-9f03-afc4ee1a32d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Global">
+      <UniqueIdentifier>{9abc8926-e823-49fd-bf22-482250632bcc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -89,6 +95,9 @@
     </ClCompile>
     <ClCompile Include="TxtReader.cpp">
       <Filter>소스 파일\Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="GameGlobalData.cpp">
+      <Filter>소스 파일\Global</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -154,6 +163,9 @@
     </ClInclude>
     <ClInclude Include="ObjectType.h">
       <Filter>헤더 파일\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="GameGlobalData.h">
+      <Filter>헤더 파일\Global</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

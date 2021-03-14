@@ -4,6 +4,7 @@
 #include "SceneManager.h"
 #include <stdio.h>
 #include "CSVReader.h"
+#include "GameGlobalData.h"
 
 void SceneProcess::Update()
 {
@@ -32,6 +33,10 @@ void SceneProcess::Render()
 	}
 }
 
+SceneProcess::~SceneProcess()
+{
+}
+
 SceneProcess::SceneProcess(SceneType type, const char* message)
 	: Scene(type)
 	, mPrevTime(timeGetTime())
@@ -42,5 +47,5 @@ SceneProcess::SceneProcess(SceneType type, const char* message)
 
 void SceneProcess::LoadCSVFile()
 {
-	mCSVReader = new CSVFile(SceneManager::mProcessFileNameArray[(int)mSceneType]);
+	mCSVReader = new CSVFile(GameGlobalData::GetInstance()->GetProcessFileNameArray()[(int)mSceneType]);
 }

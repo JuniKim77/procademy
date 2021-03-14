@@ -1,5 +1,6 @@
 #pragma once
 #include "CSVReader.h"
+#include "operatorNewOverload.h"
 #include <stdio.h>
 #include <memory>
 
@@ -12,12 +13,10 @@ CSVFile::CSVFile(const char* fileName)
 
 CSVFile::~CSVFile()
 {
-	if (mBuffer == nullptr)
+	if (mBuffer != nullptr)
 	{
-		return;
+		delete[] mBuffer;
 	}
-
-	delete[] mBuffer;
 }
 
 void CSVFile::readFile()

@@ -142,6 +142,7 @@
   <ItemGroup>
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="CSVReader.cpp" />
+    <ClCompile Include="GameGlobalData.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="myNew.cpp" />
     <ClCompile Include="ObjectBase.cpp" />
@@ -163,6 +164,7 @@
   <ItemGroup>
     <ClInclude Include="Console.h" />
     <ClInclude Include="CSVReader.h" />
+    <ClInclude Include="GameGlobalData.h" />
     <ClInclude Include="myList.h" />
     <ClInclude Include="myNew.h" />
     <ClInclude Include="ObjectBase.h" />

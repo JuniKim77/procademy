@@ -6,21 +6,10 @@ class ObjectBase;
 class CSVFile;
 enum class ObjectType;
 
-#define NAME_SIZE (64)
-
-struct ObjectStat
-{
-	char name[NAME_SIZE];
-	int hp;
-	int damage;
-	char image;
-};
-
 class ObjectManager
 {
 public:
 	static ObjectManager* GetInstance();
-	static ObjectStat* mObjectStats;
 	void AddObject(ObjectBase* object);
 	ObjectBase* GetUnitAt(int x, int y, ObjectType type);
 	void ClearObjects();
@@ -31,8 +20,7 @@ public:
 
 private:
 	~ObjectManager();
-	ObjectManager(const char* fileName = "unit_stat.csv");
-	void LoadCSVFile(const char* fileName);
+	ObjectManager();
 
 private:
 	static ObjectManager* mManager;

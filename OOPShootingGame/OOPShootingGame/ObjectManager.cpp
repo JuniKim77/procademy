@@ -7,9 +7,9 @@
 #include <stdlib.h>
 #include "ObjectType.h"
 #include "SceneManager.h"
+#include "GameGlobalData.h"
 
 ObjectManager* ObjectManager::mManager = nullptr;
-ObjectStat* ObjectManager::mObjectStats = nullptr;
 
 ObjectManager* ObjectManager::GetInstance()
 {
@@ -67,8 +67,8 @@ void ObjectManager::Update()
 
 			if (pObj->mType == ObjectType::PLAYER)
 			{
-				SceneManager::mbChangeScene = true;
-				SceneManager::mNextSceneType = SceneType::SCENE_OVER;
+				GameGlobalData::GetInstance()->mbChangeScene = true;
+				GameGlobalData::GetInstance()->mNextSceneType = SceneType::SCENE_OVER;
 			}
 
 			delete pObj;
@@ -92,7 +92,7 @@ void ObjectManager::Update()
 
 	if (count == 0)
 	{
-		SceneManager::mbNextStage = true;
+		GameGlobalData::GetInstance()->mbNextStage = true;
 	}
 }
 
@@ -117,51 +117,10 @@ ObjectManager::~ObjectManager()
 		ObjectBase* cur = mObjectList.pop_front();
 		delete cur;
 	}
-
-	if (mObjectStats != nullptr)
-		delete[] mObjectStats;
 }
 
-ObjectManager::ObjectManager(const char* fileName)
+ObjectManager::ObjectManager()
 {
-	LoadCSVFile(fileName);
-}
-
-void ObjectManager::LoadCSVFile(const char* fileName)
-{
-	CSVFile csvFile(fileName);
-
-	int mObjectSize = csvFile.GetRow();
-	int mObjectColSize = csvFile.GetCol();
-
-	mObjectStats = new ObjectStat[mObjectSize];
-
-	const char* pBegin = csvFile.GetRowAddress(1);
-
-	for (int i = 0; i < mObjectSize; ++i)
-	{
-		char buffer[64] = { 0, };
-
-		if (csvFile.CopyToNextComma(buffer, &pBegin) == true)
-		{
-			memcpy(mObjectStats[i].name, buffer, sizeof(buffer));
-		}
-
-		if (csvFile.CopyToNextComma(buffer, &pBegin) == true)
-		{
-			mObjectStats[i].hp = atoi(buffer);
-		}
-
-		if (csvFile.CopyToNextComma(buffer, &pBegin) == true)
-		{
-			mObjectStats[i].damage = atoi(buffer);
-		}
-
-		if (csvFile.CopyToNextComma(buffer, &pBegin) == true)
-		{
-			mObjectStats[i].image = *buffer;
-		}
-	}
 }
 
 void ObjectManager::ClearNonePlayerObjects()

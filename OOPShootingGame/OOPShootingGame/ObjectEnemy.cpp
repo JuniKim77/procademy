@@ -5,12 +5,13 @@
 #include "ObjectBullet.h"
 #include "operatorNewOverload.h"
 #include "ObjectType.h"
+#include "GameGlobalData.h"
 
 ObjectEnemy::ObjectEnemy(int x, int y, int type)
 	: ObjectBase(x, y, 
-		ObjectManager::mObjectStats[type].hp,
-		ObjectManager::mObjectStats[type].damage,
-		ObjectManager::mObjectStats[type].image, ObjectType::ENEMY)
+		GameGlobalData::GetInstance()->GetObjectStats()[type].hp,
+		GameGlobalData::GetInstance()->GetObjectStats()[type].damage,
+		GameGlobalData::GetInstance()->GetObjectStats()[type].image, ObjectType::ENEMY)
 	, mMoveTimer(20)
 	, mAttackTimer(50)
 {

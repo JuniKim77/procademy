@@ -9,6 +9,7 @@ public:
 	virtual void GetKeyChange() = 0;
 	virtual void Update() override;
 	virtual void Render() override;
+	virtual ~SceneProcess();
 
 protected:
 	SceneProcess(SceneType type, const char* message);

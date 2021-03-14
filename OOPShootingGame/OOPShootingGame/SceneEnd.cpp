@@ -4,6 +4,7 @@
 #include "SceneManager.h"
 #include <stdio.h>
 #include "CSVReader.h"
+#include "GameGlobalData.h"
 
 SceneEnd::SceneEnd()
 	: Scene(SceneType::SCENE_END)
@@ -13,15 +14,11 @@ SceneEnd::SceneEnd()
 
 void SceneEnd::GetKeyChange()
 {
-	if (GetAsyncKeyState(VK_ESCAPE) & 0x8001) // ESC key
-	{
-		SceneManager::mbExit = true;
-	}
 }
 
 void SceneEnd::Update()
 {
-	SceneManager::mbExit = true;
+	GameGlobalData::GetInstance()->SetExit(true);
 }
 
 void SceneEnd::Render()
@@ -34,7 +31,11 @@ void SceneEnd::Render()
 	}
 }
 
+SceneEnd::~SceneEnd()
+{
+}
+
 void SceneEnd::LoadCSVFile()
 {
-	mCSVReader = new CSVFile(SceneManager::mProcessFileNameArray[(int)mSceneType]);
+	mCSVReader = new CSVFile(GameGlobalData::GetInstance()->GetProcessFileNameArray()[(int)mSceneType]);
 }

@@ -5,6 +5,7 @@
 #include "Console.h"
 #include "SceneManager.h"
 #include "ObjectManager.h"
+#include "GameGlobalData.h"
 
 #pragma comment(lib, "winmm.lib")
 
@@ -63,7 +64,9 @@ int main(void)
 	cs_Initial();
 	Buffer_Clear();
 
-	while (!SceneManager::mbExit)
+	GameGlobalData::GetInstance()->Init();
+
+	while (!GameGlobalData::GetInstance()->GetExit())
 	{
 		// 스크린 버퍼를 지움
 		Buffer_Clear();
@@ -78,6 +81,7 @@ int main(void)
 
 	SceneManager::GetInstance()->Destroy();
 	ObjectManager::GetInstance()->Destroy();
+	GameGlobalData::GetInstance()->Destroy();
 	timeEndPeriod(1);
 
 	return 0;

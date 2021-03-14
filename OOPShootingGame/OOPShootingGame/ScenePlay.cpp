@@ -8,6 +8,7 @@
 #include <Windows.h>
 #include "SceneManager.h"
 #include "CSVReader.h"
+#include "GameGlobalData.h"
 
 ScenePlay::ScenePlay()
 	: Scene(SceneType::SCENE_PLAY)
@@ -22,8 +23,8 @@ void ScenePlay::GetKeyChange()
 {
 	if (GetAsyncKeyState(VK_ESCAPE) & 0x8001) // ESC key
 	{
-		SceneManager::mbChangeScene = true;
-		SceneManager::mNextSceneType = SceneType::SCENE_END;
+		GameGlobalData::GetInstance()->SetChangeScene(true);
+		GameGlobalData::GetInstance()->SetNextSceneType(SceneType::SCENE_END);
 	}
 }
 
@@ -41,7 +42,7 @@ void ScenePlay::LoadCSVFile()
 {
 	ObjectManager::GetInstance()->ClearNonePlayerObjects();
 
-	CSVFile csvFile(SceneManager::mStageFileNameArray[SceneManager::mCurrentStage - 1]);
+	CSVFile csvFile(GameGlobalData::GetInstance()->GetStageFileNameArray()[GameGlobalData::GetInstance()->GetCurrentStage() - 1]);
 
 	const char* pBegin = csvFile.GetRowAddress(1);
 	char buffer[64] = { 0, };

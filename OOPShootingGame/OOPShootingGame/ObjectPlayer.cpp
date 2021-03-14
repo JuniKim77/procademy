@@ -6,12 +6,13 @@
 #include "ObjectBullet.h"
 #include "operatorNewOverload.h"
 #include "ObjectType.h"
+#include "GameGlobalData.h"
 
 ObjectPlayer::ObjectPlayer(int x, int y)
 	: ObjectBase(x, y, 
-		ObjectManager::mObjectStats[(int)ObjectType::PLAYER].hp,
-		ObjectManager::mObjectStats[(int)ObjectType::PLAYER].damage,
-		ObjectManager::mObjectStats[(int)ObjectType::PLAYER].image,
+		GameGlobalData::GetInstance()->GetObjectStats()[(int)ObjectType::PLAYER].hp,
+		GameGlobalData::GetInstance()->GetObjectStats()[(int)ObjectType::PLAYER].damage,
+		GameGlobalData::GetInstance()->GetObjectStats()[(int)ObjectType::PLAYER].image,
 		ObjectType::PLAYER)
 {
 }
