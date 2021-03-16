@@ -1,5 +1,6 @@
 #pragma once
 #include "GameGlobalData.h"
+#include "operatorNewOverload.h"
 #include "SceneType.h"
 #include "TxtReader.h"
 #include "CSVReader.h"

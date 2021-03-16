@@ -1,13 +1,13 @@
 #pragma once
 #include "Scene.h"
 #include "SceneType.h"
+#include "CSVReader.h"
 
 Scene::~Scene()
 {
 	if (mCSVReader != nullptr)
 	{
 		delete mCSVReader;
-		mCSVReader = nullptr;
 	}
 }
 
