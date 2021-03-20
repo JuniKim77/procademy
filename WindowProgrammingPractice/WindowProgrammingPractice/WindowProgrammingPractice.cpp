@@ -4,12 +4,21 @@
 #include "framework.h"
 #include "WindowProgrammingPractice.h"
 #include <windowsx.h>
+#include <stdlib.h>
+#include <time.h>
 
 // 전역 변수:
-int oldX = 0;
-int oldY = 0;
-bool clickBegin = false;
+HPEN gPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
 
+#define QUEUE_SIZE (100)
+
+int queue[QUEUE_SIZE];
+int queueRear = 0;
+int queueFront = 0;
+int queueSize = 0;
+int enqueue(int value);
+void popqueue();
+int peakqueue(int pos);
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
@@ -78,45 +87,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
-	case WM_RBUTTONDOWN:
+	case WM_CREATE:
 	{
 		HDC hdc = GetDC(hWnd);
-		oldX = GET_X_LPARAM(lParam);
-		oldY = GET_Y_LPARAM(lParam);
-
-		WCHAR message[] = L"프로카데미";
-
-		Rectangle(hdc, oldX - 10, oldY - 10, oldX + 10, oldY + 10);
-
-		TextOut(hdc, oldX, oldY, L"프로카데미", wcslen(message));
-
+		SetTimer(hWnd, 1, 50, nullptr);
+		SelectObject(hdc, gPen);
 		break;
 	}
-	case WM_LBUTTONDOWN:
+	case WM_TIMER:
 	{
-		if (!clickBegin)
+		switch (wParam)
 		{
-			clickBegin = true;
+		case 1:
+		{
+			int y = 250 + rand() % 200;
+
+			enqueue(y);
+			InvalidateRect(hWnd, nullptr, true);
 			break;
 		}
-		HDC hdc = GetDC(hWnd);
-		int x = GET_X_LPARAM(lParam);
-		int y = GET_Y_LPARAM(lParam);
-
-		MoveToEx(hdc, oldX, oldY, nullptr);
-
-		LineTo(hdc, x, y);
-		break;
-	}
-	case WM_LBUTTONUP:
-	{
-		int x = GET_X_LPARAM(lParam);
-		int y = GET_Y_LPARAM(lParam);
-
-		oldX = x;
-		oldY = y;
-
-		break;
+		default:
+			break;
+		}
 	}
 	case WM_COMMAND:
 	{
@@ -137,6 +129,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 		// TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+		int y = peakqueue(queueFront);
+		int count = 0;
+		SelectObject(hdc, gPen);
+		MoveToEx(hdc, count, y, nullptr);
+
+		for (int i = queueFront; i != queueRear; i = (i + 1) % QUEUE_SIZE)
+		{
+			count += 10;
+			y = peakqueue(i);
+			LineTo(hdc, count, y);
+		}
+
 		EndPaint(hWnd, &ps);
 	}
 	break;
@@ -167,4 +171,28 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 	return (INT_PTR)FALSE;
+}
+
+int enqueue(int value)
+{
+	queue[queueRear] = value;
+
+	queueRear = (queueRear + 1) % QUEUE_SIZE;
+
+	if (queueFront == queueRear)
+	{
+		queueFront = (queueFront + 1) % QUEUE_SIZE;
+	}
+
+	return 0;
+}
+
+void popqueue()
+{
+	queueFront = (queueFront + 1) % QUEUE_SIZE;
+}
+
+int peakqueue(int pos)
+{
+	return queue[pos];
 }
