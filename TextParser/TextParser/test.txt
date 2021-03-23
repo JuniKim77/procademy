@@ -1,5 +1,13 @@
-Hojun Kim
-
-
-
-Scott Schutte
+{
+	// Local Serve Info
+	/*
+		Order List
+	*/
+	Version			= 015
+	ServerID		= 0
+	Tag			= "v10.2"
+	ServerBindIP		= "192.168.0.29"
+	ServerBindPort		= 50001
+	WorkerThread		= 3
+	MaxUser			= 300
+}
