@@ -50,8 +50,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	RegisterClassExW(&wcex);
 
-	HWND hWnd = CreateWindowW(L"ABC", L"프로카데미", WS_OVERLAPPEDWINDOW,
+	HWND hWnd = CreateWindowW(L"ABC", L"프로카데미", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
 		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+
+	CreateWindow(L"ABC", L"자식1", WS_CHILD | WS_VISIBLE | WS_CAPTION | WS_CLIPSIBLINGS,
+		50, 50, 200, 200, hWnd, (HMENU)0, hInstance, NULL);
 
 	if (!hWnd)
 	{
