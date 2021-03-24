@@ -17,50 +17,50 @@ TextParser::~TextParser()
 	}
 }
 
-bool TextParser::LoadFile(const char* fileName)
+bool TextParser::LoadFile(const WCHAR* fileName)
 {
 	FILE* fin;
-	fopen_s(&fin, fileName, "r");
+	_wfopen_s(&fin, fileName, L"r,ccs=UTF-16LE");
 
 	fseek(fin, 0, SEEK_END);
 	int fileSize = ftell(fin) + 1;
 	fseek(fin, 0, SEEK_SET);
 
-	pBuffer = (char*)malloc(fileSize);
+	pBuffer = (WCHAR*)malloc(fileSize);
 	memset(pBuffer, 0, fileSize);
 	
-	int result = fread_s(pBuffer, fileSize, fileSize, 1, fin);
+	int result = fread_s(pBuffer, fileSize, fileSize, 1, fin); // check
 
 	fclose(fin);
 
 	return result == 1;
 }
 
-bool TextParser::GetValue(const char* key, int* value)
+bool TextParser::GetValue(const WCHAR* key, int* value)
 {
-	char* pCurrent = pBuffer;
-	char chWord[MAX_PARSER_LENGTH];
+	WCHAR* pCurrent = pBuffer;
+	WCHAR chWord[MAX_PARSER_LENGTH];
 	int length;
 
 	while (GetNextWord(&pCurrent, &length))
 	{
-		memset(chWord, 0, MAX_PARSER_LENGTH);
-		memcpy(chWord, pCurrent, length);
+		memset(chWord, 0, sizeof(chWord));
+		memcpy(chWord, pCurrent, sizeof(WCHAR) * length);
 
-		if (strcmp(key, chWord) == 0)
+		if (wcscmp(key, chWord) == 0)
 		{
 			if (GetNextWord(&pCurrent, &length))
 			{
-				memset(chWord, 0, MAX_PARSER_LENGTH);
-				memcpy(chWord, pCurrent, length);
+				memset(chWord, 0, sizeof(chWord));
+				memcpy(chWord, pCurrent, sizeof(WCHAR) * length);
 
-				if (strcmp(chWord, "=") == 0)
+				if (wcscmp(chWord, L"=") == 0)
 				{
 					if (GetNextWord(&pCurrent, &length))
 					{
-						memset(chWord, 0, MAX_PARSER_LENGTH);
-						memcpy(chWord, pCurrent, length);
-						*value = atoi(chWord);
+						memset(chWord, 0, sizeof(chWord));
+						memcpy(chWord, pCurrent, sizeof(WCHAR) * length);
+						*value = _wtoi(chWord);
 
 						return true;
 					}
@@ -76,30 +76,30 @@ bool TextParser::GetValue(const char* key, int* value)
 	return false;
 }
 
-bool TextParser::GetValue(const char* key, char* value)
+bool TextParser::GetValue(const WCHAR* key, WCHAR* value)
 {
-	char* pCurrent = pBuffer;
-	char chWord[MAX_PARSER_LENGTH];
+	WCHAR* pCurrent = pBuffer;
+	WCHAR chWord[MAX_PARSER_LENGTH];
 	int length;
 
 	while (GetNextWord(&pCurrent, &length))
 	{
-		memset(chWord, 0, MAX_PARSER_LENGTH);
-		memcpy(chWord, pCurrent, length);
+		memset(chWord, 0, sizeof(chWord));
+		memcpy(chWord, pCurrent, sizeof(WCHAR) * length);
 
-		if (strcmp(key, chWord) == 0)
+		if (wcscmp(key, chWord) == 0)
 		{
 			if (GetNextWord(&pCurrent, &length))
 			{
-				memset(chWord, 0, MAX_PARSER_LENGTH);
-				memcpy(chWord, pCurrent, length);
+				memset(chWord, 0, sizeof(chWord));
+				memcpy(chWord, pCurrent, sizeof(WCHAR) * length);
 
-				if (strcmp(chWord, "=") == 0)
+				if (wcscmp(chWord, L"=") == 0)
 				{
 					if (GetNextStringWord(&pCurrent, &length))
 					{
-						memset(value, 0, MAX_PARSER_LENGTH);
-						memcpy(value, pCurrent + 1, length - 2);
+						memcpy(value, pCurrent + 1, sizeof(WCHAR) * length - 4);
+						value[length - 2] = L'\0';
 
 						return true;
 					}
@@ -115,16 +115,16 @@ bool TextParser::GetValue(const char* key, char* value)
 	return false;
 }
 
-bool TextParser::SkipNoneCommand(char** retBuffer)
+bool TextParser::SkipNoneCommand(WCHAR** retBuffer)
 {
 	while (1)
 	{
-		if (**retBuffer == ' ' || **retBuffer == '\n' || **retBuffer == '\t' 
-			|| **retBuffer == '{' || **retBuffer == '}')
+		if (**retBuffer == L' ' || **retBuffer == L'\n' || **retBuffer == L'\t' 
+			|| **retBuffer == L'{' || **retBuffer == L'}')
 		{
 			++(*retBuffer);
 		}
-		else if (**retBuffer == '/')
+		else if (**retBuffer == L'/')
 		{
 			// 林籍 贸府
 			if (!SkipComment(retBuffer))
@@ -141,23 +141,23 @@ bool TextParser::SkipNoneCommand(char** retBuffer)
 	return **retBuffer != '\0';
 }
 
-bool TextParser::SkipComment(char** retBuffer)
+bool TextParser::SkipComment(WCHAR** retBuffer)
 {
 	++(*retBuffer);
 	// 茄临 林籍 贸府
-	if (**retBuffer == '/')
+	if (**retBuffer == L'/')
 	{
 		++(*retBuffer);
 
 		while (1)
 		{
-			if (**retBuffer == '\n')
+			if (**retBuffer == L'\n')
 			{
 				++(*retBuffer);
 
 				return true;
 			}
-			if (**retBuffer == '\0')
+			if (**retBuffer == L'\0')
 			{
 				return false;
 			}
@@ -166,19 +166,19 @@ bool TextParser::SkipComment(char** retBuffer)
 		}
 	}
 	// 咯矾临 林籍 贸府
-	else if (**retBuffer == '*')
+	else if (**retBuffer == L'*')
 	{
 		++(*retBuffer);
 
 		while (1)
 		{
-			if (**retBuffer == '*' && *(*retBuffer + 1) == '/')
+			if (**retBuffer == L'*' && *(*retBuffer + 1) == L'/')
 			{
 				(*retBuffer) += 2;
 
 				return true;
 			}
-			if (**retBuffer == '\0')
+			if (**retBuffer == L'\0')
 			{
 				return false;
 			}
@@ -190,11 +190,11 @@ bool TextParser::SkipComment(char** retBuffer)
 	return false;
 }
 
-bool TextParser::GetNextWord(char** retBuffer, int* pLength)
+bool TextParser::GetNextWord(WCHAR** retBuffer, int* pLength)
 {
 	GetEndWord(retBuffer);
 
-	if (**retBuffer == '"')
+	if (**retBuffer == L'"')
 	{
 		GetEndStringWord(retBuffer);
 	}
@@ -204,9 +204,9 @@ bool TextParser::GetNextWord(char** retBuffer, int* pLength)
 		return false;
 	}
 
-	char* wordBuffer = *retBuffer;
+	WCHAR* wordBuffer = *retBuffer;
 
-	if (*wordBuffer == '"')
+	if (*wordBuffer == L'"')
 	{
 		wordBuffer++;
 	}
@@ -218,7 +218,7 @@ bool TextParser::GetNextWord(char** retBuffer, int* pLength)
 	return true;
 }
 
-bool TextParser::GetNextStringWord(char** retBuffer, int* pLength)
+bool TextParser::GetNextStringWord(WCHAR** retBuffer, int* pLength)
 {
 	GetEndWord(retBuffer);
 
@@ -227,7 +227,7 @@ bool TextParser::GetNextStringWord(char** retBuffer, int* pLength)
 		return false;
 	}
 
-	char* wordBuffer = *retBuffer;
+	WCHAR* wordBuffer = *retBuffer;
 	
 	GetEndStringWord(&wordBuffer);
 
@@ -236,13 +236,13 @@ bool TextParser::GetNextStringWord(char** retBuffer, int* pLength)
 	return true;
 }
 
-void TextParser::GetEndWord(char** retBuffer)
+void TextParser::GetEndWord(WCHAR** retBuffer)
 {
 	while (1)
 	{
-		if (**retBuffer == '.' || **retBuffer == '"' || **retBuffer == 0x20 ||
-			**retBuffer == 0x08 || **retBuffer == 0x09 || **retBuffer == 0x0a ||
-			**retBuffer == 0x0d)
+		if (**retBuffer == L'.' || **retBuffer == L'"' || **retBuffer == (WCHAR)0x20 ||
+			**retBuffer == (WCHAR)0x08 || **retBuffer == (WCHAR)0x09 || **retBuffer == (WCHAR)0x0a ||
+			**retBuffer == (WCHAR)0x0d)
 		{
 			break;
 		}
@@ -250,13 +250,13 @@ void TextParser::GetEndWord(char** retBuffer)
 	}
 }
 
-void TextParser::GetEndStringWord(char** retBuffer)
+void TextParser::GetEndStringWord(WCHAR** retBuffer)
 {
 	++(*retBuffer);
 
 	while (1)
 	{
-		if (**retBuffer == '"')
+		if (**retBuffer == L'"')
 		{
 			++(*retBuffer);
 			break;

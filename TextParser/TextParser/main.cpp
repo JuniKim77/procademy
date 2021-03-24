@@ -3,27 +3,30 @@
 
 int main()
 {
-	setlocale(LC_ALL, "");
+	_wsetlocale(LC_ALL, L"");
 	TextParser tp;
 
-	tp.LoadFile("test.txt");
+	tp.LoadFile(L"test.txt");
 
 	int value;
 
-	tp.GetValue("Version", &value);
+	tp.GetValue(L"Version", &value);
 
 	int value2;
 
-	tp.GetValue("MaxUser", &value2);
+	tp.GetValue(L"MaxUser", &value2);
 	
-	char value3[MAX_PARSER_LENGTH];
+	WCHAR value3[MAX_PARSER_LENGTH];
 
-	tp.GetValue("Tag", value3);
+	tp.GetValue(L"Tag", value3);
 
-	char value4[MAX_PARSER_LENGTH];
+	WCHAR value4[MAX_PARSER_LENGTH];
 
-	tp.GetValue("ServerBindIP", value4);
+	tp.GetValue(L"ServerBindIP", value4);
 
+	WCHAR value5[MAX_PARSER_LENGTH];
+
+	tp.GetValue(L"ÀÛ¼ºÀÚ", value5);
 
 	return 0;
 }
