@@ -12,6 +12,8 @@ HDC g_hMemDC;
 HBITMAP g_hMemBitmap;
 HBITMAP g_hMemBitmapOld;
 HPEN gPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
+HINSTANCE g_hInstace;
+HWND g_child1 = nullptr;
 
 #define QUEUE_SIZE (100)
 
@@ -46,18 +48,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWPROGRAMMINGPRACTICE));
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.hbrBackground = (HBRUSH)(COLOR_GRAYTEXT + 1);
 	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_WINDOWPROGRAMMINGPRACTICE);
 	wcex.lpszClassName = L"ABC";
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
 	RegisterClassExW(&wcex);
 
+	g_hInstace = hInstance;
+
 	HWND hWnd = CreateWindowW(L"ABC", L"프로카데미", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
 		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
-	CreateWindow(L"ABC", L"자식1", WS_CHILD | WS_VISIBLE | WS_CAPTION | WS_CLIPSIBLINGS,
-		50, 50, 200, 200, hWnd, (HMENU)0, hInstance, NULL);
+	/*CreateWindow(L"ABC", L"자식1", WS_CHILD | WS_VISIBLE | WS_CAPTION | WS_CLIPSIBLINGS,
+				50, 50, 200, 200, hWnd, nullptr, g_hInstace, nullptr);*/
 
 	if (!hWnd)
 	{
@@ -161,7 +165,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		PAINTSTRUCT ps;
 		RECT rect;
 		GetClientRect(hWnd, &rect);
-		PatBlt(g_hMemDC, 0, 0, rect.right, rect.bottom, WHITENESS); // 비트맵을 하얗게 브러쉬로 칠함
+		PatBlt(g_hMemDC, 0, 0, rect.right, rect.bottom, BLACKNESS); // 비트맵을 하얗게 브러쉬로 칠함
 
 		int y = peakqueue(queueFront);
 		int count = 0;
