@@ -6,6 +6,7 @@
 #include <windowsx.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdio.h>
 
 // 전역 변수:
 HDC g_hMemDC;
@@ -24,6 +25,8 @@ int queueSize = 0;
 int enqueue(int value);
 void popqueue();
 int peakqueue(int pos);
+void fileLoad(const char* fileName);
+
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
@@ -59,9 +62,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	HWND hWnd = CreateWindowW(L"ABC", L"프로카데미", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
 		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-
-	/*CreateWindow(L"ABC", L"자식1", WS_CHILD | WS_VISIBLE | WS_CAPTION | WS_CLIPSIBLINGS,
-				50, 50, 200, 200, hWnd, nullptr, g_hInstace, nullptr);*/
 
 	if (!hWnd)
 	{
@@ -239,4 +239,31 @@ void popqueue()
 int peakqueue(int pos)
 {
 	return queue[pos];
+}
+
+void fileLoad(const char* fileName)
+{
+	FILE* fin;
+	fopen_s(&fin, fileName, "rb");
+
+	fseek(fin, 0, SEEK_END);
+	int size = ftell(fin);
+	fseek(fin, 0, SEEK_SET);
+
+	char* buffer = (char*)malloc(size);
+
+	fread_s(buffer, size, size, 1, fin);
+
+	BITMAPFILEHEADER fileHeader;
+	tagBITMAPINFOHEADER infoHeader;
+	
+	memcpy(&fileHeader, buffer, sizeof(BITMAPFILEHEADER));
+	memcpy(&infoHeader, buffer + sizeof(BITMAPFILEHEADER), sizeof(tagBITMAPINFOHEADER));
+
+	int bitMapSize = infoHeader.biHeight * ((infoHeader.biBitCount * infoHeader.biWidth + 3) & ~3);
+
+	
+	
+
+	delete[] buffer;
 }
