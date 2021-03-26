@@ -142,10 +142,12 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="ScreenDib.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="WindowProgrammingPractice.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ScreenDib.cpp" />
     <ClCompile Include="WindowProgrammingPractice.cpp" />
   </ItemGroup>
   <ItemGroup>

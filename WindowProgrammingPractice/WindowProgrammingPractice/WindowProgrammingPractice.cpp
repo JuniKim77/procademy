@@ -25,7 +25,6 @@ int queueSize = 0;
 int enqueue(int value);
 void popqueue();
 int peakqueue(int pos);
-void fileLoad(const char* fileName);
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -239,31 +238,4 @@ void popqueue()
 int peakqueue(int pos)
 {
 	return queue[pos];
-}
-
-void fileLoad(const char* fileName)
-{
-	FILE* fin;
-	fopen_s(&fin, fileName, "rb");
-
-	fseek(fin, 0, SEEK_END);
-	int size = ftell(fin);
-	fseek(fin, 0, SEEK_SET);
-
-	char* buffer = (char*)malloc(size);
-
-	fread_s(buffer, size, size, 1, fin);
-
-	BITMAPFILEHEADER fileHeader;
-	tagBITMAPINFOHEADER infoHeader;
-	
-	memcpy(&fileHeader, buffer, sizeof(BITMAPFILEHEADER));
-	memcpy(&infoHeader, buffer + sizeof(BITMAPFILEHEADER), sizeof(tagBITMAPINFOHEADER));
-
-	int bitMapSize = infoHeader.biHeight * ((infoHeader.biBitCount * infoHeader.biWidth + 3) & ~3);
-
-	
-	
-
-	delete[] buffer;
 }

@@ -27,9 +27,15 @@
     <ClInclude Include="WindowProgrammingPractice.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="ScreenDib.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WindowProgrammingPractice.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ScreenDib.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
