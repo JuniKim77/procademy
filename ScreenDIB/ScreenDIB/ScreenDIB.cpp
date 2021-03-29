@@ -8,7 +8,7 @@
 
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
-CDib gDib(256, 256, 32);
+CDib gDib(256, 256, 32, true);
 BITMAPFILEHEADER fileHeader;
 BITMAPINFOHEADER infoHeader;
 BYTE* imageBuffer;
@@ -90,7 +90,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 color++;
             }
 
-            int x = 100;
             DWORD red = 0x00ff0000;
             buffer = gDib.GetDibBuffer();
 

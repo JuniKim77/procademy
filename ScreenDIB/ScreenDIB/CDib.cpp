@@ -1,12 +1,12 @@
 #include "CDib.h"
 
-CDib::CDib(int width, int height, int colorBit)
+CDib::CDib(int width, int height, int colorBit, bool inverse)
 	: mWidth(width)
 	, mHeight(height)
 	, mColorBit(colorBit)
 	, mBuffer(nullptr)
 {
-	CreateDibBuffer(width, height, colorBit);
+	CreateDibBuffer(width, height, colorBit, inverse);
 }
 
 CDib::~CDib()
@@ -14,11 +14,18 @@ CDib::~CDib()
 	ReleaseDibBuffer();
 }
 
-void CDib::CreateDibBuffer(int width, int height, int colorBit)
+void CDib::CreateDibBuffer(int width, int height, int colorBit, bool inverse)
 {
 	mDibInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	mDibInfo.bmiHeader.biWidth = width;
-	mDibInfo.bmiHeader.biHeight = height;
+	if (inverse)
+	{
+		mDibInfo.bmiHeader.biHeight = -height;
+	}
+	else
+	{
+		mDibInfo.bmiHeader.biHeight = height;
+	}
 	mDibInfo.bmiHeader.biBitCount = colorBit;
 	mDibInfo.bmiHeader.biPlanes = 1;
 	mDibInfo.bmiHeader.biCompression = 0;

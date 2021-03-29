@@ -4,11 +4,11 @@
 class CDib 
 {
 public:
-	CDib(int width, int height, int colorBit);
+	CDib(int width, int height, int colorBit, bool inverse = false);
 	virtual ~CDib();
 
 protected:
-	void CreateDibBuffer(int width, int height, int colorBit);
+	void CreateDibBuffer(int width, int height, int colorBit, bool inverse);
 	void ReleaseDibBuffer();
 
 public:
