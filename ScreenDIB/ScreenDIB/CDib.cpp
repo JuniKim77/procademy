@@ -50,7 +50,7 @@ void CDib::Filp(HWND hWnd, int x, int y)
 	RECT rect;
 	
 	GetClientRect(hWnd, &rect);
-	StretchDIBits(hdc, x, y, mWidth, mHeight,
+	StretchDIBits(hdc, x, y, mWidth / 2, mHeight / 2,
 		0, 0, mWidth, mHeight, mBuffer, &mDibInfo, DIB_RGB_COLORS, SRCCOPY);
 }
 

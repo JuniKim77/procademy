@@ -99,7 +99,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                 buffer += gDib.GetPitch();
             }
 
-            gDib.Filp(hWnd, 500, 500);
+            gDib.Filp(hWnd);
         }
     }
 
