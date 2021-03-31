@@ -145,11 +145,13 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ScreenDIB.h" />
+    <ClInclude Include="SpriteDib.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDib.cpp" />
     <ClCompile Include="ScreenDIB.cpp" />
+    <ClCompile Include="SpriteDib.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ScreenDIB.rc" />
