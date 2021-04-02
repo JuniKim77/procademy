@@ -142,11 +142,17 @@
   <ItemGroup>
     <ClInclude Include="ActionGame.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="GameProcess.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="ScreenDib.h" />
+    <ClInclude Include="SpriteDib.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActionGame.cpp" />
+    <ClCompile Include="GameProcess.cpp" />
+    <ClCompile Include="ScreenDib.cpp" />
+    <ClCompile Include="SpriteDib.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ActionGame.rc" />

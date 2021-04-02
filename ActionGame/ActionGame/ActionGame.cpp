@@ -4,17 +4,16 @@
 #include "framework.h"
 #include "ActionGame.h"
 #include <windowsx.h>
+#include "GameProcess.h"
 
 // 전역 변수:
-bool gbActiveApp;
+extern bool gbActiveApp;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-void InitialGame();
+
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName);
-void ContentLoad();
-void Run();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -25,7 +24,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
 	// TODO: 여기에 코드를 입력합니다.
-	InitialGame();
+	InitializeGame();
 
 	if (CreateMainWindow(hInstance, L"MainWindow", L"ActionGame") == false)
 		return -1;
@@ -46,7 +45,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		else
 		{
-			Run();
+			RunGame();
 		}
 	}
 
@@ -123,10 +122,6 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
-void InitialGame()
-{
-}
-
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName)
 {
 	WNDCLASSEXW wcex;
@@ -173,13 +168,4 @@ bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName
 	MoveWindow(hWnd, x, y, WindowRect.right - WindowRect.left, WindowRect.bottom - WindowRect.top, TRUE);
 
 	return true;
-}
-
-void ContentLoad()
-{
-}
-
-void Run()
-{
-	
 }
