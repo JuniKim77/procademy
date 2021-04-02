@@ -125,14 +125,18 @@ ObjectManager::ObjectManager()
 
 void ObjectManager::ClearNonePlayerObjects()
 {
-	for (myList<ObjectBase*>::iterator iter = mObjectList.begin(); iter != mObjectList.end(); ++iter)
+	for (myList<ObjectBase*>::iterator iter = mObjectList.begin(); iter != mObjectList.end();)
 	{
 		if ((*iter)->mType != ObjectType::PLAYER)
 		{
 			ObjectBase* pObj = *iter;
-			mObjectList.erase(iter);
+			iter = mObjectList.erase(iter);
 
 			delete pObj;
+		}
+		else
+		{
+			++iter;
 		}
 	}
 }
