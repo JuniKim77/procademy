@@ -7,7 +7,7 @@
 #include "GameProcess.h"
 
 // 전역 변수:
-extern bool gbActiveApp;
+bool gbActiveApp;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
