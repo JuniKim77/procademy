@@ -30,12 +30,18 @@
     <ClInclude Include="CDib.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="CSpriteDib.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ScreenDIB.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="CDib.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CSpriteDib.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
