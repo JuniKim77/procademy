@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{e24ab228-175f-4547-be2d-29c0bd2552c8}</ProjectGuid>
-    <RootNamespace>ScreenDIB</RootNamespace>
+    <ProjectGuid>{5c3c2dd3-3441-4af4-82a0-3c346deb9efc}</ProjectGuid>
+    <RootNamespace>ActionGame</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -131,7 +131,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -141,25 +140,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CDib.h" />
-    <ClInclude Include="CSpriteDib.h" />
+    <ClInclude Include="ActionGame.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="GameProcess.h" />
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="ScreenDIB.h" />
+    <ClInclude Include="ScreenDib.h" />
     <ClInclude Include="SpriteDib.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CDib.cpp" />
-    <ClCompile Include="CSpriteDib.cpp" />
-    <ClCompile Include="ScreenDIB.cpp" />
+    <ClCompile Include="ActionGame.cpp" />
+    <ClCompile Include="GameProcess.cpp" />
+    <ClCompile Include="ScreenDib.cpp" />
     <ClCompile Include="SpriteDib.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ScreenDIB.rc" />
+    <ResourceCompile Include="ActionGame.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="ScreenDIB.ico" />
+    <Image Include="ActionGame.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

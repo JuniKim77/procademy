@@ -31,7 +31,7 @@ public:
 	void SetCurrentStage(int stage);
 	bool GetNextStage();
 	ObjectStat* GetObjectStats();
-	void Destroy();
+	static void Destroy();
 	static GameGlobalData* GetInstance();
 	void LoadFileNameList();
 	void Init();

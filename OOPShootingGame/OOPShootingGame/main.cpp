@@ -66,6 +66,10 @@ int main(void)
 
 	GameGlobalData::GetInstance()->Init();
 
+	atexit(SceneManager::Destroy);
+	atexit(ObjectManager::Destroy);
+	atexit(GameGlobalData::Destroy);
+
 	while (!GameGlobalData::GetInstance()->GetExit())
 	{
 		// 스크린 버퍼를 지움
@@ -78,10 +82,7 @@ int main(void)
 		// 프레임 맞추기용 대기 10 Frame
 		Sleep(100);
 	}
-
-	SceneManager::GetInstance()->Destroy();
-	ObjectManager::GetInstance()->Destroy();
-	GameGlobalData::GetInstance()->Destroy();
+	
 	timeEndPeriod(1);
 
 	return 0;

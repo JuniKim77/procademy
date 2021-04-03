@@ -8,7 +8,7 @@
 
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
-CDib gDibBuffer(512, 512, 32);
+CDib gDib(256, 256, 32, true);
 BITMAPFILEHEADER fileHeader;
 BITMAPINFOHEADER infoHeader;
 BYTE* imageBuffer;
@@ -58,15 +58,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
-    LoadBMPFile("sample.bmp");
-
     ShowWindow(hWnd, nCmdShow);
-
     UpdateWindow(hWnd);
 
     MSG msg;
 
-    
+    LoadBMPFile("sample.bmp");
+
+    InvalidateRect(hWnd, nullptr, false);
 
     // 기본 메시지 루프입니다:
     while (1)
@@ -81,26 +80,26 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
         else
         {
-            /*BYTE* buffer = gDibBuffer.GetDibBuffer();
+            BYTE* buffer = gDib.GetDibBuffer();
             BYTE color = 0;
 
-            for (int i = 0; i < 256; ++i)
+            for (int i = 0; i < gDib.GetHeight(); ++i)
             {
-                memset(buffer, color, gDibBuffer.GetPitch());
-                buffer += gDibBuffer.GetPitch();
+                memset(buffer, color, gDib.GetPitch());
+                buffer += gDib.GetPitch();
                 color++;
             }
 
             DWORD red = 0x00ff0000;
-            buffer = gDibBuffer.GetDibBuffer();
+            buffer = gDib.GetDibBuffer();
 
-            for (int i = 0; i < 256; ++i)
+            for (int i = 0; i < gDib.GetHeight(); ++i)
             {
                 *(DWORD*)(buffer + i * 4) = red;
-                buffer += gDibBuffer.GetPitch();
+                buffer += gDib.GetPitch();
             }
 
-            gDibBuffer.Filp(hWnd);*/
+            gDib.Filp(hWnd, 50, 50);
         }
     }
 
@@ -146,19 +145,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             CDib dib(infoHeader.biWidth, infoHeader.biHeight, infoHeader.biBitCount);
-            BYTE* buffer = gDibBuffer.GetDibBuffer();
+            BYTE* buffer = dib.GetDibBuffer();
             BYTE* pImage = imageBuffer;
-            int imagePitch = dib.GetPitch();
-            int pitch = gDibBuffer.GetPitch();
+            int pitch = dib.GetPitch();
 
-            for (int i = 0; i < gDibBuffer.GetHeight(); ++i)
+            for (int i = 0; i < dib.GetHeight(); ++i)
             {
                 memcpy_s(buffer, pitch, pImage, pitch);
                 buffer += pitch;
-                pImage += imagePitch;
+                pImage += pitch;
             }
 
-            gDibBuffer.Filp(hWnd);
+            dib.Filp(hWnd);
 
             EndPaint(hWnd, &ps);
         }
@@ -225,5 +223,5 @@ void LoadBMPFile(const char* fileName)
     }
 
     free(buffer);
-    fclose(fin);
+
 }

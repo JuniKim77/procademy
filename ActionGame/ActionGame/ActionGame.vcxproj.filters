@@ -13,6 +13,18 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="소스 파일\Object">
+      <UniqueIdentifier>{e9eca7bf-9875-4bf2-9f2f-e6c3d0318440}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Object">
+      <UniqueIdentifier>{abad4902-4d7a-4a46-8b2f-02aabc7d4e4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Tool">
+      <UniqueIdentifier>{ba5c1373-0149-4830-a109-d6d8626b492e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Tool">
+      <UniqueIdentifier>{36b9e64f-144f-4b48-8462-bc3ad684b788}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -24,29 +36,35 @@
     <ClInclude Include="Resource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="ScreenDIB.h">
+    <ClInclude Include="ActionGame.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CDib.h">
+    <ClInclude Include="GameProcess.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ScreenDib.h">
+      <Filter>헤더 파일\Tool</Filter>
     </ClInclude>
     <ClInclude Include="SpriteDib.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Tool</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ScreenDIB.cpp">
+    <ClCompile Include="ActionGame.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CDib.cpp">
+    <ClCompile Include="GameProcess.cpp">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ScreenDib.cpp">
+      <Filter>소스 파일\Tool</Filter>
     </ClCompile>
     <ClCompile Include="SpriteDib.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\Tool</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ScreenDIB.rc">
+    <ResourceCompile Include="ActionGame.rc">
       <Filter>리소스 파일</Filter>
     </ResourceCompile>
   </ItemGroup>
@@ -54,7 +72,7 @@
     <Image Include="small.ico">
       <Filter>리소스 파일</Filter>
     </Image>
-    <Image Include="ScreenDIB.ico">
+    <Image Include="ActionGame.ico">
       <Filter>리소스 파일</Filter>
     </Image>
   </ItemGroup>

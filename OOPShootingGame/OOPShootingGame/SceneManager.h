@@ -10,7 +10,7 @@ public:
 	static SceneManager* GetInstance();
 	void Run();
 	void LoadScene();
-	void Destroy();
+	static void Destroy();
 
 private:
 	~SceneManager();

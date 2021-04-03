@@ -16,7 +16,7 @@ public:
 	void ClearNonePlayerObjects();
 	void Update();
 	void Render();
-	void Destroy();
+	static void Destroy();
 
 private:
 	~ObjectManager();
