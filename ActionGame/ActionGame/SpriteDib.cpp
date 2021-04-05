@@ -18,13 +18,13 @@ SpriteDib::~SpriteDib()
 	}
 }
 
-bool SpriteDib::LoadDibSprite(int spriteIndex, const char* fileName, int centerPointX, int centerPointY)
+bool SpriteDib::LoadDibSprite(int spriteIndex, const WCHAR* fileName, int centerPointX, int centerPointY)
 {
 	BITMAPFILEHEADER fileHeader;
 	BITMAPINFOHEADER infoHeader;
 	FILE* fin;
 
-	fopen_s(&fin, fileName, "rb");
+	_wfopen_s(&fin, fileName, L"rb");
 
 	ReleaseSprite(spriteIndex);
 

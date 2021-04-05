@@ -25,6 +25,12 @@
     <Filter Include="소스 파일\Tool">
       <UniqueIdentifier>{36b9e64f-144f-4b48-8462-bc3ad684b788}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Process">
+      <UniqueIdentifier>{7c2105a5-aae0-46a4-b07a-b53cd8c52569}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Process">
+      <UniqueIdentifier>{e844dfc3-8f55-490b-be15-885d2612a084}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -39,13 +45,37 @@
     <ClInclude Include="ActionGame.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="GameProcess.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="ScreenDib.h">
       <Filter>헤더 파일\Tool</Filter>
     </ClInclude>
     <ClInclude Include="SpriteDib.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameSkip.h">
+      <Filter>헤더 파일\Process</Filter>
+    </ClInclude>
+    <ClInclude Include="ActionDefine.h">
+      <Filter>헤더 파일\Process</Filter>
+    </ClInclude>
+    <ClInclude Include="EObjectType.h">
+      <Filter>헤더 파일\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProcess.h">
+      <Filter>헤더 파일\Process</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseObject.h">
+      <Filter>헤더 파일\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="EffectObject.h">
+      <Filter>헤더 파일\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerObject.h">
+      <Filter>헤더 파일\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="myList.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="ESprite.h">
       <Filter>헤더 파일\Tool</Filter>
     </ClInclude>
   </ItemGroup>
@@ -53,14 +83,26 @@
     <ClCompile Include="ActionGame.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="GameProcess.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="ScreenDib.cpp">
       <Filter>소스 파일\Tool</Filter>
     </ClCompile>
     <ClCompile Include="SpriteDib.cpp">
       <Filter>소스 파일\Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProcess.cpp">
+      <Filter>소스 파일\Process</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameSkip.cpp">
+      <Filter>소스 파일\Process</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseObject.cpp">
+      <Filter>소스 파일\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="EffectObject.cpp">
+      <Filter>소스 파일\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerObject.cpp">
+      <Filter>소스 파일\Object</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

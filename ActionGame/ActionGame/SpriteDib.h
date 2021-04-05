@@ -26,7 +26,7 @@ public:
 
 	SpriteDib(int maxSprite, DWORD colorKey);
 	virtual ~SpriteDib();
-	bool LoadDibSprite(int spriteIndex, const char* fileName, int centerPointX, int centerPointY);
+	bool LoadDibSprite(int spriteIndex, const WCHAR* fileName, int centerPointX, int centerPointY);
 	void ReleaseSprite(int spriteIndex);
 	// 努府俏 贸府, 漠扼虐 贸府
 	void DrawSprite(int spriteIndex, int drawX, int drawY, BYTE* dest,

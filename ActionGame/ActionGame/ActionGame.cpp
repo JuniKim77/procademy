@@ -1,13 +1,25 @@
 ﻿// ActionGame.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
+#pragma comment(lib, "imm32.lib")
+
+#define WINDOW_WIDTH (640)
+#define WINDOW_HEIGHT (480)
+#define WINDOW_COLORBIT (32)
 
 #include "framework.h"
 #include "ActionGame.h"
 #include <windowsx.h>
 #include "GameProcess.h"
+#include "ScreenDib.h"
+#include "SpriteDib.h"
+#include "ESprite.h"
 
 // 전역 변수:
+ScreenDib gScreenDib(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_COLORBIT);
+SpriteDib gSpriteDib(eSPRITE_MAX, 0xffffffff);
+HWND gMainWindow;
 bool gbActiveApp;
+HIMC gOldImc;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -66,6 +78,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
+	case WM_CREATE:
+		gOldImc = ImmAssociateContext(hWnd, nullptr);
+		break;
 	case WM_COMMAND:
 	{
 		int wmId = LOWORD(wParam);
@@ -95,6 +110,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
+		ImmAssociateContext(hWnd, gOldImc);
 		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
@@ -148,6 +164,8 @@ bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName
 
 	if (hWnd == nullptr)
 		return false;
+
+	gMainWindow = hWnd;
 
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
