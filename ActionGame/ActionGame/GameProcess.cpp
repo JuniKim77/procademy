@@ -5,7 +5,14 @@
 #include "PlayerObject.h"
 #include "SpriteDib.h"
 #include "ESprite.h"
+#include "ActionDefine.h"
+#include <stdio.h>
 
+extern DWORD gOldTime;
+DWORD gAccumulatedTime = 0;
+DWORD gSleepBegin = 0;
+DWORD gSleepEnd = 0;
+int gTick = 0;
 Process gGameState = PROCESS_GAME;
 
 void InitializeGame()
@@ -70,12 +77,12 @@ void InitializeGame()
 	gSpriteDib.LoadDibSprite(ePLAYER_ATTACK3_R04, L"SpriteData\\Attack3_R_04.bmp", 71, 90);
 	gSpriteDib.LoadDibSprite(ePLAYER_ATTACK3_R05, L"SpriteData\\Attack3_R_05.bmp", 71, 90);
 	gSpriteDib.LoadDibSprite(ePLAYER_ATTACK3_R06, L"SpriteData\\Attack3_R_06.bmp", 71, 90);
-	gSpriteDib.LoadDibSprite(eEFFECT_SPARK_01, L"SpriteData\\xSpark_1.bmp", 0, 0);
-	gSpriteDib.LoadDibSprite(eEFFECT_SPARK_02, L"SpriteData\\xSpark_2.bmp", 0, 0);
-	gSpriteDib.LoadDibSprite(eEFFECT_SPARK_03, L"SpriteData\\xSpark_3.bmp", 0, 0);
-	gSpriteDib.LoadDibSprite(eEFFECT_SPARK_04, L"SpriteData\\xSpark_4.bmp", 0, 0);
+	gSpriteDib.LoadDibSprite(eEFFECT_SPARK_01, L"SpriteData\\xSpark_1.bmp", 70, 70);
+	gSpriteDib.LoadDibSprite(eEFFECT_SPARK_02, L"SpriteData\\xSpark_2.bmp", 70, 70);
+	gSpriteDib.LoadDibSprite(eEFFECT_SPARK_03, L"SpriteData\\xSpark_3.bmp", 70, 70);
+	gSpriteDib.LoadDibSprite(eEFFECT_SPARK_04, L"SpriteData\\xSpark_4.bmp", 70, 70);
 	gSpriteDib.LoadDibSprite(eGUAGE_HP, L"SpriteData\\HPGuage.bmp", 0, 0);
-	gSpriteDib.LoadDibSprite(eSHADOW, L"SpriteData\\Shadow.bmp", 0, 0);
+	gSpriteDib.LoadDibSprite(eSHADOW, L"SpriteData\\Shadow.bmp", 32, 4);
 
 	// 플레이어 생성
 	gPlayerObject = new PlayerObject;
@@ -85,6 +92,7 @@ void InitializeGame()
 	// 테스트용 객체들
 	BaseObject* pObject = new PlayerObject;
 	pObject->SetPosition(100, 100);
+	pObject->SetEnemy();
 	gObjectList.push_back(pObject);
 }
 
@@ -112,20 +120,105 @@ void UpdateGame()
 	{
 		KeyProcess();
 	}
-	Update();
+	Update(); // 객체 run, y축 좌표 기준 정렬, 
+	DWORD curTime = timeGetTime();
+	DWORD timePeriod = curTime - gOldTime;
+	gAccumulatedTime += timePeriod;
+	gOldTime = timeGetTime();
+	gTick++;
+	if (gAccumulatedTime >= 1000)
+	{
+		wprintf(L"FPS: %d\n", gTick);
+		gTick = 0;
+		gAccumulatedTime = 0;
+	}
 	Render(); // 백버퍼에 출력
 
 	gScreenDib.Filp(gMainWindow); // 윈도에 출력
+
+	// 순수 Sleep 시간 체크
+	gSleepBegin = timeGetTime();
+	Sleep(20);
+	gSleepEnd = timeGetTime();
 }
 
 void KeyProcess()
 {
+	if (gPlayerObject == nullptr)
+	{
+		return;
+	}
+
+	DWORD action = dfAction_STAND;
+
+	if (GetAsyncKeyState(VK_RIGHT) & 0x8001 && GetAsyncKeyState(VK_UP) & 0x8001)
+	{
+		action = dfACTION_MOVE_RU;
+	}
+	else if (GetAsyncKeyState(VK_RIGHT) & 0x8001 && GetAsyncKeyState(VK_DOWN) & 0x8001)
+	{
+		action = dfACTION_MOVE_RD;
+	}
+	else if (GetAsyncKeyState(VK_LEFT) & 0x8001 && GetAsyncKeyState(VK_UP) & 0x8001)
+	{
+		action = dfACTION_MOVE_LU;
+	}
+	else if (GetAsyncKeyState(VK_LEFT) & 0x8001 && GetAsyncKeyState(VK_DOWN) & 0x8001)
+	{
+		action = dfACTION_MOVE_LD;
+	}
+	else if (GetAsyncKeyState(VK_RIGHT) & 0x8001)
+	{
+		action = dfACTION_MOVE_RR;
+	}
+	else if (GetAsyncKeyState(VK_LEFT) & 0x8001)
+	{
+		action = dfACTION_MOVE_LL;
+	}
+	else if (GetAsyncKeyState(VK_UP) & 0x8001)
+	{
+		action = dfACTION_MOVE_UU;
+	}
+	else if (GetAsyncKeyState(VK_DOWN) & 0x8001)
+	{
+		action = dfACTION_MOVE_DD;
+	}
+	else {
+		action = dfAction_STAND;
+	}
+	
+	if (GetAsyncKeyState(0x5A) & 0x8001) // Z key
+	{
+		action = dfACTION_ATTACK1;
+	}
+	else if (GetAsyncKeyState(0x58) & 0x8001) // X key
+	{
+		action = dfACTION_ATTACK2;
+	}
+	else if (GetAsyncKeyState(0x43) & 0x8001) // C key
+	{
+		action = dfACTION_ATTACK3;
+	}
+
+	gPlayerObject->ActionInput(action);
 }
 
 void Update()
 {
+	for (auto iter = gObjectList.begin(); iter != gObjectList.end(); iter++)
+	{
+		(*iter)->Run();
+	}
 }
 
 void Render()
 {
+	gSpriteDib.DrawImage(eMAP, 0, 0, gScreenDib.GetDibBuffer(), gScreenDib.GetWidth(), gScreenDib.GetHeight(),
+		gScreenDib.GetPitch());
+
+	for (auto iter = gObjectList.begin(); iter != gObjectList.end(); iter++)
+	{
+		(*iter)->Render(gScreenDib.GetDibBuffer(), gScreenDib.GetWidth(), gScreenDib.GetHeight(),
+			gScreenDib.GetPitch());
+	}
 }

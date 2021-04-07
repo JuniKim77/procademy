@@ -3,6 +3,12 @@
 #include "myList.h"
 #include <Windows.h>
 
+class ScreenDib;
+class SpriteDib;
+
+extern ScreenDib gScreenDib;
+extern SpriteDib gSpriteDib;
+
 class BaseObject
 {
 public:
@@ -15,12 +21,14 @@ public:
 	int GetSprite() { return mSpriteNow; }
 	bool IsEndFrame() { return mbEndFrame; }
 	void NextFrame();
-	virtual void Render();
+	virtual void Render(BYTE* pDest, int destWidth, int destHeight, int destPitch);
 	virtual void Run();
 	void SetPosition(int x, int y);
-	void SetSprite(int sprite);
+	void SetSprite(int spriteBegin, int spriteEnd, int frameDelay);
+	bool IsPlayer() { return mbPlayerCharacter; }
+	void SetEnemy() { mbPlayerCharacter = false; }
 
-private:
+protected:
 	int mCurX = 0;
 	int mCurY = 0;
 	int mDelayCount = 0;
@@ -31,7 +39,9 @@ private:
 	int mSpriteNow;
 	int mSpriteBegin;
 	bool mbEndFrame;
-	bool mActionInput;
+	bool mbPlayerCharacter;
+	DWORD mActionInput;
+	DWORD mInAction;
 };
 
 extern BaseObject* gPlayerObject;

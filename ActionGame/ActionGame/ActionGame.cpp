@@ -2,6 +2,7 @@
 //
 #pragma comment(lib, "imm32.lib")
 
+#define _CRT_SECURE_NO_WARNINGS
 #define WINDOW_WIDTH (640)
 #define WINDOW_HEIGHT (480)
 #define WINDOW_COLORBIT (32)
@@ -13,13 +14,20 @@
 #include "ScreenDib.h"
 #include "SpriteDib.h"
 #include "ESprite.h"
+#include <stdio.h>
+#include <locale.h>
+#include <Windows.h>
+#include <timeapi.h>
+
+#pragma comment(lib, "winmm.lib")
 
 // 전역 변수:
 ScreenDib gScreenDib(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_COLORBIT);
-SpriteDib gSpriteDib(eSPRITE_MAX, 0xffffffff);
+SpriteDib gSpriteDib(eSPRITE_MAX, 0x00ffffff);
 HWND gMainWindow;
 bool gbActiveApp;
 HIMC gOldImc;
+DWORD gOldTime;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -32,8 +40,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_ LPWSTR    lpCmdLine,
 	_In_ int       nCmdShow)
 {
+	timeBeginPeriod(1);
+	gOldTime = timeGetTime();
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	setlocale(LC_ALL, "");
+
+	if (AllocConsole())
+	{
+		freopen("CONIN$", "r", stdin);
+		freopen("CONOUT$", "w", stderr);
+		freopen("CONOUT$", "w", stdout);
+	}
+
+	wprintf(L"게임 시작\n");
 
 	// TODO: 여기에 코드를 입력합니다.
 	InitializeGame();
@@ -61,6 +82,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 	}
 
+	FreeConsole();
+	timeEndPeriod(1);
+
 	return (int)msg.wParam;
 }
 
@@ -81,6 +105,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		gOldImc = ImmAssociateContext(hWnd, nullptr);
 		break;
+	case WM_ACTIVATEAPP:
+		gbActiveApp = (bool)wParam;
+		break;
 	case WM_COMMAND:
 	{
 		int wmId = LOWORD(wParam);
@@ -91,9 +118,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
-			break;
-		case WM_ACTIVATEAPP:
-			gbActiveApp = (bool)wParam;
 			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
