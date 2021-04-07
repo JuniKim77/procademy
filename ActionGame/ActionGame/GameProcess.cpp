@@ -132,8 +132,11 @@ void UpdateGame()
 	}
 	Update(); // 객체 run, y축 좌표 기준 정렬, 
 	DWORD curTime = timeGetTime();
-	DWORD timePeriod = curTime - gOldTime;
-	gAccumulatedTime += timePeriod;
+	DWORD sleepPeriod = gSleepEnd - gSleepBegin;
+	DWORD timePeriod = curTime - gOldTime - sleepPeriod;
+	//printf("TimePeriod: %d\n", timePeriod);
+	//printf("SleepPeriod: %d\n", sleepPeriod);
+	gAccumulatedTime += (timePeriod + sleepPeriod);
 	gOldTime = timeGetTime();
 	gTick++;
 	if (gAccumulatedTime >= 1000)
@@ -148,7 +151,10 @@ void UpdateGame()
 
 	// 순수 Sleep 시간 체크
 	gSleepBegin = timeGetTime();
-	Sleep(20);
+	if (timePeriod < 20)
+	{
+		Sleep(20 - timePeriod);
+	}
 	gSleepEnd = timeGetTime();
 }
 
