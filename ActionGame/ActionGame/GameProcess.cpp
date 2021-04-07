@@ -94,6 +94,16 @@ void InitializeGame()
 	pObject->SetPosition(100, 100);
 	pObject->SetEnemy();
 	gObjectList.push_back(pObject);
+
+	pObject = new PlayerObject;
+	pObject->SetPosition(125, 125);
+	pObject->SetEnemy();
+	gObjectList.push_back(pObject);
+
+	pObject = new PlayerObject;
+	pObject->SetPosition(150, 150);
+	pObject->SetEnemy();
+	gObjectList.push_back(pObject);
 }
 
 void ContentLoad()
@@ -209,6 +219,8 @@ void Update()
 	{
 		(*iter)->Run();
 	}
+
+	SortYaxis();
 }
 
 void Render()
@@ -220,5 +232,36 @@ void Render()
 	{
 		(*iter)->Render(gScreenDib.GetDibBuffer(), gScreenDib.GetWidth(), gScreenDib.GetHeight(),
 			gScreenDib.GetPitch());
+	}
+}
+
+void SortYaxis()
+{
+	myList<BaseObject*> temp;
+
+	while (!gObjectList.empty())
+	{
+		int max = 0;
+		int maxIndex = 0;
+		int idx = 0;
+		BaseObject* obj = nullptr;
+
+		for (auto iter = gObjectList.begin(); iter != gObjectList.end(); iter++, idx++)
+		{
+			if ((*iter)->GetCurY() > max)
+			{
+				max = (*iter)->GetCurY();
+				maxIndex = idx;
+				obj = *iter;
+			}
+		}
+
+		temp.push_back(obj);
+		gObjectList.remove(obj);
+	}
+
+	while (!temp.empty())
+	{
+		gObjectList.push_front(temp.pop_front());
 	}
 }

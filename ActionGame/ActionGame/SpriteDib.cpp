@@ -213,7 +213,8 @@ void SpriteDib::Draw(int spriteIndex, int drawX, int drawY, BYTE* dest, int dest
 			{
 				if ((*pSpriteImage & 0x00ffffff) != mColorKey)
 				{
-					*pDest = (*pSpriteImage >> 1) & 0x007f7f7f;
+					DWORD temp = *pSpriteImage ^ 0xffffffff;
+					*pDest = (temp >> 1) & 0x007f7f7f;
 				}
 
 				pDest++;

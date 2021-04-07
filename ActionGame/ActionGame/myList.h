@@ -218,7 +218,7 @@ inline void myList<T>::remove(T Data)
 	{
 		Node* next = cur->next;
 
-		if (cur->data = Data)
+		if (cur->data == Data)
 		{
 			cur->prev->next = next;
 			next->prev = cur->prev;

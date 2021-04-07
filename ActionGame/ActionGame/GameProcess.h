@@ -23,3 +23,4 @@ void UpdateGame();
 void KeyProcess();
 void Update();
 void Render();
+void SortYaxis();
