@@ -18,6 +18,7 @@
 #include <locale.h>
 #include <Windows.h>
 #include <timeapi.h>
+#include "FrameSkip.h"
 
 #pragma comment(lib, "winmm.lib")
 
@@ -27,7 +28,7 @@ SpriteDib gSpriteDib(eSPRITE_MAX, 0x00ffffff);
 HWND gMainWindow;
 bool gbActiveApp;
 HIMC gOldImc;
-DWORD gOldTime;
+FrameSkip gFrameSkipper;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);

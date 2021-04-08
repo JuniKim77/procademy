@@ -6,11 +6,16 @@ class FrameSkip
 public:
 	FrameSkip();
 	~FrameSkip();
-	void Skip();
+	bool IsSkip();
+	DWORD GetTotalTick() { return mTotalTick; }
+	void CheckTime();
+	int GetFrameCount() { return mFrameCounter; }
+	void RunSleep();
+	void Reset();
 
 private:
-	DWORD mSystemTick;
-	int mMaxFPS;
-	int mOneFrameTick;
-	int mTick;
+	DWORD mTotalTick; // 경과 시간
+	int mFrameCounter; // 프레임 카운터
+	int mTimeRemain; // 남은 시간 누적
+	int mOldTick; // 이전 프레임 시간
 };

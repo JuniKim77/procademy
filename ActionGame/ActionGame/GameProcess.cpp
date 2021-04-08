@@ -9,7 +9,8 @@
 #include <stdio.h>
 
 extern DWORD gOldTime;
-DWORD gAccumulatedTime = 0;
+int gAccumulatedTime = 0;
+int gOverTime = 0;
 DWORD gSleepBegin = 0;
 DWORD gSleepEnd = 0;
 int gTick = 0;
@@ -131,11 +132,11 @@ void UpdateGame()
 		KeyProcess();
 	}
 	Update(); // ∞¥√º run, y√‡ ¡¬«• ±‚¡ÿ ¡§∑ƒ, 
-	DWORD curTime = timeGetTime();
-	DWORD sleepPeriod = gSleepEnd - gSleepBegin;
-	DWORD timePeriod = curTime - gOldTime - sleepPeriod;
-	//printf("TimePeriod: %d\n", timePeriod);
-	//printf("SleepPeriod: %d\n", sleepPeriod);
+	int curTime = timeGetTime();
+	int sleepPeriod = gSleepEnd - gSleepBegin;
+	int timePeriod = curTime - gOldTime - sleepPeriod;
+	printf("TimePeriod: %dms\n", timePeriod);
+	printf("SleepPeriod: %dms\n", sleepPeriod);
 	gAccumulatedTime += (timePeriod + sleepPeriod);
 	gOldTime = timeGetTime();
 	gTick++;
