@@ -42,7 +42,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_ int       nCmdShow)
 {
 	timeBeginPeriod(1);
-	gOldTime = timeGetTime();
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -56,6 +55,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	wprintf(L"게임 시작\n");
+
+	gFrameSkipper.CheckTime();
 
 	// TODO: 여기에 코드를 입력합니다.
 	InitializeGame();

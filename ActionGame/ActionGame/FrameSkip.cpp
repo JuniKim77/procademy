@@ -1,4 +1,5 @@
 #include "FrameSkip.h"
+#include <stdio.h>
 
 FrameSkip::FrameSkip()
 	: mTotalTick(0)
@@ -15,7 +16,7 @@ FrameSkip::~FrameSkip()
 
 bool FrameSkip::IsSkip()
 {
-	return mTimeRemain >= 20;
+	return mTimeRemain - 20 * mFrameCounter >= 20;
 }
 
 
@@ -26,6 +27,8 @@ void FrameSkip::CheckTime()
 	
 	int timePeriod = curTick - mOldTick;
 
+	mOldTick = curTick;
+
 	mTotalTick += timePeriod;
 	mFrameCounter++;
 
@@ -34,9 +37,13 @@ void FrameSkip::CheckTime()
 
 void FrameSkip::RunSleep()
 {
-	if (mTimeRemain < 0)
+	if (mTimeRemain < 0 && mTimeRemain > -20)
 	{
 		Sleep(20 + mTimeRemain);
+	}
+	else if (mTimeRemain <= -20)
+	{
+		Sleep(20);
 	}
 }
 
@@ -45,5 +52,4 @@ void FrameSkip::Reset()
 	mTotalTick = 0;
 	mFrameCounter = 0;
 	mTimeRemain = 0;
-	mOldTick = 0;
 }

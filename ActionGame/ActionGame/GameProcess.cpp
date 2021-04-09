@@ -7,14 +7,14 @@
 #include "ESprite.h"
 #include "ActionDefine.h"
 #include <stdio.h>
+#include "FrameSkip.h"
 
 extern DWORD gOldTime;
 int gAccumulatedTime = 0;
 int gOverTime = 0;
-DWORD gSleepBegin = 0;
-DWORD gSleepEnd = 0;
 int gTick = 0;
 Process gGameState = PROCESS_GAME;
+extern FrameSkip gFrameSkipper;
 
 void InitializeGame()
 {
@@ -132,31 +132,26 @@ void UpdateGame()
 		KeyProcess();
 	}
 	Update(); // 객체 run, y축 좌표 기준 정렬, 
-	int curTime = timeGetTime();
-	int sleepPeriod = gSleepEnd - gSleepBegin;
-	int timePeriod = curTime - gOldTime - sleepPeriod;
-	printf("TimePeriod: %dms\n", timePeriod);
-	printf("SleepPeriod: %dms\n", sleepPeriod);
-	gAccumulatedTime += (timePeriod + sleepPeriod);
-	gOldTime = timeGetTime();
-	gTick++;
-	if (gAccumulatedTime >= 1000)
+
+	gFrameSkipper.CheckTime();
+
+	if (gFrameSkipper.GetTotalTick() >= 1000)
 	{
-		wprintf(L"FPS: %d\n", gTick);
-		gTick = 0;
-		gAccumulatedTime = 0;
+		printf("Frame: %d\n", gFrameSkipper.GetFrameCount());
+		printf("Tick: %d\n", gFrameSkipper.GetTotalTick());
+
+		gFrameSkipper.Reset();
 	}
-	Render(); // 백버퍼에 출력
+
+	if (!gFrameSkipper.IsSkip())
+	{
+		Render(); // 백버퍼에 출력
+	}
 
 	gScreenDib.Filp(gMainWindow); // 윈도에 출력
 
 	// 순수 Sleep 시간 체크
-	gSleepBegin = timeGetTime();
-	if (timePeriod < 20)
-	{
-		Sleep(20 - timePeriod);
-	}
-	gSleepEnd = timeGetTime();
+	gFrameSkipper.RunSleep();
 }
 
 void KeyProcess()
