@@ -16,10 +16,8 @@ FrameSkip::~FrameSkip()
 
 bool FrameSkip::IsSkip()
 {
-	return mTimeRemain - 20 * mFrameCounter >= 20;
+	return mTimeRemain >= 20;
 }
-
-
 
 void FrameSkip::CheckTime()
 {
@@ -52,4 +50,10 @@ void FrameSkip::Reset()
 	mTotalTick = 0;
 	mFrameCounter = 0;
 	mTimeRemain = 0;
+}
+
+void FrameSkip::Refresh()
+{
+	mFrameCounter = 0;
+	mTotalTick -= 1000;
 }

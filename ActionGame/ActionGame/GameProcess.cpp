@@ -140,7 +140,7 @@ void UpdateGame()
 		printf("Frame: %d\n", gFrameSkipper.GetFrameCount());
 		printf("Tick: %d\n", gFrameSkipper.GetTotalTick());
 
-		gFrameSkipper.Reset();
+		gFrameSkipper.Refresh();
 	}
 
 	if (!gFrameSkipper.IsSkip())

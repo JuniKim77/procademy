@@ -12,6 +12,7 @@ public:
 	int GetFrameCount() { return mFrameCounter; }
 	void RunSleep();
 	void Reset();
+	void Refresh();
 
 private:
 	int mTotalTick; // 경과 시간

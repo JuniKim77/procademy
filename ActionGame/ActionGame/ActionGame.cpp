@@ -57,6 +57,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	wprintf(L"게임 시작\n");
 
 	gFrameSkipper.CheckTime();
+	gFrameSkipper.Reset();
 
 	// TODO: 여기에 코드를 입력합니다.
 	InitializeGame();
