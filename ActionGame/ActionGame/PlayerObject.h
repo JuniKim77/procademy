@@ -28,5 +28,4 @@ private:
 	bool mbIsLeft;
 	char mHP;
 	int mDir;
-
 };

@@ -36,19 +36,18 @@ void BaseObject::NextFrame()
 
 		if (mSpriteNow > mSpriteEnd)
 		{
-			mSpriteNow = mSpriteBegin;
-			mbEndFrame = true;
+			if (mObjectType == EObjectType::OBJECT_TYPE_EFFECT)
+			{
+				gObjectList.remove(this);
+				delete this;
+			}
+			else 
+			{
+				mSpriteNow = mSpriteBegin;
+				mbEndFrame = true;
+			}
 		}
 	}
-}
-
-void BaseObject::Render(BYTE* pDest, int destWidth, int destHeight, int destPitch)
-{
-
-}
-
-void BaseObject::Run()
-{
 }
 
 void BaseObject::SetPosition(int x, int y)
