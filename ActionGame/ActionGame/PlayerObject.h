@@ -11,7 +11,6 @@ public:
 	virtual void Run();
 	void Action();
 	void ActionInputProc();
-	void ActionProc();
 	void SetActionStand();
 	void SetActionAttack1();
 	void SetActionAttack2();

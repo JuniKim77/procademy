@@ -43,15 +43,14 @@ void PlayerObject::Render(BYTE* pDest, int destWidth, int destHeight, int destPi
 
 void PlayerObject::Run()
 {
-	ActionInputProc();
-	Action();
+	ActionInputProc();  // Action input 처리 : 이동 방향과 액션을 정리
+	Action(); // 업데이트
 }
 
 void PlayerObject::Action()
 {
-	Move();
+	Move(); // 이동
 	NextFrame();
-	ActionProc();
 }
 
 void PlayerObject::ActionInputProc()
@@ -70,143 +69,124 @@ void PlayerObject::ActionInputProc()
 	switch (mActionInput)
 	{
 	case dfACTION_ATTACK1:
-		if (mbIsLeft)
-		{
-			SetSprite(ePLAYER_ATTACK1_L01, ePLAYER_ATTACK1_L04, dfDELAY_ATTACK1);
-			BaseObject* effect = new EffectObject;
-			effect->SetPosition(mCurX - 100, mCurY - 50);
-			gObjectList.push_back(effect);
-		}
-		else
-		{
-			SetSprite(ePLAYER_ATTACK1_R01, ePLAYER_ATTACK1_R04, dfDELAY_ATTACK1);
-			BaseObject* effect = new EffectObject;
-			effect->SetPosition(mCurX + 100, mCurY - 50);
-			gObjectList.push_back(effect);
-		}
-		mDir = dfAction_STAND;
+		SetActionAttack1();
 		break;
 	case dfACTION_ATTACK2:
-		if (mbIsLeft)
-		{
-			SetSprite(ePLAYER_ATTACK2_L01, ePLAYER_ATTACK2_L04, dfDELAY_ATTACK2);
-			BaseObject* effect = new EffectObject;
-			effect->SetPosition(mCurX - 100, mCurY - 50);
-			gObjectList.push_back(effect);
-		}
-		else
-		{
-			SetSprite(ePLAYER_ATTACK2_R01, ePLAYER_ATTACK2_R04, dfDELAY_ATTACK2);
-			BaseObject* effect = new EffectObject;
-			effect->SetPosition(mCurX + 100, mCurY - 50);
-			gObjectList.push_back(effect);
-		}
-		mDir = dfAction_STAND;
+		SetActionAttack2();
 		break;
 	case dfACTION_ATTACK3:
-		if (mbIsLeft)
-		{
-			SetSprite(ePLAYER_ATTACK3_L01, ePLAYER_ATTACK3_L04, dfDELAY_ATTACK3);
-			BaseObject* effect = new EffectObject;
-			effect->SetPosition(mCurX - 100, mCurY - 50);
-			gObjectList.push_back(effect);
-		}
-		else
-		{
-			SetSprite(ePLAYER_ATTACK3_R01, ePLAYER_ATTACK3_R04, dfDELAY_ATTACK3);
-			BaseObject* effect = new EffectObject;
-			effect->SetPosition(mCurX + 100, mCurY - 50);
-			gObjectList.push_back(effect);
-		}
-		mDir = dfAction_STAND;
+		SetActionAttack3();
 		break;
 	case dfAction_STAND:
-		if (mbIsLeft)
-		{
-			SetSprite(ePLAYER_STAND_L01, ePLAYER_STAND_L03, dfDELAY_STAND);
-		}
-		else
-		{
-			SetSprite(ePLAYER_STAND_R01, ePLAYER_STAND_R03, dfDELAY_STAND);
-		}
-		mDir = dfAction_STAND;
+		SetActionStand();
 		break;
 	case dfACTION_MOVE_LL:
 	case dfACTION_MOVE_LU:
 	case dfACTION_MOVE_LD:
-		SetSprite(ePLAYER_MOVE_L01, ePLAYER_MOVE_L12, dfDELAY_MOVE);
-		mDir = mActionInput;
 		mbIsLeft = true;
+		mDir = mActionInput;
+		SetActionMove();
 		break;
 	case dfACTION_MOVE_RR:
 	case dfACTION_MOVE_RU:
 	case dfACTION_MOVE_RD:
-		SetSprite(ePLAYER_MOVE_R01, ePLAYER_MOVE_R12, dfDELAY_MOVE);
 		mbIsLeft = false;
 		mDir = mActionInput;
+		SetActionMove();
 		break;
 	case dfACTION_MOVE_UU:
 	case dfACTION_MOVE_DD:
-		if (mbIsLeft)
-		{
-			SetSprite(ePLAYER_MOVE_L01, ePLAYER_MOVE_L12, dfDELAY_MOVE);
-		}
-		else
-		{
-			SetSprite(ePLAYER_MOVE_R01, ePLAYER_MOVE_R12, dfDELAY_MOVE);
-		}
 		mDir = mActionInput;
+		SetActionMove();
 		break;
 	default:
-		if (mbIsLeft)
-		{
-			SetSprite(ePLAYER_STAND_L01, ePLAYER_STAND_L03, dfDELAY_STAND);
-		}
-		else
-		{
-			SetSprite(ePLAYER_STAND_R01, ePLAYER_STAND_R03, dfDELAY_STAND);
-		}
-		break;
-	}
-}
-
-void PlayerObject::ActionProc()
-{
-	switch (mActionInput)
-	{
-	case dfACTION_ATTACK1:
-	case dfACTION_ATTACK2:
-	case dfACTION_ATTACK3:
-		if (mbEndFrame)
-		{
-			SetActionStand();
-
-			mActionInput = dfAction_STAND;
-		}
-		break;
-	default:
+		SetActionStand();
 		break;
 	}
 }
 
 void PlayerObject::SetActionStand()
 {
+	if (mbIsLeft)
+	{
+		SetSprite(ePLAYER_STAND_L01, ePLAYER_STAND_L03, dfDELAY_STAND);
+	}
+	else
+	{
+		SetSprite(ePLAYER_STAND_R01, ePLAYER_STAND_R03, dfDELAY_STAND);
+	}
+	mDir = dfAction_STAND;
 }
 
 void PlayerObject::SetActionAttack1()
 {
+	if (mbIsLeft)
+	{
+		SetSprite(ePLAYER_ATTACK1_L01, ePLAYER_ATTACK1_L04, dfDELAY_ATTACK1);
+		BaseObject* effect = new EffectObject;
+		effect->SetPosition(mCurX - 100, mCurY - 50);
+		gObjectList.push_back(effect);
+	}
+	else
+	{
+		SetSprite(ePLAYER_ATTACK1_R01, ePLAYER_ATTACK1_R04, dfDELAY_ATTACK1);
+		BaseObject* effect = new EffectObject;
+		effect->SetPosition(mCurX + 100, mCurY - 50);
+		gObjectList.push_back(effect);
+	}
+
+	mDir = dfAction_STAND;
 }
 
 void PlayerObject::SetActionAttack2()
 {
+	if (mbIsLeft)
+	{
+		SetSprite(ePLAYER_ATTACK2_L01, ePLAYER_ATTACK2_L04, dfDELAY_ATTACK2);
+		BaseObject* effect = new EffectObject;
+		effect->SetPosition(mCurX - 100, mCurY - 50);
+		gObjectList.push_back(effect);
+	}
+	else
+	{
+		SetSprite(ePLAYER_ATTACK2_R01, ePLAYER_ATTACK2_R04, dfDELAY_ATTACK2);
+		BaseObject* effect = new EffectObject;
+		effect->SetPosition(mCurX + 100, mCurY - 50);
+		gObjectList.push_back(effect);
+	}
+	mDir = dfAction_STAND;
 }
 
 void PlayerObject::SetActionAttack3()
 {
+	if (mbIsLeft)
+	{
+		SetSprite(ePLAYER_ATTACK3_L01, ePLAYER_ATTACK3_L04, dfDELAY_ATTACK3);
+		BaseObject* effect = new EffectObject;
+		effect->SetPosition(mCurX - 100, mCurY - 50);
+		gObjectList.push_back(effect);
+	}
+	else
+	{
+		SetSprite(ePLAYER_ATTACK3_R01, ePLAYER_ATTACK3_R04, dfDELAY_ATTACK3);
+		BaseObject* effect = new EffectObject;
+		effect->SetPosition(mCurX + 100, mCurY - 50);
+		gObjectList.push_back(effect);
+	}
+
+	mDir = dfAction_STAND;
 }
 
 void PlayerObject::SetActionMove()
 {
+	if (mbIsLeft)
+	{
+		SetSprite(ePLAYER_MOVE_L01, ePLAYER_MOVE_L12, dfDELAY_MOVE);
+	}
+	else
+	{
+		SetSprite(ePLAYER_MOVE_R01, ePLAYER_MOVE_R12, dfDELAY_MOVE);
+	}
 }
 
 void PlayerObject::Move()

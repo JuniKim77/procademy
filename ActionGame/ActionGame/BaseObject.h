@@ -27,13 +27,14 @@ public:
 	void SetSprite(int spriteBegin, int spriteEnd, int frameDelay);
 	bool IsPlayer() { return mbPlayerCharacter; }
 	void SetEnemy() { mbPlayerCharacter = false; }
+	bool GetDestroy() { return mbDestroy; }
 
 protected:
 	int mCurX = 0;
 	int mCurY = 0;
 	int mDelayCount = 0;
 	int mFrameDelay = 0;
-	int mObjectID = 0;
+	int mObjectID;
 	EObjectType mObjectType;
 	int mSpriteEnd;
 	int mSpriteNow;
@@ -42,6 +43,7 @@ protected:
 	bool mbPlayerCharacter;
 	DWORD mActionInput;
 	DWORD mInAction;
+	bool mbDestroy = false;
 };
 
 extern BaseObject* gPlayerObject;

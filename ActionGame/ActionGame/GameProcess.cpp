@@ -10,11 +10,9 @@
 #include "FrameSkip.h"
 
 extern DWORD gOldTime;
-int gAccumulatedTime = 0;
-int gOverTime = 0;
-int gTick = 0;
 Process gGameState = PROCESS_GAME;
 extern FrameSkip gFrameSkipper;
+int gIDCounter;
 
 void InitializeGame()
 {
@@ -217,9 +215,21 @@ void KeyProcess()
 
 void Update()
 {
-	for (auto iter = gObjectList.begin(); iter != gObjectList.end(); iter++)
+	for (auto iter = gObjectList.begin(); iter != gObjectList.end();)
 	{
-		(*iter)->Run();
+		if ((*iter)->GetDestroy())
+		{
+			BaseObject* temp = *iter;
+
+			iter = gObjectList.erase(iter);			
+			delete temp;
+		}
+		else
+		{
+			(*iter)->Run();
+			++iter;
+		}
+		
 	}
 
 	SortYaxis();

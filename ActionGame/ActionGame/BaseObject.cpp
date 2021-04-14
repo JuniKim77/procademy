@@ -1,15 +1,18 @@
 #include "BaseObject.h"
 #include "ActionDefine.h"
 #include "ESprite.h"
+#include <stdio.h>
 
 myList<BaseObject*> gObjectList;
 BaseObject* gPlayerObject;
+extern int gIDCounter;
 
 BaseObject::BaseObject()
 	: mbEndFrame(true)
 	, mActionInput(dfAction_STAND)
 	, mInAction(dfAction_NONE)
 	, mbPlayerCharacter(true)
+	, mObjectID(gIDCounter++)
 {
 }
 
@@ -38,14 +41,15 @@ void BaseObject::NextFrame()
 		{
 			if (mObjectType == EObjectType::OBJECT_TYPE_EFFECT)
 			{
-				gObjectList.remove(this);
-				delete this;
+				mbDestroy = true;
 			}
 			else 
 			{
-				mSpriteNow = mSpriteBegin;
-				mbEndFrame = true;
+				mInAction = dfAction_NONE;
 			}
+
+			mSpriteNow = mSpriteBegin;
+			mbEndFrame = true;
 		}
 	}
 }
