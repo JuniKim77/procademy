@@ -89,6 +89,8 @@ int main()
 
 		retval = recv(listen_socket, (char*)&header, sizeof(header), 0);
 
+		printf("receive size: %d\n", retval);
+
 		if (header.dwPacketCode != 0x11223344) {
 			wprintf_s(L"%s\n", header.szFileName);
 			wprintf_s(L"%s\n", header.szName);
