@@ -4,6 +4,7 @@
 #include <WS2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <locale.h>
 
 struct MyHeader 
 {
@@ -15,6 +16,7 @@ struct MyHeader
 
 int main()
 {
+	setlocale(LC_ALL, "");
 	WSADATA wsa;
 
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
@@ -90,17 +92,13 @@ int main()
 		WCHAR otherIP[16] = { 0, };
 		WCHAR* pName = (WCHAR*)buffer;
 
-		if (retval == SOCKET_ERROR) {
-			printf("send error\n");
-			printf("Error Code: %d\n", WSAGetLastError());
-			continue;
-		}
-
-		InetNtop(AF_INET, &peerAddr.sin_addr, otherIP, sizeof(otherIP));
 		if (retval > 0) {
-			wprintf_s(L"IP: %s\n", otherIP);
-			wprintf_s(L"Port: %d\n", ntohs(peerAddr.sin_port));
-			wprintf_s(L"Name: %s\n", pName);
+			InetNtop(AF_INET, &peerAddr.sin_addr, otherIP, sizeof(otherIP));
+			if (retval > 0) {
+				wprintf_s(L"IP: %s\n", otherIP);
+				wprintf_s(L"Port: %d\n", ntohs(peerAddr.sin_port));
+				wprintf_s(L"Name: %s\n", pName);
+			}
 		}
 	}
 	
