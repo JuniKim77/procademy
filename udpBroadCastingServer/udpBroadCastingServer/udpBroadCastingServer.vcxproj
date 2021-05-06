@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{9ed4b6ed-a9bd-43cb-ae2d-d91440e45017}</ProjectGuid>
-    <RootNamespace>udpBroadCasting</RootNamespace>
+    <ProjectGuid>{b832fbdf-043b-4fcc-b8fb-68fed67430be}</ProjectGuid>
+    <RootNamespace>udpBroadCastingServer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
