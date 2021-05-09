@@ -1,4 +1,5 @@
 #pragma comment(lib, "ws2_32")
+#pragma comment(lib, "Winmm")
 
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -11,6 +12,7 @@
 
 int main()
 {
+	timeBeginPeriod(1);
 	setlocale(LC_ALL, "");
 	WSADATA wsa;
 
@@ -42,8 +44,6 @@ int main()
 		return 1;
 	}
 
-	wprintf_s(L"접속 성공!\n");
-
 	u_long on = 1;
 	if (ioctlsocket(sock, FIONBIO, &on) == SOCKET_ERROR)
 	{
@@ -52,6 +52,7 @@ int main()
 		return 1;
 	}
 	ScreenInitial();
+	system("cls");
 
 	while (1)
 	{
@@ -61,5 +62,9 @@ int main()
 		NetworkProcess(sock);
 		// 렌더링
 		Render();
+
+		Sleep(20);
 	}
+
+	timeEndPeriod(1);
 }

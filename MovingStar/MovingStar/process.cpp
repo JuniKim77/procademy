@@ -8,28 +8,28 @@
 #define STAR_SIZE (100)
 
 star stars[STAR_SIZE];
-int num_stars = 1;
+int num_stars = 0;
 WCHAR szScreenBuffer[WINDOW_HEIGHT][WINDOW_WIDTH + 1];
 HANDLE hConsole;
 
 void Render()
 {
-	ScreenClear();
-	
+	MoveCursor(0, 0);
+	wprintf_s(L"Connect Client : %d", num_stars);
+
 	for (int i = 0; i < num_stars; ++i)
 	{
-		szScreenBuffer[stars[i].y][stars[i].x] = '*';
-	}
-
-	for (int i = 0; i < WINDOW_HEIGHT; ++i)
-	{
-		MoveCursor(0, i);
-		wprintf_s(L"%s",szScreenBuffer[i]);
+		MoveCursor(stars[i].oldX, stars[i].oldY);
+		fputwc(L' ', stdout);
+		MoveCursor(stars[i].x, stars[i].y);
+		fputwc(L'*', stdout);
 	}
 }
 
 void KeyProcess()
 {
+	stars[0].save();
+
 	if (GetAsyncKeyState(VK_UP) & 0x8001)
 	{
 		stars[0].move(Dir::DIR_UP);
@@ -57,29 +57,29 @@ void NetworkProcess(SOCKET server)
 	FD_ZERO(&wset);
 	FD_SET(server, &rset);
 
-	if (stars[0].isMoved()) {
+	if (stars[0].x != stars[0].oldX || stars[0].y != stars[0].oldY) {
 		// send Message
 		MOVE_STAR* pMessage = (MOVE_STAR*)wPacket;
 		*pMessage = MOVE_STAR(stars[0].ID, stars[0].x, stars[0].y);
 		FD_SET(server, &wset);
-
-		stars[0].unsetMoved();
 	}
 
 	//select
 	timeval tval;
 	tval.tv_sec = 0;
 	tval.tv_usec = 0;
+	int count = 0;
 
 	if (select(0, &rset, &wset, NULL, &tval) > 0)
 	{
 		if (FD_ISSET(server, &rset))
 		{
 			char rPacket[16];
-			
+
 			while (recv(server, rPacket, sizeof(rPacket), 0) > 0)
 			{
 				int* type = (int*)rPacket;
+				count++;
 
 				switch (*type)
 				{
@@ -99,15 +99,19 @@ void NetworkProcess(SOCKET server)
 						}
 						stars[num_stars].ID = ((CREATE_STAR*)rPacket)->ID;
 						stars[num_stars].x = ((CREATE_STAR*)rPacket)->x;
+						stars[num_stars].oldX = ((CREATE_STAR*)rPacket)->x;
 						stars[num_stars].y = ((CREATE_STAR*)rPacket)->y;
-						num_stars++;
+						stars[num_stars].oldY = ((CREATE_STAR*)rPacket)->y;
 					}
+					num_stars++;
 					break;
 				case 2: // ∫∞ ªË¡¶
 					for (int i = 0; i < num_stars; ++i)
 					{
 						if (stars[i].ID == ((DESTROY_STAR*)rPacket)->ID)
 						{
+							MoveCursor(stars[i].x, stars[i].y);
+							fputwc(L' ', stdout);
 							stars[i] = stars[num_stars - 1];
 							num_stars--;
 							break;
@@ -119,8 +123,12 @@ void NetworkProcess(SOCKET server)
 					{
 						if (stars[i].ID == ((MOVE_STAR*)rPacket)->ID)
 						{
+							stars[i].oldX = stars[i].x;
+							stars[i].oldY = stars[i].y;
 							stars[i].x = ((MOVE_STAR*)rPacket)->x;
-							stars[i].x = ((MOVE_STAR*)rPacket)->y;
+							stars[i].y = ((MOVE_STAR*)rPacket)->y;
+							MoveCursor(stars[i].oldX, stars[i].oldY);
+							fputwc(L' ', stdout);
 							break;
 						}
 					}
@@ -139,15 +147,9 @@ void NetworkProcess(SOCKET server)
 			}
 		}
 	}
-}
 
-void ScreenClear()
-{
-	for (int i = 0; i < WINDOW_HEIGHT; ++i)
-	{
-		wmemset(szScreenBuffer[i], L' ', _countof(szScreenBuffer[i]));
-		szScreenBuffer[i][WINDOW_WIDTH] = L'\0';
-	}
+	MoveCursor(0, 1);
+	wprintf_s(L"Packet: %d", count);
 }
 
 void ScreenInitial()

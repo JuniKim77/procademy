@@ -15,18 +15,19 @@ enum class Dir
 class star
 {
 	friend void Render();
+	friend void KeyProcess();
 	friend void NetworkProcess(SOCKET server);
 public:
 	star();
 	void setID(int id) { ID = id; }
 	bool isEqual(int id) { return ID == id; }
 	void move(Dir dir);
-	bool isMoved() { return mbMoved; }
-	void unsetMoved() { mbMoved = false; }
+	void save();
 
 private:
 	int x;
+	int oldX;
 	int y;
+	int oldY;
 	int ID;
-	bool mbMoved;
 };
