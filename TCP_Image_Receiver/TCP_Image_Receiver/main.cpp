@@ -35,7 +35,10 @@ int main()
 		printf("Error Code: %d\n", err);
 		return 1;
 	}
-
+	/// <summary>
+	/// socket option -> receive timer
+	/// </summary>
+	/// <returns></returns>
 	int interval = 4000;
 	retval = setsockopt(listen_socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&interval, sizeof(interval));
 	if (retval == SOCKET_ERROR) {
@@ -87,9 +90,14 @@ int main()
 
 		st_PACKET_HEADER header;
 
-		retval = recv(listen_socket, (char*)&header, sizeof(header), 0);
+		retval = recv(client_sock, (char*)&header, sizeof(header), 0);
 
-		printf("receive size: %d\n", retval);
+		if (retval == SOCKET_ERROR) {
+			int err = WSAGetLastError();
+			printf("send error\n");
+			printf("Error Code: %d\n", err);
+			return 1;
+		}
 
 		if (header.dwPacketCode != 0x11223344) {
 			wprintf_s(L"%s\n", header.szFileName);
@@ -102,16 +110,17 @@ int main()
 
 		WCHAR file_name[64];
 
-		swprintf_s(file_name, sizeof(file_name), L"%s_%s_image", header.szName, header.szFileName);
+		swprintf_s(file_name, sizeof(file_name), L"%s_%s", header.szName, header.szFileName);
 
-		wprintf_s(L"%s\n", file_name);
+		wprintf_s(L"File Name: %s\n", file_name);
+		wprintf_s(L"File Size: %d\n", header.iFileSize);
 
 		FILE* fout;
-		_wfopen_s(&fout, file_name, L"w");
+		_wfopen_s(&fout, file_name, L"wb");
 
 		while (1)
 		{
-			retval = recv(listen_socket, buffer, sizeof(buffer), 0);
+			retval = recv(client_sock, buffer, sizeof(buffer), 0);
 			if (retval == SOCKET_ERROR) {
 				int err = WSAGetLastError();
 				printf("Error Code: %d\n", err);
@@ -120,9 +129,14 @@ int main()
 			else if (retval == 0) {
 				break;
 			}
+
+			printf("retval : %d\n", retval);
+			fwrite(buffer, retval, 1, fout);
 		}
 
 		printf("Connection Close\n");
+
+		fclose(fout);
 
 		closesocket(client_sock);
 	}
