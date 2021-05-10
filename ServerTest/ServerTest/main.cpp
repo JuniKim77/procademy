@@ -44,10 +44,11 @@ int main()
 	SOCKADDR_IN SockAddr;
 	IN_ADDR Addr;
 	memset(&SockAddr, 0, sizeof(SockAddr));
-	DomainToIP(L"procademyserver.iptime.org", &Addr);
+	//DomainToIP(L"procademyserver.iptime.org", &Addr);
+	InetPton(AF_INET, L"192.168.10.25", &SockAddr.sin_addr);
 
 	SockAddr.sin_family = AF_INET;
-	SockAddr.sin_addr = Addr;
+	//SockAddr.sin_addr = Addr;
 	SockAddr.sin_port = htons(10010);
 
 	WCHAR serverIP[16]  = { 0, };
