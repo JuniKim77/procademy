@@ -149,7 +149,9 @@ void NetworkProcess(SOCKET server)
 	}
 
 	MoveCursor(0, 1);
-	wprintf_s(L"Packet: %d", count);
+	wprintf_s(L"Packet: %d ", count);
+	MoveCursor(0, 2);
+	wprintf_s(L"ID: %d", stars[0].ID);
 }
 
 void ScreenInitial()
