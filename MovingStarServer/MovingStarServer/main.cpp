@@ -220,13 +220,12 @@ void acceptProc()
 				// send create messages of other stars
 				for (int j = 0; j < MAX_SESSION; ++j)
 				{
-					if (i == j)
-						continue;
-
-					if (g_sessions[j].socket != INVALID_SOCKET)
+					if (g_sessions[j].socket != INVALID_SOCKET && g_sessions[j].socket != g_sessions[i].socket)
 					{
 						wprintf_s(L"몰아주기 ID: %d\n", g_sessions[j].ID);
 						packet[1] = g_sessions[j].ID;
+						packet[2] = g_sessions[j].x;
+						packet[3] = g_sessions[j].y;
 						sendUniCast(&g_sessions[i], (char*)&packet);
 					}
 				}
@@ -267,18 +266,30 @@ void receiveProc(Session* from)
 				return;
 			}
 
-			wprintf_s(L"Receive 에러 : %d\n", err);
 			disconnect(from);
 
 			return;
 		}
 
-		if (packet[2] < 0 || packet[2] >= SCREEN_WIDTH || packet[3] < 0 || packet[3] >= SCREEN_HEIGTH)
+		int x = packet[2];
+		int y = packet[3];
+
+		if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGTH)
 		{
 			// wprintf_s(L"ID, %d가 범주를 이탈하려 함\n", from->ID);
 			continue;
 		}
 
+		// x, y 좌표 업데이트
+		for (int i = 0; i < MAX_SESSION; ++i)
+		{
+			if (g_sessions[i].ID == packet[1])
+			{
+				g_sessions[i].x = x;
+				g_sessions[i].y = y;
+				break;
+			}
+		}
 		sendBroadCast(from, (char*)&packet);
 		// wprintf_s(L"리시브 성공\n");
 	}
@@ -343,7 +354,8 @@ void sendBroadCast(Session* except, char* packet)
 
 void disconnect(Session* obj)
 {
-	wprintf_s(L"disconnect\n");
+	wprintf_s(L"disconnect:  ");
+	obj->printInfo();
 	closesocket(obj->socket);
 	obj->socket = INVALID_SOCKET;
 

@@ -7,6 +7,7 @@ class Session
 {
 public:
 	Session();
+	void printInfo() const;
 
 	// network
 	SOCKET socket;
