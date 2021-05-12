@@ -69,14 +69,29 @@ void NetworkProcess(SOCKET server)
 	tval.tv_sec = 0;
 	tval.tv_usec = 0;
 	int count = 0;
+	
+	int retval = select(0, &rset, &wset, NULL, &tval);
 
-	if (select(0, &rset, &wset, NULL, &tval) > 0)
+	if (retval > 0)
 	{
 		if (FD_ISSET(server, &rset))
 		{
 			char rPacket[16];
 
-			while (recv(server, rPacket, sizeof(rPacket), 0) > 0)
+			retval = recv(server, rPacket, sizeof(rPacket), 0);
+
+			if (retval == SOCKET_ERROR)
+			{
+				int err = WSAGetLastError();
+
+				if (err != WSAEWOULDBLOCK) {
+					system("cls");
+					wprintf_s(L"Error code : %d\n", err);
+					exit(1);
+				}
+			}
+
+			while (retval > 0)
 			{
 				int* type = (int*)rPacket;
 				count++;
@@ -136,6 +151,8 @@ void NetworkProcess(SOCKET server)
 				default:
 					break;
 				}
+
+				retval = recv(server, rPacket, sizeof(rPacket), 0);
 			}
 		}
 
@@ -144,8 +161,15 @@ void NetworkProcess(SOCKET server)
 			if (send(server, wPacket, sizeof(wPacket), 0) == SOCKET_ERROR)
 			{
 				wprintf_s(L"메세지 송신 에러 Code : %d\n", WSAGetLastError());
+				exit(1);
 			}
 		}
+	}
+	else if (retval == SOCKET_ERROR)
+	{
+		int err = WSAGetLastError();
+		wprintf_s(L"Error code : %d\n", err);
+		exit(1);
 	}
 
 	MoveCursor(0, 1);
