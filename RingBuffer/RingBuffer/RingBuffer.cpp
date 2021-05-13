@@ -1,5 +1,6 @@
 #include "RingBuffer.h"
 #include <cstring>
+#include <stdio.h>
 
 RingBuffer::RingBuffer()
 	: RingBuffer(DEFAULT_SIZE)
@@ -19,25 +20,34 @@ RingBuffer::RingBuffer(int iBufferSize)
 	, mBuffer(nullptr)
 {
 	mBuffer = new char[iBufferSize + 1];
+	// memset(mBuffer, 0, iBufferSize + 1);
 }
 
 void RingBuffer::Resize(int size)
 {
-	if (size > mCapacity)
+	if (size <= mCapacity)
+		return;
+
+	char* temp = new char[size + 1];
+	if (mRear >= mFront)
 	{
-		char* temp = new char[size + 1];
-		if (mRear >= mFront)
-		{
-			memcpy(temp, mBuffer, mCapacity);
-			delete[] mBuffer;
-			mBuffer = temp;
-			mCapacity = size;
-		}
-		else
-		{
+		memcpy(temp, mBuffer, mCapacity + 1);
+		delete[] mBuffer;
+		mBuffer = temp;
+		mCapacity = size;
+	}
+	else
+	{
+		int poss = DirectDequeueSize();
+		memcpy(temp, mBuffer + mFront, poss);
+		memcpy(temp + poss, mBuffer, mRear);
+		delete[] mBuffer;
+		mBuffer = temp;
+		int useSize = GetUseSize();
 
-		}
-
+		mFront = 0;
+		mRear = useSize;
+		mCapacity = size;
 	}
 }
 
@@ -72,7 +82,7 @@ int RingBuffer::DirectEnqueueSize(void)
 	}
 	else
 	{
-		return mCapacity - mRear - 1;
+		return mCapacity - mRear + 1;
 	}
 }
 
@@ -80,43 +90,171 @@ int RingBuffer::DirectDequeueSize(void)
 {
 	if (mRear >= mFront)
 	{
-		return mRear 
+		return mRear - mFront;
 	}
-	return 0;
+
+	return mCapacity - mFront + 1;
 }
 
-int RingBuffer::Enqueue(char* chpData, int iSize)
+bool RingBuffer::Enqueue(char* chpData, int iSize)
 {
-	if (iSize > GetFreeSize())
+	if (iSize > GetFreeSize() || iSize <= 0)
 	{
-		return 0;
+		return false;
+	}
+
+	if (mRear >= mFront)
+	{		
+		int possibleToEnd = DirectEnqueueSize();
+
+		if (iSize <= possibleToEnd)
+		{
+			memcpy(mBuffer + mRear, chpData, iSize);
+			mRear += iSize;
+
+			return true;
+		}
+
+		int remain = iSize - possibleToEnd;
+
+		memcpy(mBuffer + mRear, chpData, possibleToEnd);
+		memcpy(mBuffer, chpData + possibleToEnd, remain);
+
+		mRear = remain;
+
+		return true;
+	}
+
+	memcpy(mBuffer + mRear, chpData, iSize);
+
+	mRear += iSize;
+
+	return true;
+}
+
+bool RingBuffer::Dequeue(char* chpDest, int iSize)
+{
+	if (iSize > GetUseSize() || iSize <= 0) {
+		return false;
+	}
+
+	if (mFront > mRear) 
+	{
+		int possibleToEnd = DirectDequeueSize();
+
+		if (iSize <= possibleToEnd)
+		{
+			memcpy(chpDest, mBuffer + mFront, iSize);
+			mFront += iSize;
+
+			return true;
+		}
+
+		int remain = iSize - possibleToEnd;
+
+		memcpy(chpDest, mBuffer + mFront, possibleToEnd);
+		memcpy(chpDest + possibleToEnd, mBuffer, remain);
+
+		mFront = remain;
+
+		return true;
+	}
+
+	memcpy(chpDest, mBuffer + mFront, iSize);
+
+	mFront += iSize;
+
+	return true;
+}
+
+bool RingBuffer::Peek(char* chpDest, int iSize)
+{
+	if (iSize > GetUseSize() || iSize <= 0) {
+		return false;
+	}
+
+	if (mFront > mRear)
+	{
+		int possibleToEnd = DirectDequeueSize();
+
+		if (iSize <= possibleToEnd)
+		{
+			memcpy(chpDest, mBuffer + mFront, iSize);
+
+			return true;
+		}
+
+		int remain = iSize - possibleToEnd;
+
+		memcpy(chpDest, mBuffer + mFront, possibleToEnd);
+		memcpy(chpDest + possibleToEnd, mBuffer, remain);
+
+		return true;
+	}
+
+	memcpy(chpDest, mBuffer + mFront, iSize);
+
+	return true;
+}
+
+bool RingBuffer::MoveRear(int iSize)
+{
+	if (iSize > GetFreeSize() || iSize <= 0)
+	{
+		return false;
 	}
 
 	if (mRear >= mFront)
 	{
-		if (mFront == 0)
+		int possibleToEnd = DirectEnqueueSize();
+
+		if (iSize <= possibleToEnd)
+		{
+			mRear += iSize;
+
+			return true;
+		}
+
+		int remain = iSize - possibleToEnd;
+
+		mRear = remain;
+
+		return true;
 	}
 
-	return 0;
+	mRear += iSize;
+
+	return true;
 }
 
-int RingBuffer::Dequeue(char* chpDest, int iSize)
+bool RingBuffer::MoveFront(int iSize)
 {
-	return 0;
-}
+	if (iSize > GetUseSize() || iSize <= 0)
+	{
+		return false;
+	}
 
-int RingBuffer::Peek(char* chpDest, int iSize)
-{
-	return 0;
-}
+	if (mFront > mRear)
+	{
+		int possibleToEnd = DirectDequeueSize();
 
-void RingBuffer::MoveRear(int iSize)
-{
-}
+		if (iSize <= possibleToEnd)
+		{
+			mFront += iSize;
 
-int RingBuffer::MoveFront(int iSize)
-{
-	return 0;
+			return true;
+		}
+
+		int remain = iSize - possibleToEnd;
+
+		mFront = remain;
+
+		return true;
+	}
+
+	mFront += iSize;
+
+	return true;
 }
 
 void RingBuffer::ClearBuffer(void)
@@ -126,12 +264,30 @@ void RingBuffer::ClearBuffer(void)
 
 char* RingBuffer::GetFrontBufferPtr(void)
 {
-	return nullptr;
+	return mBuffer + mFront;
 }
 
 char* RingBuffer::GetRearBufferPtr(void)
 {
-	return nullptr;
+	return mBuffer + mRear;
+}
+
+void RingBuffer::printInfo()
+{
+	char buffer[BUFFER_SIZE] = { 0, };
+
+	if (mRear >= mFront)
+	{
+		memcpy(buffer, mBuffer + mFront, mRear - mFront);
+	}
+	else
+	{
+		int poss = DirectDequeueSize();
+		memcpy(buffer, mBuffer + mFront, poss);
+		memcpy(buffer + poss, mBuffer, mRear - 1);
+	}
+
+	printf("Size: %d, F: %d, R: %d, Buffer: %s\n", GetUseSize(), mFront, mRear, buffer);
 }
 
 
