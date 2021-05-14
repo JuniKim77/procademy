@@ -418,14 +418,6 @@ void sendBufferProc(Session* session)
 			break;
 		}
 
-		for (int i = 0; i < MAX_SESSION; ++i)
-		{
-			if (g_sessions[i].socket != INVALID_SOCKET)
-			{
-				g_sessions[i].printInfo();
-			}
-		}
-
 		char packet[16];
 
 		ringbuffer->Dequeue(packet, 16);
