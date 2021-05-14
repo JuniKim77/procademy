@@ -411,29 +411,19 @@ void sendBufferProc(Session* session)
 {
 	RingBuffer* ringbuffer = session->sendRingBuffer;
 
-	while (1)
+	int retval = send(session->socket, ringbuffer->GetFrontBufferPtr(), ringbuffer->GetUseSize(), 0);
+
+	if (retval == SOCKET_ERROR)
 	{
-		if (ringbuffer->GetUseSize() < 16)
-		{
-			break;
-		}
+		int err = WSAGetLastError();
+		wprintf_s(L"Send Error : %d\n", err);
 
-		char packet[16];
+		disconnect(session);
 
-		ringbuffer->Dequeue(packet, 16);
-
-		int retval = send(session->socket, packet, 16, 0);
-
-		if (retval == SOCKET_ERROR)
-		{
-			int err = WSAGetLastError();
-			wprintf_s(L"Send Error : %d\n", err);
-
-			disconnect(session);
-
-			return;
-		}
+		return;
 	}
+
+	ringbuffer->MoveFront(retval);
 }
 
 void receiveBufferProc(Session* session)
