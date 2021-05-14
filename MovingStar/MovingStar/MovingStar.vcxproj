@@ -142,11 +142,13 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="process.cpp" />
+    <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="star.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="message.h" />
     <ClInclude Include="process.h" />
+    <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="star.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
