@@ -15,8 +15,16 @@ int main()
 {
 	system(" mode  con lines=30   cols=120 ");
 
-	RingBuffer ringBuffer(BUFFER_SIZE);
-	srand(10);
+	printf("Seed: ");
+	int seed = 10;
+	scanf_s("%d", &seed);
+	printf("Ring Buffer Size: ");
+	int ringSize = BUFFER_SIZE;
+	scanf_s("%d", &ringSize);
+
+	RingBuffer ringBuffer(ringSize);
+
+	srand(seed);
 
 	while (1)
 	{
