@@ -141,9 +141,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="session.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="session.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

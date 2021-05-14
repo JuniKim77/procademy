@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "session.h"
 #include <locale.h>
+#include "RingBuffer.h"
 
 #define SERVER_PORT (3000)
 #define MAX_SESSION (60)
@@ -35,6 +36,7 @@ void acceptProc();
 /// </summary>
 /// <param name="to"></param>
 void receiveProc(Session* from);
+void receiveProc2(Session* from);
 
 /// <summary>
 /// 해당 세션에 메세지를 보내는 함수
@@ -58,6 +60,18 @@ void sendBroadCast(Session* except, char* packet);
 /// <param name="to"></param>
 void disconnect(Session* obj);
 
+/// <summary>
+/// 센드 링버퍼에 들어있는 메세지를 처리
+/// </summary>
+/// <param name="session"></param>
+void sendBufferProc(Session* session);
+
+/// <summary>
+/// 리시브 링버퍼에 들어있는 메세지를 처리
+/// </summary>
+/// <param name="session"></param>
+void receiveBufferProc(Session* session);
+
 int main()
 {
 	setlocale(LC_ALL, "");
@@ -70,7 +84,6 @@ int main()
 
 		// render();
 	}
-
 
 	return 0;
 }
@@ -114,8 +127,6 @@ void NetworkSetting()
 		wprintf_s(L"리스닝 에러 : %d\n", err);
 		exit(1);
 	}
-
-	// wprintf_s(L"소켓 리스닝 성공\n");
 }
 
 void networkProc()
@@ -154,8 +165,23 @@ void networkProc()
 
 		if (FD_ISSET(g_sessions[i].socket, &rset))
 		{
-			// wprintf_s(L"receive 돌입\n");
-			receiveProc(&g_sessions[i]);
+			receiveProc2(&g_sessions[i]);
+		}
+	}
+
+	for (int i = 0; i < MAX_SESSION; ++i)
+	{
+		if (g_sessions[i].socket == INVALID_SOCKET)
+			continue;
+
+		if (g_sessions[i].receiveRingBuffer->GetUseSize() > 0)
+		{
+			receiveBufferProc(&g_sessions[i]);
+		}
+
+		if (g_sessions[i].sendRingBuffer->GetUseSize() > 0)
+		{
+			sendBufferProc(&g_sessions[i]);
 		}
 	}
 }
@@ -208,7 +234,7 @@ void acceptProc()
 				g_sessions[i].y = SCREEN_HEIGTH / 2;
 
 				int packet[4] = { 0, g_num_ID, };
-				// ID 할당 메세지 
+				// ID 할당 메세지
 				sendUniCast(&g_sessions[i], (char*)&packet);
 				
 				packet[0] = 1;
@@ -243,7 +269,6 @@ void acceptProc()
 			break;
 		}
 			
-		// wprintf_s(L"접속 성공!\n");
 		WCHAR clientIP[16];
 		InetNtop(AF_INET, &clientAddr.sin_addr, clientIP, sizeof(clientIP));
 		wprintf_s(L"IP : %s, Port : %d\n", clientIP, ntohs(clientAddr.sin_port));
@@ -276,7 +301,6 @@ void receiveProc(Session* from)
 
 		if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGTH)
 		{
-			// wprintf_s(L"ID, %d가 범주를 이탈하려 함\n", from->ID);
 			continue;
 		}
 
@@ -291,8 +315,29 @@ void receiveProc(Session* from)
 			}
 		}
 		sendBroadCast(from, (char*)&packet);
-		// wprintf_s(L"리시브 성공\n");
 	}
+}
+
+void receiveProc2(Session* from)
+{
+	int retval = recv(from->socket, from->receiveRingBuffer->GetRearBufferPtr(),
+				from->receiveRingBuffer->GetFreeSize(), 0);
+
+	if (retval == SOCKET_ERROR)
+	{
+		int err = WSAGetLastError();
+
+		if (err == WSAEWOULDBLOCK)
+		{
+			return;
+		}
+
+		disconnect(from);
+
+		return;
+	}
+
+	from->receiveRingBuffer->MoveRear(retval);
 }
 
 void sendUniCast(Session* to, char* packet)
@@ -300,15 +345,13 @@ void sendUniCast(Session* to, char* packet)
 	if (to->socket == INVALID_SOCKET)
 		return;
 
-	if (send(to->socket, packet, 16, 0) == SOCKET_ERROR)
+	if (to->sendRingBuffer->Enqueue(packet, 16) == false)
 	{
 		int err = WSAGetLastError();
 		wprintf_s(L"Send Unicast Error : %d\n", err);
 
 		disconnect(to);
 	}
-
-	// wprintf_s(L"Send Unit 성공\n");
 }
 
 void sendBroadCast(Session* except, char* packet)
@@ -320,7 +363,7 @@ void sendBroadCast(Session* except, char* packet)
 			if (g_sessions[i].socket == INVALID_SOCKET)
 				continue;
 
-			if (send(g_sessions[i].socket, packet, 16, 0) == SOCKET_ERROR)
+			if (g_sessions[i].sendRingBuffer->Enqueue(packet, 16) == false)
 			{
 				int err = WSAGetLastError();
 				wprintf_s(L"Send Broadcast Error : %d\n", err);
@@ -328,7 +371,7 @@ void sendBroadCast(Session* except, char* packet)
 				disconnect(&g_sessions[i]);
 			}
 		}
-		// wprintf_s(L"Send Broad cast 성공\n");
+
 		return;
 	}
 	
@@ -339,7 +382,7 @@ void sendBroadCast(Session* except, char* packet)
 			if (g_sessions[i].socket == INVALID_SOCKET)
 				continue;
 
-			if (send(g_sessions[i].socket, packet, 16, 0) == SOCKET_ERROR)
+			if (g_sessions[i].sendRingBuffer->Enqueue(packet, 16) == false)
 			{
 				int err = WSAGetLastError();
 				wprintf_s(L"Send Broadcast Error : %d\n", err);
@@ -348,8 +391,6 @@ void sendBroadCast(Session* except, char* packet)
 			}
 		}
 	}
-
-	// wprintf_s(L"Send Broad cast 성공\n");
 }
 
 void disconnect(Session* obj)
@@ -358,8 +399,87 @@ void disconnect(Session* obj)
 	obj->printInfo();
 	closesocket(obj->socket);
 	obj->socket = INVALID_SOCKET;
+	obj->receiveRingBuffer->ClearBuffer();
+	obj->sendRingBuffer->ClearBuffer();
 
 	int packet[4] = { 2, obj->ID };
 
 	sendBroadCast(nullptr, (char*)&packet);
+}
+
+void sendBufferProc(Session* session)
+{
+	RingBuffer* ringbuffer = session->sendRingBuffer;
+
+	while (1)
+	{
+		if (ringbuffer->GetUseSize() < 16)
+		{
+			break;
+		}
+
+		for (int i = 0; i < MAX_SESSION; ++i)
+		{
+			if (g_sessions[i].socket != INVALID_SOCKET)
+			{
+				g_sessions[i].printInfo();
+			}
+		}
+
+		char packet[16];
+
+		ringbuffer->Dequeue(packet, 16);
+
+		int retval = send(session->socket, packet, 16, 0);
+
+		if (retval == SOCKET_ERROR)
+		{
+			int err = WSAGetLastError();
+			wprintf_s(L"Send Error : %d\n", err);
+
+			disconnect(session);
+
+			return;
+		}
+	}
+}
+
+void receiveBufferProc(Session* session)
+{
+	RingBuffer* ringbuffer = session->receiveRingBuffer;
+
+	while (1)
+	{
+		if (ringbuffer->GetUseSize() < 16)
+		{
+			break;
+		}
+
+		int packet[4];
+
+		ringbuffer->Dequeue((char*)packet, 16);
+
+		int x = packet[2];
+		int y = packet[3];
+
+		if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGTH)
+		{
+			continue;
+		}
+
+		// x, y 좌표 업데이트
+		for (int i = 0; i < MAX_SESSION; ++i)
+		{
+			if (g_sessions[i].ID == packet[1])
+			{
+				g_sessions[i].x = x;
+				g_sessions[i].y = y;
+
+
+				break;
+			}
+		}
+
+		sendBroadCast(session, (char*)&packet);
+	}
 }
