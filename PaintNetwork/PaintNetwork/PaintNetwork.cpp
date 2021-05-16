@@ -10,12 +10,14 @@
 #include <locale.h>
 #include <windowsx.h>
 #include <iostream>
+#include "RingBuffer.h"
 
 #define MAX_LOADSTRING 100
 #define PORT (25000)
 #define WM_SOCKET (WM_USER+1)
 
 // 헤더
+#pragma pack(push, 1)
 struct stHEADER
 {
 	unsigned short Len;
@@ -29,9 +31,13 @@ struct st_DRAW_PACKET
 	int		iEndX;
 	int		iEndY;
 };
+#pragma pack(pop)
 
 // 전역 변수:
 HWND g_MainWindow;
+SOCKET g_sock;
+RingBuffer g_recv_buffer(100);
+RingBuffer g_send_buffer(100);
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -41,6 +47,7 @@ bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName
 void OpenConsole();
 void logError(const WCHAR* msg);
 void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+void SendRingBuffer();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -65,7 +72,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	OpenConsole();
 	system("mode con: cols=50 lines=5");
 
-	SOCKET sock = ConnectNetwork(g_MainWindow);
+	g_sock = ConnectNetwork(g_MainWindow);
 
 	// 기본 메시지 루프입니다:
 	while (GetMessage(&msg, nullptr, 0, 0))
@@ -106,20 +113,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		NowDraw = FALSE;
 		break;
 	case WM_MOUSEMOVE:
+	{
 		if (NowDraw == TRUE) {
 			// send Packet
 			int new_x = LOWORD(lParam);
 			int new_y = HIWORD(lParam);
 
+			stHEADER header;
+			st_DRAW_PACKET packet = { x, y, new_x, new_y };
+			header.Len = sizeof(st_DRAW_PACKET);
+			g_send_buffer.Enqueue((char*)&header, sizeof(header));
+			g_send_buffer.Enqueue((char*)&packet, sizeof(packet));
 
-			/*hdc = GetDC(hWnd);
-			MoveToEx(hdc, x, y, NULL);
-			x = LOWORD(lParam);
-			y = HIWORD(lParam);
-			LineTo(hdc, x, y);
-			ReleaseDC(hWnd, hdc);*/
+
+
+				/*hdc = GetDC(hWnd);
+				MoveToEx(hdc, x, y, NULL);
+				x = LOWORD(lParam);
+				y = HIWORD(lParam);
+				LineTo(hdc, x, y);
+				ReleaseDC(hWnd, hdc);*/
 		}
 		break;
+	}
 	case WM_SOCKET:
 	{
 		SocketMessageProc(hWnd, message, wParam, lParam);
@@ -267,7 +283,7 @@ void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		logError(L"WSAGETSELECTERROR 에러");
 	}
 
-	switch (WSAGETSELECTERROR(lParam))
+	switch (WSAGETSELECTEVENT(lParam))
 	{
 	case FD_READ:
 		wprintf_s(L"읽기 시작\n");
@@ -284,4 +300,9 @@ void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	default:
 		break;
 	}
+}
+
+void SendRingBuffer()
+{
+	
 }
