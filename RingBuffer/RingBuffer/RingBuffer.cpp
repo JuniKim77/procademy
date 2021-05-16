@@ -96,11 +96,16 @@ int RingBuffer::DirectDequeueSize(void)
 	return mCapacity - mFront + 1;
 }
 
-bool RingBuffer::Enqueue(char* chpData, int iSize)
+int RingBuffer::Enqueue(char* chpData, int iSize)
 {
-	if (iSize > GetFreeSize() || iSize <= 0)
+	if (iSize <= 0)
 	{
-		return false;
+		return 0;
+	}
+
+	if (iSize > GetFreeSize())
+	{
+		return Enqueue(chpData, GetFreeSize());
 	}
 
 	if (mRear >= mFront)
@@ -112,7 +117,7 @@ bool RingBuffer::Enqueue(char* chpData, int iSize)
 			memcpy(mBuffer + mRear, chpData, iSize);
 			mRear += iSize;
 
-			return true;
+			return iSize;
 		}
 
 		int remain = iSize - possibleToEnd;
@@ -122,20 +127,25 @@ bool RingBuffer::Enqueue(char* chpData, int iSize)
 
 		mRear = remain;
 
-		return true;
+		return iSize;
 	}
 
 	memcpy(mBuffer + mRear, chpData, iSize);
 
 	mRear += iSize;
 
-	return true;
+	return iSize;
 }
 
-bool RingBuffer::Dequeue(char* chpDest, int iSize)
+int RingBuffer::Dequeue(char* chpDest, int iSize)
 {
-	if (iSize > GetUseSize() || iSize <= 0) {
-		return false;
+	if (iSize <= 0) {
+		return 0;
+	}
+
+	if (iSize > GetUseSize())
+	{
+		return Dequeue(chpDest, GetUseSize());
 	}
 
 	if (mFront > mRear) 
@@ -147,7 +157,7 @@ bool RingBuffer::Dequeue(char* chpDest, int iSize)
 			memcpy(chpDest, mBuffer + mFront, iSize);
 			mFront += iSize;
 
-			return true;
+			return iSize;
 		}
 
 		int remain = iSize - possibleToEnd;
@@ -157,20 +167,25 @@ bool RingBuffer::Dequeue(char* chpDest, int iSize)
 
 		mFront = remain;
 
-		return true;
+		return iSize;
 	}
 
 	memcpy(chpDest, mBuffer + mFront, iSize);
 
 	mFront += iSize;
 
-	return true;
+	return iSize;
 }
 
-bool RingBuffer::Peek(char* chpDest, int iSize)
+int RingBuffer::Peek(char* chpDest, int iSize)
 {
-	if (iSize > GetUseSize() || iSize <= 0) {
-		return false;
+	if (iSize <= 0) {
+		return 0;
+	}
+
+	if (iSize > GetUseSize())
+	{
+		return Peek(chpDest, GetUseSize());
 	}
 
 	if (mFront > mRear)
@@ -181,7 +196,7 @@ bool RingBuffer::Peek(char* chpDest, int iSize)
 		{
 			memcpy(chpDest, mBuffer + mFront, iSize);
 
-			return true;
+			return iSize;
 		}
 
 		int remain = iSize - possibleToEnd;
@@ -189,12 +204,12 @@ bool RingBuffer::Peek(char* chpDest, int iSize)
 		memcpy(chpDest, mBuffer + mFront, possibleToEnd);
 		memcpy(chpDest + possibleToEnd, mBuffer, remain);
 
-		return true;
+		return iSize;
 	}
 
 	memcpy(chpDest, mBuffer + mFront, iSize);
 
-	return true;
+	return iSize;
 }
 
 bool RingBuffer::MoveRear(int iSize)
