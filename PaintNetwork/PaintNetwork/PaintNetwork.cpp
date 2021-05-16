@@ -36,8 +36,9 @@ struct st_DRAW_PACKET
 // 전역 변수:
 HWND g_MainWindow;
 SOCKET g_sock;
-RingBuffer g_recv_buffer(100);
-RingBuffer g_send_buffer(100);
+bool gb_connected = false;
+RingBuffer g_recv_buffer(MAX_LOADSTRING);
+RingBuffer g_send_buffer(MAX_LOADSTRING);
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -114,6 +115,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_MOUSEMOVE:
 	{
+		if (gb_connected == false) {
+			break;
+		}
 		if (NowDraw == TRUE) {
 			// send Packet
 			int new_x = LOWORD(lParam);
@@ -125,14 +129,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_send_buffer.Enqueue((char*)&header, sizeof(header));
 			g_send_buffer.Enqueue((char*)&packet, sizeof(packet));
 
+			SendRingBuffer();
 
-
-				/*hdc = GetDC(hWnd);
-				MoveToEx(hdc, x, y, NULL);
-				x = LOWORD(lParam);
-				y = HIWORD(lParam);
-				LineTo(hdc, x, y);
-				ReleaseDC(hWnd, hdc);*/
+			x = new_x;
+			y = new_y;
 		}
 		break;
 	}
@@ -160,6 +160,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 		// TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+		while (1)
+		{
+			if (g_recv_buffer.GetUseSize() < sizeof(stHEADER))
+				break;
+
+			stHEADER header;
+			int peekSize = g_recv_buffer.Peek((char*)&header, sizeof(stHEADER));
+
+			if (peekSize < sizeof(header))
+				break;
+
+			if (g_recv_buffer.GetUseSize() < (sizeof(stHEADER) + header.Len))
+				break;
+
+			g_recv_buffer.MoveFront(sizeof(stHEADER));
+			st_DRAW_PACKET packet;
+			g_recv_buffer.Dequeue((char*)&packet, header.Len);
+
+			MoveToEx(hdc, packet.iStartX, packet.iStartY, nullptr);
+
+			LineTo(hdc, packet.iEndX, packet.iEndY);
+		}
+		ReleaseDC(hWnd, hdc);
+
 		EndPaint(hWnd, &ps);
 	}
 	break;
@@ -286,16 +310,43 @@ void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (WSAGETSELECTEVENT(lParam))
 	{
 	case FD_READ:
-		wprintf_s(L"읽기 시작\n");
+	{
+		while (1)
+		{
+			char buffer[3000];
+
+			int recvSize = recv(g_sock, buffer, g_recv_buffer.GetFreeSize(), 0);
+
+			if (recvSize == SOCKET_ERROR)
+			{
+				int err = WSAGetLastError();
+
+				if (err == WSAEWOULDBLOCK)
+				{
+					break;
+				}
+
+				logError(L"recv 에러");
+			}
+
+			int enSize = g_recv_buffer.Enqueue(buffer, recvSize);
+
+			if (g_recv_buffer.GetFreeSize() == 0)
+				break;
+		}
+		InvalidateRect(hWnd, nullptr, false);
 		break;
+	}
 	case FD_WRITE:
 		wprintf_s(L"쓰기 가능!\n");
+		SendRingBuffer();
 		break;
 	case FD_CLOSE:
-		wprintf_s(L"접속 종료!\n");
+		logError(L"접속 종료");
 		break;
 	case FD_CONNECT:
 		wprintf_s(L"연결 성공\n");
+		gb_connected = true;
 		break;
 	default:
 		break;
@@ -304,5 +355,32 @@ void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void SendRingBuffer()
 {
-	
+	while (1)
+	{
+		char buffer[3000];
+
+		int peekSize = g_send_buffer.Peek(buffer, 3000);
+
+		if (peekSize == 0)
+			break;
+
+		int sendSize = send(g_sock, buffer, peekSize, 0);
+
+		if (sendSize == SOCKET_ERROR)
+		{
+			int err = WSAGetLastError();
+
+			if (err == WSAEWOULDBLOCK)
+			{
+				break;
+			}
+
+			logError(L"send Error");
+		}
+
+		g_send_buffer.MoveFront(sendSize);
+
+		if (sendSize < peekSize)
+			break;
+	}
 }
