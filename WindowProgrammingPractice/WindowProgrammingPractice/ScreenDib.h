@@ -8,7 +8,7 @@ public:
 
 protected:
 	void CreateDibBuffer(int width, int height, int colorBit);
-	void ReleaseDibBuffer()
+	void ReleaseDibBuffer();
 
 public:
 
