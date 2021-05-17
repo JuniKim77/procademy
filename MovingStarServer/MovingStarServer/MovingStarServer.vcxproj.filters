@@ -18,10 +18,7 @@
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="star.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="process.cpp">
+    <ClCompile Include="session.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="RingBuffer.cpp">
@@ -29,13 +26,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="message.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="star.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="process.h">
+    <ClInclude Include="session.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="RingBuffer.h">

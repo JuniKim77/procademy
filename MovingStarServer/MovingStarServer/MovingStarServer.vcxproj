@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{7fab39cb-baf4-44fd-bb65-7be419af02f7}</ProjectGuid>
-    <RootNamespace>MovingStar</RootNamespace>
+    <ProjectGuid>{009af241-977b-455d-8188-d2a643bd0584}</ProjectGuid>
+    <RootNamespace>MovingStarServer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -141,15 +141,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="process.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
-    <ClCompile Include="star.cpp" />
+    <ClCompile Include="session.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="message.h" />
-    <ClInclude Include="process.h" />
     <ClInclude Include="RingBuffer.h" />
-    <ClInclude Include="star.h" />
+    <ClInclude Include="session.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
