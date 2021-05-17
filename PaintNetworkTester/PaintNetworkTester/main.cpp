@@ -7,7 +7,7 @@
 #include <time.h>
 #include "RingBuffer.h"
 
-#define SOCKET_MAX (300)
+#define SOCKET_MAX (5)
 #define WIDTH (500)
 
 // Çì´õ
