@@ -11,5 +11,4 @@ public:
 	USHORT port;
 	ULONG IP;
 	RingBuffer recv;
-	RingBuffer send;
 };

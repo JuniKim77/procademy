@@ -265,7 +265,6 @@ void Disconnect(Session* session)
     closesocket(session->socket);
     session->socket = INVALID_SOCKET;
     session->recv.ClearBuffer();
-    session->send.ClearBuffer();
     // 메세지
 }
 
@@ -289,23 +288,13 @@ void SendRingBuffer(Session* session)
 {
     while (1)
     {
-        if (session->recv.GetUseSize() < sizeof(stHEADER))
+        char buffer[3000];
+
+        int peekSize = session->recv.Peek(buffer, 3000);
+
+        if (peekSize == 0)
             break;
 
-        stHEADER header;
-        int peekSize = session->recv.Peek((char*)&header, sizeof(header));
-
-        if (peekSize < sizeof(header))
-            break;
-
-        if (session->recv.GetUseSize() < (sizeof(stHEADER) + header.Len))
-            break;
-
-        session->recv.MoveFront(sizeof(stHEADER));
-        st_DRAW_PACKET packet;
-        session->recv.Dequeue((char*)&packet, header.Len);
-
-
-
+        int sendRet = send()
     }
 }
