@@ -14,9 +14,6 @@ enum class Dir
 
 class star
 {
-	friend void Render();
-	friend void KeyProcess();
-	friend void NetworkProcess(SOCKET server);
 public:
 	star();
 	void setID(int id) { ID = id; }
@@ -24,7 +21,6 @@ public:
 	void move(Dir dir);
 	void save();
 
-private:
 	int x;
 	int oldX;
 	int y;

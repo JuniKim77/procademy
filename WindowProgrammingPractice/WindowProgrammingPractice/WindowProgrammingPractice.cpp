@@ -105,8 +105,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		RECT rect;
 		GetClientRect(hWnd, &rect);
 		HDC hdc = GetDC(hWnd);
+		
 
-		TextOut(hdc, rect.right / 2, rect.bottom / 2, L"안녕하세요", 5);
+		TextOut(hdc, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), L"안녕하세요", 5);
 		break;
 	}
 	case WM_CREATE:
