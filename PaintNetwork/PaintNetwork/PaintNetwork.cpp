@@ -49,6 +49,7 @@ void OpenConsole();
 void logError(const WCHAR* msg);
 void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void SendRingBuffer();
+void recvMessageProc(HWND hWnd);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -97,8 +98,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	PAINTSTRUCT ps;
-	HDC hdc;
 	static int x;
 	static int y;
 	static BOOL NowDraw;
@@ -157,34 +156,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	break;
 	case WM_PAINT:
 	{
-		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hWnd, &ps);
-		// TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-		while (1)
-		{
-			if (g_recv_buffer.GetUseSize() < sizeof(stHEADER))
-				break;
-
-			stHEADER header;
-			int peekSize = g_recv_buffer.Peek((char*)&header, sizeof(stHEADER));
-
-			if (peekSize < sizeof(header))
-				break;
-
-			if (g_recv_buffer.GetUseSize() < (sizeof(stHEADER) + header.Len))
-				break;
-
-			g_recv_buffer.MoveFront(sizeof(stHEADER));
-			st_DRAW_PACKET packet;
-			g_recv_buffer.Dequeue((char*)&packet, header.Len);
-
-			MoveToEx(hdc, packet.iStartX, packet.iStartY, nullptr);
-
-			LineTo(hdc, packet.iEndX, packet.iEndY);
-		}
-		ReleaseDC(hWnd, hdc);
-
-		EndPaint(hWnd, &ps);
 	}
 	break;
 	case WM_DESTROY:
@@ -334,7 +305,8 @@ void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			if (g_recv_buffer.GetFreeSize() == 0)
 				break;
 		}
-		InvalidateRect(hWnd, nullptr, false);
+
+		recvMessageProc(hWnd);
 		break;
 	}
 	case FD_WRITE:
@@ -383,4 +355,33 @@ void SendRingBuffer()
 		if (sendSize < peekSize)
 			break;
 	}
+}
+
+void recvMessageProc(HWND hWnd)
+{
+	HDC hdc = GetDC(hWnd);
+	// TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+	while (1)
+	{
+		if (g_recv_buffer.GetUseSize() < sizeof(stHEADER))
+			break;
+
+		stHEADER header;
+		int peekSize = g_recv_buffer.Peek((char*)&header, sizeof(stHEADER));
+
+		if (peekSize < sizeof(header))
+			break;
+
+		if (g_recv_buffer.GetUseSize() < (sizeof(stHEADER) + header.Len))
+			break;
+
+		g_recv_buffer.MoveFront(sizeof(stHEADER));
+		st_DRAW_PACKET packet;
+		g_recv_buffer.Dequeue((char*)&packet, header.Len);
+
+		MoveToEx(hdc, packet.iStartX, packet.iStartY, nullptr);
+
+		LineTo(hdc, packet.iEndX, packet.iEndY);
+	}
+	ReleaseDC(hWnd, hdc);
 }
