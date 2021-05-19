@@ -2,7 +2,6 @@
 //
 #pragma comment(lib, "imm32.lib")
 
-#define _CRT_SECURE_NO_WARNINGS
 #define WINDOW_WIDTH (640)
 #define WINDOW_HEIGHT (480)
 #define WINDOW_COLORBIT (32)
@@ -32,7 +31,7 @@ FrameSkip gFrameSkipper;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+void OpenConsole();
 
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName);
 
@@ -45,16 +44,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	setlocale(LC_ALL, "");
-
-	if (AllocConsole())
-	{
-		freopen("CONIN$", "r", stdin);
-		freopen("CONOUT$", "w", stderr);
-		freopen("CONOUT$", "w", stdout);
-	}
-
-	wprintf(L"게임 시작\n");
+	OpenConsole();
 
 	gFrameSkipper.CheckTime();
 	gFrameSkipper.Reset();
@@ -117,8 +107,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// 메뉴 선택을 구문 분석합니다:
 		switch (wmId)
 		{
-		case IDM_ABOUT:
-			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
 			break;
@@ -145,24 +133,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-// 정보 대화 상자의 메시지 처리기입니다.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+void OpenConsole()
 {
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
+	setlocale(LC_ALL, "");
 
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		}
-		break;
+	FILE* fin;
+	FILE* fout;
+	FILE* ferr;
+
+	if (AllocConsole())
+	{
+		freopen_s(&fin, "CONIN$", "r", stdin);
+		freopen_s(&ferr, "CONOUT$", "w", stderr);
+		freopen_s(&fout, "CONOUT$", "w", stdout);
 	}
-	return (INT_PTR)FALSE;
 }
 
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName)

@@ -55,10 +55,10 @@ void PlayerObject::Action()
 
 void PlayerObject::ActionInputProc()
 {
-	if (mInAction == mActionInput)
+	if (!IsInputChanged())
 		return;
 
-	if (mInAction == dfACTION_ATTACK1 || mInAction == dfACTION_ATTACK2 || mInAction == dfACTION_ATTACK3)
+	if (IsAttackAction())
 	{
 		if (!mbEndFrame)
 			return;

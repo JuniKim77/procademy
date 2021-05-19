@@ -31,6 +31,9 @@
     <Filter Include="소스 파일\Process">
       <UniqueIdentifier>{e844dfc3-8f55-490b-be15-885d2612a084}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Network">
+      <UniqueIdentifier>{2f13bf40-13c9-4419-8726-11bf3b9dd462}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -77,6 +80,9 @@
     </ClInclude>
     <ClInclude Include="ESprite.h">
       <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="PacketDefine.h">
+      <Filter>헤더 파일\Network</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

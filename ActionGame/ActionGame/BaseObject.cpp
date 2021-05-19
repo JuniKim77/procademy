@@ -70,3 +70,13 @@ void BaseObject::SetSprite(int spriteBegin, int spriteEnd, int frameDelay)
 	mDelayCount = 0;
 	mbEndFrame = false;
 }
+
+bool BaseObject::IsInputChanged() const
+{
+	return mInAction != mActionInput;
+}
+
+bool BaseObject::IsAttackAction() const
+{
+	return mInAction == dfACTION_ATTACK1 || mInAction == dfACTION_ATTACK2 || mInAction == dfACTION_ATTACK3;
+}

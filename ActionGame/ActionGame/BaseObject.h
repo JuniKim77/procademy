@@ -30,6 +30,10 @@ public:
 	bool GetDestroy() { return mbDestroy; }
 
 protected:
+	bool IsInputChanged() const;
+	bool IsAttackAction() const;
+
+protected:
 	int mCurX = 0;
 	int mCurY = 0;
 	int mDelayCount = 0;
