@@ -18,6 +18,7 @@
 #include <Windows.h>
 #include <timeapi.h>
 #include "FrameSkip.h"
+#include "Session.h"
 
 #pragma comment(lib, "winmm.lib")
 
@@ -28,6 +29,7 @@ HWND gMainWindow;
 bool gbActiveApp;
 HIMC gOldImc;
 FrameSkip gFrameSkipper;
+Session g_session;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -53,7 +55,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	InitializeGame();
 
 	if (CreateMainWindow(hInstance, L"MainWindow", L"ActionGame") == false)
-		return -1;
+		return 1;
+
+	if (!g_session.Connect(gMainWindow))
+		return 1;
 
 	ContentLoad();
 

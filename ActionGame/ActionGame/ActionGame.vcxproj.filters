@@ -34,6 +34,9 @@
     <Filter Include="헤더 파일\Network">
       <UniqueIdentifier>{2f13bf40-13c9-4419-8726-11bf3b9dd462}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Network">
+      <UniqueIdentifier>{e202d904-fa8f-497b-b18b-23aaac816c24}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -84,6 +87,12 @@
     <ClInclude Include="PacketDefine.h">
       <Filter>헤더 파일\Network</Filter>
     </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="RingBuffer.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActionGame.cpp">
@@ -109,6 +118,12 @@
     </ClCompile>
     <ClCompile Include="PlayerObject.cpp">
       <Filter>소스 파일\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="RingBuffer.cpp">
+      <Filter>소스 파일\Tool</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
