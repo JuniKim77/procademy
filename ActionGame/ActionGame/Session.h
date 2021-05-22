@@ -8,18 +8,22 @@
 class Session
 {
 public:
+	friend void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	Session();
 	~Session();
 	bool Connect(HWND hWnd);
+	void Disconnect();
 	void SendPacket(char* packet, int size);
 	void writeProc();
-	void ReceivePacket(char* packet, int size);
+	void ReceivePacket();
 	void recvProc();
 	void ErrorQuit(const WCHAR* msg);
 	void ErrorDisplay(const WCHAR* msg);	
+	bool IsConnected() { return mbConnected; }
 
 private:
 	SOCKET mSocket;
-	RingBuffer sendBuffer;
-	RingBuffer recvBuffer;
+	RingBuffer mSendBuffer;
+	RingBuffer mRecvBuffer;
+	bool mbConnected = false;
 };

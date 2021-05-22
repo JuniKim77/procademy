@@ -20,6 +20,8 @@
 #include "FrameSkip.h"
 #include "Session.h"
 
+#define WM_SOCKET (WM_USER + 1)
+
 #pragma comment(lib, "winmm.lib")
 
 // 전역 변수:
@@ -34,6 +36,7 @@ Session g_session;
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 void OpenConsole();
+void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName);
 
@@ -76,7 +79,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		else
 		{
-			RunGame();
+			if (g_session.IsConnected()) {
+				RunGame();
+			}
 		}
 	}
 
@@ -100,6 +105,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
+	case WM_SOCKET:
+		SocketMessageProc(hWnd, message, wParam, lParam);
+		break;
 	case WM_CREATE:
 		gOldImc = ImmAssociateContext(hWnd, nullptr);
 		break;
@@ -151,6 +159,32 @@ void OpenConsole()
 		freopen_s(&fin, "CONIN$", "r", stdin);
 		freopen_s(&ferr, "CONOUT$", "w", stderr);
 		freopen_s(&fout, "CONOUT$", "w", stdout);
+	}
+}
+
+void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	if (WSAGETSELECTERROR(lParam))
+	{
+		g_session.ErrorQuit(L"Select 에러");
+	}
+
+	switch (WSAGETSELECTEVENT(lParam))
+	{
+	case FD_CONNECT:
+		g_session.mbConnected = true;
+		break;
+	case FD_CLOSE:
+		g_session.Disconnect();
+		g_session.ErrorQuit(L"접속 종료");
+		break;
+	case FD_READ:
+		g_session.ReceivePacket();
+		g_session.recvProc();
+		break;
+	case FD_WRITE:
+		g_session.writeProc();
+		break;
 	}
 }
 

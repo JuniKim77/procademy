@@ -6,6 +6,8 @@
 #include "stdio.h"
 #include "PacketDefine.h"
 
+extern HWND gMainWindow;
+
 Session::Session()
 	: mSocket(INVALID_SOCKET)
 {
@@ -57,9 +59,14 @@ bool Session::Connect(HWND hWnd)
 	return true;
 }
 
+void Session::Disconnect()
+{
+	closesocket(mSocket);
+}
+
 void Session::SendPacket(char* packet, int size)
 {
-	int retval = sendBuffer.Enqueue(packet, size);
+	int retval = mSendBuffer.Enqueue(packet, size);
 
 	if (retval < size)
 		ErrorQuit(L"Send Error: 서버 연결 장애");
@@ -67,14 +74,33 @@ void Session::SendPacket(char* packet, int size)
 
 void Session::writeProc()
 {
+	char buffer[10000];
+	int peekSize = mSendBuffer.Peek(buffer, 10000);
 
+	if (peekSize == 0)
+		return;
 
+	int sendSize = send(mSocket, buffer, peekSize, 0);
+
+	if (sendSize == SOCKET_ERROR)
+	{
+		int err = WSAGetLastError();
+
+		if (err == WSAEWOULDBLOCK)
+		{
+			return;
+		}
+
+		ErrorQuit(L"Send Error");
+	}
+
+	mSendBuffer.MoveFront(sendSize);
 }
 
-void Session::ReceivePacket(char* packet, int size)
+void Session::ReceivePacket()
 {
-	char packet[10000];
-	int retval = recv(mSocket, packet, recvBuffer.GetFreeSize(), 0);
+	char buffer[10000];
+	int retval = recv(mSocket, buffer, mRecvBuffer.GetFreeSize(), 0);
 
 	if (retval == SOCKET_ERROR)
 	{
@@ -85,26 +111,26 @@ void Session::ReceivePacket(char* packet, int size)
 		ErrorQuit(L"Receive Error: 서버 연결 장애");
 	}
 
-	recvBuffer.Enqueue(packet, retval);
+	mRecvBuffer.Enqueue(buffer, retval);
 }
 
 void Session::recvProc()
 {
 	while (1)
 	{
-		if (recvBuffer.GetUseSize() < sizeof(stHeader))
+		if (mRecvBuffer.GetUseSize() < sizeof(stHeader))
 			break;
 
 		stHeader header;
-		recvBuffer.Peek((char*)&header, sizeof(stHeader));
+		mRecvBuffer.Peek((char*)&header, sizeof(stHeader));
 
 		if (header.byCode != 0x89)
 			ErrorQuit(L"비정상 서버");
 
-		if (recvBuffer.GetUseSize() < header.bySize + sizeof(stHeader))
+		if (mRecvBuffer.GetUseSize() < header.bySize + sizeof(stHeader))
 			break;
 
-		recvBuffer.MoveFront(sizeof(stHeader));
+		mRecvBuffer.MoveFront(sizeof(stHeader));
 
 	}
 }
@@ -112,7 +138,9 @@ void Session::recvProc()
 void Session::ErrorQuit(const WCHAR* msg)
 {
 	int err = WSAGetLastError();
-	wprintf_s(L"%s code : %d\n", msg, err);
+	WCHAR errorMsg[100];
+	swprintf_s(errorMsg, 100, L"%s code : %d", msg, err);
+	MessageBox(gMainWindow, errorMsg, L"접속종료", MB_OK);
 
 	exit(1);
 }
@@ -120,5 +148,7 @@ void Session::ErrorQuit(const WCHAR* msg)
 void Session::ErrorDisplay(const WCHAR* msg)
 {
 	int err = WSAGetLastError();
-	wprintf_s(L"%s code : %d\n", msg, err);
+	WCHAR errorMsg[100];
+	swprintf_s(errorMsg, 100, L"%s code : %d", msg, err);
+	MessageBox(gMainWindow, errorMsg, L"에러 발생", MB_OK);
 }
