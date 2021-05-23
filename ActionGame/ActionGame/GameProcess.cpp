@@ -234,7 +234,7 @@ void Update()
 		
 	}
 
-	SortYaxis();
+	//SortYaxis();
 }
 
 void Render()

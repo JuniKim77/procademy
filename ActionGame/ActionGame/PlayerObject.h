@@ -26,9 +26,11 @@ public:
 	void Move();
 	void SetID(int id) { mObjectID = id; }
 	bool CheckRange() const;
+	bool GetOldAction() const { return mActionOld; }
 
 private:
 	bool mbIsLeft;
 	char mHP;
 	int mDir;
+	DWORD mActionOld;
 };

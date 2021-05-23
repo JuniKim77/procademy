@@ -242,8 +242,6 @@ void Session::ErrorDisplay(const WCHAR* msg)
 	MessageBox(gMainWindow, errorMsg, L"에러 발생", MB_OK);
 }
 
-
-
 void Session::CreateMyPlayer(const char* msg)
 {
 	PlayerObject* player = new PlayerObject;
@@ -257,7 +255,7 @@ void Session::CreateMyPlayer(const char* msg)
 	gObjectList.push_back(gPlayerObject);
 
 	wprintf_s(L"내 캐릭터 생성 ID: %d, X : %d, Y: %d\n",
-		packet->ID, packet->X, packet->Y);
+		player->GetObectID(), player->GetCurX(), player->GetCurY());
 }
 
 void Session::CreateOtherPlayer(const char* msg)
@@ -273,7 +271,7 @@ void Session::CreateOtherPlayer(const char* msg)
 	gObjectList.push_back(player);
 
 	wprintf_s(L"적 캐릭터 생성 ID: %d, X : %d, Y: %d\n",
-		packet->ID, packet->X, packet->Y);
+		player->GetObectID(), player->GetCurX(), player->GetCurY());
 }
 
 void Session::DeletePlayer(const char* msg)
@@ -398,8 +396,10 @@ void Session::DamageProc(const char* msg)
 
 BaseObject* Session::SearchObject(int id)
 {
+	wprintf_s(L"서치 유저 시작\n");
 	for (auto iter = gObjectList.begin(); iter != gObjectList.end(); ++iter)
 	{
+		wprintf_s(L"서치할 유저 : %d, 현재 유저: %d\n", id, (*iter)->GetObectID());
 		if ((*iter)->GetObectID() == id)
 		{
 			return *iter;

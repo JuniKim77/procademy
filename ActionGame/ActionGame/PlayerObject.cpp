@@ -68,6 +68,7 @@ void PlayerObject::ActionInputProc()
 			return;
 	}
 
+	mActionOld = mInAction;
 	mInAction = mActionInput;
 
 	switch (mInAction)
@@ -248,7 +249,7 @@ void PlayerObject::SetActionMove()
 	stHeader header;
 	csMoveStart packet;
 
-	CreateMoveStartPacket(&header, &packet, mInAction, mCurX, mCurY);
+	CreateMoveStartPacket(&header, &packet, mActionOld, mCurX, mCurY);
 
 	g_session.SendPacket((char*)&header, sizeof(header));
 	g_session.SendPacket((char*)&packet, sizeof(packet));
