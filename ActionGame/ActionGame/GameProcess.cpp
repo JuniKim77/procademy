@@ -12,7 +12,8 @@
 extern DWORD gOldTime;
 Process gGameState = PROCESS_GAME;
 extern FrameSkip gFrameSkipper;
-int gIDCounter;
+extern HWND gMainWindow;
+//int gIDCounter;
 
 void InitializeGame()
 {
@@ -83,26 +84,26 @@ void InitializeGame()
 	gSpriteDib.LoadDibSprite(eGUAGE_HP, L"SpriteData\\HPGuage.bmp", 0, 0);
 	gSpriteDib.LoadDibSprite(eSHADOW, L"SpriteData\\Shadow.bmp", 32, 4);
 
-	// 플레이어 생성
-	gPlayerObject = new PlayerObject;
-	gPlayerObject->SetPosition(320, 240);
-	gObjectList.push_back(gPlayerObject);
+	//// 플레이어 생성
+	//gPlayerObject = new PlayerObject;
+	//gPlayerObject->SetPosition(320, 240);
+	//gObjectList.push_back(gPlayerObject);
 
-	// 테스트용 객체들
-	BaseObject* pObject = new PlayerObject;
-	pObject->SetPosition(100, 100);
-	pObject->SetEnemy();
-	gObjectList.push_back(pObject);
+	//// 테스트용 객체들
+	//BaseObject* pObject = new PlayerObject;
+	//pObject->SetPosition(100, 100);
+	//pObject->SetEnemy();
+	//gObjectList.push_back(pObject);
 
-	pObject = new PlayerObject;
-	pObject->SetPosition(125, 125);
-	pObject->SetEnemy();
-	gObjectList.push_back(pObject);
+	//pObject = new PlayerObject;
+	//pObject->SetPosition(125, 125);
+	//pObject->SetEnemy();
+	//gObjectList.push_back(pObject);
 
-	pObject = new PlayerObject;
-	pObject->SetPosition(150, 150);
-	pObject->SetEnemy();
-	gObjectList.push_back(pObject);
+	//pObject = new PlayerObject;
+	//pObject->SetPosition(150, 150);
+	//pObject->SetEnemy();
+	//gObjectList.push_back(pObject);
 }
 
 void ContentLoad()
@@ -133,20 +134,21 @@ void UpdateGame()
 
 	gFrameSkipper.CheckTime();
 
-	if (gFrameSkipper.GetTotalTick() >= 1000)
-	{
-		printf("Frame: %d\n", gFrameSkipper.GetFrameCount());
-		printf("Tick: %d\n", gFrameSkipper.GetTotalTick());
-
-		gFrameSkipper.Refresh();
-	}
-
 	if (!gFrameSkipper.IsSkip())
 	{
 		Render(); // 백버퍼에 출력
 	}
 
 	gScreenDib.Filp(gMainWindow); // 윈도에 출력
+
+
+	if (gFrameSkipper.GetTotalTick() >= 1000)
+	{
+		gFrameSkipper.Refresh();
+		WCHAR msg[16] = { 0, };
+		swprintf_s(msg, L"LogicFrame:%d", gFrameSkipper.GetOldFrameCount());
+		SetWindowText(gMainWindow, msg);
+	}
 
 	// 순수 Sleep 시간 체크
 	gFrameSkipper.RunSleep();

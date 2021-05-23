@@ -5,11 +5,14 @@
 #include "SpriteDib.h"
 #include <stdio.h>
 #include "EffectObject.h"
+#include "Session.h"
 
 #define dfRANGE_MOVE_TOP	50
 #define dfRANGE_MOVE_LEFT	10
 #define dfRANGE_MOVE_RIGHT	630
 #define dfRANGE_MOVE_BOTTOM	470
+
+extern Session g_session;
 
 PlayerObject::PlayerObject()
 	: mDir(dfAction_STAND)
@@ -115,6 +118,15 @@ void PlayerObject::SetActionStand()
 	{
 		SetSprite(ePLAYER_STAND_R01, ePLAYER_STAND_R03, dfDELAY_STAND);
 	}
+
+	//stHeader header;
+	//csMoveStop packet;
+
+	//CreateMoveStopPacket(&header, &packet, mDir, mCurX, mCurY);
+
+	//g_session.SendPacket((char*)&header, sizeof(header));
+	//g_session.SendPacket((char*)&packet, sizeof(packet));
+
 	mDir = dfAction_STAND;
 }
 
@@ -123,19 +135,22 @@ void PlayerObject::SetActionAttack1()
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_ATTACK1_L01, ePLAYER_ATTACK1_L04, dfDELAY_ATTACK1);
-		BaseObject* effect = new EffectObject;
-		effect->SetPosition(mCurX - 100, mCurY - 50);
-		gObjectList.push_back(effect);
 	}
 	else
 	{
 		SetSprite(ePLAYER_ATTACK1_R01, ePLAYER_ATTACK1_R04, dfDELAY_ATTACK1);
-		BaseObject* effect = new EffectObject;
-		effect->SetPosition(mCurX + 100, mCurY - 50);
-		gObjectList.push_back(effect);
 	}
 
+	/*stHeader header;
+	csAttack1 packet;
+
+	CreateAttack1Packet(&header, &packet, mDir, mCurX, mCurY);
+
+	g_session.SendPacket((char*)&header, sizeof(header));
+	g_session.SendPacket((char*)&packet, sizeof(packet));*/
+
 	mDir = dfAction_STAND;
+	
 }
 
 void PlayerObject::SetActionAttack2()
@@ -143,17 +158,20 @@ void PlayerObject::SetActionAttack2()
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_ATTACK2_L01, ePLAYER_ATTACK2_L04, dfDELAY_ATTACK2);
-		BaseObject* effect = new EffectObject;
-		effect->SetPosition(mCurX - 100, mCurY - 50);
-		gObjectList.push_back(effect);
 	}
 	else
 	{
 		SetSprite(ePLAYER_ATTACK2_R01, ePLAYER_ATTACK2_R04, dfDELAY_ATTACK2);
-		BaseObject* effect = new EffectObject;
-		effect->SetPosition(mCurX + 100, mCurY - 50);
-		gObjectList.push_back(effect);
 	}
+
+	//stHeader header;
+	//csAttack2 packet;
+
+	//CreateAttack2Packet(&header, &packet, mDir, mCurX, mCurY);
+
+	//g_session.SendPacket((char*)&header, sizeof(header));
+	//g_session.SendPacket((char*)&packet, sizeof(packet));
+
 	mDir = dfAction_STAND;
 }
 
@@ -162,19 +180,43 @@ void PlayerObject::SetActionAttack3()
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_ATTACK3_L01, ePLAYER_ATTACK3_L04, dfDELAY_ATTACK3);
-		BaseObject* effect = new EffectObject;
-		effect->SetPosition(mCurX - 100, mCurY - 50);
-		gObjectList.push_back(effect);
 	}
 	else
 	{
 		SetSprite(ePLAYER_ATTACK3_R01, ePLAYER_ATTACK3_R04, dfDELAY_ATTACK3);
-		BaseObject* effect = new EffectObject;
-		effect->SetPosition(mCurX + 100, mCurY - 50);
-		gObjectList.push_back(effect);
 	}
 
+	//stHeader header;
+	//csAttack3 packet;
+
+	//CreateAttack3Packet(&header, &packet, mDir, mCurX, mCurY);
+
+	//g_session.SendPacket((char*)&header, sizeof(header));
+	//g_session.SendPacket((char*)&packet, sizeof(packet));
+
 	mDir = dfAction_STAND;
+}
+
+void PlayerObject::CreateEffect()
+{
+	if (mbIsLeft)
+	{
+		BaseObject* effect = new EffectObject;
+		if (!IsPlayer()) {
+			effect->SetEnemy();
+		}
+		effect->SetPosition(mCurX - 80, mCurY - 60);
+		gObjectList.push_back(effect);
+	}
+	else
+	{
+		BaseObject* effect = new EffectObject;
+		if (!IsPlayer()) {
+			effect->SetEnemy();
+		}
+		effect->SetPosition(mCurX + 80, mCurY - 60);
+		gObjectList.push_back(effect);
+	}
 }
 
 void PlayerObject::SetActionMove()
@@ -187,6 +229,14 @@ void PlayerObject::SetActionMove()
 	{
 		SetSprite(ePLAYER_MOVE_R01, ePLAYER_MOVE_R12, dfDELAY_MOVE);
 	}
+
+	//stHeader header;
+	//csMoveStart packet;
+
+	//CreateMoveStartPacket(&header, &packet, mDir, mCurX, mCurY);
+
+	//g_session.SendPacket((char*)&header, sizeof(header));
+	//g_session.SendPacket((char*)&packet, sizeof(packet));
 }
 
 void PlayerObject::Move()

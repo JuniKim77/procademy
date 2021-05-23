@@ -5,14 +5,14 @@
 
 myList<BaseObject*> gObjectList;
 BaseObject* gPlayerObject;
-extern int gIDCounter;
+//extern int gIDCounter;
 
 BaseObject::BaseObject()
 	: mbEndFrame(true)
 	, mActionInput(dfAction_STAND)
 	, mInAction(dfAction_NONE)
 	, mbPlayerCharacter(true)
-	, mObjectID(gIDCounter++)
+	, mObjectID(0)
 {
 }
 
@@ -45,7 +45,7 @@ void BaseObject::NextFrame()
 			}
 			else 
 			{
-				mInAction = dfAction_NONE;
+				ActionInput(dfAction_NONE);
 			}
 
 			mSpriteNow = mSpriteBegin;

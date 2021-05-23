@@ -28,6 +28,7 @@ public:
 	bool IsPlayer() { return mbPlayerCharacter; }
 	void SetEnemy() { mbPlayerCharacter = false; }
 	bool GetDestroy() { return mbDestroy; }
+	void SetDestroy() { mbDestroy = true; }
 
 protected:
 	bool IsInputChanged() const;

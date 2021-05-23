@@ -1,5 +1,6 @@
 #include "FrameSkip.h"
 #include <stdio.h>
+#include <Windows.h>
 
 FrameSkip::FrameSkip()
 	: mTotalTick(0)
@@ -54,6 +55,7 @@ void FrameSkip::Reset()
 
 void FrameSkip::Refresh()
 {
+	mOldFrameCounter = mFrameCounter;
 	mFrameCounter = 0;
 	mTotalTick -= 1000;
 }

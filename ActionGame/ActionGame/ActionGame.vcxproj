@@ -151,6 +151,7 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="GameProcess.h" />
     <ClInclude Include="myList.h" />
+    <ClInclude Include="PacketCreater.h" />
     <ClInclude Include="PacketDefine.h" />
     <ClInclude Include="PlayerObject.h" />
     <ClInclude Include="Resource.h" />
@@ -166,6 +167,7 @@
     <ClCompile Include="EffectObject.cpp" />
     <ClCompile Include="FrameSkip.cpp" />
     <ClCompile Include="GameProcess.cpp" />
+    <ClCompile Include="PacketCreater.cpp" />
     <ClCompile Include="PlayerObject.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="ScreenDib.cpp" />

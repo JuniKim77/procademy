@@ -19,8 +19,7 @@
 #include <timeapi.h>
 #include "FrameSkip.h"
 #include "Session.h"
-
-#define WM_SOCKET (WM_USER + 1)
+#include <WinSock2.h>
 
 #pragma comment(lib, "winmm.lib")
 
@@ -160,6 +159,8 @@ void OpenConsole()
 		freopen_s(&ferr, "CONOUT$", "w", stderr);
 		freopen_s(&fout, "CONOUT$", "w", stdout);
 	}
+
+	system("mode con: cols=50 lines=20");
 }
 
 void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -173,6 +174,7 @@ void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 	case FD_CONNECT:
 		g_session.mbConnected = true;
+		wprintf_s(L"접속 성공\n");
 		break;
 	case FD_CLOSE:
 		g_session.Disconnect();

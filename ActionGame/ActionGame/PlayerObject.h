@@ -15,6 +15,7 @@ public:
 	void SetActionAttack1();
 	void SetActionAttack2();
 	void SetActionAttack3();
+	void CreateEffect();
 	void SetActionMove();
 	void SetDirection(int dir) { mDir = dir; }
 	void SetHP(char hp) { mHP = hp; }
@@ -22,6 +23,7 @@ public:
 	int GetDirection() { return mDir; }
 	bool IsLeft() { return mbIsLeft; }
 	void Move();
+	void SetID(int id) { mObjectID = id; }
 
 private:
 	bool mbIsLeft;
