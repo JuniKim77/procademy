@@ -167,7 +167,7 @@ void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (WSAGETSELECTERROR(lParam))
 	{
-		g_session.ErrorQuit(L"Select 에러");
+		g_session.ErrorQuit(L"Select 에러", __FILEW__, __LINE__);
 	}
 
 	switch (WSAGETSELECTEVENT(lParam))
@@ -178,7 +178,7 @@ void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 	case FD_CLOSE:
 		g_session.Disconnect();
-		g_session.ErrorQuit(L"접속 종료");
+		g_session.ErrorQuit(L"접속 종료", __FILEW__, __LINE__);
 		break;
 	case FD_READ:
 		g_session.ReceivePacket();

@@ -17,6 +17,7 @@ public:
 	void SetActionAttack3();
 	void CreateEffect();
 	void SetActionMove();
+	void SetAciontNone();
 	void SetDirection(int dir) { mDir = dir; }
 	void SetHP(char hp) { mHP = hp; }
 	char GetHP() { return mHP; }
@@ -24,6 +25,7 @@ public:
 	bool IsLeft() { return mbIsLeft; }
 	void Move();
 	void SetID(int id) { mObjectID = id; }
+	bool CheckRange() const;
 
 private:
 	bool mbIsLeft;

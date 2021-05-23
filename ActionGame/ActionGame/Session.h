@@ -22,7 +22,7 @@ public:
 	void ReceivePacket();
 	void recvProc();
 	void readMessage(stHeader* header);
-	void ErrorQuit(const WCHAR* msg);
+	void ErrorQuit(const WCHAR* msg, const WCHAR* fileName, unsigned int lineNum);
 	void ErrorDisplay(const WCHAR* msg);
 	bool IsConnected() { return mbConnected; }
 

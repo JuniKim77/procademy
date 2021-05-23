@@ -33,7 +33,7 @@ bool Session::Connect(HWND hWnd)
 
 	mSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (mSocket == INVALID_SOCKET)
-		ErrorQuit(L"소켓 생성 에러");
+		ErrorQuit(L"소켓 생성 에러", __FILEW__, __LINE__);
 
 	WCHAR ServerIP[16];
 	wprintf_s(L"서버 IP: ");
@@ -75,7 +75,7 @@ void Session::SendPacket(char* packet, int size)
 	int retval = mSendBuffer.Enqueue(packet, size);
 
 	if (retval < size)
-		ErrorQuit(L"Send Error: 서버 연결 장애");
+		ErrorQuit(L"Send Error: 서버 연결 장애", __FILEW__, __LINE__);
 }
 
 void Session::writeProc()
@@ -97,7 +97,7 @@ void Session::writeProc()
 			return;
 		}
 
-		ErrorQuit(L"Send Error");
+		ErrorQuit(L"Send Error", __FILEW__, __LINE__);
 	}
 
 	mSendBuffer.MoveFront(sendSize);
@@ -114,7 +114,7 @@ void Session::ReceivePacket()
 		if (err == WSAEWOULDBLOCK)
 			return;
 
-		ErrorQuit(L"Receive Error: 서버 연결 장애");
+		ErrorQuit(L"Receive Error: 서버 연결 장애", __FILEW__, __LINE__);
 	}
 
 	mRecvBuffer.Enqueue(buffer, retval);
@@ -131,7 +131,7 @@ void Session::recvProc()
 		mRecvBuffer.Peek((char*)&header, sizeof(stHeader));
 
 		if (header.byCode != 0x89)
-			ErrorQuit(L"서버 이상");
+			ErrorQuit(L"서버 이상", __FILEW__, __LINE__);
 
 		if (mRecvBuffer.GetUseSize() < header.bySize + sizeof(stHeader))
 			break;
@@ -223,10 +223,11 @@ void Session::readMessage(stHeader* header)
 	}
 }
 
-void Session::ErrorQuit(const WCHAR* msg)
+void Session::ErrorQuit(const WCHAR* msg, const WCHAR* fileName, unsigned int lineNum)
 {
 	int err = WSAGetLastError();
 	WCHAR errorMsg[100];
+	wprintf(L"%s : %d\n", fileName, lineNum);
 	swprintf_s(errorMsg, 100, L"%s code : %d", msg, err);
 	MessageBox(gMainWindow, errorMsg, L"접속종료", MB_OK);
 

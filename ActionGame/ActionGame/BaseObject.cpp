@@ -9,8 +9,8 @@ BaseObject* gPlayerObject;
 
 BaseObject::BaseObject()
 	: mbEndFrame(true)
-	, mActionInput(dfAction_STAND)
-	, mInAction(dfAction_NONE)
+	, mActionInput(-1)
+	, mInAction(-1)
 	, mbPlayerCharacter(true)
 	, mObjectID(0)
 {
