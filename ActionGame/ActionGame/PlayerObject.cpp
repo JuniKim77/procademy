@@ -63,7 +63,6 @@ void PlayerObject::Action()
 
 void PlayerObject::ActionProc()
 {
-	// 현 동작과 같은 input이면 무시.
 	if (mActionInput == dfAction_NONE)
 		return;
 
@@ -354,6 +353,9 @@ void PlayerObject::SetActionStand(bool sendMsg)
 
 void PlayerObject::Move()
 {
+	int oldX = mCurX;
+	int oldY = mCurY;
+
 	switch (mActionCur)
 	{
 	case dfACTION_MOVE_LL:
@@ -387,6 +389,13 @@ void PlayerObject::Move()
 	default:
 		break;
 	}
+
+	// 경계 처리
+	if (mCurX == dfRANGE_MOVE_LEFT || mCurX == dfRANGE_MOVE_RIGHT)
+		mCurY = oldY;
+
+	if (mCurY == dfRANGE_MOVE_TOP || mCurY == dfRANGE_MOVE_BOTTOM)
+		mCurX = oldX;
 }
 
 bool PlayerObject::IsAttackAction(DWORD action) const

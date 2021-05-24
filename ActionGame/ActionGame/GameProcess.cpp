@@ -229,7 +229,7 @@ void Update()
 		}
 	}
 
-	//SortYaxis();
+	SortYaxis();
 }
 
 void Render()
@@ -246,31 +246,26 @@ void Render()
 
 void SortYaxis()
 {
-	myList<BaseObject*> temp;
+	int count = gObjectList.size();
+	myList<BaseObject*>::iterator lastIter = --gObjectList.end();
 
-	while (!gObjectList.empty())
+	while (count > 1)
 	{
 		int max = 0;
-		int maxIndex = 0;
-		int idx = 0;
 		BaseObject* obj = nullptr;
+		myList<BaseObject*>::iterator maxIter = gObjectList.begin();
 
-		for (auto iter = gObjectList.begin(); iter != gObjectList.end(); iter++, idx++)
+		for (auto iter = gObjectList.begin(); iter != gObjectList.end(); iter++)
 		{
 			if ((*iter)->GetCurY() > max)
 			{
 				max = (*iter)->GetCurY();
-				maxIndex = idx;
-				obj = *iter;
+				maxIter = iter;
 			}
 		}
 
-		temp.push_back(obj);
-		gObjectList.remove(obj);
-	}
-
-	while (!temp.empty())
-	{
-		gObjectList.push_front(temp.pop_front());
+		gObjectList.swapNode(maxIter, lastIter);
+		--lastIter;
+		count--;
 	}
 }
