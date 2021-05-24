@@ -160,7 +160,7 @@ void OpenConsole()
 		freopen_s(&fout, "CONOUT$", "w", stdout);
 	}
 
-	system("mode con: cols=50 lines=20");
+	system("mode con: cols=80 lines=20");
 }
 
 void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

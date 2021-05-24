@@ -35,14 +35,15 @@ bool Session::Connect(HWND hWnd)
 	if (mSocket == INVALID_SOCKET)
 		ErrorQuit(L"家南 积己 俊矾", __FILEW__, __LINE__);
 
-	WCHAR ServerIP[16];
+	/*WCHAR ServerIP[16];
 	wprintf_s(L"辑滚 IP: ");
-	_getws_s(ServerIP);
+	_getws_s(ServerIP);*/
 
 	SOCKADDR_IN addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(SERVER_PORT);
-	InetPton(AF_INET, ServerIP, &addr.sin_addr);
+	//InetPton(AF_INET, ServerIP, &addr.sin_addr);
+	InetPton(AF_INET, L"127.0.0.1", &addr.sin_addr);
 
 	int asyncselectRetval = WSAAsyncSelect(mSocket, hWnd, WM_SOCKET,
 		FD_READ | FD_WRITE | FD_CLOSE | FD_CONNECT);

@@ -10,7 +10,6 @@ BaseObject* gPlayerObject;
 BaseObject::BaseObject()
 	: mbEndFrame(true)
 	, mActionInput(dfAction_NONE)
-	, mInAction(dfAction_STAND)
 	, mbPlayerCharacter(true)
 	, mObjectID(0)
 {
@@ -43,9 +42,9 @@ void BaseObject::NextFrame()
 			{
 				mbDestroy = true;
 			}
-			else 
+			else
 			{
-				ActionInput(dfAction_NONE);
+				//ActionInput(dfAction_STAND);
 			}
 
 			mSpriteNow = mSpriteBegin;
@@ -69,14 +68,4 @@ void BaseObject::SetSprite(int spriteBegin, int spriteEnd, int frameDelay)
 	mSpriteNow = spriteBegin;
 	mDelayCount = 0;
 	mbEndFrame = false;
-}
-
-bool BaseObject::IsInputChanged() const
-{
-	return mInAction != mActionInput;
-}
-
-bool BaseObject::IsAttackAction() const
-{
-	return mInAction == dfACTION_ATTACK1 || mInAction == dfACTION_ATTACK2 || mInAction == dfACTION_ATTACK3;
 }

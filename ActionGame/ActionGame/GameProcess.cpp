@@ -141,12 +141,11 @@ void UpdateGame()
 
 	gScreenDib.Filp(gMainWindow); // 윈도에 출력
 
-
 	if (gFrameSkipper.GetTotalTick() >= 1000)
 	{
 		gFrameSkipper.Refresh();
-		WCHAR msg[16] = { 0, };
-		swprintf_s(msg, L"LogicFrame:%d", gFrameSkipper.GetOldFrameCount());
+		WCHAR msg[32] = { 0, };
+		swprintf_s(msg, L"LogicFrame:%d, ID: %d", gFrameSkipper.GetOldFrameCount(), gPlayerObject->GetObectID());
 		SetWindowText(gMainWindow, msg);
 	}
 
@@ -195,9 +194,6 @@ void KeyProcess()
 	{
 		action = dfACTION_MOVE_DD;
 	}
-	else {
-		action = dfAction_STAND;
-	}
 	
 	if (GetAsyncKeyState(0x5A) & 0x8001) // Z key
 	{
@@ -231,7 +227,6 @@ void Update()
 			(*iter)->Run();
 			++iter;
 		}
-		
 	}
 
 	//SortYaxis();

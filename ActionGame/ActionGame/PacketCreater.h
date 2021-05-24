@@ -6,3 +6,4 @@ void CreateMoveStopPacket(stHeader* header, csMoveStop* packet, BYTE direction, 
 void CreateAttack1Packet(stHeader* header, csAttack1* packet, BYTE direction, WORD x, WORD y);
 void CreateAttack2Packet(stHeader* header, csAttack2* packet, BYTE direction, WORD x, WORD y);
 void CreateAttack3Packet(stHeader* header, csAttack3* packet, BYTE direction, WORD x, WORD y);
+void LogPacket(stHeader* header, char* msg, DWORD id);

@@ -10,27 +10,30 @@ public:
 	virtual void Render(BYTE* pDest, int destWidth, int destHeight, int destPitch);
 	virtual void Run();
 	void Action();
-	void ActionInputProc();
-	void SetActionStand();
-	void SetActionAttack1();
-	void SetActionAttack2();
-	void SetActionAttack3();
+	void ActionProc();
+	void InputActionProc();
+	void SetDirection(DWORD dir);
+	void SetActionAttack1(bool sendMsg = true);
+	void SetActionAttack2(bool sendMsg = true);
+	void SetActionAttack3(bool sendMsg = true);
 	void CreateEffect();
-	void SetActionMove();
-	void SetAciontNone();
-	void SetDirection(int dir) { mDir = dir; }
+	void SetActionMove(bool sendMsg = true);
+	void SetActionStand(bool sendMsg = true);
 	void SetHP(char hp) { mHP = hp; }
 	char GetHP() { return mHP; }
-	int GetDirection() { return mDir; }
 	bool IsLeft() { return mbIsLeft; }
 	void Move();
 	void SetID(int id) { mObjectID = id; }
-	bool CheckRange() const;
 	bool GetOldAction() const { return mActionOld; }
+
+protected:
+	bool IsAttackAction(DWORD action) const;
 
 private:
 	bool mbIsLeft;
 	char mHP;
-	int mDir;
+	int mDirCur;
+	int mDirOld;
+	DWORD mActionCur;
 	DWORD mActionOld;
 };

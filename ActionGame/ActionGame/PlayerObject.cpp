@@ -16,10 +16,14 @@
 extern Session g_session;
 
 PlayerObject::PlayerObject()
-	: mDir(dfAction_STAND)
+	: mDirCur(dfACTION_MOVE_LL)
+	, mDirOld(dfACTION_MOVE_LL)
+	, mActionCur(dfAction_STAND)
+	, mActionOld(dfAction_STAND)
 	, mHP(100)
 	, mbIsLeft(true)
 {
+	SetActionStand(false);
 }
 
 PlayerObject::~PlayerObject()
@@ -47,8 +51,8 @@ void PlayerObject::Render(BYTE* pDest, int destWidth, int destHeight, int destPi
 
 void PlayerObject::Run()
 {
-	ActionInputProc();  // Action input 처리 : 이동 방향과 액션을 정리
 	Action(); // 업데이트
+	ActionProc();  // Action input 처리 : 이동 방향과 액션을 정리
 }
 
 void PlayerObject::Action()
@@ -57,157 +61,200 @@ void PlayerObject::Action()
 	NextFrame();
 }
 
-void PlayerObject::ActionInputProc()
+void PlayerObject::ActionProc()
 {
-	if (!IsInputChanged())
+	// 현 동작과 같은 input이면 무시.
+	if (mActionInput == dfAction_NONE)
 		return;
 
-	if (IsAttackAction())
+	if (IsAttackAction(mActionCur))
 	{
 		if (!mbEndFrame)
 			return;
+
+		SetActionStand(false);
+		mActionInput = dfAction_STAND;
+		mActionOld = mActionCur;
+		mActionCur = mActionInput;
+		return;
 	}
 
-	mActionOld = mInAction;
-	mInAction = mActionInput;
+	if (mActionCur == mActionInput && this == gPlayerObject)
+		return;
 
-	switch (mInAction)
+	//wprintf_s(L"ID: %d, ActionCur: %d\nActionInput: %d\n", mObjectID, mActionCur, mActionInput);
+
+	mActionOld = mActionCur;
+	mActionCur = mActionInput;
+
+	switch (mActionCur)
 	{
 	case dfACTION_ATTACK1:
-		SetActionAttack1();
+		if (this == gPlayerObject)
+			SetActionAttack1();
+		else
+			SetActionAttack1(false);
 		break;
 	case dfACTION_ATTACK2:
-		SetActionAttack2();
+		if (this == gPlayerObject)
+			SetActionAttack2();
+		else
+			SetActionAttack2(false);
 		break;
 	case dfACTION_ATTACK3:
-		SetActionAttack3();
-		break;
-	case dfAction_STAND:
-		SetActionStand();
+		if (this == gPlayerObject)
+			SetActionAttack3();
+		else
+			SetActionAttack3(false);
 		break;
 	case dfACTION_MOVE_LL:
 	case dfACTION_MOVE_LU:
 	case dfACTION_MOVE_LD:
-		mbIsLeft = true;
-		mDir = mActionInput;
-		SetActionMove();
-		break;
 	case dfACTION_MOVE_RR:
 	case dfACTION_MOVE_RU:
 	case dfACTION_MOVE_RD:
-		mbIsLeft = false;
-		mDir = mActionInput;
-		SetActionMove();
-		break;
 	case dfACTION_MOVE_UU:
 	case dfACTION_MOVE_DD:
-		mDir = mActionInput;
-		SetActionMove();
+		if (this == gPlayerObject)
+			SetActionMove();
+		else
+			SetActionMove(false);
+		break;
+	case dfAction_STAND:
+		if (this == gPlayerObject)
+			SetActionStand();
+		else
+			SetActionStand(false);
 		break;
 	default:
-		SetAciontNone();
 		break;
 	}
 }
 
-void PlayerObject::SetActionStand()
+void PlayerObject::InputActionProc()
 {
-	if (mbIsLeft)
-	{
-		SetSprite(ePLAYER_STAND_L01, ePLAYER_STAND_L03, dfDELAY_STAND);
-	}
-	else
-	{
-		SetSprite(ePLAYER_STAND_R01, ePLAYER_STAND_R03, dfDELAY_STAND);
-	}
-
-	stHeader header;
-	csMoveStop packet;
-
-	CreateMoveStopPacket(&header, &packet, mInAction, mCurX, mCurY);
-
-	g_session.SendPacket((char*)&header, sizeof(header));
-	g_session.SendPacket((char*)&packet, sizeof(packet));
-
-	g_session.writeProc();
-
-	mDir = dfAction_STAND;
-
-	wprintf_s(L"# PACKET_MOVESTOP # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
-		mObjectID, mInAction, mCurX, mCurY);
 }
 
-void PlayerObject::SetActionAttack1()
+void PlayerObject::SetDirection(DWORD dir)
 {
+	mDirCur = dir;
+	if (mDirCur == dfAction_NONE) {
+		SetSprite(ePLAYER_STAND_L01, ePLAYER_STAND_L03, dfDELAY_STAND);
+	}
+}
+
+void PlayerObject::SetActionAttack1(bool sendMsg)
+{
+	stHeader header;
+	csAttack1 packet;
+
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_ATTACK1_L01, ePLAYER_ATTACK1_L04, dfDELAY_ATTACK1);
+		CreateAttack1Packet(&header, &packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
 	}
 	else
 	{
 		SetSprite(ePLAYER_ATTACK1_R01, ePLAYER_ATTACK1_R04, dfDELAY_ATTACK1);
+		CreateAttack1Packet(&header, &packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
 	}
 
-	stHeader header;
-	csAttack1 packet;
+	if (!sendMsg)
+		return;
 
-	CreateAttack1Packet(&header, &packet, mInAction, mCurX, mCurY);
+	if (mActionOld != dfAction_STAND) 
+	{
+		stHeader stopHeader;
+		csMoveStop stopPacket;
+
+		CreateMoveStopPacket(&stopHeader, &stopPacket, mDirCur, mCurX, mCurY);
+
+		g_session.SendPacket((char*)&stopHeader, sizeof(stopHeader));
+		g_session.SendPacket((char*)&stopPacket, sizeof(stopPacket));
+	}
 
 	g_session.SendPacket((char*)&header, sizeof(header));
 	g_session.SendPacket((char*)&packet, sizeof(packet));
 
 	g_session.writeProc();
 
-	mDir = dfAction_STAND;
-	
+	LogPacket(&header, (char*)&packet, mObjectID);
 }
 
-void PlayerObject::SetActionAttack2()
+void PlayerObject::SetActionAttack2(bool sendMsg)
 {
+	stHeader header;
+	csAttack2 packet;
+
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_ATTACK2_L01, ePLAYER_ATTACK2_L04, dfDELAY_ATTACK2);
+		CreateAttack2Packet(&header, &packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
 	}
 	else
 	{
 		SetSprite(ePLAYER_ATTACK2_R01, ePLAYER_ATTACK2_R04, dfDELAY_ATTACK2);
+		CreateAttack2Packet(&header, &packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
 	}
 
-	stHeader header;
-	csAttack2 packet;
+	if (!sendMsg)
+		return;
 
-	CreateAttack2Packet(&header, &packet, mInAction, mCurX, mCurY);
+	if (mActionOld != dfAction_STAND)
+	{
+		stHeader stopHeader;
+		csMoveStop stopPacket;
+
+		CreateMoveStopPacket(&stopHeader, &stopPacket, mDirCur, mCurX, mCurY);
+
+		g_session.SendPacket((char*)&stopHeader, sizeof(stopHeader));
+		g_session.SendPacket((char*)&stopPacket, sizeof(stopPacket));
+	}
 
 	g_session.SendPacket((char*)&header, sizeof(header));
 	g_session.SendPacket((char*)&packet, sizeof(packet));
 
 	g_session.writeProc();
 
-	mDir = dfAction_STAND;
+	LogPacket(&header, (char*)&packet, mObjectID);
 }
 
-void PlayerObject::SetActionAttack3()
+void PlayerObject::SetActionAttack3(bool sendMsg)
 {
+	stHeader header;
+	csAttack3 packet;
+
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_ATTACK3_L01, ePLAYER_ATTACK3_L04, dfDELAY_ATTACK3);
+		CreateAttack3Packet(&header, &packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
 	}
 	else
 	{
 		SetSprite(ePLAYER_ATTACK3_R01, ePLAYER_ATTACK3_R04, dfDELAY_ATTACK3);
+		CreateAttack3Packet(&header, &packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
 	}
 
-	stHeader header;
-	csAttack3 packet;
+	if (!sendMsg)
+		return;
 
-	CreateAttack3Packet(&header, &packet, mInAction, mCurX, mCurY);
+	if (mActionOld != dfAction_STAND)
+	{
+		stHeader stopHeader;
+		csMoveStop stopPacket;
+
+		CreateMoveStopPacket(&stopHeader, &stopPacket, mDirCur, mCurX, mCurY);
+
+		g_session.SendPacket((char*)&stopHeader, sizeof(stopHeader));
+		g_session.SendPacket((char*)&stopPacket, sizeof(stopPacket));
+	}
 
 	g_session.SendPacket((char*)&header, sizeof(header));
 	g_session.SendPacket((char*)&packet, sizeof(packet));
 
 	g_session.writeProc();
 
-	mDir = dfAction_STAND;
+	LogPacket(&header, (char*)&packet, mObjectID);
 }
 
 void PlayerObject::CreateEffect()
@@ -232,8 +279,24 @@ void PlayerObject::CreateEffect()
 	}
 }
 
-void PlayerObject::SetActionMove()
+void PlayerObject::SetActionMove(bool sendMsg)
 {
+	switch (mActionCur)
+	{
+	case dfACTION_MOVE_LL:
+	case dfACTION_MOVE_LU:
+	case dfACTION_MOVE_LD:
+		mbIsLeft = true;
+		break;
+	case dfACTION_MOVE_RR:
+	case dfACTION_MOVE_RU:
+	case dfACTION_MOVE_RD:
+		mbIsLeft = false;
+		break;
+	default:
+		break;
+	}
+
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_MOVE_L01, ePLAYER_MOVE_L12, dfDELAY_MOVE);
@@ -243,40 +306,55 @@ void PlayerObject::SetActionMove()
 		SetSprite(ePLAYER_MOVE_R01, ePLAYER_MOVE_R12, dfDELAY_MOVE);
 	}
 
-	/*if (!CheckRange())
-		return;*/
+	mDirOld = mDirCur;
+	mDirCur = mActionCur;
+
+	if (!sendMsg)
+		return;
 
 	stHeader header;
 	csMoveStart packet;
 
-	CreateMoveStartPacket(&header, &packet, mActionOld, mCurX, mCurY);
+	CreateMoveStartPacket(&header, &packet, mActionCur, mCurX, mCurY);
 
 	g_session.SendPacket((char*)&header, sizeof(header));
 	g_session.SendPacket((char*)&packet, sizeof(packet));
 
 	g_session.writeProc();
 
-	wprintf_s(L"# PACKET_MOVESTOP # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
-		mObjectID, mInAction, mCurX, mCurY);
+	LogPacket(&header, (char*)&packet, mObjectID);
 }
 
-void PlayerObject::SetAciontNone()
+void PlayerObject::SetActionStand(bool sendMsg)
 {
+	stHeader header;
+	csMoveStop packet;
+
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_STAND_L01, ePLAYER_STAND_L03, dfDELAY_STAND);
+		CreateMoveStopPacket(&header, &packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
 	}
 	else
 	{
 		SetSprite(ePLAYER_STAND_R01, ePLAYER_STAND_R03, dfDELAY_STAND);
+		CreateMoveStopPacket(&header, &packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
 	}
 
-	mDir = dfAction_STAND;
+	if (!sendMsg)
+		return;
+
+	g_session.SendPacket((char*)&header, sizeof(header));
+	g_session.SendPacket((char*)&packet, sizeof(packet));
+
+	g_session.writeProc();
+
+	LogPacket(&header, (char*)&packet, mObjectID);
 }
 
 void PlayerObject::Move()
 {
-	switch (mDir)
+	switch (mActionCur)
 	{
 	case dfACTION_MOVE_LL:
 		mCurX = max(dfRANGE_MOVE_LEFT, mCurX - 3);
@@ -311,13 +389,9 @@ void PlayerObject::Move()
 	}
 }
 
-bool PlayerObject::CheckRange() const
+bool PlayerObject::IsAttackAction(DWORD action) const
 {
-	if (mCurX < dfRANGE_MOVE_LEFT || mCurX > dfRANGE_MOVE_RIGHT ||
-		mCurY < dfRANGE_MOVE_TOP || mCurY > dfRANGE_MOVE_BOTTOM)
-	{
-		return false;
-	}
-
-	return true;
+	return action == dfACTION_ATTACK1 ||
+		action == dfACTION_ATTACK2 ||
+		action == dfACTION_ATTACK3;
 }
