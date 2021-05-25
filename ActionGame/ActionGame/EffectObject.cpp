@@ -20,8 +20,16 @@ void EffectObject::Render(BYTE* pDest, int destWidth, int destHeight, int destPi
 {
 	if (mbEffectBegin && !mbEndFrame)
 	{
-		gSpriteDib.DrawSprite(GetSprite(), mCurX, mCurY, pDest, destWidth,
-			destHeight, destPitch);
+		if (IsPlayer())
+		{
+			gSpriteDib.DrawSprite(GetSprite(), mCurX, mCurY, pDest, destWidth,
+				destHeight, destPitch);
+		}
+		else
+		{
+			gSpriteDib.DrawSpriteRed(GetSprite(), mCurX, mCurY, pDest, destWidth,
+				destHeight, destPitch);
+		}
 	}
 }
 

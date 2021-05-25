@@ -2,7 +2,6 @@
 //
 #pragma comment(lib, "imm32.lib")
 
-#define _CRT_SECURE_NO_WARNINGS
 #define WINDOW_WIDTH (640)
 #define WINDOW_HEIGHT (480)
 #define WINDOW_COLORBIT (32)
@@ -19,6 +18,8 @@
 #include <Windows.h>
 #include <timeapi.h>
 #include "FrameSkip.h"
+#include "Session.h"
+#include <WinSock2.h>
 
 #pragma comment(lib, "winmm.lib")
 
@@ -29,10 +30,12 @@ HWND gMainWindow;
 bool gbActiveApp;
 HIMC gOldImc;
 FrameSkip gFrameSkipper;
+Session g_session;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+void OpenConsole();
+void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName);
 
@@ -45,16 +48,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	setlocale(LC_ALL, "");
-
-	if (AllocConsole())
-	{
-		freopen("CONIN$", "r", stdin);
-		freopen("CONOUT$", "w", stderr);
-		freopen("CONOUT$", "w", stdout);
-	}
-
-	wprintf(L"게임 시작\n");
+	OpenConsole();
 
 	gFrameSkipper.CheckTime();
 	gFrameSkipper.Reset();
@@ -63,7 +57,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	InitializeGame();
 
 	if (CreateMainWindow(hInstance, L"MainWindow", L"ActionGame") == false)
-		return -1;
+		return 1;
+
+	if (!g_session.Connect(gMainWindow))
+		return 1;
 
 	ContentLoad();
 
@@ -81,7 +78,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		else
 		{
-			RunGame();
+			if (g_session.IsConnected()) {
+				RunGame();
+			}
 		}
 	}
 
@@ -105,6 +104,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
+	case WM_SOCKET:
+		SocketMessageProc(hWnd, message, wParam, lParam);
+		break;
 	case WM_CREATE:
 		gOldImc = ImmAssociateContext(hWnd, nullptr);
 		break;
@@ -117,8 +119,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// 메뉴 선택을 구문 분석합니다:
 		switch (wmId)
 		{
-		case IDM_ABOUT:
-			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
 			break;
@@ -145,24 +145,49 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-// 정보 대화 상자의 메시지 처리기입니다.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+void OpenConsole()
 {
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
+	setlocale(LC_ALL, "");
 
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		}
+	FILE* fin;
+	FILE* fout;
+	FILE* ferr;
+
+	if (AllocConsole())
+	{
+		freopen_s(&fin, "CONIN$", "r", stdin);
+		freopen_s(&ferr, "CONOUT$", "w", stderr);
+		freopen_s(&fout, "CONOUT$", "w", stdout);
+	}
+
+	system("mode con: cols=80 lines=20");
+}
+
+void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	if (WSAGETSELECTERROR(lParam))
+	{
+		g_session.ErrorQuit(L"Select 에러", __FILEW__, __LINE__);
+	}
+
+	switch (WSAGETSELECTEVENT(lParam))
+	{
+	case FD_CONNECT:
+		g_session.mbConnected = true;
+		wprintf_s(L"접속 성공\n");
+		break;
+	case FD_CLOSE:
+		g_session.Disconnect();
+		g_session.ErrorQuit(L"접속 종료", __FILEW__, __LINE__);
+		break;
+	case FD_READ:
+		g_session.ReceivePacket();
+		g_session.recvProc();
+		break;
+	case FD_WRITE:
+		g_session.writeProc();
 		break;
 	}
-	return (INT_PTR)FALSE;
 }
 
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName)
