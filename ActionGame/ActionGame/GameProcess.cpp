@@ -83,27 +83,6 @@ void InitializeGame()
 	gSpriteDib.LoadDibSprite(eEFFECT_SPARK_04, L"SpriteData\\xSpark_4.bmp", 70, 70);
 	gSpriteDib.LoadDibSprite(eGUAGE_HP, L"SpriteData\\HPGuage.bmp", 0, 0);
 	gSpriteDib.LoadDibSprite(eSHADOW, L"SpriteData\\Shadow.bmp", 32, 4);
-
-	//// 플레이어 생성
-	//gPlayerObject = new PlayerObject;
-	//gPlayerObject->SetPosition(320, 240);
-	//gObjectList.push_back(gPlayerObject);
-
-	//// 테스트용 객체들
-	//BaseObject* pObject = new PlayerObject;
-	//pObject->SetPosition(100, 100);
-	//pObject->SetEnemy();
-	//gObjectList.push_back(pObject);
-
-	//pObject = new PlayerObject;
-	//pObject->SetPosition(125, 125);
-	//pObject->SetEnemy();
-	//gObjectList.push_back(pObject);
-
-	//pObject = new PlayerObject;
-	//pObject->SetPosition(150, 150);
-	//pObject->SetEnemy();
-	//gObjectList.push_back(pObject);
 }
 
 void ContentLoad()

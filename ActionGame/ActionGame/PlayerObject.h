@@ -11,7 +11,8 @@ public:
 	virtual void Run();
 	void Action();
 	void ActionProc();
-	void InputActionProc();
+	void ActionPlayerProc();
+	void ActionEnemyProc();
 	void SetDirection(DWORD dir);
 	void SetActionAttack1(bool sendMsg = true);
 	void SetActionAttack2(bool sendMsg = true);

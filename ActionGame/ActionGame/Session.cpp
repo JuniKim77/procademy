@@ -1,5 +1,6 @@
 #pragma comment(lib, "ws2_32")
 
+#define DEBUG
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <WS2tcpip.h>
 #include "Session.h"
@@ -35,15 +36,21 @@ bool Session::Connect(HWND hWnd)
 	if (mSocket == INVALID_SOCKET)
 		ErrorQuit(L"소켓 생성 에러", __FILEW__, __LINE__);
 
-	WCHAR ServerIP[16];
-	wprintf_s(L"서버 IP: ");
-	_getws_s(ServerIP);
-
 	SOCKADDR_IN addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(SERVER_PORT);
+
+#ifdef DEBUG
+	InetPton(AF_INET, L"127.0.0.1", &addr.sin_addr);
+#else
+	WCHAR ServerIP[16];
+	wprintf_s(L"서버 IP: ");
+	_getws_s(ServerIP);
 	InetPton(AF_INET, ServerIP, &addr.sin_addr);
-	//InetPton(AF_INET, L"127.0.0.1", &addr.sin_addr);
+#endif // DEBUG
+
+	
+	
 
 	int asyncselectRetval = WSAAsyncSelect(mSocket, hWnd, WM_SOCKET,
 		FD_READ | FD_WRITE | FD_CLOSE | FD_CONNECT);

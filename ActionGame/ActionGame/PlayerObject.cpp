@@ -66,6 +66,14 @@ void PlayerObject::ActionProc()
 	if (mActionInput == dfAction_NONE)
 		return;
 
+	if (this == gPlayerObject)
+		ActionPlayerProc();
+	else
+		ActionEnemyProc();
+}
+
+void PlayerObject::ActionPlayerProc()
+{
 	if (IsAttackAction(mActionCur))
 	{
 		if (!mbEndFrame)
@@ -78,7 +86,7 @@ void PlayerObject::ActionProc()
 		return;
 	}
 
-	if (mActionCur == mActionInput && this == gPlayerObject)
+	if (mActionCur == mActionInput)
 		return;
 
 	//wprintf_s(L"ID: %d, ActionCur: %d\nActionInput: %d\n", mObjectID, mActionCur, mActionInput);
@@ -89,22 +97,13 @@ void PlayerObject::ActionProc()
 	switch (mActionCur)
 	{
 	case dfACTION_ATTACK1:
-		if (this == gPlayerObject)
-			SetActionAttack1();
-		else
-			SetActionAttack1(false);
+		SetActionAttack1();
 		break;
 	case dfACTION_ATTACK2:
-		if (this == gPlayerObject)
-			SetActionAttack2();
-		else
-			SetActionAttack2(false);
+		SetActionAttack2();
 		break;
 	case dfACTION_ATTACK3:
-		if (this == gPlayerObject)
-			SetActionAttack3();
-		else
-			SetActionAttack3(false);
+		SetActionAttack3();
 		break;
 	case dfACTION_MOVE_LL:
 	case dfACTION_MOVE_LU:
@@ -114,24 +113,69 @@ void PlayerObject::ActionProc()
 	case dfACTION_MOVE_RD:
 	case dfACTION_MOVE_UU:
 	case dfACTION_MOVE_DD:
-		if (this == gPlayerObject)
-			SetActionMove();
-		else
-			SetActionMove(false);
+		SetActionMove();
 		break;
 	case dfAction_STAND:
-		if (this == gPlayerObject)
-			SetActionStand();
-		else
-			SetActionStand(false);
+		SetActionStand();
 		break;
 	default:
 		break;
 	}
 }
 
-void PlayerObject::InputActionProc()
+void PlayerObject::ActionEnemyProc()
 {
+	if (IsAttackAction(mActionCur))
+	{
+		if (!mbEndFrame)
+			return;
+
+		SetActionStand(false);
+		mActionInput = dfAction_STAND;
+		mActionOld = mActionCur;
+		mActionCur = mActionInput;
+		return;
+	}
+	else
+	{
+		if (mActionCur == mActionInput)
+		{
+			return;
+		}
+	}
+
+	//wprintf_s(L"ID: %d, ActionCur: %d\nActionInput: %d\n", mObjectID, mActionCur, mActionInput);
+
+	mActionOld = mActionCur;
+	mActionCur = mActionInput;
+
+	switch (mActionCur)
+	{
+	case dfACTION_ATTACK1:
+		SetActionAttack1(false);
+		break;
+	case dfACTION_ATTACK2:
+		SetActionAttack2(false);
+		break;
+	case dfACTION_ATTACK3:
+		SetActionAttack3(false);
+		break;
+	case dfACTION_MOVE_LL:
+	case dfACTION_MOVE_LU:
+	case dfACTION_MOVE_LD:
+	case dfACTION_MOVE_RR:
+	case dfACTION_MOVE_RU:
+	case dfACTION_MOVE_RD:
+	case dfACTION_MOVE_UU:
+	case dfACTION_MOVE_DD:
+		SetActionMove(false);
+		break;
+	case dfAction_STAND:
+		SetActionStand(false);
+		break;
+	default:
+		break;
+	}
 }
 
 void PlayerObject::SetDirection(DWORD dir)
@@ -161,7 +205,7 @@ void PlayerObject::SetActionAttack1(bool sendMsg)
 	if (!sendMsg)
 		return;
 
-	if (mActionOld != dfAction_STAND) 
+	if (mActionOld != dfAction_STAND)
 	{
 		stHeader stopHeader;
 		csMoveStop stopPacket;
