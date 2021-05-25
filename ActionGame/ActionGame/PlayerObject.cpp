@@ -353,49 +353,50 @@ void PlayerObject::SetActionStand(bool sendMsg)
 
 void PlayerObject::Move()
 {
-	int oldX = mCurX;
-	int oldY = mCurY;
+	int x = mCurX;
+	int y = mCurY;
 
 	switch (mActionCur)
 	{
 	case dfACTION_MOVE_LL:
-		mCurX = max(dfRANGE_MOVE_LEFT, mCurX - 3);
+		x = mCurX - 3;
 		break;
 	case dfACTION_MOVE_LU:
-		mCurX = max(dfRANGE_MOVE_LEFT, mCurX - 3);
-		mCurY = max(dfRANGE_MOVE_TOP, mCurY - 2);
+		x = mCurX - 3;
+		y = mCurY - 2;
 		break;
 	case dfACTION_MOVE_UU:
-		mCurY = max(dfRANGE_MOVE_TOP, mCurY - 2);
+		y = mCurY - 2;
 		break;
 	case dfACTION_MOVE_RU:
-		mCurX = min(dfRANGE_MOVE_RIGHT, mCurX + 3);
-		mCurY = max(dfRANGE_MOVE_TOP, mCurY - 2);
+		x = mCurX + 3;
+		y = mCurY - 2;
 		break;
 	case dfACTION_MOVE_RR:
-		mCurX = min(dfRANGE_MOVE_RIGHT, mCurX + 3);
+		x = mCurX + 3;
 		break;
 	case dfACTION_MOVE_RD:
-		mCurX = min(dfRANGE_MOVE_RIGHT, mCurX + 3);
-		mCurY = min(dfRANGE_MOVE_BOTTOM, mCurY + 2);
+		x = mCurX + 3;
+		y = mCurY + 2;
 		break;
 	case dfACTION_MOVE_DD:
-		mCurY = min(dfRANGE_MOVE_BOTTOM, mCurY + 2);
+		y = mCurY + 2;
 		break;
 	case dfACTION_MOVE_LD:
-		mCurX = max(dfRANGE_MOVE_LEFT, mCurX - 3);
-		mCurY = min(dfRANGE_MOVE_BOTTOM, mCurY + 2);
+		x = mCurX - 3;
+		y = mCurY + 2;
 		break;
 	default:
 		break;
 	}
 
 	// 경계 처리
-	if (mCurX == dfRANGE_MOVE_LEFT || mCurX == dfRANGE_MOVE_RIGHT)
-		mCurY = oldY;
+	if (x < dfRANGE_MOVE_LEFT || x > dfRANGE_MOVE_RIGHT ||
+		y < dfRANGE_MOVE_TOP || y > dfRANGE_MOVE_BOTTOM)
+		return;
 
-	if (mCurY == dfRANGE_MOVE_TOP || mCurY == dfRANGE_MOVE_BOTTOM)
-		mCurX = oldX;
+	mCurX = x;
+	mCurY = y;
 }
 
 bool PlayerObject::IsAttackAction(DWORD action) const
