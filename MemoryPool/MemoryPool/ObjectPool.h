@@ -1,5 +1,4 @@
 /*---------------------------------------------------------------
-
 	procademy MemoryPool.
 
 	메모리 풀 클래스 (오브젝트 풀 / 프리리스트)
@@ -13,12 +12,11 @@
 	pData 사용
 
 	MemPool.Free(pData);
-
-
 ----------------------------------------------------------------*/
 #ifndef  __PROCADEMY_OBJECT_POOL__
 #define  __PROCADEMY_OBJECT_POOL__
 #include <new.h>
+#include <stdlib.h>
 
 namespace procademy
 {
@@ -36,8 +34,8 @@ namespace procademy
 				stpNextBlock = NULL;
 			}
 
-			void* code;
 			int checkSum_under = 0xAAAA;
+			void* code;
 			DATA data;
 			st_BLOCK_NODE* stpNextBlock;
 			int checkSum_over = 0xBBBB;
@@ -87,29 +85,26 @@ namespace procademy
 		int		GetSize(void) { return mCapacity; }
 
 	private:
-
+		void* AllocMemory();
 
 	private:
 		int mSize;
 		int mCapacity;
+		int mBlockUnit;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		st_BLOCK_NODE* _pFreeNode;
+		void* mOriginAddress;
 	};
 	template<typename DATA>
 	inline ObjectPool<DATA>::ObjectPool(int iBlockNum, bool bPlacementNew)
 		: mSize(0)
 		, mCapacity(iBlockNum)
+		, mBlockUnit(iBlockNum)
 		, mbPlacementNew(bPlacementNew)
 	{
-		if (bPlacementNew)
-		{
-
-		}
-		else
-		{
-
-		}
+		mOriginAddress = AllocMemory();
+		_pFreeNode = (st_BLOCK_NODE*)mOriginAddress;
 	}
 	template<typename DATA>
 	inline ObjectPool<DATA>::~ObjectPool()
@@ -124,6 +119,24 @@ namespace procademy
 	inline bool ObjectPool<DATA>::Free(DATA* pData)
 	{
 		return false;
+	}
+	template<typename DATA>
+	inline void* ObjectPool<DATA>::AllocMemory()
+	{
+		void* retMemory = malloc(sizeof(st_BLOCK_NODE) * mBlockUnit + sizeof(void*));
+
+		st_BLOCK_NODE* node = (st_BLOCK_NODE*)retMemory;
+
+		for (int i = 0; i < mBlockUnit; ++i)
+		{
+			node->
+			node->code = this;
+		}
+
+		if (mbPlacementNew)
+			return retMemory;
+
+		return retMemory;
 	}
 }
 #endif
