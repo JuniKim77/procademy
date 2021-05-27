@@ -39,25 +39,21 @@ struct Node
 	int num;
 };
 
+struct stTest
+{
+	int test[4];
+};
+
+struct stTest2
+{
+	unsigned short a;
+	stTest b;
+};
+
 int main()
 {
-	Test t0;
-
-	Test* t1 = new Test;
-
-	Test* t2 = new (t1) (Test);
-
-	Node* node = new Node;
-
 	procademy::ObjectPool<Test> pool1(100, true);
 
-	procademy::ObjectPool<Test2> pool2(100, true);
-
-	Test2* t3 = new Test2;
-
-	Test2* t4 = new (t3) (Test2);
-
-	t4->~Test2();
-
+	procademy::ObjectPool<Test2> pool2(100, false);
 	return 0;
 }

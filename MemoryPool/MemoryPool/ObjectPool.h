@@ -18,6 +18,9 @@
 #include <new.h>
 #include <stdlib.h>
 
+#define CHECKSUM_UNDER (0xAAAAAAAA)
+#define CHECKSUM_OVER (0xBBBBBBBB)
+
 namespace procademy
 {
 	template <typename DATA>
@@ -34,11 +37,11 @@ namespace procademy
 				stpNextBlock = NULL;
 			}
 
-			int checkSum_under = 0xAAAA;
+			unsigned int checkSum_under = CHECKSUM_UNDER;
 			void* code;
 			DATA data;
 			st_BLOCK_NODE* stpNextBlock;
-			int checkSum_over = 0xBBBB;
+			unsigned int checkSum_over = CHECKSUM_OVER;
 		};
 
 	public:
@@ -94,7 +97,8 @@ namespace procademy
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		st_BLOCK_NODE* _pFreeNode;
-		void* mOriginAddress;
+		st_BLOCK_NODE* mHeadPage;
+		st_BLOCK_NODE* mTailPage;
 	};
 	template<typename DATA>
 	inline ObjectPool<DATA>::ObjectPool(int iBlockNum, bool bPlacementNew)
@@ -103,38 +107,72 @@ namespace procademy
 		, mBlockUnit(iBlockNum)
 		, mbPlacementNew(bPlacementNew)
 	{
-		mOriginAddress = AllocMemory();
-		_pFreeNode = (st_BLOCK_NODE*)mOriginAddress;
+		mHeadPage = AllocMemory();
+		mTailPage = mHeadPage;
+		_pFreeNode = (st_BLOCK_NODE*)mHeadPage;
 	}
 	template<typename DATA>
 	inline ObjectPool<DATA>::~ObjectPool()
 	{
+
 	}
 	template<typename DATA>
 	inline DATA* ObjectPool<DATA>::Alloc(void)
 	{
-		return NULL;
+		if (_pFreeNode == nullptr) 
+		{
+			void* pAddress = (mTailPage + mBlockUnit + 1);
+
+			pAddress = (st_BLOCK_NODE*)AllocMemory();
+			
+			mTailPage = pAddress;
+			_pFreeNode = pAddress;
+			mCapacity += mBlockUnit;
+		}
+
+		st_BLOCK_NODE* node = _pFreeNode;
+		_pFreeNode = _pFreeNode->stpNextBlock;
+		mSize++;
+		return node;
 	}
 	template<typename DATA>
 	inline bool ObjectPool<DATA>::Free(DATA* pData)
 	{
+
+		mSize--;
 		return false;
 	}
 	template<typename DATA>
 	inline void* ObjectPool<DATA>::AllocMemory()
 	{
 		void* retMemory = malloc(sizeof(st_BLOCK_NODE) * mBlockUnit + sizeof(void*));
-
 		st_BLOCK_NODE* node = (st_BLOCK_NODE*)retMemory;
 
-		for (int i = 0; i < mBlockUnit; ++i)
+		if (mbPlacementNew)
 		{
-			node->
-			node->code = this;
+			for (int i = 0; i < mBlockUnit; ++i)
+			{
+				node->checkSum_under = CHECKSUM_UNDER;
+				node->code = this;
+				node->stpNextBlock = node + 1;
+				node->checkSum_over = CHECKSUM_OVER;
+				node++;
+			}
+		}
+		else
+		{
+			for (int i = 0; i < mBlockUnit; ++i)
+			{
+				node->checkSum_under = CHECKSUM_UNDER;
+				node->code = this;
+				new (&node->data) (DATA);
+				node->stpNextBlock = node + 1;
+				node->checkSum_over = CHECKSUM_OVER;
+				node++;
+			}
 		}
 
-		if (mbPlacementNew)
-			return retMemory;
+		(--node)->stpNextBlock = nullptr;
 
 		return retMemory;
 	}
