@@ -17,6 +17,7 @@
 #define  __PROCADEMY_OBJECT_POOL__
 #include <new.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define CHECKSUM_UNDER (0xAAAAAAAA)
 #define CHECKSUM_OVER (0xBBBBBBBB)
@@ -107,46 +108,96 @@ namespace procademy
 		, mBlockUnit(iBlockNum)
 		, mbPlacementNew(bPlacementNew)
 	{
-		mHeadPage = AllocMemory();
+		mHeadPage = (st_BLOCK_NODE*)AllocMemory();
 		mTailPage = mHeadPage;
 		_pFreeNode = (st_BLOCK_NODE*)mHeadPage;
 	}
 	template<typename DATA>
 	inline ObjectPool<DATA>::~ObjectPool()
 	{
+		st_BLOCK_NODE* pCur = mHeadPage;
 
+		while (1)
+		{
+			if (pCur == nullptr)
+			{
+				break;
+			}
+#ifdef _WIN64
+			long long** pAddress = (long long**)(pCur + mBlockUnit);
+#else
+			int** pAddress = (int**)(pCur + mBlockUnit);
+#endif
+			if (!mbPlacementNew)
+			{
+				st_BLOCK_NODE* node = pCur;
+
+				for (int i = 0; i < mBlockUnit; ++i)
+				{
+					(node->data).~DATA();
+					node++;
+				}
+			}
+
+			free(pCur);
+			pCur = (st_BLOCK_NODE*)*pAddress;
+		}
 	}
 	template<typename DATA>
 	inline DATA* ObjectPool<DATA>::Alloc(void)
 	{
 		if (_pFreeNode == nullptr) 
 		{
-			void* pAddress = (mTailPage + mBlockUnit + 1);
-
-			pAddress = (st_BLOCK_NODE*)AllocMemory();
-			
-			mTailPage = pAddress;
-			_pFreeNode = pAddress;
+			_pFreeNode = (st_BLOCK_NODE*)AllocMemory();
+#ifdef _WIN64
+			long long** pAddress = (long long**)(mTailPage + mBlockUnit);
+			*pAddress = (long long*)_pFreeNode;
+#else
+			int** pAddress = (int**)(mTailPage + mBlockUnit);
+			*pAddress = (int*)_pFreeNode;
+#endif
+			mTailPage = (st_BLOCK_NODE*)*pAddress;
 			mCapacity += mBlockUnit;
 		}
 
 		st_BLOCK_NODE* node = _pFreeNode;
 		_pFreeNode = _pFreeNode->stpNextBlock;
 		mSize++;
-		return node;
+
+		if (mbPlacementNew)
+		{
+			new (&node->data) (DATA);
+		}
+
+		return &node->data;
 	}
 	template<typename DATA>
 	inline bool ObjectPool<DATA>::Free(DATA* pData)
 	{
+		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
 
+		if (pNode->code != this || 
+			pNode->checkSum_under != CHECKSUM_UNDER || 
+			pNode->checkSum_over != CHECKSUM_OVER)
+		{
+			return false;
+		}
+		if (mbPlacementNew)
+		{
+			pData->~DATA();
+		}
+
+		pNode->stpNextBlock = _pFreeNode;
+		_pFreeNode = pNode;
 		mSize--;
-		return false;
+		return true;
 	}
 	template<typename DATA>
 	inline void* ObjectPool<DATA>::AllocMemory()
 	{
 		void* retMemory = malloc(sizeof(st_BLOCK_NODE) * mBlockUnit + sizeof(void*));
-		st_BLOCK_NODE* node = (st_BLOCK_NODE*)retMemory;
+		st_BLOCK_NODE* pOrigin = (st_BLOCK_NODE*)retMemory;
+		st_BLOCK_NODE* node = pOrigin;
 
 		if (mbPlacementNew)
 		{
@@ -171,9 +222,15 @@ namespace procademy
 				node++;
 			}
 		}
+		(node - 1)->stpNextBlock = nullptr;
 
-		(--node)->stpNextBlock = nullptr;
-
+#ifdef _WIN64
+		long long* pAddress = (long long*)(pOrigin + mBlockUnit);
+		*pAddress = NULL;
+#else
+		int* pAddress = (int*)(pOrigin + mBlockUnit);
+		*pAddress = NULL;
+#endif
 		return retMemory;
 	}
 }
