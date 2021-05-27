@@ -19,6 +19,7 @@ public:
 	void Disconnect();
 	void SendPacket(char* packet, int size);
 	void writeProc();
+	void sendTCP(int size);
 	void ReceivePacket();
 	void recvProc();
 	void readMessage(stHeader* header);
