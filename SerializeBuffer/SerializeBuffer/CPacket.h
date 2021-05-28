@@ -45,6 +45,7 @@ public:
 	// Return: (int)패킷 버퍼 사이즈 얻기.
 	//////////////////////////////////////////////////////////////////////////
 	int	GetCapacity(void) { return mCapacity; }
+
 	//////////////////////////////////////////////////////////////////////////
 	// 현재 사용중인 사이즈 얻기.
 	//
@@ -70,6 +71,47 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	int		MoveWritePos(int iSize);
 	int		MoveReadPos(int iSize);
+	/// <summary>
+	/// 현재 버퍼의 사용 가능 사이즈 반환
+	/// </summary>
+	/// <returns>사용 가능 사이즈</returns>
+	int GetFreeSize() const;
+
+	// 연산자 오버로딩 넣기
+	CPacket& operator << (unsigned char byValue);
+	CPacket& operator << (char chValue);
+
+	CPacket& operator << (short shValue);
+	CPacket& operator << (unsigned short wValue);
+
+	CPacket& operator << (int iValue);
+	CPacket& operator << (long lValue);
+	CPacket& operator << (float fValue);
+
+	CPacket& operator << (__int64 iValue);
+	CPacket& operator << (double dValue);
+
+	// 연산자 오버로딩 빼기
+	CPacket& operator >> (unsigned char& byValue);
+	CPacket& operator >> (char& chValue);
+
+	CPacket& operator >> (short& shValue);
+	CPacket& operator >> (unsigned short& wValue);
+
+	CPacket& operator >> (int& iValue);
+	CPacket& operator >> (unsigned int& dwValue);
+	CPacket& operator >> (float& fValue);
+
+	CPacket& operator >> (__int64& iValue);
+	CPacket& operator >> (double& dValue);
+
+protected:
+	/// <summary>
+	/// 버퍼 크기를 패킷의 기본 버퍼 사이즈 만큼 증가.
+	/// </summary>
+	void resize();
+	void writeBuffer(const void* src, int size);
+	void readBuffer(void* dest, int size);
 
 private:
 	char* mBuffer;
