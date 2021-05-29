@@ -1,5 +1,4 @@
 #pragma once
-#include <Windows.h>
 
 class FrameSkip
 {
@@ -13,10 +12,12 @@ public:
 	void RunSleep();
 	void Reset();
 	void Refresh();
+	int GetOldFrameCount() { return mOldFrameCounter; }
 
 private:
 	int mTotalTick; // 경과 시간
 	int mFrameCounter; // 프레임 카운터
+	int mOldFrameCounter = 0;
 	int mTimeRemain; // 남은 시간 누적
 	int mOldTick; // 이전 프레임 시간
 };

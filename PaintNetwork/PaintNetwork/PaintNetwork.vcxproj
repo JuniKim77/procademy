@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{5c3c2dd3-3441-4af4-82a0-3c346deb9efc}</ProjectGuid>
-    <RootNamespace>ActionGame</RootNamespace>
+    <ProjectGuid>{5ccc3ae5-a03f-472b-9bd7-a5c2da84c2c9}</ProjectGuid>
+    <RootNamespace>PaintNetwork</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -141,44 +141,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ActionDefine.h" />
-    <ClInclude Include="ActionGame.h" />
-    <ClInclude Include="BaseObject.h" />
-    <ClInclude Include="EffectObject.h" />
-    <ClInclude Include="EObjectType.h" />
-    <ClInclude Include="ESprite.h" />
-    <ClInclude Include="FrameSkip.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="GameProcess.h" />
-    <ClInclude Include="myList.h" />
-    <ClInclude Include="PacketCreater.h" />
-    <ClInclude Include="PacketDefine.h" />
-    <ClInclude Include="PlayerObject.h" />
+    <ClInclude Include="PaintNetwork.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RingBuffer.h" />
-    <ClInclude Include="ScreenDib.h" />
-    <ClInclude Include="Session.h" />
-    <ClInclude Include="SpriteDib.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ActionGame.cpp" />
-    <ClCompile Include="BaseObject.cpp" />
-    <ClCompile Include="EffectObject.cpp" />
-    <ClCompile Include="FrameSkip.cpp" />
-    <ClCompile Include="GameProcess.cpp" />
-    <ClCompile Include="PacketCreater.cpp" />
-    <ClCompile Include="PlayerObject.cpp" />
+    <ClCompile Include="PaintNetwork.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
-    <ClCompile Include="ScreenDib.cpp" />
-    <ClCompile Include="Session.cpp" />
-    <ClCompile Include="SpriteDib.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ActionGame.rc" />
+    <ResourceCompile Include="PaintNetwork.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="ActionGame.ico" />
+    <Image Include="PaintNetwork.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

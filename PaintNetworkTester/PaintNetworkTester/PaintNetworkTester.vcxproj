@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{5c3c2dd3-3441-4af4-82a0-3c346deb9efc}</ProjectGuid>
-    <RootNamespace>ActionGame</RootNamespace>
+    <ProjectGuid>{f32e39b3-378a-4c8e-998d-2802e462b8c5}</ProjectGuid>
+    <RootNamespace>PaintNetworkTester</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -86,11 +86,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -100,12 +100,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -115,11 +115,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -129,57 +129,23 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ActionDefine.h" />
-    <ClInclude Include="ActionGame.h" />
-    <ClInclude Include="BaseObject.h" />
-    <ClInclude Include="EffectObject.h" />
-    <ClInclude Include="EObjectType.h" />
-    <ClInclude Include="ESprite.h" />
-    <ClInclude Include="FrameSkip.h" />
-    <ClInclude Include="framework.h" />
-    <ClInclude Include="GameProcess.h" />
-    <ClInclude Include="myList.h" />
-    <ClInclude Include="PacketCreater.h" />
-    <ClInclude Include="PacketDefine.h" />
-    <ClInclude Include="PlayerObject.h" />
-    <ClInclude Include="Resource.h" />
-    <ClInclude Include="RingBuffer.h" />
-    <ClInclude Include="ScreenDib.h" />
-    <ClInclude Include="Session.h" />
-    <ClInclude Include="SpriteDib.h" />
-    <ClInclude Include="targetver.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="ActionGame.cpp" />
-    <ClCompile Include="BaseObject.cpp" />
-    <ClCompile Include="EffectObject.cpp" />
-    <ClCompile Include="FrameSkip.cpp" />
-    <ClCompile Include="GameProcess.cpp" />
-    <ClCompile Include="PacketCreater.cpp" />
-    <ClCompile Include="PlayerObject.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
-    <ClCompile Include="ScreenDib.cpp" />
-    <ClCompile Include="Session.cpp" />
-    <ClCompile Include="SpriteDib.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ActionGame.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="ActionGame.ico" />
-    <Image Include="small.ico" />
+    <ClInclude Include="RingBuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -48,14 +48,12 @@ int dequeueProc(RingBuffer* ringBuffer)
 
 	int ran = rand() % (STR_SIZE + 1);
 
-	if (ringBuffer->Dequeue(buffer, ran) == true)
-	{
-		buffer[ran] = '\0';
-		printf(buffer);
-		//printf("SUCCESS::  ");
-	}
+	int size = ringBuffer->Dequeue(buffer, ran);
 
-	return ran;
+	buffer[size] = '\0';
+	printf(buffer);
+
+	return size;
 }
 
 int enqueueProc(RingBuffer* ringBuffer)
@@ -77,11 +75,9 @@ int enqueueProc(RingBuffer* ringBuffer)
 
 	buffer[ran] = '\0';
 
-	if (ringBuffer->Enqueue(buffer, ran) == true)
-	{
-		cur = (cur + ran) % STR_SIZE;
-		//printf("SUCCESS::  ");
-	}
+	int size = ringBuffer->Enqueue(buffer, ran);
 
-	return ran;
+	cur = (cur + size) % STR_SIZE;
+
+	return size;
 }
