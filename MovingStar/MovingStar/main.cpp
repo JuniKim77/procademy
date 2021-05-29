@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <locale.h>
 #include "process.h"
+#include "RingBuffer.h"
 
 #define SERVER_PORT (3000)
 
@@ -54,12 +55,14 @@ int main()
 	ScreenInitial();
 	system("cls");
 
+	RingBuffer ringBuffer;
+
 	while (1)
 	{
 		// 키 입력
 		KeyProcess();
 		// 메세지 처리
-		NetworkProcess(sock);
+		NetworkProcess(sock, &ringBuffer);
 		// 렌더링
 		Render();
 

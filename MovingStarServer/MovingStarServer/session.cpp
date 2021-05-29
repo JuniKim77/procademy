@@ -1,12 +1,24 @@
 #include "session.h"
 #include <iostream>
 #include <WS2tcpip.h>
+#include "RingBuffer.h"
 
 Session::Session()
 	: socket(INVALID_SOCKET)
 	, port(0)
 	, IP(0)
+	, sendRingBuffer(new RingBuffer)
+	, receiveRingBuffer(new RingBuffer)
 {
+}
+
+Session::~Session()
+{
+	if (sendRingBuffer != nullptr)
+		delete sendRingBuffer;
+
+	if (receiveRingBuffer != nullptr)
+		delete receiveRingBuffer;
 }
 
 void Session::printInfo() const

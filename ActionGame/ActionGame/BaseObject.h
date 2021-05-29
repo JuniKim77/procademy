@@ -28,6 +28,7 @@ public:
 	bool IsPlayer() { return mbPlayerCharacter; }
 	void SetEnemy() { mbPlayerCharacter = false; }
 	bool GetDestroy() { return mbDestroy; }
+	void SetDestroy() { mbDestroy = true; }
 
 protected:
 	int mCurX = 0;
@@ -42,7 +43,6 @@ protected:
 	bool mbEndFrame;
 	bool mbPlayerCharacter;
 	DWORD mActionInput;
-	DWORD mInAction;
 	bool mbDestroy = false;
 };
 

@@ -89,6 +89,7 @@ public:
 	void clear();
 	int size() { return _size; };
 	bool empty() { return _size == 0; };
+	void swapNode(iterator& left, iterator& right);
 	/*	- 이터레이터의 그 노드를 지움.
 		- 그리고 지운 노드의 다음 노드를 카리키는 이터레이터 리턴*/
 	iterator erase(iterator iter)
@@ -206,6 +207,14 @@ inline void myList<T>::clear()
 	_tail.prev = &_head;
 
 	_size = 0;
+}
+
+template<typename T>
+inline void myList<T>::swapNode(iterator& left, iterator& right)
+{
+	T temp = (*left);
+	(*left) = (*right);
+	(*right) = temp;
 }
 
 template<typename T>
