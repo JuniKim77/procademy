@@ -144,6 +144,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ObjectPool.h" />
+    <ClInclude Include="ObjectPoolPage.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

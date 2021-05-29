@@ -13,8 +13,8 @@
 
 	MemPool.Free(pData);
 ----------------------------------------------------------------*/
-#ifndef  __PROCADEMY_OBJECT_POOL__
-#define  __PROCADEMY_OBJECT_POOL__
+#ifndef  __PROCADEMY_OBJECT_POOL_PAGE__
+#define  __PROCADEMY_OBJECT_POOL_PAGE__
 #include <new.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,7 +25,7 @@
 namespace procademy
 {
 	template <typename DATA>
-	class ObjectPool
+	class ObjectPoolPage
 	{
 	private:
 		/* **************************************************************** */
@@ -53,8 +53,8 @@ namespace procademy
 		//				(bool) Alloc 시 생성자 / Free 시 파괴자 호출 여부
 		// Return:
 		//////////////////////////////////////////////////////////////////////////
-		ObjectPool(int iBlockNum, bool bPlacementNew = false);
-		virtual	~ObjectPool();
+		ObjectPoolPage(int iBlockNum, bool bPlacementNew = false);
+		virtual	~ObjectPoolPage();
 
 		//////////////////////////////////////////////////////////////////////////
 		// 블럭 하나를 할당받는다.  
@@ -89,40 +89,75 @@ namespace procademy
 		int		GetSize(void) { return mCapacity; }
 
 	private:
-		void* AllocMemory(int size);
+		void* AllocMemory();
 
 	private:
 		int mSize;
 		int mCapacity;
+		int mBlockUnit;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		st_BLOCK_NODE* _pFreeNode;
+		st_BLOCK_NODE* mHeadPage;
+		st_BLOCK_NODE* mTailPage;
 	};
 	template<typename DATA>
-	inline ObjectPool<DATA>::ObjectPool(int iBlockNum, bool bPlacementNew)
+	inline ObjectPoolPage<DATA>::ObjectPoolPage(int iBlockNum, bool bPlacementNew)
 		: mSize(0)
 		, mCapacity(iBlockNum)
+		, mBlockUnit(iBlockNum)
 		, mbPlacementNew(bPlacementNew)
 	{
-		_pFreeNode = (st_BLOCK_NODE*)AllocMemory(mCapacity);
+		mHeadPage = (st_BLOCK_NODE*)AllocMemory();
+		mTailPage = mHeadPage;
+		_pFreeNode = (st_BLOCK_NODE*)mHeadPage;
 	}
 	template<typename DATA>
-	inline ObjectPool<DATA>::~ObjectPool()
+	inline ObjectPoolPage<DATA>::~ObjectPoolPage()
 	{
-		while (_pFreeNode != nullptr)
+		st_BLOCK_NODE* pCur = mHeadPage;
+
+		while (1)
 		{
-			st_BLOCK_NODE* pNext = _pFreeNode->stpNextBlock;
-			free(_pFreeNode);
-			_pFreeNode = pNext;
+			if (pCur == nullptr)
+			{
+				break;
+			}
+#ifdef _WIN64
+			long long** pAddress = (long long**)(pCur + mBlockUnit);
+#else
+			int** pAddress = (int**)(pCur + mBlockUnit);
+#endif
+			if (!mbPlacementNew)
+			{
+				st_BLOCK_NODE* node = pCur;
+
+				for (int i = 0; i < mBlockUnit; ++i)
+				{
+					(node->data).~DATA();
+					node++;
+				}
+			}
+
+			free(pCur);
+			pCur = (st_BLOCK_NODE*)*pAddress;
 		}
 	}
 	template<typename DATA>
-	inline DATA* ObjectPool<DATA>::Alloc(void)
+	inline DATA* ObjectPoolPage<DATA>::Alloc(void)
 	{
-		if (_pFreeNode == nullptr)
+		if (_pFreeNode == nullptr) 
 		{
-			_pFreeNode = (st_BLOCK_NODE*)AllocMemory(mCapacity);
-			mCapacity *= 2;
+			_pFreeNode = (st_BLOCK_NODE*)AllocMemory();
+#ifdef _WIN64
+			long long** pAddress = (long long**)(mTailPage + mBlockUnit);
+			*pAddress = (long long*)_pFreeNode;
+#else
+			int** pAddress = (int**)(mTailPage + mBlockUnit);
+			*pAddress = (int*)_pFreeNode;
+#endif
+			mTailPage = (st_BLOCK_NODE*)*pAddress;
+			mCapacity += mBlockUnit;
 		}
 
 		st_BLOCK_NODE* node = _pFreeNode;
@@ -137,12 +172,12 @@ namespace procademy
 		return &node->data;
 	}
 	template<typename DATA>
-	inline bool ObjectPool<DATA>::Free(DATA* pData)
+	inline bool ObjectPoolPage<DATA>::Free(DATA* pData)
 	{
 		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
 
-		if (pNode->code != this ||
-			pNode->checkSum_under != CHECKSUM_UNDER ||
+		if (pNode->code != this || 
+			pNode->checkSum_under != CHECKSUM_UNDER || 
 			pNode->checkSum_over != CHECKSUM_OVER)
 		{
 			return false;
@@ -158,40 +193,45 @@ namespace procademy
 		return true;
 	}
 	template<typename DATA>
-	inline void* ObjectPool<DATA>::AllocMemory(int size)
+	inline void* ObjectPoolPage<DATA>::AllocMemory()
 	{
-		st_BLOCK_NODE* node = nullptr;
-		st_BLOCK_NODE* nodePost = nullptr;
+		void* retMemory = malloc(sizeof(st_BLOCK_NODE) * mBlockUnit + sizeof(st_BLOCK_NODE*));
+		st_BLOCK_NODE* pOrigin = (st_BLOCK_NODE*)retMemory;
+		st_BLOCK_NODE* node = pOrigin;
 
 		if (mbPlacementNew)
 		{
-			for (int i = 0; i < size; ++i)
+			for (int i = 0; i < mBlockUnit; ++i)
 			{
-				node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
 				node->checkSum_under = CHECKSUM_UNDER;
 				node->code = this;
-				node->stpNextBlock = nodePost;
+				node->stpNextBlock = node + 1;
 				node->checkSum_over = CHECKSUM_OVER;
-
-				nodePost = node;
+				node++;
 			}
 		}
 		else
 		{
-			for (int i = 0; i < size; ++i)
+			for (int i = 0; i < mBlockUnit; ++i)
 			{
-				node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
 				node->checkSum_under = CHECKSUM_UNDER;
 				node->code = this;
 				new (&node->data) (DATA);
-				node->stpNextBlock = nodePost;
+				node->stpNextBlock = node + 1;
 				node->checkSum_over = CHECKSUM_OVER;
-
-				nodePost = node;
+				node++;
 			}
 		}
+		(node - 1)->stpNextBlock = nullptr;
 
-		return node;
+#ifdef _WIN64
+		long long* pAddress = (long long*)(pOrigin + mBlockUnit);
+		*pAddress = NULL;
+#else
+		int* pAddress = (int*)(pOrigin + mBlockUnit);
+		*pAddress = NULL;
+#endif
+		return retMemory;
 	}
 }
 #endif
