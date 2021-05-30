@@ -19,7 +19,9 @@ public:
 	void Disconnect();
 	void SendPacket(char* packet, int size);
 	void writeProc();
+	void sendTCP(int size);
 	void ReceivePacket();
+	void receiveTCP(int size);
 	void recvProc();
 	void readMessage(stHeader* header);
 	void ErrorQuit(const WCHAR* msg, const WCHAR* fileName, unsigned int lineNum);
