@@ -8,6 +8,7 @@
 typedef UINT_PTR        SOCKET;
 struct stHeader;
 class BaseObject;
+class CPacket;
 
 class Session
 {
@@ -29,15 +30,15 @@ public:
 	bool IsConnected() { return mbConnected; }
 
 	// Contents
-	void CreateMyPlayer(const char* msg);
-	void CreateOtherPlayer(const char* msg);
-	void DeletePlayer(const char* msg);
-	void MoveStartPlayer(const char* msg);
-	void MoveStopPlayer(const char* msg);
-	void AttackProc1(const char* msg);
-	void AttackProc2(const char* msg);
-	void AttackProc3(const char* msg);
-	void DamageProc(const char* msg);
+	void CreateMyPlayer(CPacket* packet);
+	void CreateOtherPlayer(CPacket* packet);
+	void DeletePlayer(CPacket* packet);
+	void MoveStartPlayer(CPacket* packet);
+	void MoveStopPlayer(CPacket* packet);
+	void AttackProc1(CPacket* packet);
+	void AttackProc2(CPacket* packet);
+	void AttackProc3(CPacket* packet);
+	void DamageProc(CPacket* packet);
 
 protected:
 	BaseObject* SearchObject(int id);

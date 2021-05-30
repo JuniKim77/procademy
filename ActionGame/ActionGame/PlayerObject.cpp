@@ -7,6 +7,7 @@
 #include "EffectObject.h"
 #include "Session.h"
 #include "PacketCreater.h"
+#include "CPacket.h"
 
 #define dfRANGE_MOVE_TOP	50
 #define dfRANGE_MOVE_LEFT	10
@@ -188,18 +189,17 @@ void PlayerObject::SetDirection(DWORD dir)
 
 void PlayerObject::SetActionAttack1(bool sendMsg)
 {
-	stHeader header;
-	csAttack1 packet;
+	CPacket packet;
 
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_ATTACK1_L01, ePLAYER_ATTACK1_L04, dfDELAY_ATTACK1);
-		CreateAttack1Packet(&header, &packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
+		CreateAttack1Packet(&packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
 	}
 	else
 	{
 		SetSprite(ePLAYER_ATTACK1_R01, ePLAYER_ATTACK1_R04, dfDELAY_ATTACK1);
-		CreateAttack1Packet(&header, &packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
+		CreateAttack1Packet(&packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
 	}
 
 	if (!sendMsg)
@@ -207,37 +207,33 @@ void PlayerObject::SetActionAttack1(bool sendMsg)
 
 	if (mActionOld != dfAction_STAND)
 	{
-		stHeader stopHeader;
-		csMoveStop stopPacket;
+		CPacket stopPacket;
 
-		CreateMoveStopPacket(&stopHeader, &stopPacket, mDirCur, mCurX, mCurY);
+		CreateMoveStopPacket(&stopPacket, mDirCur, mCurX, mCurY);
 
-		g_session.SendPacket((char*)&stopHeader, sizeof(stopHeader));
-		g_session.SendPacket((char*)&stopPacket, sizeof(stopPacket));
+		g_session.SendPacket(stopPacket.GetBufferPtr(), stopPacket.GetSize());
 	}
 
-	g_session.SendPacket((char*)&header, sizeof(header));
-	g_session.SendPacket((char*)&packet, sizeof(packet));
+	g_session.SendPacket(packet.GetBufferPtr(), packet.GetSize());
 
 	g_session.writeProc();
 
-	LogPacket(&header, (char*)&packet, mObjectID);
+	LogPacket(&packet, mObjectID);
 }
 
 void PlayerObject::SetActionAttack2(bool sendMsg)
 {
-	stHeader header;
-	csAttack2 packet;
+	CPacket packet;
 
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_ATTACK2_L01, ePLAYER_ATTACK2_L04, dfDELAY_ATTACK2);
-		CreateAttack2Packet(&header, &packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
+		CreateAttack2Packet(&packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
 	}
 	else
 	{
 		SetSprite(ePLAYER_ATTACK2_R01, ePLAYER_ATTACK2_R04, dfDELAY_ATTACK2);
-		CreateAttack2Packet(&header, &packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
+		CreateAttack2Packet(&packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
 	}
 
 	if (!sendMsg)
@@ -245,37 +241,33 @@ void PlayerObject::SetActionAttack2(bool sendMsg)
 
 	if (mActionOld != dfAction_STAND)
 	{
-		stHeader stopHeader;
-		csMoveStop stopPacket;
+		CPacket stopPacket;
 
-		CreateMoveStopPacket(&stopHeader, &stopPacket, mDirCur, mCurX, mCurY);
+		CreateMoveStopPacket(&stopPacket, mDirCur, mCurX, mCurY);
 
-		g_session.SendPacket((char*)&stopHeader, sizeof(stopHeader));
-		g_session.SendPacket((char*)&stopPacket, sizeof(stopPacket));
+		g_session.SendPacket(stopPacket.GetBufferPtr(), stopPacket.GetSize());
 	}
 
-	g_session.SendPacket((char*)&header, sizeof(header));
-	g_session.SendPacket((char*)&packet, sizeof(packet));
+	g_session.SendPacket(packet.GetBufferPtr(), packet.GetSize());
 
 	g_session.writeProc();
 
-	LogPacket(&header, (char*)&packet, mObjectID);
+	LogPacket(&packet, mObjectID);
 }
 
 void PlayerObject::SetActionAttack3(bool sendMsg)
 {
-	stHeader header;
-	csAttack3 packet;
+	CPacket packet;
 
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_ATTACK3_L01, ePLAYER_ATTACK3_L04, dfDELAY_ATTACK3);
-		CreateAttack3Packet(&header, &packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
+		CreateAttack3Packet(&packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
 	}
 	else
 	{
 		SetSprite(ePLAYER_ATTACK3_R01, ePLAYER_ATTACK3_R04, dfDELAY_ATTACK3);
-		CreateAttack3Packet(&header, &packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
+		CreateAttack3Packet(&packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
 	}
 
 	if (!sendMsg)
@@ -283,21 +275,18 @@ void PlayerObject::SetActionAttack3(bool sendMsg)
 
 	if (mActionOld != dfAction_STAND)
 	{
-		stHeader stopHeader;
-		csMoveStop stopPacket;
+		CPacket stopPacket;
 
-		CreateMoveStopPacket(&stopHeader, &stopPacket, mDirCur, mCurX, mCurY);
+		CreateMoveStopPacket(&stopPacket, mDirCur, mCurX, mCurY);
 
-		g_session.SendPacket((char*)&stopHeader, sizeof(stopHeader));
-		g_session.SendPacket((char*)&stopPacket, sizeof(stopPacket));
+		g_session.SendPacket(stopPacket.GetBufferPtr(), stopPacket.GetSize());
 	}
 
-	g_session.SendPacket((char*)&header, sizeof(header));
-	g_session.SendPacket((char*)&packet, sizeof(packet));
+	g_session.SendPacket(packet.GetBufferPtr(), packet.GetSize());
 
 	g_session.writeProc();
 
-	LogPacket(&header, (char*)&packet, mObjectID);
+	LogPacket(&packet, mObjectID);
 }
 
 void PlayerObject::CreateEffect()
@@ -355,44 +344,40 @@ void PlayerObject::SetActionMove(bool sendMsg)
 	if (!sendMsg)
 		return;
 
-	stHeader header;
-	csMoveStart packet;
+	CPacket packet;
 
-	CreateMoveStartPacket(&header, &packet, mActionCur, mCurX, mCurY);
+	CreateMoveStartPacket(&packet, mActionCur, mCurX, mCurY);
 
-	g_session.SendPacket((char*)&header, sizeof(header));
-	g_session.SendPacket((char*)&packet, sizeof(packet));
+	g_session.SendPacket(packet.GetBufferPtr(), packet.GetSize());
 
 	g_session.writeProc();
 
-	LogPacket(&header, (char*)&packet, mObjectID);
+	LogPacket(&packet, mObjectID);
 }
 
 void PlayerObject::SetActionStand(bool sendMsg)
 {
-	stHeader header;
-	csMoveStop packet;
+	CPacket packet;
 
 	if (mbIsLeft)
 	{
 		SetSprite(ePLAYER_STAND_L01, ePLAYER_STAND_L03, dfDELAY_STAND);
-		CreateMoveStopPacket(&header, &packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
+		CreateMoveStopPacket(&packet, dfPACKET_MOVE_DIR_LL, mCurX, mCurY);
 	}
 	else
 	{
 		SetSprite(ePLAYER_STAND_R01, ePLAYER_STAND_R03, dfDELAY_STAND);
-		CreateMoveStopPacket(&header, &packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
+		CreateMoveStopPacket(&packet, dfPACKET_MOVE_DIR_RR, mCurX, mCurY);
 	}
 
 	if (!sendMsg)
 		return;
 
-	g_session.SendPacket((char*)&header, sizeof(header));
-	g_session.SendPacket((char*)&packet, sizeof(packet));
+	g_session.SendPacket(packet.GetBufferPtr(), packet.GetSize());
 
 	g_session.writeProc();
 
-	LogPacket(&header, (char*)&packet, mObjectID);
+	LogPacket(&packet, mObjectID);
 }
 
 void PlayerObject::Move()

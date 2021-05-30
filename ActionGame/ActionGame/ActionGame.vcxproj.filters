@@ -96,6 +96,9 @@
     <ClInclude Include="PacketCreater.h">
       <Filter>헤더 파일\Network</Filter>
     </ClInclude>
+    <ClInclude Include="CPacket.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ActionGame.cpp">
@@ -130,6 +133,9 @@
     </ClCompile>
     <ClCompile Include="PacketCreater.cpp">
       <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="CPacket.cpp">
+      <Filter>소스 파일\Tool</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
