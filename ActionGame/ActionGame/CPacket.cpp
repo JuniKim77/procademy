@@ -141,6 +141,20 @@ CPacket& CPacket::operator<<(int iValue)
 	return *this;
 }
 
+CPacket& CPacket::operator<<(unsigned int iValue)
+{
+	if (sizeof(unsigned int) > GetFreeSize())
+	{
+		resize();
+
+		// log
+	}
+
+	writeBuffer((char*)&iValue, sizeof(unsigned int));
+
+	return *this;
+}
+
 CPacket& CPacket::operator<<(long lValue)
 {
 	if (sizeof(long) > GetFreeSize())
@@ -151,6 +165,20 @@ CPacket& CPacket::operator<<(long lValue)
 	}
 
 	writeBuffer((char*)&lValue, sizeof(long));
+
+	return *this;
+}
+
+CPacket& CPacket::operator<<(unsigned long lValue)
+{
+	if (sizeof(unsigned long) > GetFreeSize())
+	{
+		resize();
+
+		// log
+	}
+
+	writeBuffer((char*)&lValue, sizeof(unsigned long));
 
 	return *this;
 }
@@ -199,7 +227,7 @@ CPacket& CPacket::operator<<(double dValue)
 
 CPacket& CPacket::operator>>(unsigned char& byValue)
 {
-	unsigned char* pBuf = (unsigned char* )mFront;
+	unsigned char* pBuf = (unsigned char*)mFront;
 
 	byValue = *pBuf;
 	MoveFront(sizeof(unsigned char));
@@ -247,12 +275,32 @@ CPacket& CPacket::operator>>(int& iValue)
 	return *this;
 }
 
+CPacket& CPacket::operator>>(unsigned int& iValue)
+{
+	unsigned int* pBuf = (unsigned int*)mFront;
+
+	iValue = *pBuf;
+	MoveFront(sizeof(unsigned int));
+
+	return *this;
+}
+
 CPacket& CPacket::operator>>(long& dwValue)
 {
 	long* pBuf = (long*)mFront;
 
 	dwValue = *pBuf;
 	MoveFront(sizeof(long));
+
+	return *this;
+}
+
+CPacket& CPacket::operator>>(unsigned long& dwValue)
+{
+	unsigned long* pBuf = (unsigned long*)mFront;
+
+	dwValue = *pBuf;
+	MoveFront(sizeof(unsigned long));
 
 	return *this;
 }
