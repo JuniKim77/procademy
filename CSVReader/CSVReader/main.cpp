@@ -3,9 +3,7 @@
 
 int main()
 {
-	CSVFile test("test2.csv");
-
-	test.readFile();
+	CSVFile test(L"test2.csv");
 
 	return 0;
 }

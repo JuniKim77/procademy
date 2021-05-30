@@ -3,103 +3,137 @@
 #include <stdio.h>
 #include <memory>
 
-CSVFile::CSVFile(const char* fileName)
+CSVFile::CSVFile(const WCHAR* fileName)
 	: mFileName(fileName)
-	, mBuffer(nullptr)
+	, mpBuffer(nullptr)
 {
-	
+	readFile();
 }
 
 CSVFile::~CSVFile()
 {
-	if (mBuffer == nullptr)
+	if (mpBuffer != nullptr)
 	{
-		return;
+		delete[] mpBuffer;
 	}
-
-	delete[] mBuffer;
 }
 
 void CSVFile::readFile()
 {
 	FILE* fin;
 
-	fopen_s(&fin, mFileName, "r");
+	_wfopen_s(&fin, mFileName, L"r,ccs=UTF-16LE");
+
 	fseek(fin, 0, SEEK_END);
 
 	int size = ftell(fin);
-	mBuffer = new char[size];
+	mpBuffer = new WCHAR[size];
+#ifdef _DEBUG
 	memset(mBuffer, 0, size);
+#endif
 	fseek(fin, 0, SEEK_SET);
-	int test = fread_s(mBuffer, size, size, 1, fin);
+	int result = fread_s(mpBuffer, size, size, 1, fin);
 
-	mRowSize = countRow(mBuffer);
-	mColSize = countCol(mBuffer);
+	mpCurrent = mpBuffer;
+
+	countRow();
+	countCol();
 
 	fclose(fin);
 }
 
-const char* CSVFile::GetRowAddress(int line)
+void CSVFile::SelectRow(int x)
 {
-	if (line < 1 || line > mRowSize)
-		return nullptr;
+	if (x < 0 || x >= mRowSize)
+		return;
 
-	char* pBuf = mBuffer;
-	int count = 0;
+	mpCurrent = mpBuffer;
 
-	while (count < line)
+	int rowCount = 0;
+	
+	while (rowCount < x) 
 	{
-		while (*pBuf != '\n')
+		int colCount = 0;
+
+		while (colCount < mColSize)
 		{
-			++pBuf;
+
 		}
-		++pBuf;
-		++count;
 	}
-
-	return pBuf;
 }
 
-const char* CSVFile::GetTitleAddress()
+void CSVFile::NextRow()
 {
-	char* pBuf = mBuffer;
-
-	while (*pBuf < 0)
-	{
-		++pBuf;
-	}
-
-	return pBuf;
 }
 
-int CSVFile::countRow(const char* buffer) const
+void CSVFile::PreRow()
 {
-	const char* pBuf = buffer;
+}
+
+void CSVFile::MoveColumn(int x)
+{
+}
+
+void CSVFile::NextColumn()
+{
+}
+
+void CSVFile::PreColumn()
+{
+}
+
+void CSVFile::GetColumn(char* chValue)
+{
+}
+
+void CSVFile::GetColumn(short* shValue)
+{
+}
+
+void CSVFile::GetColumn(int* iValue)
+{
+}
+
+void CSVFile::GetColumn(__int64* iiValue)
+{
+}
+
+void CSVFile::GetColumn(float* fValue)
+{
+}
+
+void CSVFile::GetColumn(double* dValue)
+{
+}
+
+void CSVFile::countRow()
+{
+	const WCHAR* pBuf = mpBuffer;
 	int count = 0;
 
-	while (*pBuf != '\0')
+	while (*pBuf != L'\0')
 	{
-		if (*pBuf == '\n')
+		if (*pBuf == L'\n')
 			++count;
 
 		++pBuf;
 	}
 
-	return count - 1;
+	mRowSize = count - 1;
 }
 
-int CSVFile::countCol(const char* buffer) const
+void CSVFile::countCol()
 {
-	const char* pBuf = buffer;
+	const WCHAR* pBuf = mpBuffer;
 	int count = 0;
 
-	while (*pBuf != '\n')
+	while (*pBuf != L'\n')
 	{
-		if (*pBuf == ',')
+		if (*pBuf == L',')
 			++count;
 
 		++pBuf;
 	}
 
-	return count + 1;
+	mColSize = count + 1;
 }
