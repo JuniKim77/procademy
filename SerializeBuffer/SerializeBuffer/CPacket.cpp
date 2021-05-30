@@ -40,20 +40,30 @@ void CPacket::Clear(void)
 	mRear = mFront;
 }
 
-int CPacket::MoveWritePos(int iSize)
-{
-
-	return 0;
-}
-
-int CPacket::MoveReadPos(int iSize)
+int CPacket::MoveFront(int iSize)
 {
 	if (iSize <= 0)
 		return 0;
 
-	int useSize = mRear - mFront;
+	int size = iSize <= mSize ? iSize : mSize;
 
-	return 0;
+	mFront += size;
+	mSize -= size;
+
+	return size;
+}
+
+int CPacket::MoveRear(int iSize)
+{
+	if (iSize <= 0)
+		return 0;
+
+	int size = iSize <= GetFreeSize() ? iSize : GetFreeSize();
+
+	mRear += size;
+	mSize += size;
+
+	return size;
 }
 
 int CPacket::GetFreeSize() const
@@ -70,7 +80,7 @@ CPacket& CPacket::operator<<(unsigned char byValue)
 		// log
 	}
 
-	writeBuffer(&byValue, sizeof(unsigned char));
+	writeBuffer((char*)&byValue, sizeof(unsigned char));
 
 	return *this;
 }
@@ -98,90 +108,236 @@ CPacket& CPacket::operator<<(short shValue)
 		// log
 	}
 
-	writeBuffer(&shValue, sizeof(short));
+	writeBuffer((char*)&shValue, sizeof(short));
 
 	return *this;
 }
 
 CPacket& CPacket::operator<<(unsigned short wValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	if (sizeof(unsigned short) > GetFreeSize())
+	{
+		resize();
+
+		// log
+	}
+
+	writeBuffer((char*)&wValue, sizeof(unsigned short));
+
+	return *this;
 }
 
 CPacket& CPacket::operator<<(int iValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	if (sizeof(int) > GetFreeSize())
+	{
+		resize();
+
+		// log
+	}
+
+	writeBuffer((char*)&iValue, sizeof(int));
+
+	return *this;
 }
 
 CPacket& CPacket::operator<<(long lValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	if (sizeof(long) > GetFreeSize())
+	{
+		resize();
+
+		// log
+	}
+
+	writeBuffer((char*)&lValue, sizeof(long));
+
+	return *this;
 }
 
 CPacket& CPacket::operator<<(float fValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	if (sizeof(float) > GetFreeSize())
+	{
+		resize();
+
+		// log
+	}
+
+	writeBuffer((char*)&fValue, sizeof(float));
+
+	return *this;
 }
 
 CPacket& CPacket::operator<<(__int64 iValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	if (sizeof(__int64) > GetFreeSize())
+	{
+		resize();
+
+		// log
+	}
+
+	writeBuffer((char*)&iValue, sizeof(__int64));
+
+	return *this;
 }
 
 CPacket& CPacket::operator<<(double dValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	if (sizeof(double) > GetFreeSize())
+	{
+		resize();
+
+		// log
+	}
+
+	writeBuffer((char*)&dValue, sizeof(double));
+
+	return *this;
 }
 
 CPacket& CPacket::operator>>(unsigned char& byValue)
 {
-	readBuffer(&byValue, sizeof(unsigned char));
+	unsigned char* pBuf = (unsigned char* )mFront;
+
+	byValue = *pBuf;
+	MoveFront(sizeof(unsigned char));
 
 	return *this;
 }
 
 CPacket& CPacket::operator>>(char& chValue)
 {
-	readBuffer(&chValue, sizeof(char));
+	char* pBuf = mFront;
+
+	chValue = *pBuf;
+	MoveFront(sizeof(char));
 
 	return *this;
 }
 
 CPacket& CPacket::operator>>(short& shValue)
 {
-	readBuffer(&shValue, sizeof(short));
+	short* pBuf = (short*)mFront;
+
+	shValue = *pBuf;
+	MoveFront(sizeof(short));
 
 	return *this;
 }
 
 CPacket& CPacket::operator>>(unsigned short& wValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	unsigned short* pBuf = (unsigned short*)mFront;
+
+	wValue = *pBuf;
+	MoveFront(sizeof(unsigned short));
+
+	return *this;
 }
 
 CPacket& CPacket::operator>>(int& iValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	int* pBuf = (int*)mFront;
+
+	iValue = *pBuf;
+	MoveFront(sizeof(int));
+
+	return *this;
 }
 
-CPacket& CPacket::operator>>(unsigned int& dwValue)
+CPacket& CPacket::operator>>(long& dwValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	long* pBuf = (long*)mFront;
+
+	dwValue = *pBuf;
+	MoveFront(sizeof(long));
+
+	return *this;
 }
 
 CPacket& CPacket::operator>>(float& fValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	float* pBuf = (float*)mFront;
+
+	fValue = *pBuf;
+	MoveFront(sizeof(float));
+
+	return *this;
 }
 
 CPacket& CPacket::operator>>(__int64& iValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	__int64* pBuf = (__int64*)mFront;
+
+	iValue = *pBuf;
+	MoveFront(sizeof(__int64));
+
+	return *this;
 }
 
 CPacket& CPacket::operator>>(double& dValue)
 {
-	// TODO: 여기에 return 문을 삽입합니다.
+	double* pBuf = (double*)mFront;
+
+	dValue = *pBuf;
+	MoveFront(sizeof(double));
+
+	return *this;
+}
+
+int CPacket::GetData(char* chpDest, int iLength)
+{
+	int size = iLength >= mSize ? iLength : mSize;
+
+	memcpy(chpDest, mFront, size);
+	MoveFront(size);
+
+	return size;
+}
+
+int CPacket::GetData(wchar_t* chpDest, int iLength)
+{
+	return GetData((char*)chpDest, iLength * 2);
+}
+
+int CPacket::PutData(const char* chpSrc, int iLength)
+{
+	if (iLength > GetFreeSize())
+	{
+		resize();
+
+		// log
+	}
+
+	memcpy(mRear, chpSrc, iLength);
+	MoveRear(iLength);
+
+	return iLength;
+}
+
+int CPacket::PutData(const wchar_t* chpSrc, int iLength)
+{
+	return PutData((const char*)chpSrc, iLength * 2);
+}
+
+CPacket& CPacket::operator<<(const char* s)
+{
+	int len = strlen(s);
+
+	PutData(s, len);
+
+	return *this;
+}
+
+CPacket& CPacket::operator<<(const wchar_t* s)
+{
+	int len = wcslen(s);
+
+	PutData(s, len);
+
+	return *this;
 }
 
 void CPacket::resize()
@@ -203,17 +359,8 @@ void CPacket::resize()
 	mCapacity += eBUFFER_DEFAULT;
 }
 
-void CPacket::writeBuffer(const void* src, int size)
+void CPacket::writeBuffer(const char* src, int size)
 {
 	memcpy(mRear, src, size);
-	mRear += size;
-	mSize += size;
-}
-
-void CPacket::readBuffer(void* dest, int size)
-{
-	memcpy(mFront, dest, size);
-
-	mFront += size;
-	mSize -= size;
+	MoveRear(size);
 }

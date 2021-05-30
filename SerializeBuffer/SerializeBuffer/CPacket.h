@@ -69,8 +69,8 @@ public:
 	// Parameters: (int) 이동 사이즈.
 	// Return: (int) 이동된 사이즈.
 	//////////////////////////////////////////////////////////////////////////
-	int		MoveWritePos(int iSize);
-	int		MoveReadPos(int iSize);
+	int		MoveFront(int iSize);
+	int		MoveRear(int iSize);
 	/// <summary>
 	/// 현재 버퍼의 사용 가능 사이즈 반환
 	/// </summary>
@@ -99,19 +99,39 @@ public:
 	CPacket& operator >> (unsigned short& wValue);
 
 	CPacket& operator >> (int& iValue);
-	CPacket& operator >> (unsigned int& dwValue);
+	CPacket& operator >> (long& dwValue);
 	CPacket& operator >> (float& fValue);
 
 	CPacket& operator >> (__int64& iValue);
 	CPacket& operator >> (double& dValue);
+
+	//////////////////////////////////////////////////////////////////////////
+	// 데이타 얻기.
+	//
+	// Parameters: (char *)Dest 포인터. (int)Size.
+	// Return: (int)복사한 사이즈.
+	//////////////////////////////////////////////////////////////////////////
+	int		GetData(char* chpDest, int iLength);
+	int		GetData(wchar_t* chpDest, int iLength);
+
+	//////////////////////////////////////////////////////////////////////////
+	// 데이타 삽입.
+	//
+	// Parameters: (char *)Src 포인터. (int)SrcSize.
+	// Return: (int)복사한 사이즈.
+	//////////////////////////////////////////////////////////////////////////
+	int		PutData(const char* chpSrc, int iLength);
+	int		PutData(const wchar_t* chpSrc, int iLength);
+
+	CPacket& operator << (const char* s);
+	CPacket& operator << (const wchar_t* s);
 
 protected:
 	/// <summary>
 	/// 버퍼 크기를 패킷의 기본 버퍼 사이즈 만큼 증가.
 	/// </summary>
 	void resize();
-	void writeBuffer(const void* src, int size);
-	void readBuffer(void* dest, int size);
+	void writeBuffer(const char* src, int size);
 
 private:
 	char* mBuffer;
