@@ -49,8 +49,8 @@ bool Session::Connect(HWND hWnd)
 	InetPton(AF_INET, ServerIP, &addr.sin_addr);
 #endif // DEBUG
 
-	
-	
+
+
 
 	int asyncselectRetval = WSAAsyncSelect(mSocket, hWnd, WM_SOCKET,
 		FD_READ | FD_WRITE | FD_CLOSE | FD_CONNECT);
@@ -88,15 +88,33 @@ void Session::SendPacket(char* packet, int size)
 
 void Session::writeProc()
 {
-	char buffer[10000];
-	int peekSize = mSendBuffer.Peek(buffer, 10000);
+	int useSize = mSendBuffer.GetUseSize();
+	int directDequeueSize = mSendBuffer.DirectDequeueSize();
+	int size = 0;
+	int remain = 0;
+	
+	if (useSize <= directDequeueSize)
+	{
+		size = useSize;
+	}
+	else
+	{
+		size = directDequeueSize;
+		remain = size - directDequeueSize;
+	}
 
-	if (peekSize == 0)
+	sendTCP(size);
+	sendTCP(remain);
+}
+
+void Session::sendTCP(int size)
+{
+	if (size == 0)
 		return;
 
-	int sendSize = send(mSocket, buffer, peekSize, 0);
+	int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), size, 0);
 
-	if (sendSize == SOCKET_ERROR)
+	if (sendSize == SOCKET_ERROR || sendSize < size)
 	{
 		int err = WSAGetLastError();
 
@@ -113,8 +131,31 @@ void Session::writeProc()
 
 void Session::ReceivePacket()
 {
-	char buffer[10000];
-	int retval = recv(mSocket, buffer, mRecvBuffer.GetFreeSize(), 0);
+	int freeSize = mSendBuffer.GetFreeSize();
+	int directEnqueueSize = mSendBuffer.DirectEnqueueSize();
+	int size = 0;
+	int remain = 0;
+
+	if (freeSize <= directEnqueueSize)
+	{
+		size = freeSize;
+	}
+	else
+	{
+		size = directEnqueueSize;
+		remain = size - directEnqueueSize;
+	}
+
+	receiveTCP(size);
+	receiveTCP(remain);
+}
+
+void Session::receiveTCP(int size)
+{
+	if (size == 0)
+		return;
+
+	int retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), mRecvBuffer.GetFreeSize(), 0);
 
 	if (retval == SOCKET_ERROR)
 	{
@@ -125,7 +166,7 @@ void Session::ReceivePacket()
 		ErrorQuit(L"Receive Error: 서버 연결 장애", __FILEW__, __LINE__);
 	}
 
-	mRecvBuffer.Enqueue(buffer, retval);
+	mRecvBuffer.MoveRear(retval);
 }
 
 void Session::recvProc()
