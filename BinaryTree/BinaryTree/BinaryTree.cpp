@@ -17,22 +17,20 @@ void BinaryTree::InsertNode(int data)
 {
 	if (mRoot == nullptr)
 	{
-		mRoot = new Node(data, 0);
+		mRoot = new Node(data);
 
 		return;
 	}
 
-	int count = 0;
 	Node* node = mRoot;
 
 	while (1)
 	{
-		count++;
 		if (node->data > data)
 		{
 			if (node->left == nullptr)
 			{
-				node->left = new Node(data, count);
+				node->left = new Node(data);
 				return;
 			}
 
@@ -42,7 +40,7 @@ void BinaryTree::InsertNode(int data)
 		{
 			if (node->right == nullptr)
 			{
-				node->right = new Node(data, count);
+				node->right = new Node(data);
 				return;
 			}
 
@@ -53,24 +51,24 @@ void BinaryTree::InsertNode(int data)
 
 void BinaryTree::printTree()
 {
-	printHelper(mRoot);
+	printHelper(mRoot, 0);
 }
 
-void BinaryTree::printHelper(Node* root)
+void BinaryTree::printHelper(Node* root, int depth)
 {
 	if (root == nullptr)
 		return;
 
-	printHelper(root->left);
+	printHelper(root->left, depth + 1);
 	
 	int count = 0;
-	while (count++ < root->depth)
+	while (count++ < depth)
 	{
 		cout << "\t";
 	}
-	cout << root->data << "(" << root->depth << ")" << endl;
+	cout << root->data << "(" << depth << ")" << endl;
 
-	printHelper(root->right);
+	printHelper(root->right, depth + 1);
 }
 
 void BinaryTree::deleteHelper(Node* root)
