@@ -6,14 +6,12 @@ private:
 	struct Node
 	{
 		int data;
-		int depth;
 
 		Node* left;
 		Node* right;
 
-		Node(int data, int depth)
+		Node(int data)
 			: data(data)
-			, depth(depth)
 			, left(nullptr)
 			, right(nullptr)
 		{
@@ -27,7 +25,7 @@ public:
 	void printTree();
 
 private:
-	void printHelper(Node* root);
+	void printHelper(Node* root, int depth);
 	void deleteHelper(Node* root);
 
 private:
