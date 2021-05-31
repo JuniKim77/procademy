@@ -3,103 +3,319 @@
 #include <stdio.h>
 #include <memory>
 
-CSVFile::CSVFile(const char* fileName)
+CSVFile::CSVFile(const WCHAR* fileName)
 	: mFileName(fileName)
-	, mBuffer(nullptr)
+	, mpBuffer(nullptr)
 {
-	
+	readFile();
 }
 
 CSVFile::~CSVFile()
 {
-	if (mBuffer == nullptr)
+	if (mpBuffer != nullptr)
 	{
-		return;
+		delete[] (mpBuffer - 1);
 	}
-
-	delete[] mBuffer;
 }
 
 void CSVFile::readFile()
 {
 	FILE* fin;
 
-	fopen_s(&fin, mFileName, "r");
+	// UTF-8 이라도 읽고 나면 UTF-16LE 로 바뀜
+	_wfopen_s(&fin, mFileName, L"r,ccs=UTF-8");
+
 	fseek(fin, 0, SEEK_END);
-
+	// 이 사이즈는 UTF-8 기준이기 때문에 실제 필요한 바이트 보다 작다.
 	int size = ftell(fin);
-	mBuffer = new char[size];
-	memset(mBuffer, 0, size);
-	fseek(fin, 0, SEEK_SET);
-	int test = fread_s(mBuffer, size, size, 1, fin);
+	mpBuffer = new WCHAR[size + 2];
+	memset(mpBuffer, 0, (size + 2) * 2);
+	mpBuffer++;
 
-	mRowSize = countRow(mBuffer);
-	mColSize = countCol(mBuffer);
+	fseek(fin, 0, SEEK_SET);
+	int result = fread_s(mpBuffer, (size + 1) * 2, (size + 1) * 2, 1, fin);
+
+	mpCurrent = mpBuffer;
+
+	countRow();
+	countCol();
 
 	fclose(fin);
 }
 
-const char* CSVFile::GetRowAddress(int line)
+bool CSVFile::SelectRow(int x)
 {
-	if (line < 1 || line > mRowSize)
-		return nullptr;
-
-	char* pBuf = mBuffer;
-	int count = 0;
-
-	while (count < line)
+	if (x < 0 || x >= mRowSize)
 	{
-		while (*pBuf != '\n')
+		// log
+		return false;
+	}
+
+	mpCurrent = mpBuffer;
+
+	int rowCount = 0;
+	
+	while (rowCount < x)
+	{
+		while (1)
 		{
-			++pBuf;
+			if (*mpCurrent == L'\n')
+			{
+				++mpCurrent;
+				break;
+			}
+
+			++mpCurrent;
 		}
-		++pBuf;
-		++count;
+
+		rowCount++;
 	}
 
-	return pBuf;
+	return true;
 }
 
-const char* CSVFile::GetTitleAddress()
+bool CSVFile::NextRow()
 {
-	char* pBuf = mBuffer;
-
-	while (*pBuf < 0)
-	{
-		++pBuf;
-	}
-
-	return pBuf;
-}
-
-int CSVFile::countRow(const char* buffer) const
-{
-	const char* pBuf = buffer;
 	int count = 0;
 
-	while (*pBuf != '\0')
+	while (1)
 	{
-		if (*pBuf == '\n')
+		if (*mpCurrent == L'\0')
+		{
+			return false;
+		}
+
+		if (count == mColSize)
+		{
+			break;
+		}
+
+		if (*mpCurrent == L',' || *mpCurrent == L'\n')
+		{
+			count++;
+		}
+
+		++mpCurrent;
+	}
+
+	return true;
+}
+
+bool CSVFile::PreRow()
+{
+	int count = 0;
+
+	while (1)
+	{
+		if (count == mColSize)
+		{
+			while (1)
+			{
+				if (*mpCurrent == L',' || *mpCurrent == L'\0')
+				{
+					++mpCurrent;
+					break;
+				}
+				--mpCurrent;
+			}
+			break;
+		}
+
+		if (*mpCurrent == L'\0')
+		{
+			return false;
+		}
+
+		if (*mpCurrent == L',' || *mpCurrent == L'\n')
+		{
+			count++;
+		}
+
+		--mpCurrent;
+	}
+
+	return true;
+}
+
+bool CSVFile::MoveColumn(int x)
+{
+	if (x < 0 || x >= mColSize)
+		return false;
+
+	while (1)
+	{
+		if (*mpCurrent == L'\n' || *mpCurrent == L'\0')
+		{
+			++mpCurrent;
+			break;
+		}
+		--mpCurrent;
+	}
+
+	int count = 0;
+
+	while (count < x)
+	{
+		if (*mpCurrent == L',')
+		{
+			count++;
+		}
+
+		++mpCurrent;
+	}
+
+	return true;
+}
+
+bool CSVFile::NextColumn()
+{
+	while (1)
+	{
+		if (*mpCurrent == L',' || *mpCurrent == L'\n')
+		{
+			++mpCurrent;
+			break;
+		}
+
+		if (*mpCurrent == L'\0')
+		{
+			return false;
+		}
+
+		++mpCurrent;
+	}
+
+	return true;
+}
+
+bool CSVFile::PreColumn()
+{
+	if (mpCurrent == mpBuffer)
+	{
+		return false;
+	}
+
+	mpCurrent -= 2;
+
+	while (1)
+	{
+		if (*mpCurrent == L',' || *mpCurrent == L'\n')
+		{
+			++mpCurrent;
+			break;
+		}
+
+		if (*mpCurrent == L'\0')
+		{
+			++mpCurrent;
+			break;
+		}
+
+		--mpCurrent;
+	}
+
+	return true;
+}
+
+int CSVFile::GetColumn(WCHAR* chValue, int size)
+{
+	if (size <= 0)
+		return 0;
+
+	WCHAR* pBuf = mpCurrent;
+	int len = 0;
+
+	while (1)
+	{
+		if (*pBuf == L',' || *pBuf == L'\n' || *pBuf == L'\0')
+		{
+			break;
+		}
+		++len;
+		++pBuf;
+	}
+
+	if (len == 0)
+		return 0;
+
+	pBuf = mpCurrent;
+	int count = 0;
+	WCHAR* dest = chValue;
+
+	if (size <= len)
+	{
+		while (count < size)
+		{
+			*dest++ = *pBuf++;
+			count++;
+		}
+
+		return size - 1;
+	}
+	
+	while (count < len)
+	{
+		*dest++ = *pBuf++;
+		count++;
+	}
+
+	return len;
+}
+
+bool CSVFile::GetColumn(int* iValue)
+{
+	if (*mpCurrent == L',')
+		return false;
+
+	WCHAR* pBuf = mpCurrent;
+	int len = 0;
+
+	while (1)
+	{
+		if (*pBuf == L',' || *pBuf == L'\n' || *pBuf == L'\0')
+		{
+			break;
+		}
+		++len;
+		++pBuf;
+	}
+
+	pBuf = mpCurrent;
+	*iValue = _wtoi(pBuf);
+
+	return true;
+}
+
+void CSVFile::countRow()
+{
+	const WCHAR* pBuf = mpBuffer;
+	int count = 0;
+
+	while (*pBuf != L'\0')
+	{
+		if (*pBuf == L'\n')
+		{
+			++count;
+		}
+
+		++pBuf;
+	}
+
+	mRowSize = count + 1;
+}
+
+void CSVFile::countCol()
+{
+	const WCHAR* pBuf = mpBuffer;
+	int count = 0;
+
+	while (*pBuf != L'\n')
+	{
+		if (*pBuf == L',')
 			++count;
 
 		++pBuf;
 	}
 
-	return count - 1;
-}
-
-int CSVFile::countCol(const char* buffer) const
-{
-	const char* pBuf = buffer;
-	int count = 0;
-
-	while (*pBuf != '\n')
-	{
-		if (*pBuf == ',')
-			++count;
-
-		++pBuf;
-	}
-
-	return count + 1;
+	mColSize = count + 1;
 }
