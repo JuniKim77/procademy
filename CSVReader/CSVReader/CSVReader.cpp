@@ -14,7 +14,7 @@ CSVFile::~CSVFile()
 {
 	if (mpBuffer != nullptr)
 	{
-		delete[] mpBuffer;
+		delete[] (mpBuffer - 1);
 	}
 }
 
@@ -22,17 +22,18 @@ void CSVFile::readFile()
 {
 	FILE* fin;
 
-	_wfopen_s(&fin, mFileName, L"r,ccs=UTF-16LE");
+	// UTF-8 이라도 읽고 나면 UTF-16LE 로 바뀜
+	_wfopen_s(&fin, mFileName, L"r,ccs=UTF-8");
 
 	fseek(fin, 0, SEEK_END);
-
+	// 이 사이즈는 UTF-8 기준이기 때문에 실제 필요한 바이트 보다 작다.
 	int size = ftell(fin);
-	mpBuffer = new WCHAR[size];
-#ifdef _DEBUG
-	memset(mBuffer, 0, size);
-#endif
+	mpBuffer = new WCHAR[size + 2];
+	memset(mpBuffer, 0, (size + 2) * 2);
+	mpBuffer++;
+
 	fseek(fin, 0, SEEK_SET);
-	int result = fread_s(mpBuffer, size, size, 1, fin);
+	int result = fread_s(mpBuffer, (size + 1) * 2, (size + 1) * 2, 1, fin);
 
 	mpCurrent = mpBuffer;
 
@@ -42,68 +43,247 @@ void CSVFile::readFile()
 	fclose(fin);
 }
 
-void CSVFile::SelectRow(int x)
+bool CSVFile::SelectRow(int x)
 {
 	if (x < 0 || x >= mRowSize)
-		return;
+	{
+		// log
+		return false;
+	}
 
 	mpCurrent = mpBuffer;
 
 	int rowCount = 0;
 	
-	while (rowCount < x) 
+	while (rowCount < x)
 	{
-		int colCount = 0;
-
-		while (colCount < mColSize)
+		while (1)
 		{
+			if (*mpCurrent == L'\n')
+			{
+				++mpCurrent;
+				break;
+			}
 
+			++mpCurrent;
 		}
+
+		rowCount++;
 	}
+
+	return true;
 }
 
-void CSVFile::NextRow()
+bool CSVFile::NextRow()
 {
+	int count = 0;
+
+	while (1)
+	{
+		if (*mpCurrent == L'\0')
+		{
+			return false;
+		}
+
+		if (count == mColSize)
+		{
+			break;
+		}
+
+		if (*mpCurrent == L',' || *mpCurrent == L'\n')
+		{
+			count++;
+		}
+
+		++mpCurrent;
+	}
+
+	return true;
 }
 
-void CSVFile::PreRow()
+bool CSVFile::PreRow()
 {
+	int count = 0;
+
+	while (1)
+	{
+		if (count == mColSize)
+		{
+			while (1)
+			{
+				if (*mpCurrent == L',' || *mpCurrent == L'\0')
+				{
+					++mpCurrent;
+					break;
+				}
+				--mpCurrent;
+			}
+			break;
+		}
+
+		if (*mpCurrent == L'\0')
+		{
+			return false;
+		}
+
+		if (*mpCurrent == L',' || *mpCurrent == L'\n')
+		{
+			count++;
+		}
+
+		--mpCurrent;
+	}
+
+	return true;
 }
 
-void CSVFile::MoveColumn(int x)
+bool CSVFile::MoveColumn(int x)
 {
+	if (x < 0 || x >= mColSize)
+		return false;
+
+	while (1)
+	{
+		if (*mpCurrent == L'\n' || *mpCurrent == L'\0')
+		{
+			++mpCurrent;
+			break;
+		}
+		--mpCurrent;
+	}
+
+	int count = 0;
+
+	while (count < x)
+	{
+		if (*mpCurrent == L',')
+		{
+			count++;
+		}
+
+		++mpCurrent;
+	}
+
+	return true;
 }
 
-void CSVFile::NextColumn()
+bool CSVFile::NextColumn()
 {
+	while (1)
+	{
+		if (*mpCurrent == L',' || *mpCurrent == L'\n')
+		{
+			++mpCurrent;
+			break;
+		}
+
+		if (*mpCurrent == L'\0')
+		{
+			return false;
+		}
+
+		++mpCurrent;
+	}
+
+	return true;
 }
 
-void CSVFile::PreColumn()
+bool CSVFile::PreColumn()
 {
+	if (mpCurrent == mpBuffer)
+	{
+		return false;
+	}
+
+	mpCurrent -= 2;
+
+	while (1)
+	{
+		if (*mpCurrent == L',' || *mpCurrent == L'\n')
+		{
+			++mpCurrent;
+			break;
+		}
+
+		if (*mpCurrent == L'\0')
+		{
+			++mpCurrent;
+			break;
+		}
+
+		--mpCurrent;
+	}
+
+	return true;
 }
 
-void CSVFile::GetColumn(char* chValue)
+int CSVFile::GetColumn(WCHAR* chValue, int size)
 {
+	if (size <= 0)
+		return 0;
+
+	WCHAR* pBuf = mpCurrent;
+	int len = 0;
+
+	while (1)
+	{
+		if (*pBuf == L',' || *pBuf == L'\n' || *pBuf == L'\0')
+		{
+			break;
+		}
+		++len;
+		++pBuf;
+	}
+
+	if (len == 0)
+		return 0;
+
+	pBuf = mpCurrent;
+	int count = 0;
+	WCHAR* dest = chValue;
+
+	if (size <= len)
+	{
+		while (count < size)
+		{
+			*dest++ = *pBuf++;
+			count++;
+		}
+
+		return size - 1;
+	}
+	
+	while (count < len)
+	{
+		*dest++ = *pBuf++;
+		count++;
+	}
+
+	return len;
 }
 
-void CSVFile::GetColumn(short* shValue)
+bool CSVFile::GetColumn(int* iValue)
 {
-}
+	if (*mpCurrent == L',')
+		return false;
 
-void CSVFile::GetColumn(int* iValue)
-{
-}
+	WCHAR* pBuf = mpCurrent;
+	int len = 0;
 
-void CSVFile::GetColumn(__int64* iiValue)
-{
-}
+	while (1)
+	{
+		if (*pBuf == L',' || *pBuf == L'\n' || *pBuf == L'\0')
+		{
+			break;
+		}
+		++len;
+		++pBuf;
+	}
 
-void CSVFile::GetColumn(float* fValue)
-{
-}
+	pBuf = mpCurrent;
+	*iValue = _wtoi(pBuf);
 
-void CSVFile::GetColumn(double* dValue)
-{
+	return true;
 }
 
 void CSVFile::countRow()
@@ -114,12 +294,14 @@ void CSVFile::countRow()
 	while (*pBuf != L'\0')
 	{
 		if (*pBuf == L'\n')
+		{
 			++count;
+		}
 
 		++pBuf;
 	}
 
-	mRowSize = count - 1;
+	mRowSize = count + 1;
 }
 
 void CSVFile::countCol()

@@ -9,18 +9,34 @@ public:
 	~CSVFile();
 	int GetRow() { return mRowSize; }
 	int GetCol() { return mColSize; }
-	void SelectRow(int x);
-	void NextRow();
-	void PreRow();
-	void MoveColumn(int x);
-	void NextColumn();
-	void PreColumn();
-	void GetColumn(char* chValue);
-	void GetColumn(short* shValue);
-	void GetColumn(int* iValue);
-	void GetColumn(__int64* iiValue);
-	void GetColumn(float* fValue);
-	void GetColumn(double* dValue);
+	/// <summary>
+	/// 선택 Row의 첫번째 Col로 이동
+	/// </summary>
+	/// <param name="x"></param>
+	bool SelectRow(int x);
+	/// <summary>
+	/// 현재 기준 다음 줄의 해당 col로 이동
+	/// </summary>
+	bool NextRow();
+	/// <summary>
+	/// 현재 기준 이전 줄의 해당 col로 이동
+	/// </summary>
+	bool PreRow();
+	/// <summary>
+	/// 현재 줄의 x 번째 col로 이동
+	/// </summary>
+	/// <param name="x"></param>
+	bool MoveColumn(int x);
+	/// <summary>
+	/// 현재 기준 다음 col로 이동
+	/// </summary>
+	bool NextColumn();
+	/// <summary>
+	/// 현재 기준 이전 col로 이동
+	/// </summary>
+	bool PreColumn();
+	int GetColumn(WCHAR* chValue, int size);
+	bool GetColumn(int* iValue);
 
 private:
 	void readFile();
