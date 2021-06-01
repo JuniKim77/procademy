@@ -36,5 +36,5 @@ private:
 	void deleteHelper(Node* root);
 
 private:
-	Node* mRoot;
+	BinaryTree::Node* mRoot;
 };
