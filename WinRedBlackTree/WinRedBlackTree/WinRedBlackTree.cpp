@@ -8,6 +8,7 @@
 
 // 전역 변수:
 HWND gMainWindow;
+HINSTANCE gInstance;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -28,7 +29,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // 전역 문자열을 초기화합니다.
 
     // 애플리케이션 초기화를 수행합니다:
-    OpenConsole();
+    //OpenConsole();
 
     if (CreateMainWindow(hInstance, L"MainWindow", L"Red Black Tree") == false)
         return 1;
@@ -42,7 +43,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		DispatchMessage(&msg);
     }
 
-    FreeConsole();
+    //FreeConsole();
 
     return (int) msg.wParam;
 }
@@ -59,18 +60,34 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    static HWND editor;
+    static HWND btn_insert;
+    static HWND btn_delete;
+
     switch (message)
     {
+    case WM_CREATE:
+    {
+        int x = GetSystemMetrics(SM_CXSCREEN) * 0.1;
+        int y = GetSystemMetrics(SM_CYSCREEN) * 0.8;
+
+        editor = CreateWindowW(L"edit", nullptr, WS_CHILD | WS_VISIBLE | ES_NUMBER, x, y + 25, 100, 20, hWnd, (HMENU)0, gInstance, NULL);
+        SendMessageW(editor, EM_LIMITTEXT, (WPARAM)10, 0);
+        CreateWindowW(L"button", L"입력", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 25, 80, 20, hWnd, (HMENU)1, gInstance, NULL);
+        CreateWindowW(L"button", L"삭제", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 25, 80, 20, hWnd, (HMENU)2, gInstance, NULL);
+        break;
+    }
     case WM_KEYDOWN:
     {
-        HDC hdc = GetDC(hWnd);
-
-        int x = rand() % 1000;
-        int y = rand() % 1000;
-
-        TextOutW(hdc, x, y, L"A", 1);
-
-        ReleaseDC(hWnd, hdc);
+        switch (wParam)
+        {
+        case VK_SPACE:
+            SetFocus(editor);
+            break;
+        case VK_ESCAPE:
+            SetFocus(gMainWindow);
+            break;
+        }
     }
     case WM_COMMAND:
         {
@@ -78,6 +95,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // 메뉴 선택을 구문 분석합니다:
             switch (wmId)
             {
+            case 1:
+            {
+                WCHAR text[20];
+                SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
+                SetWindowText(editor, L"");
+                SetFocus(gMainWindow);
+                InvalidateRect(hWnd, nullptr, TRUE);
+                break;
+            }
+            case 2:
+                WCHAR text[20];
+                SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
+                SetWindowText(editor, L"");
+                SetFocus(gMainWindow);
+                InvalidateRect(hWnd, nullptr, TRUE);
+                break;
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
@@ -91,11 +124,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-            int x = GetSystemMetrics(SM_CXSCREEN) * 0.1;
-            int y = GetSystemMetrics(SM_CYSCREEN) * 0.8;
-            WCHAR str[] = L"1. 노드 입력    |    2. 노드 삭제";
-            SetBkMode(hdc, TRANSPARENT);
-            TextOutW(hdc, x, y, str, _countof(str) - 1);
+            HBRUSH myBrush = CreateSolidBrush(RGB(150, 0, 0));
+            SelectObject(hdc, myBrush);
+            Ellipse(hdc, 200, 200, 250, 250);
             EndPaint(hWnd, &ps);
         }
         break;
@@ -121,7 +152,7 @@ bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName
     wcex.hInstance = hInstance;
     wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINREDBLACKTREE));
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)GetStockObject(LTGRAY_BRUSH);
+    wcex.hbrBackground = CreateSolidBrush(RGB(0, 100, 100));
     wcex.lpszMenuName = MAKEINTRESOURCEW(IDI_WINREDBLACKTREE);
     wcex.lpszClassName = className;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
@@ -129,7 +160,7 @@ bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName
     RegisterClassExW(&wcex);
 
     // 애플리케이션 초기화를 수행합니다:
-    HWND hWnd = CreateWindowExW(0, className, windowName, WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX,
+    HWND hWnd = CreateWindowExW(0, className, windowName, WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), nullptr, nullptr, hInstance, nullptr);
 
     if (hWnd == nullptr)
