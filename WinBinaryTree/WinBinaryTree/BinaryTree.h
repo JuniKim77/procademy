@@ -35,7 +35,8 @@ private:
 	Node* SearchMax(Node* root);
 	Node* SearchMin(Node* root);
 	void printHelper(Node* root, int depth);
-	void printWinHelper(HDC hdc, Node* root, int depth);
+	void printWinHelper(HDC hdc, Node* root, int beginX, int endX, int depth);
+	void drawNode(HDC hdc, Node* node, int x, int y, int leftX, int rightX);
 	void deleteHelper(Node* root);
 
 private:

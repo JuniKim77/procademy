@@ -67,8 +67,11 @@ void BinaryTree::printTreeWin(HWND hWnd)
 	HBRUSH myBrush = CreateSolidBrush(RGB(0, 150, 0));
 	SelectObject(hdc, myBrush);
 	SetBkMode(hdc, TRANSPARENT);
+	SetTextAlign(hdc, TA_CENTER);
 
-	printWinHelper(hdc, mRoot, 0);
+	int x = GetSystemMetrics(SM_CXSCREEN);
+
+	printWinHelper(hdc, mRoot, 0, x, 0);
 }
 
 bool BinaryTree::DeleteNode(int data)
@@ -255,24 +258,40 @@ void BinaryTree::printHelper(Node* root, int depth)
 	printHelper(root->right, depth + 1);
 }
 
-void BinaryTree::printWinHelper(HDC hdc, Node* root, int depth)
+void BinaryTree::printWinHelper(HDC hdc, Node* root, int beginX, int endX, int depth)
 {
 	if (root == nullptr)
 		return;
 
-	printHelper(root->left, depth + 1);
+	int x = (beginX + endX) / 2;
+	int y = 100 * depth;
 
-	int width = GetSystemMetrics(SM_CXSCREEN);
-	int height = GetSystemMetrics(SM_CXSCREEN);
-	int w = width / 2;
-	int h = height / 2;
-	Ellipse(hdc, w, 0, w + 50, 50);
+	drawNode(hdc, root, x, y, (beginX + x) / 2, (x + endX) / 2);
+
+	printWinHelper(hdc, root->left, beginX, x, depth + 1);
+	printWinHelper(hdc, root->right, x, endX, depth + 1);
+}
+
+void BinaryTree::drawNode(HDC hdc, Node* node, int x, int y, int leftX, int rightX)
+{
+	// 선 그리기
+	if (node->left != nullptr)
+	{
+		MoveToEx(hdc, x + 25, y + 17, NULL);
+		LineTo(hdc, leftX + 25, y + 117);
+	}
+
+	if (node->right != nullptr)
+	{
+		MoveToEx(hdc, x + 25, y + 17, NULL);
+		LineTo(hdc, rightX + 25, y + 117);
+	}
+
+	Ellipse(hdc, x, y, x + 50, y + 50);
 	WCHAR text[20];
-	wsprintf(text, L"%d", mRoot->data);
+	wsprintf(text, L"%d", node->data);
 
-	TextOut(hdc, w + 10, 20, text, wcslen(text));
-
-	printHelper(root->right, depth + 1);
+	TextOut(hdc, x + 25, y + 17, text, wcslen(text));	
 }
 
 void BinaryTree::deleteHelper(Node* root)
