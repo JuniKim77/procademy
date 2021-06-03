@@ -5,6 +5,7 @@
 #include "WinRedBlackTree.h"
 #include <windowsx.h>
 #include <locale>
+#include "RedBlackTree.h"
 
 // 전역 변수:
 HWND gMainWindow;
@@ -14,12 +15,14 @@ HINSTANCE gInstance;
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName);
 void OpenConsole();
+void InitData();
+RedBlackTree g_RedBlackTree;
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPWSTR    lpCmdLine,
+    _In_ int       nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
@@ -30,8 +33,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // 애플리케이션 초기화를 수행합니다:
     //OpenConsole();
+    InitData();
 
-    if (CreateMainWindow(hInstance, L"MainWindow", L"Red Black Tree") == false)
+    if (CreateMainWindow(hInstance, L"MainWindow", L"Binary Tree") == false)
         return 1;
 
     MSG msg;
@@ -39,13 +43,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // 기본 메시지 루프입니다:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
     }
 
     //FreeConsole();
 
-    return (int) msg.wParam;
+    return (int)msg.wParam;
 }
 
 //
@@ -75,6 +79,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SendMessageW(editor, EM_LIMITTEXT, (WPARAM)10, 0);
         CreateWindowW(L"button", L"입력", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 25, 80, 20, hWnd, (HMENU)1, gInstance, NULL);
         CreateWindowW(L"button", L"삭제", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 25, 80, 20, hWnd, (HMENU)2, gInstance, NULL);
+        CreateWindowW(L"button", L"L 회전", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 50, 80, 20, hWnd, (HMENU)3, gInstance, NULL);
+        CreateWindowW(L"button", L"R 회전", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 50, 80, 20, hWnd, (HMENU)4, gInstance, NULL);
         break;
     }
     case WM_KEYDOWN:
@@ -90,46 +96,75 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
     }
     case WM_COMMAND:
+    {
+        int wmId = LOWORD(wParam);
+        // 메뉴 선택을 구문 분석합니다:
+        switch (wmId)
         {
-            int wmId = LOWORD(wParam);
-            // 메뉴 선택을 구문 분석합니다:
-            switch (wmId)
-            {
-            case 1:
-            {
-                WCHAR text[20];
-                SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
-                SetWindowText(editor, L"");
-                SetFocus(gMainWindow);
-                InvalidateRect(hWnd, nullptr, TRUE);
-                break;
-            }
-            case 2:
-                WCHAR text[20];
-                SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
-                SetWindowText(editor, L"");
-                SetFocus(gMainWindow);
-                InvalidateRect(hWnd, nullptr, TRUE);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
+        case 1:
+        {
+            WCHAR text[20] = { 0, };
+            SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
+            SetWindowText(editor, L"");
+            SetFocus(gMainWindow);
+            g_RedBlackTree.InsertNode(_wtoi(text));
+            InvalidateRect(hWnd, nullptr, TRUE);
+            break;
         }
-        break;
+        case 2:
+        {
+            WCHAR text[20] = { 0, };
+            SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
+            SetWindowText(editor, L"");
+            SetFocus(gMainWindow);
+            g_RedBlackTree.DeleteNode(_wtoi(text));
+            InvalidateRect(hWnd, nullptr, TRUE);
+            break;
+        }
+        case 3:
+        {
+            WCHAR text[20] = { 0, };
+            SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
+            SetWindowText(editor, L"");
+            SetFocus(gMainWindow);
+            RedBlackTree::Node* node = g_RedBlackTree.SearchHelper(_wtoi(text));
+            if (node != g_RedBlackTree.Nil) {
+                g_RedBlackTree.RotateLeft(node);
+                InvalidateRect(hWnd, nullptr, TRUE);
+            }
+            
+            break;
+        }
+        case 4:
+        {
+            WCHAR text[20] = { 0, };
+            SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
+            SetWindowText(editor, L"");
+            SetFocus(gMainWindow);
+            RedBlackTree::Node* node = g_RedBlackTree.SearchHelper(_wtoi(text));
+            if (node != g_RedBlackTree.Nil) {
+                g_RedBlackTree.RotateRight(node);
+                InvalidateRect(hWnd, nullptr, TRUE);
+            }
+            break;
+        }
+        case IDM_EXIT:
+            DestroyWindow(hWnd);
+            break;
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
+        }
+    }
+    break;
     case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-            HBRUSH myBrush = CreateSolidBrush(RGB(150, 0, 0));
-            SelectObject(hdc, myBrush);
-            Ellipse(hdc, 200, 200, 250, 250);
-            EndPaint(hWnd, &ps);
-        }
-        break;
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+        g_RedBlackTree.printTreeWin(hWnd);
+        EndPaint(hWnd, &ps);
+    }
+    break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
@@ -191,4 +226,21 @@ void OpenConsole()
     }
 
     system("mode con: cols=80 lines=20");
+}
+
+void InitData()
+{
+    g_RedBlackTree.InsertNode(400);
+    g_RedBlackTree.InsertNode(200);
+    g_RedBlackTree.InsertNode(600);
+    g_RedBlackTree.InsertNode(100);
+    g_RedBlackTree.InsertNode(300);
+    g_RedBlackTree.InsertNode(500);
+    g_RedBlackTree.InsertNode(700);
+    g_RedBlackTree.InsertNode(50);
+    g_RedBlackTree.InsertNode(350);
+    g_RedBlackTree.InsertNode(650);
+    g_RedBlackTree.InsertNode(250);
+    g_RedBlackTree.InsertNode(450);
+    g_RedBlackTree.InsertNode(1000);
 }

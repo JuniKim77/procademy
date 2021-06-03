@@ -141,11 +141,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="RedBlackTree.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="WinRedBlackTree.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="RedBlackTree.cpp" />
     <ClCompile Include="WinRedBlackTree.cpp" />
   </ItemGroup>
   <ItemGroup>
