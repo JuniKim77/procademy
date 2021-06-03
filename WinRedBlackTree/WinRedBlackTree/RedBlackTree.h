@@ -133,12 +133,18 @@ private:
 	/// 삭제 시, Rep 왼쪽 편 BLACK, Sibling RED
 	/// </summary>
 	/// <param name="root"></param>
-	void DeleteRebalanceSibligRedLeft(Node* root);
+	void DeleteRebalanceSiblingRedLeft(Node* root);
 	/// <summary>
 	/// 삭제 시, Rep 오른쪽 편 BLACK, Sibling RED
 	/// </summary>
 	/// <param name="root"></param>
-	void DeleteRebalanceSibligRedRight(Node* root);
+	void DeleteRebalanceSiblingRedRight(Node* root);
+	/// <summary>
+	/// 삭제 시, Sibling BLACK, 두 자식 모두 BLACK
+	/// </summary>
+	/// <param name="root"></param>
+	/// <returns></returns>
+	RedBlackTree::Node* DeleteRebalanceSiblingBlackBothBlack(Node* root);
 
 private:
 	RedBlackTree::Node* Nil;
