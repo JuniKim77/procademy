@@ -7,11 +7,13 @@ using namespace std;
 BinaryTree::BinaryTree()
 	: mRoot(nullptr)
 {
+	mBrush = CreateSolidBrush(RGB(0, 150, 0));
 }
 
 BinaryTree::~BinaryTree()
 {
 	deleteHelper(mRoot);
+	DeleteObject(mBrush);
 }
 
 void BinaryTree::InsertNode(int data)
@@ -64,14 +66,15 @@ void BinaryTree::printTree()
 void BinaryTree::printTreeWin(HWND hWnd)
 {
 	HDC hdc = GetDC(hWnd);
-	HBRUSH myBrush = CreateSolidBrush(RGB(0, 150, 0));
-	SelectObject(hdc, myBrush);
+	SelectObject(hdc, mBrush);
 	SetBkMode(hdc, TRANSPARENT);
 	SetTextAlign(hdc, TA_CENTER);
 
 	int x = GetSystemMetrics(SM_CXSCREEN);
 
 	printWinHelper(hdc, mRoot, 0, x, 0);
+
+	ReleaseDC(hWnd, hdc);
 }
 
 bool BinaryTree::DeleteNode(int data)
@@ -291,7 +294,7 @@ void BinaryTree::drawNode(HDC hdc, Node* node, int x, int y, int leftX, int righ
 	WCHAR text[20];
 	wsprintf(text, L"%d", node->data);
 
-	TextOut(hdc, x + 25, y + 17, text, wcslen(text));	
+	TextOut(hdc, x + 25, y + 17, text, wcslen(text));
 }
 
 void BinaryTree::deleteHelper(Node* root)

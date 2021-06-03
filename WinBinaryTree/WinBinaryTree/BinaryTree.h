@@ -41,4 +41,5 @@ private:
 
 private:
 	BinaryTree::Node* mRoot;
+	HBRUSH mBrush;
 };
