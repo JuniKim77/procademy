@@ -16,14 +16,6 @@ class RedBlackTree
 
 		int data;
 
-		Node()
-			: color(NODE_COLOR::BLACK)
-			, parent(nullptr)
-			, left(nullptr)
-			, right(nullptr)
-			, data(0)
-		{}
-
 		Node(int data)
 			: color(NODE_COLOR::RED)
 			, data(data)
@@ -48,6 +40,6 @@ private:
 	void RotateLeft(Node* root);
 
 private:
-	RedBlackTree::Node Nil;
+	RedBlackTree::Node* Nil;
 	RedBlackTree::Node* mRoot;
 };

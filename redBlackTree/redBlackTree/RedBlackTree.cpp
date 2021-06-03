@@ -2,22 +2,27 @@
 #include <iostream>
 
 RedBlackTree::RedBlackTree()
-	: mRoot(nullptr)
 {
+	Nil = new Node(-1);
+	Nil->color = NODE_COLOR::BLACK;
+	mRoot = Nil;
 }
 
 RedBlackTree::~RedBlackTree()
 {
 	DestroyHelper(mRoot);
+
+	if (Nil != nullptr)
+		delete Nil;
 }
 
 void RedBlackTree::InsertNode(int data)
 {
-	if (mRoot == nullptr)
+	if (mRoot == Nil)
 	{
 		mRoot = new Node(data);
-		mRoot->left = &Nil;
-		mRoot->right = &Nil;
+		mRoot->left = Nil;
+		mRoot->right = Nil;
 		mRoot->color = NODE_COLOR::BLACK;
 
 		return;
@@ -29,13 +34,13 @@ void RedBlackTree::InsertNode(int data)
 	{
 		if (node->data > data)
 		{
-			if (node->left == nullptr)
+			if (node->left == Nil)
 			{
 				Node* newNode = new Node(data);
-				newNode->left = &Nil;
-				newNode->right = &Nil;
-				node->left = newNode;
+				newNode->left = Nil;
+				newNode->right = Nil;
 				newNode->parent = node;
+				node->left = newNode;
 
 				// Balancing
 
@@ -46,13 +51,13 @@ void RedBlackTree::InsertNode(int data)
 		}
 		else
 		{
-			if (node->right == nullptr)
+			if (node->right == Nil)
 			{
 				Node* newNode = new Node(data);
-				newNode->left = &Nil;
-				newNode->right = &Nil;
-				node->right = newNode;
+				newNode->left = Nil;
+				newNode->right = Nil;
 				newNode->parent = node;
+				node->right = newNode;
 
 				// Balancing
 
@@ -178,7 +183,7 @@ RedBlackTree::Node* RedBlackTree::SearchHelper(int data)
 {
 	Node* pNode = mRoot;
 
-	while (pNode != nullptr)
+	while (pNode != Nil)
 	{
 		if (pNode->data == data)
 		{
@@ -194,16 +199,16 @@ RedBlackTree::Node* RedBlackTree::SearchHelper(int data)
 		}
 	}
 
-	return nullptr;
+	return Nil;
 }
 
 RedBlackTree::Node* RedBlackTree::SearchMax(Node* root)
 {
 	Node* pNode = root;
 
-	while (pNode != nullptr)
+	while (pNode != Nil)
 	{
-		if (pNode->right == nullptr)
+		if (pNode->right == Nil)
 		{
 			return pNode;
 		}
@@ -211,16 +216,16 @@ RedBlackTree::Node* RedBlackTree::SearchMax(Node* root)
 		pNode = pNode->right;
 	}
 
-	return nullptr;
+	return Nil;
 }
 
 RedBlackTree::Node* RedBlackTree::SearchMin(Node* root)
 {
 	Node* pNode = root;
 
-	while (pNode != nullptr)
+	while (pNode != Nil)
 	{
-		if (pNode->left == nullptr)
+		if (pNode->left == Nil)
 		{
 			return pNode;
 		}
@@ -228,27 +233,30 @@ RedBlackTree::Node* RedBlackTree::SearchMin(Node* root)
 		pNode = pNode->left;
 	}
 
-	return nullptr;
+	return Nil;
 }
 
 void RedBlackTree::DestroyHelper(Node* root)
 {
-	if (root == nullptr)
+	if (root == Nil)
 		return;
 
 	DestroyHelper(root->left);
 	DestroyHelper(root->right);
+#ifdef _DEBUG
 	std::cout << "Delete Node " << root->data << std::endl;
+#endif
 	delete root;
 }
 
 void RedBlackTree::RotateRight(Node* root)
 {
-	if (root->left == &Nil)
+	if (root->left == Nil)
 		return;
 
 	Node* parent = root->parent;
 	Node* left = root->left;
+
 	// 1. 부모 노드와 Left 연결
 	if (root == mRoot)
 	{
@@ -268,24 +276,23 @@ void RedBlackTree::RotateRight(Node* root)
 		left->parent = parent;
 	}
 
-	// 2. Left의 Right와 root와 연결
+	// 2. LR과 root와 연결
 	root->left = left->right;
 	left->right->parent = root;
 
 	// 3. Left를 Parent로 승격
 	left->right = root;
 	root->parent = left;
-
-	// Balancing
 }
 
 void RedBlackTree::RotateLeft(Node* root)
 {
-	if (root->right == &Nil)
+	if (root->right == Nil)
 		return;
 
 	Node* parent = root->parent;
 	Node* right = root->right;
+
 	// 1. 부모 노드와 Right 연결
 	if (root == mRoot)
 	{
@@ -305,13 +312,11 @@ void RedBlackTree::RotateLeft(Node* root)
 		right->parent = parent;
 	}
 
-	// 2. Right의 Left와 root와 연결
+	// 2. RL과 root와 연결
 	root->right = right->left;
 	right->left->parent = root;
 
 	// 3. Right를 Parent로 승격
 	right->left = root;
 	root->parent = right;
-
-	// Balancing
 }
