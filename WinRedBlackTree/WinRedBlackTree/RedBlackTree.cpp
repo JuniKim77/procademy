@@ -105,7 +105,7 @@ bool RedBlackTree::DeleteNode(int data)
 		{
 			DeleteRebalance(rightMin->right);
 		}
-
+		
 		delete rightMin;
 	}
 	// 하나의 자식만 갖은 경우
@@ -457,7 +457,7 @@ void RedBlackTree::Left_InsertRebalanceUncleBlack(Node* root)
 {
 	Node* parent = root->parent;
 	Node* grand = parent->parent;
-
+	
 	if (parent->right == root)
 	{
 		RotateLeft(parent);
