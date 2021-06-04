@@ -29,9 +29,9 @@ public:
 	
 
 private:
-	Node* SearchHelper(int data);
-	Node* SearchMax(Node* root);
-	Node* SearchMin(Node* root);
+	BinaryTree::Node* SearchHelper(int data);
+	BinaryTree::Node* SearchMax(Node* root);
+	BinaryTree::Node* SearchMin(Node* root);
 	void printHelper(Node* root, int depth);
 	void deleteHelper(Node* root);
 
