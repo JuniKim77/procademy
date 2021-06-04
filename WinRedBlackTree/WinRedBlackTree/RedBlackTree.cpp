@@ -428,7 +428,7 @@ void RedBlackTree::InsertRebalance(Node* originRoot)
 		{
 			if (grand->right->color == NODE_COLOR::BLACK)
 			{
-				InsertRebalanceUncleBlackLeft(root);
+				Left_InsertRebalanceUncleBlack(root);
 
 				return;
 			}
@@ -441,7 +441,7 @@ void RedBlackTree::InsertRebalance(Node* originRoot)
 		{
 			if (grand->left->color == NODE_COLOR::BLACK)
 			{
-				InsertRebalanceUncleBlackRight(root);
+				Right_InsertRebalanceUncleBlack(root);
 
 				return;
 			}
@@ -453,7 +453,7 @@ void RedBlackTree::InsertRebalance(Node* originRoot)
 	}
 }
 
-void RedBlackTree::InsertRebalanceUncleBlackLeft(Node* root)
+void RedBlackTree::Left_InsertRebalanceUncleBlack(Node* root)
 {
 	Node* parent = root->parent;
 	Node* grand = parent->parent;
@@ -475,7 +475,7 @@ void RedBlackTree::InsertRebalanceUncleBlackLeft(Node* root)
 	}
 }
 
-void RedBlackTree::InsertRebalanceUncleBlackRight(Node* root)
+void RedBlackTree::Right_InsertRebalanceUncleBlack(Node* root)
 {
 	Node* parent = root->parent;
 	Node* grand = parent->parent;
@@ -516,19 +516,13 @@ void RedBlackTree::DeleteRebalance(Node* originRoot)
 
 	while (1)
 	{
-		Node* parent = root->parent;
-
-		/*if (parent == mRoot)
-		{
-			mRoot = root;
-			mRoot->color = NODE_COLOR::BLACK;
-		}*/
-
 		if (root->color == NODE_COLOR::RED)
 		{
 			root->color = NODE_COLOR::BLACK;
 			return;
 		}
+
+		Node* parent = root->parent;
 
 		// 왼쪽편인 경우
 		if (parent->left == root)
@@ -537,32 +531,27 @@ void RedBlackTree::DeleteRebalance(Node* originRoot)
 
 			if (sibling->color == NODE_COLOR::RED)
 			{
-				DeleteRebalanceSiblingRedLeft(sibling);
+				Left_DeleteRebalanceSiblingRed(sibling);
 			}
 			else
 			{
 				if (sibling->left->color == NODE_COLOR::BLACK &&
 					sibling->right->color == NODE_COLOR::BLACK)
 				{
-					root = DeleteRebalanceSiblingBlackBothBlack(sibling);
+					root = Both_DeleteRebalanceSiblingBlackBothBlack(sibling);
 				}
 				else
 				{
 					if (sibling->left->color == NODE_COLOR::RED)
 					{
-						sibling->color = NODE_COLOR::RED;
-						sibling->left->color = NODE_COLOR::BLACK;
-
-						RotateRight(sibling);
+						Left_DeleteRebalanceSiblingBlackInsideRed(sibling);
 					}
 
 					sibling = parent->right;
 
-					sibling->color = parent->color;
-					parent->color = NODE_COLOR::BLACK;
-					sibling->right->color = NODE_COLOR::BLACK;
+					Left_DeleteRebalanceSiblingBlackOutsideRed(sibling);
 
-					RotateLeft(parent);
+					return;
 				}
 			}
 		}
@@ -573,35 +562,34 @@ void RedBlackTree::DeleteRebalance(Node* originRoot)
 
 			if (sibling->color == NODE_COLOR::RED)
 			{
-				DeleteRebalanceSiblingRedRight(sibling);
+				Right_DeleteRebalanceSiblingRed(sibling);
 			}
 			else
 			{
 				if (sibling->left->color == NODE_COLOR::BLACK &&
 					sibling->right->color == NODE_COLOR::BLACK)
 				{
-					root = DeleteRebalanceSiblingBlackBothBlack(sibling);
+					root = Both_DeleteRebalanceSiblingBlackBothBlack(sibling);
 				}
 				else
 				{
 					if (sibling->right->color == NODE_COLOR::RED)
 					{
-						sibling->color = NODE_COLOR::RED;
-						sibling->right->color = NODE_COLOR::BLACK;
-
-						RotateLeft(sibling);
+						Right_DeleteRebalanceSiblingBlackInsideRed(sibling);
 					}
 
 					sibling = parent->left;
 
+					Right_DeleteRebalanceSiblingBlackOutsideRed(sibling);
 
+					return;
 				}
 			}
 		}
 	}
 }
 
-void RedBlackTree::DeleteRebalanceSiblingRedLeft(Node* root)
+void RedBlackTree::Left_DeleteRebalanceSiblingRed(Node* root)
 {
 	Node* parent = root->parent;
 
@@ -609,9 +597,15 @@ void RedBlackTree::DeleteRebalanceSiblingRedLeft(Node* root)
 	root->color = NODE_COLOR::BLACK;
 
 	RotateLeft(parent);
+
+	if (mRoot == parent)
+	{
+		mRoot = root;
+		mRoot->color = NODE_COLOR::BLACK;
+	}
 }
 
-void RedBlackTree::DeleteRebalanceSiblingRedRight(Node* root)
+void RedBlackTree::Right_DeleteRebalanceSiblingRed(Node* root)
 {
 	Node* parent = root->parent;
 
@@ -619,12 +613,68 @@ void RedBlackTree::DeleteRebalanceSiblingRedRight(Node* root)
 	root->color = NODE_COLOR::BLACK;
 
 	RotateRight(parent);
+
+	if (mRoot == parent)
+	{
+		mRoot = root;
+		mRoot->color = NODE_COLOR::BLACK;
+	}
 }
 
-RedBlackTree::Node* RedBlackTree::DeleteRebalanceSiblingBlackBothBlack(Node* root)
+RedBlackTree::Node* RedBlackTree::Both_DeleteRebalanceSiblingBlackBothBlack(Node* root)
 {
 	Node* parent = root->parent;
 	root->color = NODE_COLOR::RED;
 
 	return parent;
+}
+
+void RedBlackTree::Left_DeleteRebalanceSiblingBlackInsideRed(Node* root)
+{
+	root->color = NODE_COLOR::RED;
+	root->left->color = NODE_COLOR::BLACK;
+
+	RotateRight(root);
+}
+
+void RedBlackTree::Right_DeleteRebalanceSiblingBlackInsideRed(Node* root)
+{
+	root->color = NODE_COLOR::RED;
+	root->right->color = NODE_COLOR::BLACK;
+
+	RotateLeft(root);
+}
+
+void RedBlackTree::Left_DeleteRebalanceSiblingBlackOutsideRed(Node* root)
+{
+	Node* parent = root->parent;
+
+	root->color = parent->color;
+	parent->color = NODE_COLOR::BLACK;
+	root->right->color = NODE_COLOR::BLACK;
+
+	RotateLeft(parent);
+
+	if (mRoot == parent)
+	{
+		mRoot = root;
+		mRoot->color = NODE_COLOR::BLACK;
+	}
+}
+
+void RedBlackTree::Right_DeleteRebalanceSiblingBlackOutsideRed(Node* root)
+{
+	Node* parent = root->parent;
+
+	root->color = parent->color;
+	parent->color = NODE_COLOR::BLACK;
+	root->left->color = NODE_COLOR::BLACK;
+
+	RotateRight(parent);
+
+	if (mRoot == parent)
+	{
+		mRoot = root;
+		mRoot->color = NODE_COLOR::BLACK;
+	}
 }

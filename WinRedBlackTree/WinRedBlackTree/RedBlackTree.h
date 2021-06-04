@@ -106,45 +106,65 @@ private:
 	/// <summary>
 	/// 입력 시 리벨런싱
 	/// </summary>
-	/// <param name="originRoot"></param>
+	/// <param name="originRoot">NewNode</param>
 	void InsertRebalance(Node* originRoot);
 	/// <summary>
 	/// 새 노드(N)가 왼쪽 편, 부모 RED, 삼촌 BLACK
 	/// </summary>
-	/// <param name="root"></param>
-	void InsertRebalanceUncleBlackLeft(Node* root);
+	/// <param name="root">NewNode</param>
+	void Left_InsertRebalanceUncleBlack(Node* root);
 	/// <summary>
 	/// 새 노드(N)가 오른쪽 편, 부모 RED, 삼촌 BLACK
 	/// </summary>
-	/// <param name="root"></param>
-	void InsertRebalanceUncleBlackRight(Node* root);
+	/// <param name="root">NewNode</param>
+	void Right_InsertRebalanceUncleBlack(Node* root);
 	/// <summary>
 	/// 입력 시, 부모 RED, 삼촌도 RED
 	/// </summary>
-	/// <param name="root"></param>
+	/// <param name="root">NewNode</param>
 	/// <returns>grand root</returns>
 	RedBlackTree::Node* InsertRebalanceUncleRed(Node* root);
 	/// <summary>
 	/// 삭제 시 리밸런싱
 	/// </summary>
-	/// <param name="originRoot"></param>
+	/// <param name="originRoot">Rep</param>
 	void DeleteRebalance(Node* originRoot);
 	/// <summary>
 	/// 삭제 시, Rep 왼쪽 편 BLACK, Sibling RED
 	/// </summary>
-	/// <param name="root"></param>
-	void DeleteRebalanceSiblingRedLeft(Node* root);
+	/// <param name="root">Sibling</param>
+	void Left_DeleteRebalanceSiblingRed(Node* root);
 	/// <summary>
 	/// 삭제 시, Rep 오른쪽 편 BLACK, Sibling RED
 	/// </summary>
-	/// <param name="root"></param>
-	void DeleteRebalanceSiblingRedRight(Node* root);
+	/// <param name="root">Sibling</param>
+	void Right_DeleteRebalanceSiblingRed(Node* root);
 	/// <summary>
 	/// 삭제 시, Sibling BLACK, 두 자식 모두 BLACK
 	/// </summary>
-	/// <param name="root"></param>
+	/// <param name="root">Sibling</param>
 	/// <returns></returns>
-	RedBlackTree::Node* DeleteRebalanceSiblingBlackBothBlack(Node* root);
+	RedBlackTree::Node* Both_DeleteRebalanceSiblingBlackBothBlack(Node* root);
+	/// <summary>
+	/// 삭제 시, Rep 왼쪽 편 BLACK, Sibling BLACK 안쪽 자식 RED
+	/// </summary>
+	/// <param name="root">Sibling</param>
+	void Left_DeleteRebalanceSiblingBlackInsideRed(Node* root);
+	/// <summary>
+	/// 삭제 시, Rep 오른쪽 편 BLACK, Sibling BLACK 안쪽 자식 RED
+	/// </summary>
+	/// <param name="root">Sibling</param>
+	void Right_DeleteRebalanceSiblingBlackInsideRed(Node* root);
+	/// <summary>
+	/// 삭제 시, Rep 왼쪽 편 BLACK, Sibling BLACK 밖깥쪽 자식 RED
+	/// </summary>
+	/// <param name="root">Sibling</param>
+	void Left_DeleteRebalanceSiblingBlackOutsideRed(Node* root);
+	/// <summary>
+	/// 삭제 시, Rep 오른쪽 편 BLACK, Sibling BLACK 밖깥쪽 자식 RED
+	/// </summary>
+	/// <param name="root">Sibling</param>
+	void Right_DeleteRebalanceSiblingBlackOutsideRed(Node* root);
 
 private:
 	RedBlackTree::Node* Nil;
