@@ -4,7 +4,9 @@
 #define PRO_BEGIN(TagName)	ProfileBegin(TagName)
 #define PRO_END(TagName)	ProfileEnd(TagName)
 #define PROFILE_MAX (50)
-#define NAME_MAX (80)
+#define NAME_MAX (20)
+#define FILE_NAME_MAX (80)
+#define COLUMN_SIZE (5)
 
 typedef struct
 {
@@ -20,6 +22,13 @@ typedef struct
 	__int64			iCall;				// 누적 호출 횟수.
 
 } PROFILE_SAMPLE;
+
+struct Setting
+{
+	WCHAR colNames[COLUMN_SIZE][32];
+	int colSize[COLUMN_SIZE];
+	int totalSize;
+};
 
 // extern PROFILE_SAMPLE gProfiles[PROFILE_MAX];
 

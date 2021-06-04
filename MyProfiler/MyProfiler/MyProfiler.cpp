@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include "CSVReader.h"
 
 PROFILE_SAMPLE gProfiles[PROFILE_MAX];
 
@@ -60,13 +61,35 @@ void ProfileEnd(const WCHAR* szName)
 
 void ProfileDataOutText(const WCHAR* szFileName)
 {
+	CSVFile csv(L"settings.csv");
+
+	Setting setting;
+
+	csv.NextColumn();
+
+	for (int i = 0; i < COLUMN_SIZE; ++i)
+	{
+		memset(setting.colNames[i], 0, NAME_MAX * 2);
+		csv.GetColumn(setting.colNames[i], NAME_MAX);
+		csv.NextColumn();
+	}
+
+	csv.GetColumn(&setting.totalSize);
+	csv.NextColumn();
+
+	for (int i = 0; i < COLUMN_SIZE; ++i)
+	{
+		csv.GetColumn(&setting.colSize[i]);
+		csv.NextColumn();
+	}
+
 	FILE* fout;
 	tm t;
 	time_t newTime;
 
 	time(&newTime);
 	localtime_s(&t, &newTime);
-	WCHAR fileName[NAME_MAX];
+	WCHAR fileName[FILE_NAME_MAX];
 
 	swprintf_s(fileName, _countof(fileName), L"%s_%04d%02d%02d_%02d%02d%02d.txt",
 		szFileName,
@@ -79,15 +102,23 @@ void ProfileDataOutText(const WCHAR* szFileName)
 
 	_wfopen_s(&fout, fileName, L"a");
 
-	WCHAR div[NAME_MAX];
-	wmemset(div, L'-', NAME_MAX);
-	div[NAME_MAX - 2] = L'\n';
-	div[NAME_MAX - 1] = L'\0';
+	WCHAR* div = new WCHAR[setting.totalSize];
+	wmemset(div, L'-', setting.totalSize);
+	div[setting.totalSize - 2] = L'\n';
+	div[setting.totalSize - 1] = L'\0';
 
 	fwprintf_s(fout, L"%ls\n", div);
 
-	WCHAR tableName[NAME_MAX];
-	swprintf_s(tableName, _countof(tableName), L"%19ls%16ls%16ls%16ls%11ls",
+	WCHAR* tableName = new WCHAR[setting.totalSize];
+	WCHAR tableSet[FILE_NAME_MAX];
+	swprintf_s(tableSet, FILE_NAME_MAX, L"%%%dls%%%dls%%%dls%%%dls%%%dls",
+		setting.colSize[0], 
+		setting.colSize[1], 
+		setting.colSize[2], 
+		setting.colSize[3], 
+		setting.colSize[4]);
+
+	swprintf_s(tableName, setting.totalSize, tableSet,
 		L"Name  |",
 		L"Average  |",
 		L"Min   |",
@@ -139,7 +170,7 @@ void ProfileDataOutText(const WCHAR* szFileName)
 		swprintf_s(maxTxt, _countof(maxTxt), L"%.4lfus |", gProfiles[i].iMax[0] / freq);
 		swprintf_s(callTxt, _countof(callTxt), L"%lld |", gProfiles[i].iCall);
 
-		swprintf_s(line, _countof(line), L"%19ls%16ls%16ls%16ls%11ls",
+		swprintf_s(line, _countof(line), tableSet,
 			nameTxt,
 			avgTxt,
 			minTxt,
@@ -152,6 +183,9 @@ void ProfileDataOutText(const WCHAR* szFileName)
 	fwprintf_s(fout, L"%ls", div);
 
 	fclose(fout);
+
+	delete[] div;
+	delete[] tableName;
 }
 
 void ProfileReset(void)
