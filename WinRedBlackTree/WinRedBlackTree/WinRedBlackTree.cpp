@@ -36,7 +36,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // 애플리케이션 초기화를 수행합니다:
     OpenConsole();
-    srand(time(NULL));
+    //srand(time(NULL));
+    srand(1000);
     InitData();
 
     if (CreateMainWindow(hInstance, L"MainWindow", L"Binary Tree") == false)

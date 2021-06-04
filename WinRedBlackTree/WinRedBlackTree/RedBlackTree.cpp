@@ -79,7 +79,7 @@ bool RedBlackTree::DeleteNode(int data)
 {
 	Node* pNode = SearchHelper(data);
 
-	wprintf_s(L"%d\n", data);
+	wprintf_s(L"삭제할 숫자: %d\n", data);
 
 	if (pNode == Nil)
 		return false;
@@ -286,7 +286,7 @@ void RedBlackTree::printNode(Node* root)
 
 void RedBlackTree::deleteNodePrint(Node* del)
 {
-	wprintf_s(L"\nDelete ");
+	wprintf_s(L"Delete ");
 	printNode(del);
 	wprintf_s(L"\nParent: ");
 	printNode(del->parent);
@@ -587,6 +587,8 @@ void RedBlackTree::DeleteRebalance(Node* originRoot)
 {
 	Node* root = originRoot;
 
+	wprintf_s(L"시작 Root: \n");
+
 	while (1)
 	{
 		printAround(root);
@@ -606,33 +608,37 @@ void RedBlackTree::DeleteRebalance(Node* originRoot)
 
 			if (sibling->color == NODE_COLOR::RED)
 			{
-				Left_DeleteRebalanceSiblingRed(sibling);
-
+				wprintf_s(L"왼쪽편인 경우, 형제가 RED인 경우: \n");
 				printAround(sibling);
+
+				Left_DeleteRebalanceSiblingRed(sibling);
 			}
 			else
 			{
 				if (sibling->left->color == NODE_COLOR::BLACK &&
 					sibling->right->color == NODE_COLOR::BLACK)
 				{
-					root = Both_DeleteRebalanceSiblingBlackBothBlack(sibling);
-
+					wprintf_s(L"왼쪽편인 경우, 형제가 BLACK인 경우, 형제의 두자식 모두 BLACK: \n");
 					printAround(sibling);
+
+					root = Both_DeleteRebalanceSiblingBlackBothBlack(sibling);
 				}
 				else
 				{
 					if (sibling->left->color == NODE_COLOR::RED)
 					{
-						Left_DeleteRebalanceSiblingBlackInsideRed(sibling);
-
+						wprintf_s(L"왼쪽편인 경우, 형제가 BLACK인 경우, 형제의 안쪽 자식 노드 RED: \n");
 						printAround(sibling);
+
+						Left_DeleteRebalanceSiblingBlackInsideRed(sibling);
 					}
 
 					sibling = parent->right;
 
-					Left_DeleteRebalanceSiblingBlackOutsideRed(sibling);
-
+					wprintf_s(L"왼쪽편인 경우, 형제가 BLACK인 경우, 형제의 밖깥 자식 노드 RED: \n");
 					printAround(sibling);
+
+					Left_DeleteRebalanceSiblingBlackOutsideRed(sibling);
 
 					return;
 				}
@@ -645,33 +651,37 @@ void RedBlackTree::DeleteRebalance(Node* originRoot)
 
 			if (sibling->color == NODE_COLOR::RED)
 			{
-				Right_DeleteRebalanceSiblingRed(sibling);
-
+				wprintf_s(L"오른쪽의 경우, 형제가 RED인 경우: \n");
 				printAround(sibling);
+
+				Right_DeleteRebalanceSiblingRed(sibling);
 			}
 			else
 			{
 				if (sibling->left->color == NODE_COLOR::BLACK &&
 					sibling->right->color == NODE_COLOR::BLACK)
 				{
-					root = Both_DeleteRebalanceSiblingBlackBothBlack(sibling);
-
+					wprintf_s(L"오른쪽의 경우, 형제가 BLACK인 경우, 형제의 두자식 모두 BLACK: \n");
 					printAround(sibling);
+
+					root = Both_DeleteRebalanceSiblingBlackBothBlack(sibling);
 				}
 				else
 				{
 					if (sibling->right->color == NODE_COLOR::RED)
 					{
-						Right_DeleteRebalanceSiblingBlackInsideRed(sibling);
-
+						wprintf_s(L"오른쪽의 경우, 형제가 BLACK인 경우, 형제의 안쪽 자식 노드 RED: \n");
 						printAround(sibling);
+
+						Right_DeleteRebalanceSiblingBlackInsideRed(sibling);
 					}
 
 					sibling = parent->left;
 
-					Right_DeleteRebalanceSiblingBlackOutsideRed(sibling);
-
+					wprintf_s(L"오른쪽의 경우, 형제가 BLACK인 경우, 형제의 밖깥 자식 노드 RED: \n");
 					printAround(sibling);
+
+					Right_DeleteRebalanceSiblingBlackOutsideRed(sibling);
 
 					return;
 				}
