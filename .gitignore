@@ -387,3 +387,7 @@ ASALocalRun/
 *.bmp
 *.png
 *.bak
+
+# Profiler
+MyProfiler/MyProfiler/*.txt
+redBlackTree/redBlackTree/*.txt
