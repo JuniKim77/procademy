@@ -1,16 +1,19 @@
 #include "BinaryTree.h"
 #include <iostream>
+#include <windowsx.h>
 
 using namespace std;
 
 BinaryTree::BinaryTree()
 	: mRoot(nullptr)
 {
+	mBrush = CreateSolidBrush(RGB(0, 150, 0));
 }
 
 BinaryTree::~BinaryTree()
 {
 	deleteHelper(mRoot);
+	DeleteObject(mBrush);
 }
 
 void BinaryTree::InsertNode(int data)
@@ -58,6 +61,20 @@ void BinaryTree::InsertNode(int data)
 void BinaryTree::printTree()
 {
 	printHelper(mRoot, 0);
+}
+
+void BinaryTree::printTreeWin(HWND hWnd)
+{
+	HDC hdc = GetDC(hWnd);
+	SelectObject(hdc, mBrush);
+	SetBkMode(hdc, TRANSPARENT);
+	SetTextAlign(hdc, TA_CENTER);
+
+	int x = GetSystemMetrics(SM_CXSCREEN);
+
+	printWinHelper(hdc, mRoot, 0, x, 0);
+
+	ReleaseDC(hWnd, hdc);
 }
 
 bool BinaryTree::DeleteNode(int data)
@@ -242,6 +259,42 @@ void BinaryTree::printHelper(Node* root, int depth)
 	cout << root->data << "(" << depth << ")" << endl;
 
 	printHelper(root->right, depth + 1);
+}
+
+void BinaryTree::printWinHelper(HDC hdc, Node* root, int beginX, int endX, int depth)
+{
+	if (root == nullptr)
+		return;
+
+	int x = (beginX + endX) / 2;
+	int y = 100 * depth;
+
+	drawNode(hdc, root, x, y, (beginX + x) / 2, (x + endX) / 2);
+
+	printWinHelper(hdc, root->left, beginX, x, depth + 1);
+	printWinHelper(hdc, root->right, x, endX, depth + 1);
+}
+
+void BinaryTree::drawNode(HDC hdc, Node* node, int x, int y, int leftX, int rightX)
+{
+	// 선 그리기
+	if (node->left != nullptr)
+	{
+		MoveToEx(hdc, x + 25, y + 17, NULL);
+		LineTo(hdc, leftX + 25, y + 117);
+	}
+
+	if (node->right != nullptr)
+	{
+		MoveToEx(hdc, x + 25, y + 17, NULL);
+		LineTo(hdc, rightX + 25, y + 117);
+	}
+
+	Ellipse(hdc, x, y, x + 50, y + 50);
+	WCHAR text[20];
+	wsprintf(text, L"%d", node->data);
+
+	TextOut(hdc, x + 25, y + 17, text, wcslen(text));
 }
 
 void BinaryTree::deleteHelper(Node* root)

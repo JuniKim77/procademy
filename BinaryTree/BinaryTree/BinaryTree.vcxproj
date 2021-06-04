@@ -141,7 +141,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BinaryTree.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="main.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BinaryTree.h" />

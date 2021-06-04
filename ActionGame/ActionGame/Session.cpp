@@ -10,6 +10,7 @@
 #include "PlayerObject.h"
 #include "EffectObject.h"
 #include "ActionDefine.h"
+#include "CPacket.h"
 
 extern HWND gMainWindow;
 extern myList<BaseObject*> gObjectList;
@@ -48,9 +49,6 @@ bool Session::Connect(HWND hWnd)
 	_getws_s(ServerIP);
 	InetPton(AF_INET, ServerIP, &addr.sin_addr);
 #endif // DEBUG
-
-
-
 
 	int asyncselectRetval = WSAAsyncSelect(mSocket, hWnd, WM_SOCKET,
 		FD_READ | FD_WRITE | FD_CLOSE | FD_CONNECT);
@@ -193,78 +191,55 @@ void Session::recvProc()
 
 void Session::readMessage(stHeader* header)
 {
+	CPacket packet;
+	mRecvBuffer.Dequeue(packet.GetBufferPtr(), header->bySize);
+	packet.MoveRear(header->bySize);
+
 	switch (header->byType)
 	{
 	case dfPACKET_SC_CREATE_MY_CHARACTER:
 	{
-		scCreateMyCharacter packet;
-		mRecvBuffer.Dequeue((char*)&packet, sizeof(packet));
-
-		CreateMyPlayer((char*)&packet);
+		CreateMyPlayer(&packet);
 		break;
 	}
 	case dfPACKET_SC_CREATE_OTHER_CHARACTER:
 	{
-		scCreateOtherCharacter packet;
-		mRecvBuffer.Dequeue((char*)&packet, sizeof(packet));
-
-		CreateOtherPlayer((char*)&packet);
+		CreateOtherPlayer(&packet);
 		break;
 	}
 	case dfPACKET_SC_DELETE_CHARACTER:
 	{
-		scDeleteCharacter packet;
-		mRecvBuffer.Dequeue((char*)&packet, sizeof(packet));
-
-		DeletePlayer((char*)&packet);
+		DeletePlayer(&packet);
 		break;
 	}
 	case dfPACKET_SC_MOVE_START:
 	{
-		scMoveStart packet;
-		mRecvBuffer.Dequeue((char*)&packet, sizeof(packet));
-
-		MoveStartPlayer((char*)&packet);
+		MoveStartPlayer(&packet);
 		break;
 	}
 	case dfPACKET_SC_MOVE_STOP:
 	{
-		scMoveStop packet;
-		mRecvBuffer.Dequeue((char*)&packet, sizeof(packet));
-
-		MoveStopPlayer((char*)&packet);
+		MoveStopPlayer(&packet);
 		break;
 	}
 	case dfPACKET_SC_ATTACK1:
 	{
-		scAttack1 packet;
-		mRecvBuffer.Dequeue((char*)&packet, sizeof(packet));
-
-		AttackProc1((char*)&packet);
+		AttackProc1(&packet);
 		break;
 	}
 	case dfPACKET_SC_ATTACK2:
 	{
-		scAttack2 packet;
-		mRecvBuffer.Dequeue((char*)&packet, sizeof(packet));
-
-		AttackProc2((char*)&packet);
+		AttackProc2(&packet);
 		break;
 	}
 	case dfPACKET_SC_ATTACK3:
 	{
-		scAttack3 packet;
-		mRecvBuffer.Dequeue((char*)&packet, sizeof(packet));
-
-		AttackProc3((char*)&packet);
+		AttackProc3(&packet);
 		break;
 	}
 	case dfPACKET_SC_DAMAGE:
 	{
-		scDamage packet;
-		mRecvBuffer.Dequeue((char*)&packet, sizeof(packet));
-
-		DamageProc((char*)&packet);
+		DamageProc(&packet);
 		break;
 	}
 	default:
@@ -291,15 +266,21 @@ void Session::ErrorDisplay(const WCHAR* msg)
 	MessageBox(gMainWindow, errorMsg, L"에러 발생", MB_OK);
 }
 
-void Session::CreateMyPlayer(const char* msg)
+void Session::CreateMyPlayer(CPacket* packet)
 {
 	PlayerObject* player = new PlayerObject;
-	scCreateMyCharacter* packet = (scCreateMyCharacter*)msg;
+	DWORD ID;
+	BYTE direction;
+	WORD x;
+	WORD y;
+	BYTE HP;
 
-	player->SetPosition(packet->X, packet->Y);
-	player->SetID(packet->ID);
-	player->SetHP(packet->HP);
-	player->SetDirection(packet->Direction);
+	*packet >> ID >> direction >> x >> y >> HP;
+
+	player->SetPosition(x, y);
+	player->SetID(ID);
+	player->SetHP(HP);
+	player->SetDirection(direction);
 	gPlayerObject = player;
 	gObjectList.push_back(gPlayerObject);
 
@@ -307,15 +288,21 @@ void Session::CreateMyPlayer(const char* msg)
 		player->GetObectID(), player->GetCurX(), player->GetCurY());
 }
 
-void Session::CreateOtherPlayer(const char* msg)
+void Session::CreateOtherPlayer(CPacket* packet)
 {
 	PlayerObject* player = new PlayerObject;
-	scCreateOtherCharacter* packet = (scCreateOtherCharacter*)msg;
+	DWORD ID;
+	BYTE direction;
+	WORD x;
+	WORD y;
+	BYTE HP;
 
-	player->SetPosition(packet->X, packet->Y);
-	player->SetID(packet->ID);
-	player->SetHP(packet->HP);
-	player->SetDirection(packet->Direction);
+	*packet >> ID >> direction >> x >> y >> HP;
+
+	player->SetPosition(x, y);
+	player->SetID(ID);
+	player->SetHP(HP);
+	player->SetDirection(direction);
 	player->SetEnemy();
 	gObjectList.push_back(player);
 
@@ -323,11 +310,13 @@ void Session::CreateOtherPlayer(const char* msg)
 		player->GetObectID(), player->GetCurX(), player->GetCurY());
 }
 
-void Session::DeletePlayer(const char* msg)
+void Session::DeletePlayer(CPacket* packet)
 {
-	scDeleteCharacter* packet = (scDeleteCharacter*)msg;
+	DWORD ID;
 
-	BaseObject* target = SearchObject(packet->ID);
+	*packet >> ID;
+
+	BaseObject* target = SearchObject(ID);
 
 	if (target == nullptr)
 		return;
@@ -339,33 +328,43 @@ void Session::DeletePlayer(const char* msg)
 		target->GetCurY());
 }
 
-void Session::MoveStartPlayer(const char* msg)
+void Session::MoveStartPlayer(CPacket* packet)
 {
-	scMoveStart* packet = (scMoveStart*)msg;
+	DWORD ID;
+	BYTE direction;
+	WORD x;
+	WORD y;
 
-	BaseObject* target = SearchObject(packet->ID);
+	*packet >> ID >> direction >> x >> y;
+
+	BaseObject* target = SearchObject(ID);
 
 	if (target == nullptr)
 		return;
 
-	target->SetPosition(packet->X, packet->Y);
-	target->ActionInput(packet->Direction);
+	target->SetPosition(x, y);
+	target->ActionInput(direction);
 	wprintf_s(L"캐릭터 이동 시작. ID: %d, X : %d, Y: %d\n",
 		target->GetObectID(),
 		target->GetCurX(),
 		target->GetCurY());
 }
 
-void Session::MoveStopPlayer(const char* msg)
+void Session::MoveStopPlayer(CPacket* packet)
 {
-	scMoveStart* packet = (scMoveStart*)msg;
+	DWORD ID;
+	BYTE direction;
+	WORD x;
+	WORD y;
 
-	BaseObject* target = SearchObject(packet->ID);
+	*packet >> ID >> direction >> x >> y;
+
+	BaseObject* target = SearchObject(ID);
 
 	if (target == nullptr)
 		return;
 
-	target->SetPosition(packet->X, packet->Y);
+	target->SetPosition(x, y);
 	target->ActionInput(dfAction_STAND);
 	wprintf_s(L"캐릭터 정지. ID: %d, X : %d, Y: %d\n",
 		target->GetObectID(),
@@ -373,16 +372,21 @@ void Session::MoveStopPlayer(const char* msg)
 		target->GetCurY());
 }
 
-void Session::AttackProc1(const char* msg)
+void Session::AttackProc1(CPacket* packet)
 {
-	scAttack1* packet = (scAttack1*)msg;
+	DWORD ID;
+	BYTE direction;
+	WORD x;
+	WORD y;
 
-	BaseObject* target = SearchObject(packet->ID);
+	*packet >> ID >> direction >> x >> y;
+
+	BaseObject* target = SearchObject(ID);
 
 	if (target == nullptr)
 		return;
 
-	target->SetPosition(packet->X, packet->Y);
+	target->SetPosition(x, y);
 	target->ActionInput(dfACTION_ATTACK1);
 	wprintf_s(L"캐릭터 공격 1. ID: %d, X : %d, Y: %d\n",
 		target->GetObectID(),
@@ -390,16 +394,21 @@ void Session::AttackProc1(const char* msg)
 		target->GetCurY());
 }
 
-void Session::AttackProc2(const char* msg)
+void Session::AttackProc2(CPacket* packet)
 {
-	scAttack2* packet = (scAttack2*)msg;
+	DWORD ID;
+	BYTE direction;
+	WORD x;
+	WORD y;
 
-	BaseObject* target = SearchObject(packet->ID);
+	*packet >> ID >> direction >> x >> y;
+
+	BaseObject* target = SearchObject(ID);
 
 	if (target == nullptr)
 		return;
 
-	target->SetPosition(packet->X, packet->Y);
+	target->SetPosition(x, y);
 	target->ActionInput(dfACTION_ATTACK2);
 	wprintf_s(L"캐릭터 공격 2. ID: %d, X : %d, Y: %d\n",
 		target->GetObectID(),
@@ -407,16 +416,21 @@ void Session::AttackProc2(const char* msg)
 		target->GetCurY());
 }
 
-void Session::AttackProc3(const char* msg)
+void Session::AttackProc3(CPacket* packet)
 {
-	scAttack3* packet = (scAttack3*)msg;
+	DWORD ID;
+	BYTE direction;
+	WORD x;
+	WORD y;
 
-	BaseObject* target = SearchObject(packet->ID);
+	*packet >> ID >> direction >> x >> y;
+
+	BaseObject* target = SearchObject(ID);
 
 	if (target == nullptr)
 		return;
 
-	target->SetPosition(packet->X, packet->Y);
+	target->SetPosition(x, y);
 	target->ActionInput(dfACTION_ATTACK3);
 	wprintf_s(L"캐릭터 공격 2. ID: %d, X : %d, Y: %d\n",
 		target->GetObectID(),
@@ -424,17 +438,21 @@ void Session::AttackProc3(const char* msg)
 		target->GetCurY());
 }
 
-void Session::DamageProc(const char* msg)
+void Session::DamageProc(CPacket* packet)
 {
-	scDamage* packet = (scDamage*)msg;
+	DWORD attackID;
+	DWORD damageID;
+	BYTE damageHP;
 
-	PlayerObject* attacker = (PlayerObject*)SearchObject(packet->AttackID);
-	PlayerObject* target = (PlayerObject*)SearchObject(packet->DamageID);
+	*packet >> attackID >> damageID >> damageHP;
+
+	PlayerObject* attacker = (PlayerObject*)SearchObject(attackID);
+	PlayerObject* target = (PlayerObject*)SearchObject(damageID);
 
 	if (attacker == nullptr || target == nullptr)
 		return;
 
-	target->SetHP(packet->DamageHP);
+	target->SetHP(damageHP);
 	attacker->CreateEffect();
 
 	wprintf_s(L"캐릭터 공격 받음. ID: %d, X : %d, Y: %d\n",

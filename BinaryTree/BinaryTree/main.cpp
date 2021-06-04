@@ -31,4 +31,24 @@ int main()
 	Tree.InsertNode(26);
 
 	Tree.printTree();
+	cout << "===================================================" << endl;
+
+	if (Tree.DeleteNode(100))
+	{
+		Tree.printTree();
+	}
+
+	cout << "===================================================" << endl;
+
+	if (Tree.DeleteNode(10))
+	{
+		Tree.printTree();
+	}
+
+	cout << "===================================================" << endl;
+
+	if (Tree.DeleteNode(24))
+	{
+		Tree.printTree();
+	}
 }

@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{5c3c2dd3-3441-4af4-82a0-3c346deb9efc}</ProjectGuid>
-    <RootNamespace>ActionGame</RootNamespace>
+    <ProjectGuid>{497f96bf-6bdf-4a58-96e3-b5e89ef3ff0c}</ProjectGuid>
+    <RootNamespace>WinRedBlackTree</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -102,7 +102,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -141,47 +140,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ActionDefine.h" />
-    <ClInclude Include="ActionGame.h" />
-    <ClInclude Include="BaseObject.h" />
-    <ClInclude Include="CPacket.h" />
-    <ClInclude Include="EffectObject.h" />
-    <ClInclude Include="EObjectType.h" />
-    <ClInclude Include="ESprite.h" />
-    <ClInclude Include="FrameSkip.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="GameProcess.h" />
-    <ClInclude Include="myList.h" />
-    <ClInclude Include="PacketCreater.h" />
-    <ClInclude Include="PacketDefine.h" />
-    <ClInclude Include="PlayerObject.h" />
+    <ClInclude Include="RedBlackTree.h" />
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="RingBuffer.h" />
-    <ClInclude Include="ScreenDib.h" />
-    <ClInclude Include="Session.h" />
-    <ClInclude Include="SpriteDib.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="WinRedBlackTree.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ActionGame.cpp" />
-    <ClCompile Include="BaseObject.cpp" />
-    <ClCompile Include="CPacket.cpp" />
-    <ClCompile Include="EffectObject.cpp" />
-    <ClCompile Include="FrameSkip.cpp" />
-    <ClCompile Include="GameProcess.cpp" />
-    <ClCompile Include="PacketCreater.cpp" />
-    <ClCompile Include="PlayerObject.cpp" />
-    <ClCompile Include="RingBuffer.cpp" />
-    <ClCompile Include="ScreenDib.cpp" />
-    <ClCompile Include="Session.cpp" />
-    <ClCompile Include="SpriteDib.cpp" />
+    <ClCompile Include="RedBlackTree.cpp" />
+    <ClCompile Include="WinRedBlackTree.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="ActionGame.rc" />
+    <ResourceCompile Include="WinRedBlackTree.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="ActionGame.ico" />
     <Image Include="small.ico" />
+    <Image Include="WinRedBlackTree.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
