@@ -195,7 +195,7 @@ bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName
     RegisterClassExW(&wcex);
 
     // 애플리케이션 초기화를 수행합니다:
-    HWND hWnd = CreateWindowExW(0, className, windowName, WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
+    HWND hWnd = CreateWindowExW(0, className, windowName, WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_MAXIMIZE,
         CW_USEDEFAULT, CW_USEDEFAULT, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), nullptr, nullptr, hInstance, nullptr);
 
     if (hWnd == nullptr)
@@ -230,17 +230,12 @@ void OpenConsole()
 
 void InitData()
 {
-    g_RedBlackTree.InsertNode(400);
-    g_RedBlackTree.InsertNode(200);
-    g_RedBlackTree.InsertNode(600);
-    g_RedBlackTree.InsertNode(100);
-    g_RedBlackTree.InsertNode(300);
-    g_RedBlackTree.InsertNode(500);
-    g_RedBlackTree.InsertNode(700);
-    g_RedBlackTree.InsertNode(50);
-    g_RedBlackTree.InsertNode(350);
-    g_RedBlackTree.InsertNode(650);
-    g_RedBlackTree.InsertNode(250);
-    g_RedBlackTree.InsertNode(450);
-    g_RedBlackTree.InsertNode(1000);
+    srand(time(NULL));
+
+    for (int i = 0; i < 60; ++i)
+    {
+        int num = rand() % 1000;
+
+        g_RedBlackTree.InsertNode(num);
+    }
 }
