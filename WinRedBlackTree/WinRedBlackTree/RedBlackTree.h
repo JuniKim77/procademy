@@ -37,7 +37,7 @@ public:
 	/// 데이터 삽입
 	/// </summary>
 	/// <param name="data"></param>
-	void InsertNode(int data);
+	bool InsertNode(int data);
 	/// <summary>
 	/// 데이터 삭제
 	/// </summary>
@@ -50,6 +50,9 @@ public:
 	/// <param name="hWnd"></param>
 	void printTreeWin(HWND hWnd);
 	void clear();
+	void printAround(Node* root);
+	void printNode(Node* root);
+	void deleteNodePrint(Node* del);
 
 private:
 	/// <summary>
