@@ -79,8 +79,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SendMessageW(editor, EM_LIMITTEXT, (WPARAM)10, 0);
         CreateWindowW(L"button", L"입력", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 25, 80, 20, hWnd, (HMENU)1, gInstance, NULL);
         CreateWindowW(L"button", L"삭제", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 25, 80, 20, hWnd, (HMENU)2, gInstance, NULL);
-        CreateWindowW(L"button", L"L 회전", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 50, 80, 20, hWnd, (HMENU)3, gInstance, NULL);
-        CreateWindowW(L"button", L"R 회전", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 50, 80, 20, hWnd, (HMENU)4, gInstance, NULL);
         break;
     }
     case WM_KEYDOWN:
@@ -119,33 +117,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             SetFocus(gMainWindow);
             g_RedBlackTree.DeleteNode(_wtoi(text));
             InvalidateRect(hWnd, nullptr, TRUE);
-            break;
-        }
-        case 3:
-        {
-            WCHAR text[20] = { 0, };
-            SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
-            SetWindowText(editor, L"");
-            SetFocus(gMainWindow);
-            RedBlackTree::Node* node = g_RedBlackTree.SearchHelper(_wtoi(text));
-            if (node != g_RedBlackTree.Nil) {
-                g_RedBlackTree.RotateLeft(node);
-                InvalidateRect(hWnd, nullptr, TRUE);
-            }
-            
-            break;
-        }
-        case 4:
-        {
-            WCHAR text[20] = { 0, };
-            SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
-            SetWindowText(editor, L"");
-            SetFocus(gMainWindow);
-            RedBlackTree::Node* node = g_RedBlackTree.SearchHelper(_wtoi(text));
-            if (node != g_RedBlackTree.Nil) {
-                g_RedBlackTree.RotateRight(node);
-                InvalidateRect(hWnd, nullptr, TRUE);
-            }
             break;
         }
         case IDM_EXIT:
