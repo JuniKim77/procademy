@@ -13,7 +13,7 @@ int main()
 
 	std::unordered_set<unsigned int> setNums;
 
-	for (int i = 0; i < 1000; i++)
+	for (int i = 0; i < 100000; i++)
 	{
 		unsigned int num;
 
