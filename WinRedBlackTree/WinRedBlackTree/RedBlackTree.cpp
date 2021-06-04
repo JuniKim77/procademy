@@ -219,6 +219,11 @@ void RedBlackTree::printTreeWin(HWND hWnd)
 	ReleaseDC(hWnd, hdc);
 }
 
+void RedBlackTree::clear()
+{
+	DestroyHelper(mRoot);
+}
+
 void RedBlackTree::printWinHelper(HDC hdc, Node* root, int beginX, int endX, int depth)
 {
 	if (root == Nil)

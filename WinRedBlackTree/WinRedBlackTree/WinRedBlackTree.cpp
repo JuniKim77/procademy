@@ -203,7 +203,7 @@ void InitData()
 {
     srand(time(NULL));
 
-    for (int i = 0; i < 60; ++i)
+    for (int i = 0; i < 100; ++i)
     {
         int num = rand() % 1000;
 
