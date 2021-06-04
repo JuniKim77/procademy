@@ -141,10 +141,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyProfiler.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CSVReader.h" />
     <ClInclude Include="MyProfiler.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
