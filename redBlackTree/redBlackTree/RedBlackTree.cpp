@@ -219,6 +219,13 @@ void RedBlackTree::printTreeWin(HWND hWnd)
 	ReleaseDC(hWnd, hdc);
 }
 
+bool RedBlackTree::SearchData(int data)
+{
+	Node* node = SearchHelper(data);
+
+	return node != Nil;
+}
+
 void RedBlackTree::printWinHelper(HDC hdc, Node* root, int beginX, int endX, int depth)
 {
 	if (root == Nil)
