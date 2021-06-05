@@ -49,6 +49,7 @@ public:
 	/// </summary>
 	/// <param name="hWnd"></param>
 	void printTreeWin(HWND hWnd);
+	bool SearchData(int data);
 
 private:
 	/// <summary>

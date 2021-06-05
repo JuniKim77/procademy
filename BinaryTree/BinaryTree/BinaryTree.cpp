@@ -62,7 +62,7 @@ void BinaryTree::printTree()
 
 bool BinaryTree::DeleteNode(int data)
 {
-	Node* pNode = SearchHelper(data);
+	BinaryTree::Node* pNode = SearchHelper(data);
 
 	if (pNode == nullptr)
 		return false;

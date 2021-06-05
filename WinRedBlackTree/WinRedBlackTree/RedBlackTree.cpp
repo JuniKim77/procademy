@@ -18,7 +18,7 @@ RedBlackTree::~RedBlackTree()
 		delete Nil;
 }
 
-void RedBlackTree::InsertNode(int data)
+bool RedBlackTree::InsertNode(int data)
 {
 	if (mRoot == Nil)
 	{
@@ -27,7 +27,7 @@ void RedBlackTree::InsertNode(int data)
 		mRoot->right = Nil;
 		mRoot->color = NODE_COLOR::BLACK;
 
-		return;
+		return true;
 	}
 
 	Node* node = mRoot;
@@ -47,7 +47,7 @@ void RedBlackTree::InsertNode(int data)
 				// Balancing
 				InsertRebalance(newNode);
 
-				return;
+				return true;
 			}
 
 			node = node->left;
@@ -65,12 +65,14 @@ void RedBlackTree::InsertNode(int data)
 				// Balancing
 				InsertRebalance(newNode);
 
-				return;
+				return true;
 			}
 
 			node = node->right;
 		}
 	}
+
+	return false;
 }
 
 bool RedBlackTree::DeleteNode(int data)
@@ -115,6 +117,7 @@ bool RedBlackTree::DeleteNode(int data)
 		{
 			mRoot = pNode->left;
 			mRoot->color = NODE_COLOR::BLACK;
+
 			delete pNode;
 
 			return true;
@@ -145,6 +148,7 @@ bool RedBlackTree::DeleteNode(int data)
 		if (pNode == mRoot)
 		{
 			mRoot = pNode->right;
+
 			delete pNode;
 
 			return true;
@@ -217,6 +221,61 @@ void RedBlackTree::printTreeWin(HWND hWnd)
 	printWinHelper(hdc, mRoot, 0, x, 0);
 
 	ReleaseDC(hWnd, hdc);
+}
+
+void RedBlackTree::clear()
+{
+	DestroyHelper(mRoot);
+
+	mRoot = Nil;
+}
+
+void RedBlackTree::printAround(Node* root)
+{
+	Node* parent = root->parent;
+	Node* sibling = parent->left == root ? parent->right : parent->left;
+	Node* NL = root->left;
+	Node* NR = root->right;
+	Node* grand = parent->parent;
+
+	wprintf_s(L"root: ");
+	printNode(root);
+	wprintf_s(L"parent: ");
+	printNode(parent);
+	wprintf_s(L"sibling: ");
+	printNode(sibling);
+	wprintf_s(L"NL: ");
+	printNode(NL);
+	wprintf_s(L"NR: ");
+	printNode(NR);
+	wprintf_s(L"grand: ");
+	printNode(grand);
+
+	wprintf_s(L"\n============================\n\n");
+}
+
+void RedBlackTree::printNode(Node* root)
+{
+	if (root == nullptr)
+	{
+		wprintf_s(L"NULL Node\n");
+	}
+	else if (root == Nil)
+	{
+		wprintf_s(L"Nil Node, Color: %s\n", root->color == NODE_COLOR::BLACK ? L"BLACK" : L"RED");
+	}
+	else
+	{
+		wprintf_s(L"Normal Node, Data: %d, Color: %s\n", root->data, root->color == NODE_COLOR::BLACK ? L"BLACK" : L"RED");
+	}
+}
+
+void RedBlackTree::deleteNodePrint(Node* del)
+{
+	wprintf_s(L"Delete ");
+	printNode(del);
+	wprintf_s(L"\nParent: ");
+	printNode(del->parent);
 }
 
 void RedBlackTree::printWinHelper(HDC hdc, Node* root, int beginX, int endX, int depth)
@@ -516,7 +575,7 @@ void RedBlackTree::DeleteRebalance(Node* originRoot)
 
 	while (1)
 	{
-		if (root->color == NODE_COLOR::RED)
+		if (root->color == NODE_COLOR::RED || mRoot == root)
 		{
 			root->color = NODE_COLOR::BLACK;
 			return;
@@ -597,12 +656,6 @@ void RedBlackTree::Left_DeleteRebalanceSiblingRed(Node* root)
 	root->color = NODE_COLOR::BLACK;
 
 	RotateLeft(parent);
-
-	if (mRoot == parent)
-	{
-		mRoot = root;
-		mRoot->color = NODE_COLOR::BLACK;
-	}
 }
 
 void RedBlackTree::Right_DeleteRebalanceSiblingRed(Node* root)
@@ -613,12 +666,6 @@ void RedBlackTree::Right_DeleteRebalanceSiblingRed(Node* root)
 	root->color = NODE_COLOR::BLACK;
 
 	RotateRight(parent);
-
-	if (mRoot == parent)
-	{
-		mRoot = root;
-		mRoot->color = NODE_COLOR::BLACK;
-	}
 }
 
 RedBlackTree::Node* RedBlackTree::Both_DeleteRebalanceSiblingBlackBothBlack(Node* root)
@@ -654,12 +701,6 @@ void RedBlackTree::Left_DeleteRebalanceSiblingBlackOutsideRed(Node* root)
 	root->right->color = NODE_COLOR::BLACK;
 
 	RotateLeft(parent);
-
-	if (mRoot == parent)
-	{
-		mRoot = root;
-		mRoot->color = NODE_COLOR::BLACK;
-	}
 }
 
 void RedBlackTree::Right_DeleteRebalanceSiblingBlackOutsideRed(Node* root)
@@ -671,10 +712,4 @@ void RedBlackTree::Right_DeleteRebalanceSiblingBlackOutsideRed(Node* root)
 	root->left->color = NODE_COLOR::BLACK;
 
 	RotateRight(parent);
-
-	if (mRoot == parent)
-	{
-		mRoot = root;
-		mRoot->color = NODE_COLOR::BLACK;
-	}
 }

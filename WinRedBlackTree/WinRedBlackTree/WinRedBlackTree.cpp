@@ -6,6 +6,7 @@
 #include <windowsx.h>
 #include <locale>
 #include "RedBlackTree.h"
+#include <unordered_set>
 
 // 전역 변수:
 HWND gMainWindow;
@@ -16,7 +17,9 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName);
 void OpenConsole();
 void InitData();
+void RandomDelete();
 RedBlackTree g_RedBlackTree;
+std::unordered_set<int> g_set;
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -32,7 +35,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // 전역 문자열을 초기화합니다.
 
     // 애플리케이션 초기화를 수행합니다:
-    //OpenConsole();
+    OpenConsole();
+    //srand(time(NULL));
+    srand(1000);
     InitData();
 
     if (CreateMainWindow(hInstance, L"MainWindow", L"Binary Tree") == false)
@@ -47,7 +52,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         DispatchMessage(&msg);
     }
 
-    //FreeConsole();
+    FreeConsole();
 
     return (int)msg.wParam;
 }
@@ -79,6 +84,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SendMessageW(editor, EM_LIMITTEXT, (WPARAM)10, 0);
         CreateWindowW(L"button", L"입력", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 25, 80, 20, hWnd, (HMENU)1, gInstance, NULL);
         CreateWindowW(L"button", L"삭제", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 25, 80, 20, hWnd, (HMENU)2, gInstance, NULL);
+        CreateWindowW(L"button", L"랜덤 생성", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 50, 80, 20, hWnd, (HMENU)3, gInstance, NULL);
+        CreateWindowW(L"button", L"랜덤 삭제", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 50, 80, 20, hWnd, (HMENU)4, gInstance, NULL);
         break;
     }
     case WM_KEYDOWN:
@@ -116,6 +123,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             SetWindowText(editor, L"");
             SetFocus(gMainWindow);
             g_RedBlackTree.DeleteNode(_wtoi(text));
+            InvalidateRect(hWnd, nullptr, TRUE);
+            break;
+        }
+        case 3:
+        {
+            SetWindowText(editor, L"");
+            SetFocus(gMainWindow);
+
+            InitData();
+
+            InvalidateRect(hWnd, nullptr, TRUE);
+            break;
+        }
+        case 4:
+        {
+            SetWindowText(editor, L"");
+            SetFocus(gMainWindow);
+
+            RandomDelete();
+
             InvalidateRect(hWnd, nullptr, TRUE);
             break;
         }
@@ -201,12 +228,30 @@ void OpenConsole()
 
 void InitData()
 {
-    srand(time(NULL));
+    g_RedBlackTree.clear();
+    g_set.clear();
 
-    for (int i = 0; i < 60; ++i)
+    for (int i = 0; i < 40; ++i)
     {
-        int num = rand() % 1000;
+        int num = rand() % 2000;
 
-        g_RedBlackTree.InsertNode(num);
+        g_set.insert(num);
+
+        bool ret = g_RedBlackTree.InsertNode(num);
     }
+}
+
+void RandomDelete()
+{
+    if (g_set.empty())
+        return;
+
+    int num = rand() % g_set.size();
+
+    auto iter = g_set.begin();
+
+    for (int i = 0; i < num; ++i, ++iter);
+
+    g_RedBlackTree.DeleteNode(*iter);
+    g_set.erase(iter);
 }
