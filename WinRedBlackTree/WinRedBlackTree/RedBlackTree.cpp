@@ -79,8 +79,6 @@ bool RedBlackTree::DeleteNode(int data)
 {
 	Node* pNode = SearchHelper(data);
 
-	wprintf_s(L"삭제할 숫자: %d\n", data);
-
 	if (pNode == Nil)
 		return false;
 
@@ -105,9 +103,6 @@ bool RedBlackTree::DeleteNode(int data)
 
 		rightMin->right->parent = parent;
 
-		wprintf_s(L"양 노드 있는 경우\n");
-		deleteNodePrint(rightMin);
-
 		if (rightMin->color == NODE_COLOR::BLACK)
 		{
 			DeleteRebalance(rightMin->right);
@@ -118,9 +113,6 @@ bool RedBlackTree::DeleteNode(int data)
 	// 하나의 자식만 갖은 경우
 	else if (pNode->left != Nil)
 	{
-		wprintf_s(L"왼 자식만 있는 경우\n");
-		deleteNodePrint(pNode);
-
 		if (pNode == mRoot)
 		{
 			mRoot = pNode->left;
@@ -153,9 +145,6 @@ bool RedBlackTree::DeleteNode(int data)
 	}
 	else if (pNode->right != Nil)
 	{
-		wprintf_s(L"오른 자식만 있는 경우\n");
-		deleteNodePrint(pNode);
-
 		if (pNode == mRoot)
 		{
 			mRoot = pNode->right;
@@ -188,9 +177,6 @@ bool RedBlackTree::DeleteNode(int data)
 	// 아무 자식 없는 경우
 	else
 	{
-		wprintf_s(L"아무 자식 없는 경우\n");
-		deleteNodePrint(pNode);
-
 		if (pNode == mRoot)
 		{
 			mRoot = Nil;
