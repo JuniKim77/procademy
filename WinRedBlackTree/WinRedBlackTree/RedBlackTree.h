@@ -53,8 +53,10 @@ public:
 	void printAround(Node* root);
 	void printNode(Node* root);
 	void deleteNodePrint(Node* del);
+	bool CheckBalance();
 
 private:
+	void checkBalanceHelper(Node* root, int blackount);
 	/// <summary>
 	/// WinAPI ºä¾î ÇïÆÛ
 	/// </summary>
@@ -175,4 +177,6 @@ private:
 	RedBlackTree::Node* mRoot;
 	HBRUSH mRedBrush;
 	HBRUSH mBlackBrush;
+	int mNumBlack;
+	bool mBalanced;
 };

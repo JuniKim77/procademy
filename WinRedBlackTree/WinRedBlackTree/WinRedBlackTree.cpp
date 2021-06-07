@@ -11,6 +11,8 @@
 // 전역 변수:
 HWND gMainWindow;
 HINSTANCE gInstance;
+HBRUSH gRedBrush;
+HBRUSH gGreenBrush;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -79,6 +81,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         int x = GetSystemMetrics(SM_CXSCREEN) * 0.1;
         int y = GetSystemMetrics(SM_CYSCREEN) * 0.8;
+        gRedBrush = CreateSolidBrush(RGB(180, 0, 0));
+        gGreenBrush = CreateSolidBrush(RGB(0, 180, 0));
 
         editor = CreateWindowW(L"edit", nullptr, WS_CHILD | WS_VISIBLE | ES_NUMBER, x, y + 25, 100, 20, hWnd, (HMENU)0, gInstance, NULL);
         SendMessageW(editor, EM_LIMITTEXT, (WPARAM)10, 0);
@@ -160,6 +164,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         HDC hdc = BeginPaint(hWnd, &ps);
         // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
         g_RedBlackTree.printTreeWin(hWnd);
+
+        int x = GetSystemMetrics(SM_CXSCREEN) - 200;
+        int y = 0;
+
+        if (g_RedBlackTree.CheckBalance())
+        {
+            SelectObject(hdc, gGreenBrush);
+            Ellipse(hdc, x, y, x + 50, y + 50);
+        }
+        else
+        {
+            SelectObject(hdc, gRedBrush);
+            Ellipse(hdc, x, y, x + 50, y + 50);
+        }
+        
         EndPaint(hWnd, &ps);
     }
     break;
