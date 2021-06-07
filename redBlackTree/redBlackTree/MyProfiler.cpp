@@ -30,7 +30,7 @@ void ProfileEnd(const WCHAR* szName)
 
 	int idx = SearchName(szName);
 
-	__int64 time = end.QuadPart - gProfiles[idx].lStartTime.QuadPart;
+	LONGLONG time = end.QuadPart - gProfiles[idx].lStartTime.QuadPart;
 
 	gProfiles[idx].iTotalTime += time;
 	++gProfiles[idx].iCall;
@@ -145,8 +145,8 @@ void ProfileDataOutText(const WCHAR* szFileName)
 		{
 			for (int j = 0; j < 2; ++j)
 			{
-				time -= gProfiles[i].iMax[i];
-				time -= gProfiles[i].iMin[i];
+				time -= gProfiles[i].iMax[j];
+				time -= gProfiles[i].iMin[j];
 			}
 
 			avg = time / freq / (gProfiles[i].iCall - 4);
@@ -155,8 +155,6 @@ void ProfileDataOutText(const WCHAR* szFileName)
 		{
 			avg = time / freq / (gProfiles[i].iCall);
 		}
-		
-		
 
 		WCHAR nameTxt[32];
 		WCHAR avgTxt[32];

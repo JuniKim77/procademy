@@ -170,6 +170,13 @@ bool BinaryTree::DeleteNode(int data)
 	return true;
 }
 
+bool BinaryTree::SearchData(int data)
+{
+	Node* node = SearchHelper(data);
+
+	return node != nullptr && node->data == data;
+}
+
 BinaryTree::Node* BinaryTree::SearchHelper(int data)
 {
 	Node* pNode = mRoot;
@@ -251,6 +258,5 @@ void BinaryTree::deleteHelper(Node* root)
 
 	deleteHelper(root->left);
 	deleteHelper(root->right);
-	cout << "Delete Node " << root->data << endl;
 	delete root;
 }

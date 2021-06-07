@@ -26,6 +26,7 @@ public:
 	void InsertNode(int data);
 	void printTree();
 	bool DeleteNode(int data);
+	bool SearchData(int data);
 	
 
 private:

@@ -223,7 +223,7 @@ bool RedBlackTree::SearchData(int data)
 {
 	Node* node = SearchHelper(data);
 
-	return node != Nil;
+	return node != Nil && node->data == data;
 }
 
 bool RedBlackTree::CheckBalance()
