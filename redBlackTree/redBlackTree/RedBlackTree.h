@@ -50,8 +50,10 @@ public:
 	/// <param name="hWnd"></param>
 	void printTreeWin(HWND hWnd);
 	bool SearchData(int data);
+	bool CheckBalance();
 
 private:
+	void checkBalanceHelper(Node* root, int blackount);
 	/// <summary>
 	/// WinAPI ºä¾î ÇïÆÛ
 	/// </summary>
@@ -172,4 +174,6 @@ private:
 	RedBlackTree::Node* mRoot;
 	HBRUSH mRedBrush;
 	HBRUSH mBlackBrush;
+	int mNumBlack;
+	bool mBalanced;
 };
