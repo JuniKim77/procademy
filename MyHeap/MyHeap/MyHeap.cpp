@@ -13,7 +13,7 @@ MyHeap::MyHeap(int size)
 MyHeap::~MyHeap()
 {
     if (mBuffer != nullptr)
-        delete mBuffer;
+        delete[] mBuffer;
 }
 
 bool MyHeap::InsertData(int data)
@@ -25,6 +25,8 @@ bool MyHeap::InsertData(int data)
     mSize++;
 
     Heapify(mSize);
+
+    return true;
 }
 
 int MyHeap::GetMax()
