@@ -11,6 +11,8 @@ public:
 	Node* GetMin();
 	void printHeap();
 	int GetSize() { return mSize; }
+	bool UpdateNode(Node& other);
+	void ClearHeap() { mSize = 0; }
 
 private:
 	void Swap(int left, int right);

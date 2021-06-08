@@ -54,6 +54,30 @@ void MyHeap::printHeap()
     printHelper(1);
 }
 
+bool MyHeap::UpdateNode(Node& other)
+{
+    for (int i = 1; i <= mSize; ++i)
+    {
+        if (mBuffer[i].position == other.position)
+        {
+            if (mBuffer[i].f > other.f)
+            {
+                mBuffer[i].g = other.g;
+                mBuffer[i].f = other.f;
+                mBuffer[i].pParent = other.pParent;
+
+                Heapify(i);
+
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    return false;
+}
+
 void MyHeap::Swap(int left, int right)
 {
     Node temp = mBuffer[left];

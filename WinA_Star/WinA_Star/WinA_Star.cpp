@@ -5,6 +5,7 @@
 #include "WinA_Star.h"
 #include <windowsx.h>
 #include <locale>
+#include "AStar.h"
 
 #define CELL_SIZE (16)
 
@@ -16,6 +17,9 @@ HBRUSH g_Gray;
 HBRUSH g_Yellow;
 HPEN g_Pen;
 HPEN g_ArrowPen;
+TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
+Coordi g_begin;
+Coordi g_end;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
