@@ -56,6 +56,8 @@ struct Node
 
 bool SearchDestination(Coordi begin, Coordi end, HDC hdc);
 
+bool SearchHelper(Coordi begin, Coordi end, HDC hdc, bool reverse);
+
 void LogInfo(Node* cur, HDC hdc);
 
 void DrawPath(Node* end, HDC hdc);

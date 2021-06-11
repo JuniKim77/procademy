@@ -9,6 +9,7 @@
 //#define LogCell
 #define G_Wegiht (1.5f)
 #define H_Wegiht (2.0f)
+#define Reverse_Stand (2.0f)
 
 extern TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
 MyHeap g_openList(128);
@@ -27,6 +28,16 @@ extern HPEN g_arrow;
 
 bool SearchDestination(Coordi begin, Coordi end, HDC hdc)
 {
+	bool found = SearchHelper(begin, end, hdc, false);
+
+	if (found) 
+		return true;
+
+	return SearchHelper(end, begin, hdc, true);
+}
+
+bool SearchHelper(Coordi begin, Coordi end, HDC hdc, bool reverse)
+{
 	memset(closeVisit, 0, sizeof(closeVisit));
 	memset(openAdded, 0, sizeof(openAdded));
 
@@ -35,13 +46,25 @@ bool SearchDestination(Coordi begin, Coordi end, HDC hdc)
 	const float gWeight[8] = { 1.0, G_Wegiht, 1.0, G_Wegiht, 1.0, G_Wegiht, 1.0, G_Wegiht };
 
 	unsigned short h = abs(begin.x - end.x) + abs(begin.y - end.y);
-	Node* node = new Node(begin, 0, h, h);
+	Node* node = new Node(begin, 0, H_Wegiht * h, H_Wegiht * h);
 	g_openList.InsertData(node);
 	openAdded[begin.y][begin.x] = true;
 	SetBkMode(hdc, TRANSPARENT);
 	SelectObject(hdc, g_font);
 
-	while (1)
+	int count = 0;
+	int changeDirectionStand;
+
+	if (reverse)
+	{
+		changeDirectionStand = h * 10.0;
+	}
+	else
+	{
+		changeDirectionStand = h * Reverse_Stand;
+	}
+
+	while (count++ < changeDirectionStand)
 	{
 		Node* cur = g_openList.GetMin();
 
@@ -56,7 +79,7 @@ bool SearchDestination(Coordi begin, Coordi end, HDC hdc)
 		{
 			DrawPoint(begin.x, begin.y, g_Green, hdc);
 		}
-		
+
 #ifdef LogCell
 		LogInfo(cur, hdc);
 #endif
@@ -77,7 +100,7 @@ bool SearchDestination(Coordi begin, Coordi end, HDC hdc)
 
 			if (nX < 0 || nY < 0 ||
 				nX >= MAP_WIDTH || nY >= MAP_HEIGHT ||
-				closeVisit[nY][nX] || 
+				closeVisit[nY][nX] ||
 				g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
 				continue;
@@ -109,7 +132,7 @@ bool SearchDestination(Coordi begin, Coordi end, HDC hdc)
 			Node* next = new Node({ nX, nY }, nG, nH, nF);
 
 			next->pParent = cur;
-			
+
 			g_openList.InsertData(next);
 			DrawCell(next->position.x, next->position.y, g_Blue, hdc);
 
@@ -122,10 +145,9 @@ bool SearchDestination(Coordi begin, Coordi end, HDC hdc)
 		Sleep(30);
 	}
 
-	g_closeList.clear();
-	g_openList.ClearHeap();
+	FreeNode();
 
-	return false;
+	return count < changeDirectionStand;
 }
 
 void LogInfo(Node* cur, HDC hdc)
