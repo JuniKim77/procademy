@@ -7,7 +7,7 @@ MyHeap::MyHeap(int size)
     : mCapacity(size)
     , mSize(0)
 {
-    mBuffer = new Node[mCapacity + 1];
+    mBuffer = new Node*[mCapacity + 1];
 }
 
 MyHeap::~MyHeap()
@@ -23,11 +23,7 @@ void MyHeap::InsertData(Node* data)
         resize();
     }
 
-    mBuffer[mSize + 1].position = data->position;
-    mBuffer[mSize + 1].g = data->g;
-    mBuffer[mSize + 1].h = data->h;
-    mBuffer[mSize + 1].f = data->f;
-    mBuffer[mSize + 1].pParent = data->pParent;
+    mBuffer[mSize + 1] = data;
 
     mSize++;
 
@@ -46,25 +42,20 @@ Node* MyHeap::GetMin()
 
     DeHeapify(1);
 
-    return &mBuffer[retIndex];
+    return mBuffer[retIndex];
 }
 
-void MyHeap::printHeap()
-{
-    printHelper(1);
-}
-
-bool MyHeap::UpdateNode(Node& other)
+bool MyHeap::UpdateNode(Node* other)
 {
     for (int i = 1; i <= mSize; ++i)
     {
-        if (mBuffer[i].position == other.position)
+        if (mBuffer[i]->position == other->position)
         {
-            if (mBuffer[i].f > other.f)
+            if (mBuffer[i]->f > other->f)
             {
-                mBuffer[i].g = other.g;
-                mBuffer[i].f = other.f;
-                mBuffer[i].pParent = other.pParent;
+                mBuffer[i]->g = other->g;
+                mBuffer[i]->f = other->f;
+                mBuffer[i]->pParent = other->pParent;
 
                 Heapify(i);
 
@@ -80,7 +71,7 @@ bool MyHeap::UpdateNode(Node& other)
 
 void MyHeap::Swap(int left, int right)
 {
-    Node temp = mBuffer[left];
+    Node* temp = mBuffer[left];
     mBuffer[left] = mBuffer[right];
     mBuffer[right] = temp;
 }
@@ -92,7 +83,7 @@ void MyHeap::Heapify(int index)
 
     int parent = index / 2;
 
-    if (mBuffer[parent].f > mBuffer[index].f)
+    if (mBuffer[parent]->f > mBuffer[index]->f)
     {
         Swap(parent, index);
 
@@ -107,9 +98,9 @@ void MyHeap::DeHeapify(int index)
 
     if (mSize >= right)
     {
-        int next = mBuffer[left].f < mBuffer[right].f ? left : right;
+        int next = mBuffer[left]->f < mBuffer[right]->f ? left : right;
 
-        if (mBuffer[index].f > mBuffer[next].f)
+        if (mBuffer[index]->f > mBuffer[next]->f)
         {
             Swap(index, next);
 
@@ -118,7 +109,7 @@ void MyHeap::DeHeapify(int index)
     }
     else if (mSize >= left)
     {
-        if (mBuffer[left].f < mBuffer[index].f)
+        if (mBuffer[left]->f < mBuffer[index]->f)
         {
             Swap(left, index);
 
@@ -127,33 +118,9 @@ void MyHeap::DeHeapify(int index)
     }
 }
 
-void MyHeap::printHelper(int index)
-{
-    if (index > mSize)
-        return;
-
-    int left = index * 2;
-    int right = index * 2 + 1;
-
-    printHelper(left);
-
-    int depth = index;
-    int count = 0;
-
-    while (depth > 1)
-    {
-        cout << "\t";
-        depth /= 2;
-        count++;
-    }
-    cout << mBuffer[index].f << "(" << count << ")" << endl;
-
-    printHelper(right);
-}
-
 void MyHeap::resize()
 {
-    Node* temp = new Node[mCapacity * 2 + 1];
+    Node** temp = new Node*[mCapacity * 2 + 1];
     for (int i = 0; i < mSize; ++i)
     {
         temp[i] = mBuffer[i];

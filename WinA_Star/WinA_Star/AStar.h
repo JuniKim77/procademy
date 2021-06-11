@@ -1,7 +1,10 @@
 #pragma once
 
-#define MAP_WIDTH (100)
-#define MAP_HEIGHT (50)
+#define MAP_WIDTH (25)
+#define MAP_HEIGHT (12)
+#define CELL_SIZE (64)
+
+#include <wtypes.h>
 
 enum class TileType
 {
@@ -50,4 +53,8 @@ struct Node
 	{}
 };
 
-bool SearchDestination(Coordi begin, Coordi end);
+bool SearchDestination(Coordi begin, Coordi end, HDC hdc);
+
+void LogInfo(Node* cur, HDC hdc);
+
+void DrawPath(Node* end, HDC hdc);

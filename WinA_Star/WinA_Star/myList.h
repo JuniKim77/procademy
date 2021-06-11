@@ -130,6 +130,7 @@ inline myList<T>::myList()
 template<typename T>
 inline myList<T>::~myList()
 {
+	clear();
 }
 
 template<typename T>

@@ -2,8 +2,8 @@
 #include "MyHeap.h"
 #include "myList.h"
 #include <string.h>
-
-#define abs(a) ((a) < 0 ? (-a) : (a))
+#include <stdio.h>
+#include <math.h>
 
 extern TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
 MyHeap g_openList(128);
@@ -11,34 +11,54 @@ myList<Node*> g_closeList;
 bool closeVisit[MAP_HEIGHT][MAP_WIDTH];
 bool openAdded[MAP_HEIGHT][MAP_WIDTH];
 
-bool SearchDestination(Coordi begin, Coordi end)
+extern void DrawCell(int x, int y, HBRUSH brush, HDC hdc);
+extern void DrawPoint(int x, int y, HBRUSH brush, HDC hdc);
+extern HBRUSH g_Red;
+extern HBRUSH g_Green;
+extern HBRUSH g_Yellow;
+extern HBRUSH g_Blue;
+extern HFONT g_font;
+extern HPEN g_arrow;
+
+bool SearchDestination(Coordi begin, Coordi end, HDC hdc)
 {
 	memset(closeVisit, 0, sizeof(closeVisit));
 	memset(openAdded, 0, sizeof(openAdded));
-	g_closeList.clear();
-	g_openList.ClearHeap();
 
 	const int dx[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
 	const int dy[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
 	const float gWeight[8] = { 1.0, 1.5, 1.0, 1.5, 1.0, 1.5, 1.0, 1.5 };
 
 	unsigned short h = abs(begin.x - end.x) + abs(begin.y - end.y);
-	Node node(begin, 0, h, h);
-	g_openList.InsertData(&node);
+	Node* node = new Node(begin, 0, h, h);
+	g_openList.InsertData(node);
 	openAdded[begin.y][begin.x] = true;
+	SetBkMode(hdc, TRANSPARENT);
+	SelectObject(hdc, g_font);
 
 	while (1)
 	{
 		Node* cur = g_openList.GetMin();
-		g_closeList.push_back(cur);
-		closeVisit[cur->position.y][cur->position.x] = true;
 
 		if (cur == nullptr)
 			break;
 
+		g_closeList.push_back(cur);
+		DrawCell(cur->position.x, cur->position.y, g_Yellow, hdc);
+		closeVisit[cur->position.y][cur->position.x] = true;
+
+		if (cur->position == begin)
+		{
+			DrawPoint(begin.x, begin.y, g_Red, hdc);
+		}
+		
+		LogInfo(cur, hdc);
+
 		if (cur->position == end)
 		{
 			// Rendoring
+			DrawPath(cur, hdc);
+
 			return true;
 		}
 
@@ -59,22 +79,79 @@ bool SearchDestination(Coordi begin, Coordi end)
 			float nH = abs(nX - end.x) + abs(nY - end.y);
 			float nF = nG + nH;
 
-			Node next({ nX, nY }, nG, nH, nF);
-
-			next.pParent = cur;
-
 			if (openAdded[nY][nX])
 			{
-				g_openList.UpdateNode(next);
-			}
-			else
-			{
-				g_openList.InsertData(&next);
+				Node next({ nX, nY }, nG, nH, nF);
+				next.pParent = cur;
 
-				openAdded[nY][nX] = true;
+				g_openList.UpdateNode(&next);
+				DrawCell(next.position.x, next.position.y, g_Blue, hdc);
+
+				LogInfo(&next, hdc);
+
+				continue;
 			}
+
+			Node* next = new Node({ nX, nY }, nG, nH, nF);
+
+			next->pParent = cur;
+
+			if (next->position == end)
+			{
+				DrawPoint(end.x, end.y, g_Green, hdc);
+				DrawPath(next, hdc);
+				return true;
+			}
+			
+			g_openList.InsertData(next);
+			DrawCell(next->position.x, next->position.y, g_Blue, hdc);
+
+			LogInfo(next, hdc);
+
+			openAdded[nY][nX] = true;
 		}
+
+		Sleep(30);
 	}
 
+	g_closeList.clear();
+	g_openList.ClearHeap();
+
 	return false;
+}
+
+void LogInfo(Node* cur, HDC hdc)
+{
+	char str[10] = { 0, };
+	sprintf_s(str, "G: %.1f", cur->g);
+	TextOutA(hdc, cur->position.x * CELL_SIZE, cur->position.y * CELL_SIZE, str, 10);
+	sprintf_s(str, "H: %.1f", cur->h);
+	TextOutA(hdc, cur->position.x * CELL_SIZE, cur->position.y * CELL_SIZE + 15, str, 10);
+	sprintf_s(str, "F: %.1f", cur->f);
+	TextOutA(hdc, cur->position.x * CELL_SIZE, cur->position.y * CELL_SIZE + 30, str, 10);
+}
+
+void DrawPath(Node* end, HDC hdc)
+{
+	HPEN oldPen = (HPEN)SelectObject(hdc, g_arrow);
+	MoveToEx(hdc, end->position.x * CELL_SIZE + CELL_SIZE / 2, end->position.y * CELL_SIZE + CELL_SIZE / 2, NULL);
+
+	Node* next = end->pParent;
+
+	while (1)
+	{
+		LineTo(hdc, next->position.x * CELL_SIZE + CELL_SIZE / 2, next->position.y * CELL_SIZE + CELL_SIZE / 2);
+
+		if (next->pParent == nullptr)
+		{
+			break;
+		}
+
+		next = next->pParent;
+	}
+
+	g_closeList.clear();
+	g_openList.ClearHeap();
+
+	SelectObject(hdc, oldPen);
 }

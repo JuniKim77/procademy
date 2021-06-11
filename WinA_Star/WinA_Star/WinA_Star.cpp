@@ -7,26 +7,32 @@
 #include <locale>
 #include "AStar.h"
 
-#define CELL_SIZE (16)
-
 // 전역 변수:
 HWND gMainWindow;
 HINSTANCE gInstance;
 HBRUSH g_White;
 HBRUSH g_Gray;
 HBRUSH g_Yellow;
-HPEN g_Pen;
-HPEN g_ArrowPen;
+HBRUSH g_Red; // 시작
+HBRUSH g_Green; // 끝
+HBRUSH g_Blue;
+HFONT g_font;
+HPEN g_arrow;
 TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
-Coordi g_begin;
-Coordi g_end;
+Coordi g_begin = { MAP_WIDTH / 5, MAP_HEIGHT / 2 };
+Coordi g_end = { MAP_WIDTH / 5 * 2, MAP_HEIGHT / 2 };
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName);
 void OpenConsole();
 void DrawCell(int x, int y, HBRUSH brush, HDC hdc);
+void DrawBegin(int x, int y, HDC hdc);
+void DrawEnd(int x, int y, HDC hdc);
+void DrawPoint(int x, int y, HBRUSH brush, HDC hdc);
+void DrawWall(HDC hdc);
 void Clear(HDC hdc);
+void ClearWall(HDC hdc);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -73,10 +79,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static HWND editor;
     static HWND btn_insert;
     static HWND btn_delete;
-    static bool s_button = false;
+    static bool s_LButton = false;
+    static bool s_BeginButton = false;
+    static bool s_EndButton = false;
+    static bool s_EraseWall = false;
 
     switch (message)
     {
@@ -85,18 +93,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         int x = GetSystemMetrics(SM_CXSCREEN) * 0.1;
         int y = GetSystemMetrics(SM_CYSCREEN) * 0.8;
 
-        editor = CreateWindowW(L"edit", nullptr, WS_CHILD | WS_VISIBLE | ES_NUMBER, x, y + 25, 100, 20, hWnd, (HMENU)0, gInstance, NULL);
-        SendMessageW(editor, EM_LIMITTEXT, (WPARAM)10, 0);
-        CreateWindowW(L"button", L"시작점", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 25, 80, 20, hWnd, (HMENU)1, gInstance, NULL);
-        CreateWindowW(L"button", L"도착점", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 25, 80, 20, hWnd, (HMENU)2, gInstance, NULL);
-        CreateWindowW(L"button", L"장벽", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 50, 80, 20, hWnd, (HMENU)3, gInstance, NULL);
-        CreateWindowW(L"button", L"클리어", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 50, 80, 20, hWnd, (HMENU)4, gInstance, NULL);
+        CreateWindowW(L"button", L"시작", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 25, 100, 20, hWnd, (HMENU)1, gInstance, NULL);
+        CreateWindowW(L"button", L"클리어", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 25, 100, 20, hWnd, (HMENU)2, gInstance, NULL);
+        CreateWindowW(L"button", L"장벽 클리어", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 50, 100, 20, hWnd, (HMENU)3, gInstance, NULL);
+        CreateWindowW(L"button", L"시작점", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y - 75, 100, 20, hWnd, (HMENU)4, gInstance, NULL);
+        CreateWindowW(L"button", L"도착점", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y - 75, 100, 20, hWnd, (HMENU)5, gInstance, NULL);
+        CreateWindowW(L"button", L"장벽", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y - 50, 100, 20, hWnd, (HMENU)6, gInstance, NULL);
+        CreateWindowW(L"button", L"지우개", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y - 50, 100, 20, hWnd, (HMENU)7, gInstance, NULL);
 
         g_White = CreateSolidBrush(RGB(200, 200, 200));
         g_Gray = CreateSolidBrush(RGB(30, 30, 30));
         g_Yellow = CreateSolidBrush(RGB(180, 180, 100));
-        g_Pen = CreatePen(PS_SOLID, 1, RGB(80, 80, 80));
-        g_ArrowPen = CreatePen(PS_SOLID, 1, RGB(150, 0, 0));
+        g_Red = CreateSolidBrush(RGB(200, 0, 0));
+        g_Green = CreateSolidBrush(RGB(0, 200, 0));
+        g_Blue = CreateSolidBrush(RGB(100, 100, 180));
+        g_arrow = CreatePen(PS_SOLID, 3, RGB(200, 0, 0));
+        g_font = CreateFont(15, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 3, 2, 1,
+            VARIABLE_PITCH | FF_ROMAN, NULL);
 
         break;
     }
@@ -104,9 +117,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         switch (wParam)
         {
-        case VK_SPACE:
-            SetFocus(editor);
-            break;
         case VK_ESCAPE:
             SetFocus(gMainWindow);
             break;
@@ -114,30 +124,49 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     case WM_MOUSEMOVE:
     {
-        if (!s_button)
-            break;
+        int x = LOWORD(lParam) / CELL_SIZE;
+        int y = HIWORD(lParam) / CELL_SIZE;
+        HDC hdc = GetDC(hWnd);
 
-        int x = LOWORD(lParam);
-        int y = HIWORD(lParam);
-
-        wprintf_s(L"X: %d, Y: %d \n", x, y);
-
-        if (x < CELL_SIZE || y < CELL_SIZE || x >= 101 * CELL_SIZE || y >= 51 * CELL_SIZE)
+        if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT)
         {
             break;
         }
-        HDC hdc = GetDC(hWnd);
-        DrawCell(x / CELL_SIZE, y / CELL_SIZE, g_Yellow, hdc);
+
+        if (!s_LButton)
+            break;
+
+		if (s_BeginButton)
+		{
+			DrawBegin(x, y, hdc);
+		}
+		else if (s_EndButton)
+		{
+			DrawEnd(x, y, hdc);
+		}
+        else if (s_EraseWall)
+        {
+            g_Map[y][x] = TileType::TILE_TYPE_PATH;
+
+            DrawCell(x, y, g_White, hdc);
+        }
+        else
+        {
+            g_Map[y][x] = TileType::TILE_TYPE_WALL;
+
+            DrawCell(x, y, g_Gray, hdc);
+        }
+        
         break;
     }
     case WM_LBUTTONDOWN:
     {
-        s_button = true;
+        s_LButton = true;
         break;
     }
     case WM_LBUTTONUP:
     {
-        s_button = false;
+        s_LButton = false;
         break;
     }
     case WM_COMMAND:
@@ -146,35 +175,51 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         // 메뉴 선택을 구문 분석합니다:
         switch (wmId)
         {
-        case 1:
+        case 1: // 길 탐색 시작
         {
+            HDC hdc = GetDC(hWnd);
+            SearchDestination(g_begin, g_end, hdc);
             break;
         }
-        case 2:
+        case 2: // 장벽 남기고 클리어
         {
-            WCHAR text[20] = { 0, };
-            SendMessage(editor, WM_GETTEXT, 20, (LPARAM)text);
-            SetWindowText(editor, L"");
-            SetFocus(gMainWindow);
+            HDC hdc = GetDC(hWnd);
+            Clear(hdc);
+            DrawWall(hdc);
 
-            InvalidateRect(hWnd, nullptr, TRUE);
             break;
         }
-        case 3:
+        case 3: // 장벽 클리어
         {
-            SetWindowText(editor, L"");
-            SetFocus(gMainWindow);
+            HDC hdc = GetDC(hWnd);
+            ClearWall(hdc);
 
-            
-
-            InvalidateRect(hWnd, nullptr, TRUE);
             break;
         }
         case 4:
         {
-            HDC hdc = GetDC(hWnd);
-            Clear(hdc);
-
+            s_BeginButton = true;
+            s_EndButton = false;
+            break;
+        }
+        case 5:
+        {
+            s_BeginButton = false;
+            s_EndButton = true;
+            break;
+        }
+        case 6:
+        {
+            s_BeginButton = false;
+            s_EndButton = false;
+            s_EraseWall = false;
+            break;
+        }
+        case 7:
+        {
+            s_BeginButton = false;
+            s_EndButton = false;
+            s_EraseWall = true;
             break;
         }
         case IDM_EXIT:
@@ -190,15 +235,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
         // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-        SelectObject(hdc, g_Pen);
-
-        for (int i = 1; i <= 50; ++i)
-        {
-            for (int j = 1; j <= 100; ++j)
-            {
-                DrawCell(j, i, g_White, hdc);
-            }
-        }
+        Clear(hdc);
 
         EndPaint(hWnd, &ps);
     }
@@ -269,18 +306,79 @@ void OpenConsole()
 void DrawCell(int x, int y, HBRUSH brush, HDC hdc)
 {
     SelectObject(hdc, brush);
-    Rectangle(hdc, x * CELL_SIZE, y * CELL_SIZE, (x + 1) * CELL_SIZE, (y + 1) * CELL_SIZE);
+    Rectangle(hdc, x * CELL_SIZE, y * CELL_SIZE,
+        (x + 1) * CELL_SIZE, (y + 1) * CELL_SIZE);
+}
+
+void DrawBegin(int x, int y, HDC hdc)
+{
+    DrawCell(g_begin.x, g_begin.y, g_White, hdc);
+    DrawPoint(x, y, g_Red, hdc);
+
+    g_Map[y][x] = TileType::TILE_TYPE_BEGIN;
+    g_Map[g_begin.y][g_begin.x] = TileType::TILE_TYPE_PATH;
+
+    g_begin.x = x;
+    g_begin.y = y;
+}
+
+void DrawEnd(int x, int y, HDC hdc)
+{
+    DrawCell(g_end.x, g_end.y, g_White, hdc);
+    DrawPoint(x, y, g_Green, hdc);
+    g_Map[y][x] = TileType::TILE_TYPE_END;
+    g_Map[g_end.y][g_end.x] = TileType::TILE_TYPE_PATH;
+
+    g_end.x = x;
+    g_end.y = y;
+}
+
+void DrawPoint(int x, int y, HBRUSH brush, HDC hdc)
+{
+    SelectObject(hdc, brush);
+    Ellipse(hdc, x * CELL_SIZE + 2, y * CELL_SIZE + 2,
+        (x + 1) * CELL_SIZE - 2, (y + 1) * CELL_SIZE - 2);
+}
+
+void DrawWall(HDC hdc)
+{
+    for (int i = 0; i < MAP_HEIGHT; ++i)
+    {
+        for (int j = 0; j < MAP_WIDTH; ++j)
+        {
+            if (g_Map[i][j] == TileType::TILE_TYPE_WALL)
+            {
+                DrawCell(j, i, g_Gray, hdc);
+            }
+        }
+    }
 }
 
 void Clear(HDC hdc)
 {
-    SelectObject(hdc, g_Pen);
-
-    for (int i = 1; i <= 50; ++i)
+    for (int i = 0; i < MAP_HEIGHT; ++i)
     {
-        for (int j = 1; j <= 100; ++j)
+        for (int j = 0; j < MAP_WIDTH; ++j)
         {
             DrawCell(j, i, g_White, hdc);
+        }
+    }
+
+    DrawPoint(g_begin.x, g_begin.y, g_Red, hdc);
+    DrawPoint(g_end.x, g_end.y, g_Green, hdc);
+}
+
+void ClearWall(HDC hdc)
+{
+    for (int i = 0; i < MAP_HEIGHT; ++i)
+    {
+        for (int j = 0; j < MAP_WIDTH; ++j)
+        {
+            if (g_Map[i][j] == TileType::TILE_TYPE_WALL)
+            {
+                DrawCell(j, i, g_White, hdc);
+                g_Map[i][j] = TileType::TILE_TYPE_PATH;
+            }
         }
     }
 }
