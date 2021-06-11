@@ -1,9 +1,9 @@
 #include "AStar.h"
 #include "MyHeap.h"
-#include "myList.h"
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include "RingBuffer.h"
 
 #define PriorHeight
 //#define LogCell
@@ -12,10 +12,10 @@
 #define Reverse_Stand (2.0f)
 
 extern TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
+Node* g_NodeMap[MAP_HEIGHT][MAP_WIDTH];
 MyHeap g_openList(128);
-myList<Node*> g_closeList;
-bool closeVisit[MAP_HEIGHT][MAP_WIDTH];
-bool openAdded[MAP_HEIGHT][MAP_WIDTH];
+RingBuffer g_NodeRing;
+NodeType g_NodeType[MAP_HEIGHT][MAP_WIDTH];
 
 extern void DrawCell(int x, int y, HBRUSH brush, HDC hdc);
 extern void DrawPoint(int x, int y, HBRUSH brush, HDC hdc);
@@ -38,8 +38,7 @@ bool SearchDestination(Coordi begin, Coordi end, HDC hdc)
 
 bool SearchHelper(Coordi begin, Coordi end, HDC hdc, bool reverse)
 {
-	memset(closeVisit, 0, sizeof(closeVisit));
-	memset(openAdded, 0, sizeof(openAdded));
+	memset(g_NodeType, 0, sizeof(g_NodeType));
 
 	const int dx[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
 	const int dy[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
@@ -48,7 +47,7 @@ bool SearchHelper(Coordi begin, Coordi end, HDC hdc, bool reverse)
 	unsigned short h = abs(begin.x - end.x) + abs(begin.y - end.y);
 	Node* node = new Node(begin, 0, H_Wegiht * h, H_Wegiht * h);
 	g_openList.InsertData(node);
-	openAdded[begin.y][begin.x] = true;
+	g_NodeType[begin.y][begin.x] = NodeType::NODE_TYPE_OPEN;
 	SetBkMode(hdc, TRANSPARENT);
 	SelectObject(hdc, g_font);
 
@@ -71,9 +70,9 @@ bool SearchHelper(Coordi begin, Coordi end, HDC hdc, bool reverse)
 		if (cur == nullptr)
 			break;
 
-		g_closeList.push_back(cur);
+		g_NodeRing.Enqueue(cur);
 		DrawCell(cur->position.x, cur->position.y, g_Yellow, hdc);
-		closeVisit[cur->position.y][cur->position.x] = true;
+		g_NodeType[cur->position.y][cur->position.x] = NodeType::NODE_TYPE_CLOSE;
 
 		if (cur->position == begin)
 		{
@@ -100,7 +99,7 @@ bool SearchHelper(Coordi begin, Coordi end, HDC hdc, bool reverse)
 
 			if (nX < 0 || nY < 0 ||
 				nX >= MAP_WIDTH || nY >= MAP_HEIGHT ||
-				closeVisit[nY][nX] ||
+				g_NodeType[nY][nX] == NodeType::NODE_TYPE_CLOSE ||
 				g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
 				continue;
@@ -114,7 +113,7 @@ bool SearchHelper(Coordi begin, Coordi end, HDC hdc, bool reverse)
 #endif
 			float nF = nG + nH;
 
-			if (openAdded[nY][nX])
+			if (g_NodeType[nY][nX] == NodeType::NODE_TYPE_OPEN)
 			{
 				Node next({ nX, nY }, nG, nH, nF);
 				next.pParent = cur;
@@ -139,7 +138,7 @@ bool SearchHelper(Coordi begin, Coordi end, HDC hdc, bool reverse)
 #ifdef LogCell
 			LogInfo(next, hdc);
 #endif
-			openAdded[nY][nX] = true;
+			g_NodeType[nY][nX] = NodeType::NODE_TYPE_OPEN;
 		}
 
 		Sleep(30);
@@ -187,9 +186,10 @@ void DrawPath(Node* end, HDC hdc)
 
 void FreeNode()
 {
-	while (!g_closeList.empty())
+	while (g_NodeRing.GetUseSize() != 0)
 	{
-		Node* node = g_closeList.pop_back();
+		Node* node;
+		g_NodeRing.Dequeue(&node);
 
 		delete node;
 	}
