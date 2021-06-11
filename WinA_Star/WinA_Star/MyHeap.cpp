@@ -83,7 +83,7 @@ void MyHeap::Heapify(int index)
 
     int parent = index / 2;
 
-    if (mBuffer[parent]->f > mBuffer[index]->f)
+    if (mBuffer[parent]->f >= mBuffer[index]->f)
     {
         Swap(parent, index);
 

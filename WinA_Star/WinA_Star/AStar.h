@@ -1,8 +1,9 @@
 #pragma once
 
-#define MAP_WIDTH (25)
-#define MAP_HEIGHT (12)
-#define CELL_SIZE (64)
+#define MAP_WIDTH (50)
+#define MAP_HEIGHT (24)
+#define CELL_SIZE (32)
+#define FONT_HEIGHT (8)
 
 #include <wtypes.h>
 
@@ -58,3 +59,5 @@ bool SearchDestination(Coordi begin, Coordi end, HDC hdc);
 void LogInfo(Node* cur, HDC hdc);
 
 void DrawPath(Node* end, HDC hdc);
+
+void FreeNode();

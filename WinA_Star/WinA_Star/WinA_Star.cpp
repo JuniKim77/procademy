@@ -13,8 +13,8 @@ HINSTANCE gInstance;
 HBRUSH g_White;
 HBRUSH g_Gray;
 HBRUSH g_Yellow;
-HBRUSH g_Red; // 시작
-HBRUSH g_Green; // 끝
+HBRUSH g_Red; // 도착
+HBRUSH g_Green; // 시작
 HBRUSH g_Blue;
 HFONT g_font;
 HPEN g_arrow;
@@ -108,7 +108,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_Green = CreateSolidBrush(RGB(0, 200, 0));
         g_Blue = CreateSolidBrush(RGB(100, 100, 180));
         g_arrow = CreatePen(PS_SOLID, 3, RGB(200, 0, 0));
-        g_font = CreateFont(15, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 3, 2, 1,
+        g_font = CreateFont(FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 3, 2, 1,
             VARIABLE_PITCH | FF_ROMAN, NULL);
 
         break;
@@ -313,7 +313,7 @@ void DrawCell(int x, int y, HBRUSH brush, HDC hdc)
 void DrawBegin(int x, int y, HDC hdc)
 {
     DrawCell(g_begin.x, g_begin.y, g_White, hdc);
-    DrawPoint(x, y, g_Red, hdc);
+    DrawPoint(x, y, g_Green, hdc);
 
     g_Map[y][x] = TileType::TILE_TYPE_BEGIN;
     g_Map[g_begin.y][g_begin.x] = TileType::TILE_TYPE_PATH;
@@ -325,7 +325,7 @@ void DrawBegin(int x, int y, HDC hdc)
 void DrawEnd(int x, int y, HDC hdc)
 {
     DrawCell(g_end.x, g_end.y, g_White, hdc);
-    DrawPoint(x, y, g_Green, hdc);
+    DrawPoint(x, y, g_Red, hdc);
     g_Map[y][x] = TileType::TILE_TYPE_END;
     g_Map[g_end.y][g_end.x] = TileType::TILE_TYPE_PATH;
 
@@ -364,8 +364,8 @@ void Clear(HDC hdc)
         }
     }
 
-    DrawPoint(g_begin.x, g_begin.y, g_Red, hdc);
-    DrawPoint(g_end.x, g_end.y, g_Green, hdc);
+    DrawPoint(g_begin.x, g_begin.y, g_Green, hdc);
+    DrawPoint(g_end.x, g_end.y, g_Red, hdc);
 }
 
 void ClearWall(HDC hdc)
