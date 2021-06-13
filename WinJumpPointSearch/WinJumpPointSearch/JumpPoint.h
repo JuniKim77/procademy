@@ -70,6 +70,7 @@ struct Node
 	{}
 };
 
-bool SearchPath(Coordi begin, Coordi end, HDC hdc, NodeDirection dir);
+bool AStarSearch(Coordi begin, Coordi end, HDC hdc);
+bool SearchHelper(Coordi begin, Coordi end, HDC hdc, NodeDirection dir);
 void DrawPath(Node* end, HDC hdc);
 void FreeNode();

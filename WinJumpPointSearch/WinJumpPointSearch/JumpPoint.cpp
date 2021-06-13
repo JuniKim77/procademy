@@ -4,6 +4,12 @@
 #include <stdio.h>
 #include <math.h>
 
+#define G_Wegiht (1.5f)
+#define H_Wegiht (1.0f)
+#define Reverse_Stand (2.0f)
+
+MyHeap g_openList(128);
+
 extern void DrawCell(int x, int y, HBRUSH brush, HDC hdc);
 extern void DrawPoint(int x, int y, HBRUSH brush, HDC hdc);
 extern HBRUSH g_Red; // µµÂø
@@ -13,7 +19,17 @@ extern HBRUSH g_Blue;
 extern HFONT g_font;
 extern HPEN g_arrow;
 
-bool SearchPath(Coordi begin, Coordi end, HDC hdc, NodeDirection dir)
+bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
+{
+	unsigned short h = abs(begin.x - end.x) + abs(begin.y - end.y);
+	Node* node = new Node(begin, 0, H_Wegiht * h, H_Wegiht * h, NodeDirection::NODE_DIRECTION_NONE);
+	
+	
+
+	return false;
+}
+
+bool SearchHelper(Coordi begin, Coordi end, HDC hdc, NodeDirection dir)
 {
 	switch (dir)
 	{
