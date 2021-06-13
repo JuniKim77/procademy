@@ -144,14 +144,15 @@
     <ClInclude Include="AStar.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MyHeap.h" />
-    <ClInclude Include="myList.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="WinA_Star.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AStar.cpp" />
     <ClCompile Include="MyHeap.cpp" />
+    <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="WinA_Star.cpp" />
   </ItemGroup>
   <ItemGroup>

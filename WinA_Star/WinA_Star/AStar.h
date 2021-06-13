@@ -26,6 +26,13 @@ struct Coordi
 	}
 };
 
+enum class NodeType
+{
+	NODE_TYPE_NONE,
+	NODE_TYPE_OPEN,
+	NODE_TYPE_CLOSE,
+};
+
 struct Node
 {
 	Coordi position;
