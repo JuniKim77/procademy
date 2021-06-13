@@ -12,7 +12,7 @@ enum class TileType
 	TILE_TYPE_PATH,
 	TILE_TYPE_WALL,
 	TILE_TYPE_BEGIN,
-	TILE_TYPE_END,
+	TILE_TYPE_END
 };
 
 struct Coordi
