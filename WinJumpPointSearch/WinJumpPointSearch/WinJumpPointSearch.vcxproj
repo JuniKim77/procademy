@@ -142,12 +142,16 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="JumpPoint.h" />
+    <ClInclude Include="MyHeap.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="WinJumpPointSearch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JumpPoint.cpp" />
+    <ClCompile Include="MyHeap.cpp" />
+    <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="WinJumpPointSearch.cpp" />
   </ItemGroup>
   <ItemGroup>
