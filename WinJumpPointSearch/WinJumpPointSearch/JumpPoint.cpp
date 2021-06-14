@@ -62,7 +62,35 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 			break;
 		}
 		case NodeDirection::NODE_DIRECTION_RD:
+		{
+			int nY = cur->position.y - 1;
+			int nX = cur->position.x + 1;
+
+			if (nY >= 0 && nX < MAP_WIDTH &&
+				g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL &&
+				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
+			{
+				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
+			}
+			nY++;
+			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RR);
+			nY++;
+			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
+			nX--;
+			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_DD);
+			nX--;
+
+			if (nY < MAP_HEIGHT && nX >= 0 &&
+				g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL &&
+				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
+
+
+			{
+				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
+			}
+
 			break;
+		}
 		case NodeDirection::NODE_DIRECTION_DD:
 		{
 			int nY = cur->position.y + 1;
