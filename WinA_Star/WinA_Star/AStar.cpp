@@ -12,7 +12,6 @@
 #define Reverse_Stand (2.0f)
 
 extern TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
-Node* g_NodeMap[MAP_HEIGHT][MAP_WIDTH];
 MyHeap g_openList(128);
 RingBuffer g_NodeRing;
 NodeType g_NodeType[MAP_HEIGHT][MAP_WIDTH];
