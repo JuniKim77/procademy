@@ -23,7 +23,7 @@ extern HBRUSH g_Blue;
 extern HFONT g_font;
 extern HPEN g_arrow;
 
-bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
+bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 {
 	unsigned short h = abs(begin.x - end.x) + abs(begin.y - end.y);
 	Node* node = new Node(begin, 0, H_Wegiht * h, H_Wegiht * h, NodeDirection::NODE_DIRECTION_NONE);
@@ -49,15 +49,15 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 			if (nY >= 0 && g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
 			}
 			++nY;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RR);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RR);
 			++nY;
 			if (nY < MAP_HEIGHT && g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
 			}
 			break;
 		}
@@ -70,21 +70,21 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 				g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
 			}
 			nY++;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RR);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RR);
 			nY++;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
 			nX--;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_DD);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_DD);
 			nX--;
 
 			if (nY < MAP_HEIGHT && nX >= 0 &&
 				g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
 			}
 
 			break;
@@ -102,15 +102,15 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 			if (nX >= 0 && g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
 			}
 			++nX;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_DD);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_DD);
 			++nX;
 			if (nX < MAP_WIDTH && g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
 			}
 			break;
 		}
@@ -123,21 +123,21 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 				g_Map[nY][nX + 1] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
 			}
 			nY++;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LL);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LL);
 			nY++;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
 			nX++;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_DD);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_DD);
 			nX++;
 
 			if (nY < MAP_HEIGHT && nX < MAP_WIDTH &&
 				g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
 			}
 
 			break;
@@ -155,15 +155,15 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 			if (nY >= 0 && g_Map[nY][nX + 1] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
 			}
 			++nY;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LL);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LL);
 			++nY;
 			if (nY < MAP_HEIGHT && g_Map[nY][nX + 1] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
 			}
 			break;
 		}
@@ -176,21 +176,21 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 				g_Map[nY][nX + 1] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
 			}
 			nY--;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LL);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LL);
 			nY--;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
 			nX++;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_UU);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_UU);
 			nX++;
 
 			if (nY >= 0 && nX < MAP_WIDTH &&
 				g_Map[nY + 1][nX] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
 			}
 
 			break;
@@ -208,15 +208,15 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 			if (nX >= 0 && g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
 			}
 			++nX;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_UU);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_UU);
 			++nX;
 			if (nX < MAP_WIDTH && g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
 			}
 			break;
 		}
@@ -229,21 +229,21 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 				g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
 			}
 			nY--;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RR);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RR);
 			nY--;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
 			nX--;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_UU);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_UU);
 			nX--;
 
 			if (nY >= 0 && nX >= 0 &&
 				g_Map[nY + 1][nX] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
+				SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
 			}
 
 			break;
@@ -253,21 +253,21 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 			int nY = cur->position.y;
 			int nX = cur->position.x + 1;
 
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RR);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RR);
 			nY++;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RD);
 			nX--;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_DD);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_DD);
 			nX--;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LD);
 			nY--;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LL);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LL);
 			nY--;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_LU);
 			nX++;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_UU);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_UU);
 			nX++;
-			SearchHelper({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
+			SearchDirection({ nX, nY }, end, hdc, NodeDirection::NODE_DIRECTION_RU);
 
 			break;
 		}
@@ -275,12 +275,11 @@ bool AStarSearch(Coordi begin, Coordi end, HDC hdc)
 			break;
 		}
 	}
-	
 
 	return false;
 }
 
-bool SearchHelper(Coordi begin, Coordi end, HDC hdc, NodeDirection dir)
+bool SearchDirection(Coordi begin, Coordi end, HDC hdc, NodeDirection dir)
 {
 	switch (dir)
 	{
@@ -301,7 +300,6 @@ bool SearchHelper(Coordi begin, Coordi end, HDC hdc, NodeDirection dir)
 	case NodeDirection::NODE_DIRECTION_RU:
 		break;
 	case NodeDirection::NODE_DIRECTION_NONE:
-		break;
 	default:
 		break;
 	}
