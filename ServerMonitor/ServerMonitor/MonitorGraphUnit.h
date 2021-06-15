@@ -9,8 +9,7 @@ public:
 		LINE_SINGLE,
 		LINE_MULTI,
 		NUMBER,
-		ONOFF,
-		PIE
+		ONOFF
 	};
 	struct ST_HWNDtoTHIS
 	{
@@ -46,6 +45,12 @@ private:
 	//------------------------------------------------------
 	// 윈도우 위치,크기,색상, 그래프 타입 등.. 자료
 	//------------------------------------------------------
+	HINSTANCE mHInstance;
+	HWND mHParent;
+	int mX;
+	int mY;
+	int mWidth;
+	int mHeight;
 	TYPE _enGraphType;
 
 	//------------------------------------------------------

@@ -19,7 +19,6 @@ HINSTANCE g_hInst;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName);
 
@@ -84,8 +83,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// 메뉴 선택을 구문 분석합니다:
 		switch (wmId)
 		{
-		case IDM_ABOUT:
-			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
 			break;
@@ -111,26 +108,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-// 정보 대화 상자의 메시지 처리기입니다.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
-
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		}
-		break;
-	}
-	return (INT_PTR)FALSE;
-}
-
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName)
 {
 	WNDCLASSEXW wcex;
@@ -152,7 +129,7 @@ bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName
 	RegisterClassExW(&wcex);
 
 	// 애플리케이션 초기화를 수행합니다:
-	HWND hWnd = CreateWindowExW(0, className, windowName, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+	HWND hWnd = CreateWindowExW(0, className, windowName, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
 		CW_USEDEFAULT, CW_USEDEFAULT, 1280, 640, nullptr, nullptr, hInstance, nullptr);
 
 	if (hWnd == nullptr)
