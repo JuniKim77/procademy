@@ -5,6 +5,8 @@
 #define CELL_SIZE (32)
 #define FONT_HEIGHT (8)
 
+#define MAX_SEARCH (50)
+
 #include <wtypes.h>
 
 enum class TileType
@@ -26,13 +28,6 @@ enum class NodeDirection
 	NODE_DIRECTION_UU,
 	NODE_DIRECTION_RU,
 	NODE_DIRECTION_NONE,
-};
-
-enum class NodeFound
-{
-	NODE_FOUND_FAIL,
-	NODE_FOUND_SUCCESS,
-	NODE_FOUND_FIN
 };
 
 struct Coordi
@@ -78,6 +73,6 @@ struct Node
 };
 
 bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc);
-bool SearchDirection(Coordi begin, Coordi end, HDC hdc, NodeDirection dir);
+Node* SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir);
 void DrawPath(Node* end, HDC hdc);
 void FreeNode();
