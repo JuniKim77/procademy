@@ -284,7 +284,49 @@ bool SearchDirection(Coordi begin, Coordi end, HDC hdc, NodeDirection dir)
 	switch (dir)
 	{
 	case NodeDirection::NODE_DIRECTION_RR:
+	{
+		bool blocked = false;
+
+		int nX = begin.x;
+		int nY = begin.y;
+		int count = 0;
+
+		while (count < MAP_WIDTH)
+		{
+			if (nX >= MAP_WIDTH)
+			{
+				return false;
+			}
+
+			if (end.x == nX && end.y == nY)
+			{
+				return true;
+			}
+
+			if (nY - 1 >= 0)
+			{
+				if (blocked == true && g_Map[nY - 1][nX] == TileType::TILE_TYPE_PATH)
+				{
+					int g = nX - begin.x + 1;
+					int h = abs(nX - end.x) + abs(nY - end.y);
+					float f = g + h * H_Wegiht;
+
+					Node* node = new Node({ nX - 1, nY }, g, h, f, NodeDirection::NODE_DIRECTION_RR);
+
+					return false;
+				}
+
+				if (g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL)
+				{
+					blocked = true;
+				}
+			}
+
+			count++;
+		}
+
 		break;
+	}
 	case NodeDirection::NODE_DIRECTION_RD:
 		break;
 	case NodeDirection::NODE_DIRECTION_DD:

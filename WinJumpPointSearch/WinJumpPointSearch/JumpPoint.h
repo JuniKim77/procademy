@@ -28,6 +28,13 @@ enum class NodeDirection
 	NODE_DIRECTION_NONE,
 };
 
+enum class NodeFound
+{
+	NODE_FOUND_FAIL,
+	NODE_FOUND_SUCCESS,
+	NODE_FOUND_FIN
+};
+
 struct Coordi
 {
 	int x;
