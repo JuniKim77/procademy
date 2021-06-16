@@ -43,7 +43,6 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 		HBRUSH brush = GetColor();
 		DrawPoint(cur->position.x, cur->position.y, brush, hdc);
 
-
 		if (cur->position == end)
 		{
 			DrawPoint(end.x, end.y, g_Red, hdc);
@@ -293,6 +292,8 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 		default:
 			break;
 		}
+
+		Sleep(10);
 	}
 
 	return false;
@@ -454,7 +455,7 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			bridge->g = g;
 			bridge->h = h;
 			bridge->f = f;
-			bridge->position = { nX - 1, nY };
+			bridge->position = { nX, nY };
 
 			bool ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_RR, brush);
 
@@ -462,8 +463,6 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			{
 				hasCreated = true;
 			}
-
-			bridge->position = { nX, nY - 1 };
 
 			ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_DD, brush);
 
@@ -475,6 +474,27 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			if (hasCreated)
 			{
 				break;
+			}
+
+			// 内呈 眉农
+			if (nX >= 1 && (nY + 1) < MAP_HEIGHT)
+			{
+				if (g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL &&
+					g_Map[nY + 1][nX - 1] == TileType::TILE_TYPE_PATH)
+				{
+					hasCreated = true;
+					break;
+				}
+			}
+
+			if ((nX + 1) < MAP_WIDTH && (nY - 1) >= 0)
+			{
+				if (g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL &&
+					g_Map[nY - 1][nX + 1] == TileType::TILE_TYPE_PATH)
+				{
+					hasCreated = true;
+					break;
+				}
 			}
 
 			nX++;
@@ -649,7 +669,7 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			bridge->g = g;
 			bridge->h = h;
 			bridge->f = f;
-			bridge->position = { nX, nY - 1 };
+			bridge->position = { nX, nY };
 
 			bool ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_DD, brush);
 
@@ -657,8 +677,6 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			{
 				hasCreated = true;
 			}
-
-			bridge->position = { nX + 1, nY };
 
 			ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_LL, brush);
 
@@ -670,6 +688,27 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			if (hasCreated)
 			{
 				break;
+			}
+
+			// 内呈 眉农
+			if ((nX + 1) < MAP_WIDTH && (nY + 1) < MAP_HEIGHT)
+			{
+				if (g_Map[nY][nX + 1] == TileType::TILE_TYPE_WALL &&
+					g_Map[nY + 1][nX + 1] == TileType::TILE_TYPE_PATH)
+				{
+					hasCreated = true;
+					break;
+				}
+			}
+
+			if ((nX - 1) >= 0 && (nY - 1) >= 0)
+			{
+				if (g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL &&
+					g_Map[nY - 1][nX - 1] == TileType::TILE_TYPE_PATH)
+				{
+					hasCreated = true;
+					break;
+				}
 			}
 
 			nX--;
@@ -842,7 +881,7 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			bridge->g = g;
 			bridge->h = h;
 			bridge->f = f;
-			bridge->position = { nX + 1, nY };
+			bridge->position = { nX, nY };
 
 			bool ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_LL, brush);
 
@@ -850,8 +889,6 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			{
 				hasCreated = true;
 			}
-
-			bridge->position = { nX, nY + 1};
 
 			ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_UU, brush);
 
@@ -863,6 +900,27 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			if (hasCreated)
 			{
 				break;
+			}
+
+			// 内呈 眉农
+			if ((nX - 1) >= 0 && (nY + 1) < MAP_HEIGHT)
+			{
+				if (g_Map[nY + 1][nX] == TileType::TILE_TYPE_WALL &&
+					g_Map[nY + 1][nX - 1] == TileType::TILE_TYPE_PATH)
+				{
+					hasCreated = true;
+					break;
+				}
+			}
+
+			if ((nX + 1) < MAP_WIDTH && (nY - 1) >= 0)
+			{
+				if (g_Map[nY][nX + 1] == TileType::TILE_TYPE_WALL &&
+					g_Map[nY - 1][nX + 1] == TileType::TILE_TYPE_PATH)
+				{
+					hasCreated = true;
+					break;
+				}
 			}
 
 			nX--;
@@ -1035,7 +1093,7 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			bridge->g = g;
 			bridge->h = h;
 			bridge->f = f;
-			bridge->position = { nX, nY + 1 };
+			bridge->position = { nX, nY };
 
 			bool ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_UU, brush);
 
@@ -1043,8 +1101,6 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			{
 				hasCreated = true;
 			}
-
-			bridge->position = { nX - 1, nY };
 
 			ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_RR, brush);
 
@@ -1056,6 +1112,27 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			if (hasCreated)
 			{
 				break;
+			}
+
+			// 内呈 眉农
+			if ((nX + 1) < MAP_WIDTH && (nY + 1) < MAP_HEIGHT)
+			{
+				if (g_Map[nY + 1][nX] == TileType::TILE_TYPE_WALL &&
+					g_Map[nY + 1][nX + 1] == TileType::TILE_TYPE_PATH)
+				{
+					hasCreated = true;
+					break;
+				}
+			}
+
+			if ((nX - 1) >= 0 && (nY - 1) >= 0)
+			{
+				if (g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL &&
+					g_Map[nY - 1][nX - 1] == TileType::TILE_TYPE_PATH)
+				{
+					hasCreated = true;
+					break;
+				}
 			}
 
 			nX++;
