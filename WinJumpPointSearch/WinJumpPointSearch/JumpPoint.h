@@ -87,11 +87,13 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc);
 /// <param name="hdc"></param>
 /// <param name="dir"></param>
 /// <returns>노드 생성 여부</returns>
-bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir);
+bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRUSH brush);
 void DrawPath(Node* end, HDC hdc);
 /// <summary>
 /// 링노드로 생성된 모든 노드 삭제
 /// 오픈 리스트는 그저 단순히 size 만 0으로
 /// </summary>
 void FreeNode();
-void InsertNode(Node* node);
+void InsertNode(Node* node, HDC hdc);
+HBRUSH GetColor();
+void colorSet();

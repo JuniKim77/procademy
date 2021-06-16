@@ -49,6 +49,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // 애플리케이션 초기화를 수행합니다:
     OpenConsole();
+    srand(1000);
 
     if (CreateMainWindow(hInstance, L"MainWindow", L"Binary Tree") == false)
         return 1;
@@ -178,7 +179,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case 1: // 길 탐색 시작
         {
             HDC hdc = GetDC(hWnd);
-            // SearchDestination(g_begin, g_end, hdc);
+            JumpPointSearch(g_begin, g_end, hdc);
             break;
         }
         case 2: // 장벽 남기고 클리어
