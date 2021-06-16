@@ -71,8 +71,27 @@ struct Node
 		, pParent(nullptr)
 	{}
 };
-
+/// <summary>
+/// 서치 시작
+/// </summary>
+/// <param name="begin"></param>
+/// <param name="end"></param>
+/// <param name="hdc"></param>
+/// <returns></returns>
 bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc);
-Node* SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir);
+/// <summary>
+/// 방향 서치 & 코너 발견시 노드 생성 후 추가
+/// </summary>
+/// <param name="pParent"></param>
+/// <param name="end"></param>
+/// <param name="hdc"></param>
+/// <param name="dir"></param>
+/// <returns>노드 생성 여부</returns>
+bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir);
 void DrawPath(Node* end, HDC hdc);
+/// <summary>
+/// 링노드로 생성된 모든 노드 삭제
+/// 오픈 리스트는 그저 단순히 size 만 0으로
+/// </summary>
 void FreeNode();
+void InsertNode(Node* node);
