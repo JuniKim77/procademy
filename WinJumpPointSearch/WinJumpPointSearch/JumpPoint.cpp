@@ -293,7 +293,7 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			break;
 		}
 
-		Sleep(10);
+		Sleep(30);
 	}
 
 	return false;

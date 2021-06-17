@@ -6,6 +6,7 @@
 #include <windowsx.h>
 #include <locale>
 #include "JumpPoint.h"
+#include "CRayCast.h"
 
 // 전역 변수:
 HWND gMainWindow;
@@ -21,6 +22,7 @@ HPEN g_arrow;
 TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
 Coordi g_begin = { MAP_WIDTH / 5, MAP_HEIGHT / 2 };
 Coordi g_end = { MAP_WIDTH / 5 * 2, MAP_HEIGHT / 2 };
+CRayCast g_rayCast;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -51,7 +53,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     OpenConsole();
     srand(1000);
 
-    if (CreateMainWindow(hInstance, L"MainWindow", L"Binary Tree") == false)
+    if (CreateMainWindow(hInstance, L"MainWindow", L"Jump Point Search") == false)
         return 1;
 
     MSG msg;
@@ -124,8 +126,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam)
         {
         case VK_SPACE:
+        {
             s_space = !s_space;
+
             break;
+        }
         case VK_ESCAPE:
             SetFocus(gMainWindow);
             break;
@@ -157,6 +162,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             Clear(hdc);
 
             // 렌더링
+            g_rayCast.Reset();
+            g_rayCast.SetEnd({ x, y });
+            CRayCast::Coordi cur;
+
+            while (!g_rayCast.GetNext(cur))
+            {
+                if (cur.x < 0 || cur.y < 0 || cur.x >= MAP_WIDTH || cur.y >= MAP_HEIGHT)
+                {
+                    break;
+                }
+                DrawCell(cur.x, cur.y, g_Blue, hdc);
+            }
 
             old_x = x;
             old_y = y;
@@ -204,6 +221,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             break;
         }
+
+        g_rayCast.SetBegin({ x, y });
 
         DrawCell(s_x, s_y, g_White, hdc);
 
