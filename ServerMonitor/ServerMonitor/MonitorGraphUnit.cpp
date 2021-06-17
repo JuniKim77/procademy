@@ -1,7 +1,16 @@
 #include "MonitorGraphUnit.h"
 
 MonitorGraphUnit::MonitorGraphUnit(HINSTANCE hInstance, HWND hWndParent, TYPE enType, int iPosX, int iPosY, int iWidth, int iHeight)
+	: mhInstance(hInstance)
+	, mhWndParent(hWndParent)
+	, menType(enType)
+	, miPosX(iPosX)
+	, miPosY(iPosY)
+	, miWidth(iWidth)
+	, miHeight(iHeight)
 {
+	_hMemDC = GetDC(hWndParent);
+	_hBitmap = CreateCompatibleBitmap(_hMemDC, miWidth, miHeight);
 }
 
 MonitorGraphUnit::~MonitorGraphUnit()

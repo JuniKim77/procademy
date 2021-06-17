@@ -47,6 +47,13 @@ private:
 	// 윈도우 위치,크기,색상, 그래프 타입 등.. 자료
 	//------------------------------------------------------
 	TYPE _enGraphType;
+	HINSTANCE mhInstance;
+	HWND mhWndParent;
+	TYPE menType;
+	int miPosX;
+	int miPosY;
+	int miWidth;
+	int miHeight;
 
 	//------------------------------------------------------
 	// 더블 버퍼링용 메모리 DC, 메모리 비트맵
