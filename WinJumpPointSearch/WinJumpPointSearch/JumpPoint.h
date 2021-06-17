@@ -5,6 +5,8 @@
 #define CELL_SIZE (32)
 #define FONT_HEIGHT (8)
 
+#define MAX_SEARCH (50)
+
 #include <wtypes.h>
 
 enum class TileType
@@ -56,6 +58,14 @@ struct Node
 		, dir(NodeDirection::NODE_DIRECTION_NONE)
 		, pParent(nullptr)
 	{}
+	Node(const Node* node)
+		: position(node->position)
+		, g(node->g)
+		, h(node->h)
+		, f(node->f)
+		, dir(node->dir)
+		, pParent(node->pParent)
+	{}
 	Node(Coordi _pos,
 		float _g,
 		float _h,
@@ -69,8 +79,30 @@ struct Node
 		, pParent(nullptr)
 	{}
 };
-
-bool AStarSearch(Coordi begin, Coordi end, HDC hdc);
-bool SearchHelper(Coordi begin, Coordi end, HDC hdc, NodeDirection dir);
-void DrawPath(Node* end, HDC hdc);
+/// <summary>
+/// 서치 시작
+/// </summary>
+/// <param name="begin"></param>
+/// <param name="end"></param>
+/// <param name="hdc"></param>
+/// <returns></returns>
+bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc);
+/// <summary>
+/// 방향 서치 & 코너 발견시 노드 생성 후 추가
+/// </summary>
+/// <param name="pParent"></param>
+/// <param name="end"></param>
+/// <param name="hdc"></param>
+/// <param name="dir"></param>
+/// <returns>노드 생성 여부</returns>
+bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRUSH brush);
+void DrawPath(Node* end, HDC hdc, HPEN pen);
+void DrawPathCell(Node* end, HDC hdc, HBRUSH brush);
+/// <summary>
+/// 링노드로 생성된 모든 노드 삭제
+/// 오픈 리스트는 그저 단순히 size 만 0으로
+/// </summary>
 void FreeNode();
+void InsertNode(Node* node, HDC hdc);
+HBRUSH GetColor();
+void colorSet();

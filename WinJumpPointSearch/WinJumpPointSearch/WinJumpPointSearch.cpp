@@ -6,6 +6,7 @@
 #include <windowsx.h>
 #include <locale>
 #include "JumpPoint.h"
+#include "CRayCast.h"
 
 // 전역 변수:
 HWND gMainWindow;
@@ -16,11 +17,15 @@ HBRUSH g_Yellow;
 HBRUSH g_Red; // 도착
 HBRUSH g_Green; // 시작
 HBRUSH g_Blue;
+HBRUSH g_Brown;
 HFONT g_font;
 HPEN g_arrow;
+HPEN g_blueArrow;
 TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
-Coordi g_begin = { MAP_WIDTH / 5, MAP_HEIGHT / 2 };
-Coordi g_end = { MAP_WIDTH / 5 * 2, MAP_HEIGHT / 2 };
+Coordi g_begin = { MAP_WIDTH / 7, MAP_HEIGHT / 7 };
+Coordi g_end = { MAP_WIDTH / 5 * 4, MAP_HEIGHT / 5 * 4 };
+CRayCast g_rayCast;
+bool g_space = false;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -49,8 +54,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // 애플리케이션 초기화를 수행합니다:
     OpenConsole();
+    srand(1000);
 
-    if (CreateMainWindow(hInstance, L"MainWindow", L"Binary Tree") == false)
+    if (CreateMainWindow(hInstance, L"MainWindow", L"Jump Point Search") == false)
         return 1;
 
     MSG msg;
@@ -85,6 +91,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static bool s_BeginButton = false;
     static bool s_EndButton = false;
     static bool s_EraseWall = false;
+    static int s_x = 0;
+    static int s_y = 0;
+    static int old_x = 0;
+    static int old_y = 0;
 
     switch (message)
     {
@@ -107,7 +117,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_Red = CreateSolidBrush(RGB(200, 0, 0));
         g_Green = CreateSolidBrush(RGB(0, 200, 0));
         g_Blue = CreateSolidBrush(RGB(100, 100, 180));
+        g_Brown = CreateSolidBrush(RGB(165, 42, 42));
         g_arrow = CreatePen(PS_SOLID, 3, RGB(200, 0, 0));
+        g_blueArrow = CreatePen(PS_SOLID, 3, RGB(0, 0, 220));
         g_font = CreateFont(FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 3, 2, 1,
             VARIABLE_PITCH | FF_ROMAN, NULL);
 
@@ -117,6 +129,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         switch (wParam)
         {
+        case VK_SPACE:
+        {
+            g_space = !g_space;
+
+            break;
+        }
         case VK_ESCAPE:
             SetFocus(gMainWindow);
             break;
@@ -131,6 +149,44 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT)
         {
             break;
+        }
+
+        if (g_space)
+        {
+            if (x == 0 && y == 1)
+            {
+                break;
+            }
+
+            if (old_x == x && old_y == y)
+            {
+                break;
+            }
+
+            Clear(hdc);
+
+            // 렌더링
+            g_rayCast.Reset();
+            g_rayCast.SetEnd({ x, y });
+            Coordi cur;
+
+            while (!g_rayCast.GetNext(cur))
+            {
+                if (cur.x < 0 || cur.y < 0 || cur.x >= MAP_WIDTH || cur.y >= MAP_HEIGHT)
+                {
+                    break;
+                }
+                DrawCell(cur.x, cur.y, g_Blue, hdc);
+            }
+
+            old_x = x;
+            old_y = y;
+
+            SelectObject(hdc, g_arrow);
+
+            MoveToEx(hdc, s_x * CELL_SIZE + CELL_SIZE / 2, s_y * CELL_SIZE + CELL_SIZE / 2, nullptr);
+
+            LineTo(hdc, x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2);
         }
 
         if (!s_LButton)
@@ -159,9 +215,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         break;
     }
+    case WM_RBUTTONDOWN:
+    {
+        int x = LOWORD(lParam) / CELL_SIZE;
+        int y = HIWORD(lParam) / CELL_SIZE;
+        HDC hdc = GetDC(hWnd);
+
+        if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT)
+        {
+            break;
+        }
+
+        g_rayCast.SetBegin({ x, y });
+
+        DrawCell(s_x, s_y, g_White, hdc);
+
+        s_x = x;
+        s_y = y;
+        
+        DrawCell(s_x, s_y, g_Blue, hdc);
+
+        break;
+    }
     case WM_LBUTTONDOWN:
     {
         s_LButton = true;
+
         break;
     }
     case WM_LBUTTONUP:
@@ -178,7 +257,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         case 1: // 길 탐색 시작
         {
             HDC hdc = GetDC(hWnd);
-            // SearchDestination(g_begin, g_end, hdc);
+            JumpPointSearch(g_begin, g_end, hdc);
+            SetFocus(gMainWindow);
             break;
         }
         case 2: // 장벽 남기고 클리어
@@ -186,6 +266,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             HDC hdc = GetDC(hWnd);
             Clear(hdc);
             DrawWall(hdc);
+            SetFocus(gMainWindow);
 
             break;
         }
@@ -193,6 +274,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             HDC hdc = GetDC(hWnd);
             ClearWall(hdc);
+            SetFocus(gMainWindow);
 
             break;
         }
@@ -200,12 +282,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             s_BeginButton = true;
             s_EndButton = false;
+            SetFocus(gMainWindow);
             break;
         }
         case 5:
         {
             s_BeginButton = false;
             s_EndButton = true;
+            SetFocus(gMainWindow);
             break;
         }
         case 6:
@@ -213,6 +297,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             s_BeginButton = false;
             s_EndButton = false;
             s_EraseWall = false;
+            SetFocus(gMainWindow);
             break;
         }
         case 7:
@@ -220,6 +305,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             s_BeginButton = false;
             s_EndButton = false;
             s_EraseWall = true;
+            SetFocus(gMainWindow);
             break;
         }
         case IDM_EXIT:
