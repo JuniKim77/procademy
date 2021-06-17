@@ -143,6 +143,7 @@
     <ClInclude Include="CRayCast.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="JumpPoint.h" />
+    <ClInclude Include="JumpPointOptimizer.h" />
     <ClInclude Include="MyHeap.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RingBuffer.h" />
@@ -152,6 +153,7 @@
   <ItemGroup>
     <ClCompile Include="CRayCast.cpp" />
     <ClCompile Include="JumpPoint.cpp" />
+    <ClCompile Include="JumpPointOptimizer.cpp" />
     <ClCompile Include="MyHeap.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="WinJumpPointSearch.cpp" />

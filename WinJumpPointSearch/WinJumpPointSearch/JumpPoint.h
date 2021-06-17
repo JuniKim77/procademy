@@ -58,6 +58,14 @@ struct Node
 		, dir(NodeDirection::NODE_DIRECTION_NONE)
 		, pParent(nullptr)
 	{}
+	Node(const Node* node)
+		: position(node->position)
+		, g(node->g)
+		, h(node->h)
+		, f(node->f)
+		, dir(node->dir)
+		, pParent(node->pParent)
+	{}
 	Node(Coordi _pos,
 		float _g,
 		float _h,
@@ -88,7 +96,8 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc);
 /// <param name="dir"></param>
 /// <returns>노드 생성 여부</returns>
 bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRUSH brush);
-void DrawPath(Node* end, HDC hdc);
+void DrawPath(Node* end, HDC hdc, HPEN pen);
+void DrawPathCell(Node* end, HDC hdc, HBRUSH brush);
 /// <summary>
 /// 링노드로 생성된 모든 노드 삭제
 /// 오픈 리스트는 그저 단순히 size 만 0으로

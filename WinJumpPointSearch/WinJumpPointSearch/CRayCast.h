@@ -1,18 +1,9 @@
 #pragma once
+#include "JumpPoint.h"
 
 class CRayCast
 {
 public:
-	struct Coordi
-	{
-		int x;
-		int y;
-
-		bool operator == (Coordi& other)
-		{
-			return x == other.x && y == other.y;
-		}
-	};
 	CRayCast() {}
 	void SetBegin(Coordi begin);
 	void SetEnd(Coordi end);

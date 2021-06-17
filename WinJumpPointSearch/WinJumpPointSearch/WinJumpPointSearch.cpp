@@ -17,12 +17,15 @@ HBRUSH g_Yellow;
 HBRUSH g_Red; // 도착
 HBRUSH g_Green; // 시작
 HBRUSH g_Blue;
+HBRUSH g_Brown;
 HFONT g_font;
 HPEN g_arrow;
+HPEN g_blueArrow;
 TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
-Coordi g_begin = { MAP_WIDTH / 5, MAP_HEIGHT / 2 };
-Coordi g_end = { MAP_WIDTH / 5 * 2, MAP_HEIGHT / 2 };
+Coordi g_begin = { MAP_WIDTH / 7, MAP_HEIGHT / 7 };
+Coordi g_end = { MAP_WIDTH / 5 * 4, MAP_HEIGHT / 5 * 4 };
 CRayCast g_rayCast;
+bool g_space = false;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -88,7 +91,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static bool s_BeginButton = false;
     static bool s_EndButton = false;
     static bool s_EraseWall = false;
-    static bool s_space = false;
     static int s_x = 0;
     static int s_y = 0;
     static int old_x = 0;
@@ -115,7 +117,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         g_Red = CreateSolidBrush(RGB(200, 0, 0));
         g_Green = CreateSolidBrush(RGB(0, 200, 0));
         g_Blue = CreateSolidBrush(RGB(100, 100, 180));
+        g_Brown = CreateSolidBrush(RGB(165, 42, 42));
         g_arrow = CreatePen(PS_SOLID, 3, RGB(200, 0, 0));
+        g_blueArrow = CreatePen(PS_SOLID, 3, RGB(0, 0, 220));
         g_font = CreateFont(FONT_HEIGHT, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 3, 2, 1,
             VARIABLE_PITCH | FF_ROMAN, NULL);
 
@@ -127,7 +131,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
         case VK_SPACE:
         {
-            s_space = !s_space;
+            g_space = !g_space;
 
             break;
         }
@@ -147,7 +151,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         }
 
-        if (s_space)
+        if (g_space)
         {
             if (x == 0 && y == 1)
             {
@@ -164,7 +168,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // 렌더링
             g_rayCast.Reset();
             g_rayCast.SetEnd({ x, y });
-            CRayCast::Coordi cur;
+            Coordi cur;
 
             while (!g_rayCast.GetNext(cur))
             {

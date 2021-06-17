@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <math.h>
 #include "RingBuffer.h"
+#include "JumpPointOptimizer.h"
+#include "CRayCast.h"
 
 #define G_Weight (1.5f)
 #define H_Weight (1.0f)
@@ -14,6 +16,7 @@ MyHeap g_openList(128);
 RingBuffer g_NodeRing;
 bool g_Visit[MAP_HEIGHT][MAP_WIDTH];
 bool g_ColorTable[13][13][13];
+JumpPointOptimizer g_Optimizer;
 
 extern void DrawCell(int x, int y, HBRUSH brush, HDC hdc);
 extern void DrawPoint(int x, int y, HBRUSH brush, HDC hdc);
@@ -24,6 +27,9 @@ extern HBRUSH g_Yellow;
 extern HBRUSH g_Blue;
 extern HFONT g_font;
 extern HPEN g_arrow;
+extern HPEN g_blueArrow;
+extern bool g_space;
+extern HBRUSH g_Brown;
 
 bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 {
@@ -46,7 +52,26 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 		if (cur->position == end)
 		{
 			DrawPoint(end.x, end.y, g_Red, hdc);
-			DrawPath(cur, hdc);
+
+			Node* temp = cur;
+
+			while (temp != nullptr)
+			{
+				g_Optimizer.InsertNode(temp);
+
+				temp = temp->pParent;
+			}
+			if (g_space)
+			{
+				DrawPathCell(g_Optimizer.GetHead(), hdc, g_Brown);
+			}
+			DrawPath(cur, hdc, g_arrow);
+			DrawPath(g_Optimizer.GetHead(), hdc, g_blueArrow);
+
+			DrawPoint(cur->position.x, cur->position.y, brush, hdc);
+
+			FreeNode();
+			g_Optimizer.Clear();
 
 			return true;
 		}
@@ -1161,9 +1186,9 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 	return false;
 }
 
-void DrawPath(Node* end, HDC hdc)
+void DrawPath(Node* end, HDC hdc, HPEN pen)
 {
-	HPEN oldPen = (HPEN)SelectObject(hdc, g_arrow);
+	HPEN oldPen = (HPEN)SelectObject(hdc, pen);
 	MoveToEx(hdc, end->position.x * CELL_SIZE + CELL_SIZE / 2, end->position.y * CELL_SIZE + CELL_SIZE / 2, NULL);
 
 	Node* next = end->pParent;
@@ -1180,9 +1205,33 @@ void DrawPath(Node* end, HDC hdc)
 		next = next->pParent;
 	}
 
-	FreeNode();
-
 	SelectObject(hdc, oldPen);
+}
+
+void DrawPathCell(Node* end, HDC hdc, HBRUSH brush)
+{
+	Node* beginPos = end;
+	Node* endPos = end->pParent;
+
+	CRayCast rayCast;
+
+	while (endPos != nullptr)
+	{
+		rayCast.SetBegin(beginPos->position);
+		rayCast.SetEnd(endPos->position);
+
+		Coordi cur;
+
+		while (!rayCast.GetNext(cur))
+		{
+			DrawCell(cur.x, cur.y, brush, hdc);
+		}
+
+		rayCast.Reset();
+
+		beginPos = beginPos->pParent;
+		endPos = endPos->pParent;
+	}
 }
 
 void FreeNode()
