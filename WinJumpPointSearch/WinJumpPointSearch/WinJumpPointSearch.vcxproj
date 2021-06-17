@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CRayCast.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="JumpPoint.h" />
     <ClInclude Include="MyHeap.h" />
@@ -149,6 +150,7 @@
     <ClInclude Include="WinJumpPointSearch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CRayCast.cpp" />
     <ClCompile Include="JumpPoint.cpp" />
     <ClCompile Include="MyHeap.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
