@@ -143,12 +143,14 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="MonitorGraphUnit.h" />
+    <ClInclude Include="MyQueue.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ServerMonitor.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MonitorGraphUnit.cpp" />
+    <ClCompile Include="MyQueue.cpp" />
     <ClCompile Include="ServerMonitor.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -40,7 +40,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     srand(1000);
     InitData();
 
-    if (CreateMainWindow(hInstance, L"MainWindow", L"Binary Tree") == false)
+    if (CreateMainWindow(hInstance, L"MainWindow", L"Red Black Tree") == false)
         return 1;
 
     MSG msg;

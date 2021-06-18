@@ -1,6 +1,8 @@
 #define dfMAXCHILD (100)
 #include <Windows.h>
 
+class MyQueue;
+
 class MonitorGraphUnit
 {
 public:
@@ -9,8 +11,7 @@ public:
 		LINE_SINGLE,
 		LINE_MULTI,
 		NUMBER,
-		ONOFF,
-		PIE
+		ONOFF
 	};
 	struct ST_HWNDtoTHIS
 	{
@@ -31,6 +32,7 @@ public:
 	// 데이터 넣기.
 	/////////////////////////////////////////////////////////
 	BOOL InsertData(int iData);
+	static void RegisterChildClass(HINSTANCE hInstance);
 
 protected:
 	//------------------------------------------------------
@@ -65,6 +67,7 @@ private:
 	// 데이터
 	//------------------------------------------------------
 	//데이터 큐 / 리스트
+	MyQueue* mQueue;
 
 	// static 맴버 함수의 프로시저에서 This 포인터를 찾기 위한
 	// HWND + Class Ptr 의 테이블
