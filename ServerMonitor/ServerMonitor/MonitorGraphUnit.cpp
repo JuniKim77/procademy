@@ -10,7 +10,7 @@ MonitorGraphUnit::MonitorGraphUnit(HINSTANCE hInstance, HWND hWndParent, TYPE en
 	, miWidth(iWidth)
 	, miHeight(iHeight)
 {
-	HWND childWnd = CreateWindow(L"child_window", NULL, WS_CHILD | WS_VISIBLE | WS_CAPTION | WS_CLIPSIBLINGS,
+	HWND childWnd = CreateWindow(L"child_window", NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
 		miPosX, miPosY, miWidth, miHeight, mhWndParent, NULL, mhInstance, NULL);
 	_hMemDC = GetDC(childWnd);
 	_hBitmap = CreateCompatibleBitmap(_hMemDC, miWidth, miHeight);
@@ -24,9 +24,45 @@ MonitorGraphUnit::~MonitorGraphUnit()
 {
 }
 
-LRESULT MonitorGraphUnit::WndProc(HWND hWnd, UINT meesage, WPARAM wParam, LPARAM lParam)
+LRESULT MonitorGraphUnit::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	return LRESULT();
+	switch (message)
+	{
+	case WM_CREATE:
+		
+		break;
+
+	case WM_TIMER:
+		
+		break;
+
+	case WM_COMMAND:
+	{
+		int wmId = LOWORD(wParam);
+		// 메뉴 선택을 구문 분석합니다:
+		switch (wmId)
+		{
+		
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+	}
+	break;
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hWnd, &ps);
+		// TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+		EndPaint(hWnd, &ps);
+	}
+	break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return 0;
 }
 
 BOOL MonitorGraphUnit::InsertData(int iData)
