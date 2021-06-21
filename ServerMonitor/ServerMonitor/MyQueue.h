@@ -5,6 +5,7 @@
 class MyQueue
 {
 public:
+	friend class MonitorGraphUnit;
 	MyQueue(int capacity);
 	~MyQueue();
 	void enqueue(int value);

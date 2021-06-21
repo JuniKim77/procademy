@@ -50,7 +50,7 @@ private:
 	//------------------------------------------------------
 	TYPE _enGraphType;
 	HINSTANCE mhInstance;
-	HWND mhWndParent;
+	HWND mChildWnd;
 	TYPE menType;
 	int miPosX;
 	int miPosY;
@@ -60,8 +60,8 @@ private:
 	//------------------------------------------------------
 	// 더블 버퍼링용 메모리 DC, 메모리 비트맵
 	//------------------------------------------------------
-	HDC		_hMemDC;
-	HBITMAP		_hBitmap;
+	HDC mChildWindowHDC;
+	HDC		mDoubleHDC;
 
 	//------------------------------------------------------
 	// 데이터
