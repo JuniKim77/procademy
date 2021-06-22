@@ -78,13 +78,8 @@ void NetWorkProc()
 		AcceptProc();
 	}
 
-	vector<FD_SET> fdArr;
-	fdArr.reserve(20);
-
 	int count = 0;
 	FD_ZERO(&rset);
-
-	
 
 	for (auto iter = g_sessions.begin(); iter != g_sessions.end(); ++iter)
 	{
@@ -96,10 +91,12 @@ void NetWorkProc()
 			// reset
 			numSelected = select(0, &rset, NULL, NULL, &tval);
 
-			for (int i = 0; i < numSelected; ++i)
+			for (int i = 0; i < numSelected;)
 			{
 
 			}
+
+			FD_ZERO(&rset);
 		}
 	}
 }

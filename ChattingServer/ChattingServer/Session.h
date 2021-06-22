@@ -21,6 +21,7 @@ private:
 	RingBuffer mSendBuffer;
 	RingBuffer mRecvBuffer;
 	bool mbLogin = false;
+	bool mbAlive = true;
 
 	// content
 	DWORD mIDNum;
