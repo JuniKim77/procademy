@@ -14,7 +14,7 @@ MonitorGraphUnit::MonitorGraphUnit(HINSTANCE hInstance, HWND hWndParent, TYPE en
 		miPosX, miPosY, miWidth, miHeight, hWndParent, NULL, mhInstance, NULL);
 	mChildWindowHDC = GetDC(mChildWnd);
 	mDoubleHDC = CreateCompatibleDC(mChildWindowHDC);
-	HBITMAP mBitMap = CreateCompatibleBitmap(mDoubleHDC, miWidth, miHeight);
+	HBITMAP mBitMap = CreateCompatibleBitmap(mChildWindowHDC, miWidth, miHeight);
 	SelectObject(mDoubleHDC, mBitMap);
 	mQueue = new MyQueue(100);
 
@@ -72,7 +72,6 @@ BOOL MonitorGraphUnit::InsertData(int iData)
 {
 	HPEN redPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
 	mQueue->enqueue(iData);
-
 	
 	int y = mQueue->peakqueue(mQueue->mFront);
 	int count = 0;
