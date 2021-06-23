@@ -129,19 +129,19 @@ void Session::sendTCP(int size)
 
 void Session::ReceivePacket()
 {
-	int freeSize = mSendBuffer.GetFreeSize();
-	int directEnqueueSize = mSendBuffer.DirectEnqueueSize();
+	int freeSize = mRecvBuffer.GetFreeSize();
+	int directEnqueueSize = mRecvBuffer.DirectEnqueueSize();
 	int size = 0;
 	int remain = 0;
 
-	if (freeSize <= directEnqueueSize)
+	if (freeSize > directEnqueueSize)
 	{
-		size = freeSize;
+		size = directEnqueueSize;
+		remain = freeSize - directEnqueueSize;
 	}
 	else
 	{
-		size = directEnqueueSize;
-		remain = size - directEnqueueSize;
+		size = freeSize;
 	}
 
 	receiveTCP(size);
@@ -153,7 +153,7 @@ void Session::receiveTCP(int size)
 	if (size == 0)
 		return;
 
-	int retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), mRecvBuffer.GetFreeSize(), 0);
+	int retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), size, 0);
 
 	if (retval == SOCKET_ERROR)
 	{
@@ -161,6 +161,8 @@ void Session::receiveTCP(int size)
 		if (err == WSAEWOULDBLOCK)
 			return;
 
+
+		// 수정 필요?
 		ErrorQuit(L"Receive Error: 서버 연결 장애", __FILEW__, __LINE__);
 	}
 

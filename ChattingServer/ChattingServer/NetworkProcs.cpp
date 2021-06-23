@@ -80,63 +80,102 @@ void NetWorkProc()
 
 	int count = 0;
 	FD_ZERO(&rset);
+	auto fdIter = g_sessions.begin();
 
-	for (auto iter = g_sessions.begin(); iter != g_sessions.end(); ++iter)
+	for (auto iter = g_sessions.begin(); iter != g_sessions.end();)
 	{
 		FD_SET(iter->second->mSocket, &rset);
 		count++;
 
 		if (count == FD_SETSIZE)
 		{
-			// reset
-			numSelected = select(0, &rset, NULL, NULL, &tval);
-
-			for (int i = 0; i < numSelected;)
-			{
-
-			}
+			SelectProc(fdIter, &rset);
 
 			FD_ZERO(&rset);
+			fdIter = ++iter;
+		}
+		else
+		{
+			++iter;
+		}
+	}
+	
+	SelectProc(fdIter, &rset);
+
+	//DestroySessionProc();
+}
+
+void SelectProc(std::unordered_map<DWORD, Session*>::iterator iter, FD_SET* rset)
+{
+	timeval tval;
+	tval.tv_sec = 0;
+	tval.tv_usec = 100;
+
+	int numSelected = select(0, rset, NULL, NULL, &tval);
+
+	if (numSelected == SOCKET_ERROR)
+	{
+		LogError(L"Select 에러", g_listenSocket);
+
+		exit(1);
+	}
+
+	for (int i = 0; i < numSelected;)
+	{
+		if (FD_ISSET(iter->second->mSocket, rset))
+		{
+			iter->second->receivePacket();
+			
+			i++;
+		}
+		iter++;
+	}
+}
+
+void DestroySessionProc()
+{
+	for (auto iter = g_sessions.begin(); iter != g_sessions.end();)
+	{
+		if (iter->second->mbAlive == false)
+		{
+			// 삭제 코드
 		}
 	}
 }
 
 void AcceptProc()
 {
-	while (1)
+	SOCKADDR_IN clientAddr;
+	int len = sizeof(len);
+
+	SOCKET client = accept(g_listenSocket, (SOCKADDR*)&clientAddr, &len);
+
+	if (client == INVALID_SOCKET)
 	{
-		SOCKADDR_IN clientAddr;
-		int len = sizeof(len);
+		int err = WSAGetLastError();
 
-		SOCKET client = accept(g_listenSocket, (SOCKADDR*)&clientAddr, &len);
-
-		if (client == INVALID_SOCKET)
+		if (err == WSAEWOULDBLOCK)
 		{
-			int err = WSAGetLastError();
-
-			if (err == WSAEWOULDBLOCK)
-			{
-				break;
-			}
-			LogError(L"Accept 에러", g_listenSocket);
-
-			exit(1);
+			return;
 		}
+		LogError(L"Accept 에러", g_listenSocket);
 
-		u_long on = 1;
-		if (ioctlsocket(client, FIONBIO, &on) == SOCKET_ERROR) {
-			// ???
-
-			LogError(L"논블락 소켓 전환 에러", client);
-
-			continue;
-		}
-
-		Session* session = new Session(client, ntohs(clientAddr.sin_port),
-			clientAddr.sin_addr.S_un.S_addr, g_NoUser++);
-
-		g_sessions[session->mIDNum] = session;
+		exit(1);
 	}
+
+	u_long on = 1;
+	if (ioctlsocket(client, FIONBIO, &on) == SOCKET_ERROR) {
+		// ???
+
+		LogError(L"논블락 소켓 전환 에러", client);
+
+		exit(1);
+	}
+
+	Session* session = new Session(client, ntohs(clientAddr.sin_port),
+		clientAddr.sin_addr.S_un.S_addr);
+
+	g_sessions[client] = session;
 }
 
 void LogError(const WCHAR* msg, SOCKET sock)
