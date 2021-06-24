@@ -4,10 +4,9 @@
 #include <unordered_map>
 
 class Session;
+class CPacket;
 
 void CreateServer();
 void NetWorkProc();
-void SelectProc(std::unordered_map<DWORD, Session*>::iterator iter, FD_SET* rset);
-void DestroySessionProc();
+void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset);
 void AcceptProc();
-void LogError(const WCHAR* msg, SOCKET sock);

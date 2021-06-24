@@ -8,12 +8,17 @@
 #include <unordered_map>
 #include "Session.h"
 #include <vector>
+#include "CPacket.h"
+#include "User.h"
 
 using namespace std;
 
 SOCKET g_listenSocket;
-DWORD g_NoUser = 0;
+DWORD g_SessionNo = 1;
+DWORD g_RoomNo = 1;
 unordered_map<DWORD, Session*> g_sessions;
+unordered_map<DWORD, User*> g_users;
+unordered_map<DWORD, Room*> g_rooms;
 
 void CreateServer()
 {
@@ -63,13 +68,16 @@ void CreateServer()
 void NetWorkProc()
 {
 	FD_SET rset;
+	FD_SET wset;
 	FD_ZERO(&rset);
+	FD_ZERO(&wset);
+	DWORD sessionKeyTable[FD_SETSIZE];
 
 	FD_SET(g_listenSocket, &rset);
 
 	timeval tval;
 	tval.tv_sec = 0;
-	tval.tv_usec = 100;
+	tval.tv_usec = 0;
 
 	int numSelected = select(0, &rset, NULL, NULL, &tval);
 
@@ -80,38 +88,46 @@ void NetWorkProc()
 
 	int count = 0;
 	FD_ZERO(&rset);
-	auto fdIter = g_sessions.begin();
 
 	for (auto iter = g_sessions.begin(); iter != g_sessions.end();)
 	{
-		FD_SET(iter->second->mSocket, &rset);
+		Session* session = iter->second;
+		iter++; // 미리 증가
+
+		sessionKeyTable[count] = session->mSessionNo;
+		FD_SET(session->mSocket, &rset);
+
+		if (session->mSendBuffer.GetUseSize() > 0)
+		{
+			FD_SET(session->mSocket, &wset);
+		}
+
 		count++;
 
 		if (count == FD_SETSIZE)
 		{
-			SelectProc(fdIter, &rset);
+			SelectProc(sessionKeyTable, &rset, &wset);
 
 			FD_ZERO(&rset);
-			fdIter = ++iter;
-		}
-		else
-		{
-			++iter;
+			FD_ZERO(&wset);
+			memset(sessionKeyTable, 0, sizeof(sessionKeyTable));
+			count = 0;
 		}
 	}
 	
-	SelectProc(fdIter, &rset);
-
-	//DestroySessionProc();
+	if (count > 0)
+	{
+		SelectProc(sessionKeyTable, &rset, &wset);
+	}
 }
 
-void SelectProc(std::unordered_map<DWORD, Session*>::iterator iter, FD_SET* rset)
+void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset)
 {
 	timeval tval;
 	tval.tv_sec = 0;
-	tval.tv_usec = 100;
+	tval.tv_usec = 0;
 
-	int numSelected = select(0, rset, NULL, NULL, &tval);
+	int numSelected = select(0, rset, wset, NULL, &tval);
 
 	if (numSelected == SOCKET_ERROR)
 	{
@@ -120,26 +136,24 @@ void SelectProc(std::unordered_map<DWORD, Session*>::iterator iter, FD_SET* rset
 		exit(1);
 	}
 
-	for (int i = 0; i < numSelected;)
+	for (int i = 0; i < FD_SETSIZE; ++i)
 	{
-		if (FD_ISSET(iter->second->mSocket, rset))
-		{
-			iter->second->receivePacket();
-			
-			i++;
-		}
-		iter++;
-	}
-}
+		DWORD key = keyTable[i];
+		if (g_sessions[key] == nullptr)
+			continue;
 
-void DestroySessionProc()
-{
-	for (auto iter = g_sessions.begin(); iter != g_sessions.end();)
-	{
-		if (iter->second->mbAlive == false)
+		if (FD_ISSET(g_sessions[key]->mSocket, wset))
 		{
-			// 삭제 코드
+			g_sessions[key]->writePacket();
 		}
+
+		if (FD_ISSET(g_sessions[key]->mSocket, rset))
+		{
+			g_sessions[key]->receivePacket();
+		}
+
+		// DisconnectProc
+
 	}
 }
 
@@ -186,4 +200,9 @@ void LogError(const WCHAR* msg, SOCKET sock)
 	{
 		closesocket(sock);
 	}
+}
+
+BYTE makeCheckSum(CPacket* packet, WORD msgType)
+{
+	return 0;
 }

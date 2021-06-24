@@ -8,7 +8,10 @@ int main()
 
 	CreateServer();
 
-	NetWorkProc();
+	while (1)
+	{
+		NetWorkProc();
+	}
 
 	return 0;
 }

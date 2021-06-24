@@ -4,11 +4,14 @@
 #include <unordered_map>
 #include "RingBuffer.h"
 
+struct st_PACKET_HEADER;
+class CPacket;
+
 class Session
 {
 	friend void NetWorkProc(); 
-	friend void DestroySessionProc();
-	friend void SelectProc(std::unordered_map<DWORD, Session*>::iterator iter, FD_SET* rset);
+	friend void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset);
+	
 public:
 	Session(SOCKET socket, u_short port, u_long ip);
 	~Session();
@@ -22,10 +25,14 @@ public:
 	/// <summary>
 	/// 리시브 링버퍼에서 패킷을 꺼내와서 로직 처리하는 함수
 	/// </summary>
-	void receiveProc();
+	bool receiveProc();
+	void writePacket();
 
 private:
+	bool readMessage(st_PACKET_HEADER* header);
+	BYTE makeCheckSum(CPacket* packet, WORD msgType);
 	void ReceiveHelper(int size);
+	void WriteHelper(int size);
 
 private:
 	SOCKET mSocket;
@@ -33,6 +40,7 @@ private:
 	u_long mIP;
 	RingBuffer mSendBuffer;
 	RingBuffer mRecvBuffer;
+	DWORD mSessionNo;
 	bool mbLogin = false;
 	bool mbAlive = true;
 };
