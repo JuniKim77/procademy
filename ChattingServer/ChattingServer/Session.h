@@ -27,6 +27,7 @@ public:
 	/// </summary>
 	bool receiveProc();
 	void writePacket();
+	void sendPacket(char* buffer, int size);
 
 private:
 	bool readMessage(st_PACKET_HEADER* header);

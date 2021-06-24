@@ -1,6 +1,15 @@
 #include "User.h"
 #include "CPacket.h"
 #include "Protocol.h"
+#include <unordered_map>
+#include "Session.h"
+#include <list>
+
+using namespace std;
+
+extern unordered_map<DWORD, Session*> g_sessions;
+extern unordered_map<DWORD, User*> g_users;
+extern unordered_map<DWORD, Room*> g_rooms;
 
 User::User(DWORD userNo, const WCHAR* name)
 	: mUserNo(userNo)
@@ -71,4 +80,37 @@ bool User::ReqChat(CPacket* packet)
 bool User::ReqRoomLeave(CPacket* packet)
 {
 	return false;
+}
+
+void User::SendUnicast(DWORD to, CPacket* packet)
+{
+	if (g_users[to] == nullptr)
+	{
+		wprintf_s(L"SendUnicast Dest Client is Null\n");
+		return;
+	}
+
+	g_sessions[to]->sendPacket(packet->GetBufferPtr(), packet->GetSize());
+}
+
+void User::SendBroadcast(CPacket* packet)
+{
+	for (auto iter = g_sessions.begin(); iter != g_sessions.end(); ++iter)
+	{
+		SendUnicast(iter->first, packet);
+	}
+}
+
+void User::SendBroadcast_room(DWORD roomNo, DWORD from, CPacket* packet)
+{
+	for (auto iter = g_rooms[roomNo]->mUserList.begin();
+		iter != g_rooms[roomNo]->mUserList.end(); ++iter)
+	{
+		DWORD userNo = *iter;
+
+		if (userNo != from)
+		{
+			SendUnicast(userNo, packet);
+		}
+	}
 }

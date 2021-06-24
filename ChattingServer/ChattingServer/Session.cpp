@@ -103,6 +103,11 @@ void Session::writePacket()
 	WriteHelper(remain);
 }
 
+void Session::sendPacket(char* buffer, int size)
+{
+	mSendBuffer.Enqueue(buffer, size);
+}
+
 bool Session::readMessage(st_PACKET_HEADER* header)
 {
 	CPacket packet;

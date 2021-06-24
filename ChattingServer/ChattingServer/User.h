@@ -28,6 +28,10 @@ private:
 	bool ReqChat(CPacket* packet);
 	bool ReqRoomLeave(CPacket* packet);
 
+	void SendUnicast(DWORD to, CPacket* packet);
+	void SendBroadcast(CPacket* packet);
+	void SendBroadcast_room(DWORD roomNo, DWORD from, CPacket* packet);
+
 private:
 	DWORD mUserNo;
 	DWORD mRoomNo;
