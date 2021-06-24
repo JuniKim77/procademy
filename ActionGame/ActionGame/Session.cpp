@@ -91,14 +91,14 @@ void Session::writeProc()
 	int size = 0;
 	int remain = 0;
 	
-	if (useSize <= directDequeueSize)
+	if (useSize > directDequeueSize)
 	{
-		size = useSize;
+		size = directDequeueSize;
+		remain = useSize - size;
 	}
 	else
 	{
-		size = directDequeueSize;
-		remain = size - directDequeueSize;
+		size = useSize;
 	}
 
 	sendTCP(size);
