@@ -3,6 +3,7 @@
 #include "CPacket.h"
 #include <unordered_map>
 #include "User.h"
+#include "Content.h"
 
 using namespace std;
 
@@ -124,7 +125,7 @@ bool Session::readMessage(st_PACKET_HEADER* header)
 		return false;
 	}
 
-	if (!g_users[mSessionNo]->PacketProc(header->wMsgType, &packet))
+	if (!PacketProc(mSessionNo, header->wMsgType, &packet))
 	{
 		wprintf(L"Abnormal User [UserNo: %d]\n", mSessionNo);
 		SetDisconnect();

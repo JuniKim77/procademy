@@ -4,7 +4,7 @@
 #include <wtypes.h>
 
 class Session;
-class User;
+struct User;
 struct Room;
 
 void InsertSessionData(Session* session);

@@ -154,7 +154,6 @@ void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset)
 		}
 
 		// DisconnectProc
-
 	}
 }
 

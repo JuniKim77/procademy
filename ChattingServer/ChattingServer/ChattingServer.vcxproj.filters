@@ -33,10 +33,10 @@
     <ClCompile Include="NetworkProcs.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="User.cpp">
+    <ClCompile Include="Container.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Container.cpp">
+    <ClCompile Include="Content.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -63,6 +63,9 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Container.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Content.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

@@ -141,16 +141,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Container.cpp" />
+    <ClCompile Include="Content.cpp" />
     <ClCompile Include="CPacket.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NetworkProcs.cpp" />
     <ClCompile Include="PacketCreater.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Session.cpp" />
-    <ClCompile Include="User.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Container.h" />
+    <ClInclude Include="Content.h" />
     <ClInclude Include="CPacket.h" />
     <ClInclude Include="NetworkProcs.h" />
     <ClInclude Include="PacketCreater.h" />

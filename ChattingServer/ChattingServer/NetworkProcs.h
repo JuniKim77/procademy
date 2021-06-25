@@ -1,7 +1,6 @@
 #pragma once
 
 #include <wtypes.h>
-#include <unordered_map>
 
 class Session;
 class CPacket;
