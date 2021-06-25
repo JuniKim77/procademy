@@ -204,5 +204,15 @@ void LogError(const WCHAR* msg, SOCKET sock)
 
 BYTE makeCheckSum(CPacket* packet, WORD msgType)
 {
-	return 0;
+	int size = packet->GetSize();
+	BYTE* pBuf = (BYTE*)packet->GetBufferPtr();
+	BYTE checkSum = 0;
+
+	for (int i = 0; i < size; ++i)
+	{
+		checkSum += *pBuf;
+		++pBuf;
+	}
+
+	return checkSum % 256;
 }

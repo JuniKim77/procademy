@@ -2,12 +2,15 @@
 #include <wtypes.h>
 
 class CPacket;
+struct st_PACKET_HEADER;
 
-void CreateResLoginPacket(CPacket* packet, BYTE result, DWORD userNo);
-void CreateResRoomListPacket(CPacket* packet, DWORD roomNo);
-void CreateResRoomCreatePacket(CPacket* packet, BYTE result, DWORD roomNo);
-void CreateResRoomEnterPacket(CPacket* packet, BYTE result, DWORD roomNo);
-void CreateResChatPacket(CPacket* packet, DWORD from, WORD msgSize, const WCHAR* msg);
-void CreateResRoomLeavePacket(CPacket* packet, DWORD from);
-void CreateResRoomDeletePacket(CPacket* packet, DWORD roomNo);
-void CreateResOtherUserRoomEnterPacket(CPacket* packet, const WCHAR* name, DWORD userNo);
+void CreateResLoginPacket(st_PACKET_HEADER* header, CPacket* packet, BYTE result, DWORD userNo);
+void CreateResRoomListPacket(st_PACKET_HEADER* header, CPacket* packet, DWORD roomNo);
+void CreateResRoomCreatePacket(st_PACKET_HEADER* header, CPacket* packet, BYTE result, DWORD roomNo);
+void CreateResRoomEnterPacket(st_PACKET_HEADER* header, CPacket* packet, BYTE result, DWORD roomNo);
+void CreateResChatPacket(st_PACKET_HEADER* header, CPacket* packet, DWORD from, WORD msgSize, const WCHAR* msg);
+void CreateResRoomLeavePacket(st_PACKET_HEADER* header, CPacket* packet, DWORD from);
+void CreateResRoomDeletePacket(st_PACKET_HEADER* header, CPacket* packet, DWORD roomNo);
+void CreateResOtherUserRoomEnterPacket(st_PACKET_HEADER* header, CPacket* packet, const WCHAR* name, DWORD userNo);
+BYTE makeCheckSum(CPacket* packet, WORD msgType);
+void FillHeader(st_PACKET_HEADER* header, CPacket* packet, WORD msgType);

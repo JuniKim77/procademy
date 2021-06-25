@@ -8,10 +8,11 @@ using namespace std;
 
 extern unordered_map<DWORD, User*> g_users;
 
-Session::Session(SOCKET socket, u_short port, u_long ip)
+Session::Session(SOCKET socket, u_short port, u_long ip, DWORD sessionNo)
 	: mSocket(socket)
 	, mPort(port)
 	, mIP(ip)
+	, mSessionNo(sessionNo)
 {
 }
 

@@ -13,7 +13,7 @@ class Session
 	friend void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset);
 	
 public:
-	Session(SOCKET socket, u_short port, u_long ip);
+	Session(SOCKET socket, u_short port, u_long ip, DWORD sessionNo);
 	~Session();
 	void SetDisconnect() { mbAlive = false; }
 	void printInfo() const;
