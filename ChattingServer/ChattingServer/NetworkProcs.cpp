@@ -10,6 +10,7 @@
 #include <vector>
 #include "CPacket.h"
 #include "User.h"
+#include "Container.h"
 
 using namespace std;
 
@@ -187,9 +188,15 @@ void AcceptProc()
 	}
 
 	Session* session = new Session(client, ntohs(clientAddr.sin_port),
-		clientAddr.sin_addr.S_un.S_addr);
+		clientAddr.sin_addr.S_un.S_addr, g_SessionNo);
 
-	g_sessions[client] = session;
+	// ²®µ¥±â À¯Àú
+	User* user = new User(g_SessionNo);
+
+	InsertSessionData(session);
+	InsertUserData(user);
+
+	g_SessionNo++;
 }
 
 void LogError(const WCHAR* msg, SOCKET sock)
