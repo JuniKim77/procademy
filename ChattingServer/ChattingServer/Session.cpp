@@ -67,6 +67,8 @@ bool Session::receiveProc()
 	if (header.byCode != dfPACKET_CODE)
 	{
 		// 비정상 유저
+		wprintf(L"Code Error [UserNo: %d]\n", mSessionNo);
+
 		SetDisconnect();
 
 		return false;
@@ -77,9 +79,7 @@ bool Session::receiveProc()
 
 	mRecvBuffer.MoveFront(sizeof(header));
 
-	bool result = readMessage(&header);
-
-	return true;
+	return readMessage(&header);
 }
 
 void Session::writePacket()
