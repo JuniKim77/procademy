@@ -337,7 +337,7 @@ CPacket& CPacket::operator>>(double& dValue)
 
 int CPacket::GetData(char* chpDest, int iLength)
 {
-	int size = iLength >= mSize ? iLength : mSize;
+	int size = iLength <= mSize ? iLength : mSize;
 
 	memcpy(chpDest, mFront, size);
 	MoveFront(size);

@@ -130,11 +130,28 @@ void CreateResStressEcho(st_PACKET_HEADER* header, CPacket* packet, CPacket* rec
 	WCHAR msg[1024];
 	*receivePacket >> size;
 	receivePacket->GetData(msg, size / sizeof(WCHAR));
-	
+
+	char* pBuf_receive = receivePacket->GetBufferPtr();
+
 	*packet << size;
 	packet->PutData(msg, size / sizeof(WCHAR));
 
 	FillHeader(header, packet, df_RES_STRESS_ECHO);
+
+	wprintf_s(L"%d - %d - %d - %d\n", header->byCode, header->byCheckSum,
+		header->wMsgType, header->wPayloadSize);
+
+	wprintf_s(L"===========================================\n\n\n");
+
+	char* pBuf_send = packet->GetBufferPtr();
+
+	for (WORD i = 0; i < header->wPayloadSize; ++i)
+	{
+		if (*(pBuf_receive++) != *(pBuf_send++))
+		{
+			int test = 0;
+		}
+	}
 }
 
 BYTE makeCheckSum(CPacket* packet, WORD msgType)

@@ -9,6 +9,7 @@ class CPacket;
 
 class Session
 {
+	friend bool ReqStressEcho(DWORD from, CPacket* packet);
 	friend void NetWorkProc(); 
 	friend void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset);
 	
