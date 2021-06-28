@@ -124,6 +124,19 @@ void CreateResOtherUserRoomEnterPacket(st_PACKET_HEADER* header, CPacket* packet
 	FillHeader(header, packet, df_RES_USER_ENTER);
 }
 
+void CreateResStressEcho(st_PACKET_HEADER* header, CPacket* packet, CPacket* receivePacket)
+{
+	WORD size;
+	WCHAR msg[1024];
+	*receivePacket >> size;
+	receivePacket->GetData(msg, size / sizeof(WCHAR));
+	
+	*packet << size;
+	packet->PutData(msg, size / sizeof(WCHAR));
+
+	FillHeader(header, packet, df_RES_STRESS_ECHO);
+}
+
 BYTE makeCheckSum(CPacket* packet, WORD msgType)
 {
 	int size = packet->GetSize();

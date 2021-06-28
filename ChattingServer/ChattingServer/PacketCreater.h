@@ -12,5 +12,6 @@ void CreateResChatPacket(st_PACKET_HEADER* header, CPacket* packet, DWORD from, 
 void CreateResRoomLeavePacket(st_PACKET_HEADER* header, CPacket* packet, DWORD from);
 void CreateResRoomDeletePacket(st_PACKET_HEADER* header, CPacket* packet, DWORD roomNo);
 void CreateResOtherUserRoomEnterPacket(st_PACKET_HEADER* header, CPacket* packet, const WCHAR* name, DWORD userNo);
+void CreateResStressEcho(st_PACKET_HEADER* header, CPacket* packet, CPacket* receivePacket);
 BYTE makeCheckSum(CPacket* packet, WORD msgType);
 void FillHeader(st_PACKET_HEADER* header, CPacket* packet, WORD msgType);

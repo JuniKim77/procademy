@@ -21,6 +21,7 @@ void ResChat(DWORD from, DWORD roomNo, WORD msgSize, const WCHAR* msg);
 bool ReqRoomLeave(DWORD from);
 void ResRoomLeave(DWORD client, DWORD roomNo);
 void ResRoomDelete(DWORD roomNo);
+bool ReqStressEcho(DWORD from, CPacket* packet);
 
 void SendUnicast(DWORD to, st_PACKET_HEADER* header, CPacket* packet);
 void SendBroadcast(st_PACKET_HEADER* header, CPacket* packet);

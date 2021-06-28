@@ -18,7 +18,7 @@ extern unordered_map<DWORD, Room*> g_rooms;
 
 bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 {
-	wprintf_s(L"패킷 수신 [UserNo: %d][msgType: %d]\n", from, msgType);
+	//wprintf_s(L"패킷 수신 [UserNo: %d][msgType: %d]\n", from, msgType);
 
 	switch (msgType)
 	{
@@ -39,6 +39,9 @@ bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 		break;
 	case df_REQ_ROOM_LEAVE:
 		return ReqRoomLeave(from);
+		break;
+	case df_REQ_STRESS_ECHO:
+		return ReqStressEcho(from, packet);
 		break;
 	default:
 		break;
@@ -337,6 +340,19 @@ void ResRoomDelete(DWORD roomNo)
 	CreateResRoomDeletePacket(&sendHeader, &sendPacket, roomNo);
 
 	SendBroadcast(&sendHeader, &sendPacket);
+}
+
+bool ReqStressEcho(DWORD from, CPacket* packet)
+{
+	CPacket sendPacket;
+	st_PACKET_HEADER sendHeader;
+
+	CreateResStressEcho(&sendHeader, &sendPacket, packet);
+
+	SendUnicast(from, &sendHeader, &sendPacket);
+	//SendBroadcast(&sendHeader, &sendPacket);
+
+	return true;
 }
 
 void SendUnicast(DWORD to, st_PACKET_HEADER* header, CPacket* packet)
