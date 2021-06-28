@@ -307,6 +307,8 @@ bool ReqRoomLeave(DWORD client, CPacket* packet)
 
 	if (room->mUserList.empty())
 	{
+		ResRoomDelete(user->mRoomNo);
+
 		DeleteRoomData(user->mRoomNo);
 	}
 
@@ -322,7 +324,19 @@ void ResRoomLeave(DWORD client, DWORD roomNo)
 
 	CreateResRoomLeavePacket(&sendHeader, &sendPacket, client);
 
+	SendUnicast(client, &sendHeader, &sendPacket);
+
 	SendBroadcast_room(roomNo, client, &sendHeader, &sendPacket);
+}
+
+void ResRoomDelete(DWORD roomNo)
+{
+	CPacket sendPacket;
+	st_PACKET_HEADER sendHeader;
+
+	CreateResRoomDeletePacket(&sendHeader, &sendPacket, roomNo);
+
+	SendBroadcast(&sendHeader, &sendPacket);
 }
 
 void SendUnicast(DWORD to, st_PACKET_HEADER* header, CPacket* packet)

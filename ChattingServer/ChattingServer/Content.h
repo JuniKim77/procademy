@@ -20,6 +20,7 @@ bool ReqChat(DWORD client, CPacket* packet);
 void ResChat(DWORD from, DWORD roomNo, WORD msgSize, const WCHAR* msg);
 bool ReqRoomLeave(DWORD from, CPacket* packet);
 void ResRoomLeave(DWORD client, DWORD roomNo);
+void ResRoomDelete(DWORD roomNo);
 
 void SendUnicast(DWORD to, st_PACKET_HEADER* header, CPacket* packet);
 void SendBroadcast(st_PACKET_HEADER* header, CPacket* packet);

@@ -32,7 +32,7 @@ void CreateResRoomListPacket(st_PACKET_HEADER* header, CPacket* packet)
 
 		*packet << room->mRoomNo;
 
-		WORD size = wcslen(room->mTitle) * sizeof(WCHAR);
+		WORD size = (wcslen(room->mTitle) - 1) * sizeof(WCHAR); // ³Î »©°í
 		*packet << size;
 		packet->PutData(room->mTitle, size / sizeof(WCHAR));
 
