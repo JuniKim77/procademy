@@ -169,8 +169,6 @@ bool ReqRoomCreate(DWORD client, CPacket* packet)
 
 	InsertRoomData(g_RoomNo, room);
 
-
-
 	wprintf_s(L"¹æ »ý¼º [UserNo:%d][Room:%s] [TotalRoom:%d]\n",
 		client, roomTitle, g_rooms.size());
 
@@ -219,11 +217,11 @@ bool ReqRoomEnter(DWORD client, CPacket* packet)
 
 		if (iter->second->mRoomNo == roomNo)
 		{
-			ResRoomEnter(client, df_RESULT_ROOM_ENTER_OK, roomNo);
+			ResRoomOtherUserEnter(client, roomNo);
 
 			InsertUserToRoom(client, iter->second);
 
-			ResRoomOtherUserEnter(client, roomNo);
+			ResRoomEnter(client, df_RESULT_ROOM_ENTER_OK, roomNo);
 
 			return true;
 		}

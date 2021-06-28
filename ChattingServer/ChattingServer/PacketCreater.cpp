@@ -86,7 +86,7 @@ void CreateResRoomEnterPacket(st_PACKET_HEADER* header, CPacket* packet, BYTE re
 		{
 			User* user = FindUser(*iter);
 
-			packet->PutData(user->mName, _countof(user->mName));
+			packet->PutData(user->mName, dfNICK_MAX_LEN);
 			*packet << user->mUserNo;
 		}
 	}
@@ -118,7 +118,7 @@ void CreateResRoomDeletePacket(st_PACKET_HEADER* header, CPacket* packet, DWORD 
 
 void CreateResOtherUserRoomEnterPacket(st_PACKET_HEADER* header, CPacket* packet, const WCHAR* name, DWORD userNo)
 {
-	packet->PutData(name, 15);
+	packet->PutData(name, dfNICK_MAX_LEN);
 	*packet << userNo;
 
 	FillHeader(header, packet, df_RES_USER_ENTER);
