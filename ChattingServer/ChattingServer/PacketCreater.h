@@ -5,7 +5,7 @@ class CPacket;
 struct st_PACKET_HEADER;
 
 void CreateResLoginPacket(st_PACKET_HEADER* header, CPacket* packet, BYTE result, DWORD userNo);
-void CreateResRoomListPacket(st_PACKET_HEADER* header, CPacket* packet, DWORD roomNo);
+void CreateResRoomListPacket(st_PACKET_HEADER* header, CPacket* packet);
 void CreateResRoomCreatePacket(st_PACKET_HEADER* header, CPacket* packet, BYTE result, DWORD roomNo);
 void CreateResRoomEnterPacket(st_PACKET_HEADER* header, CPacket* packet, BYTE result, DWORD roomNo);
 void CreateResChatPacket(st_PACKET_HEADER* header, CPacket* packet, DWORD from, WORD msgSize, const WCHAR* msg);

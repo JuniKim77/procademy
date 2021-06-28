@@ -148,7 +148,7 @@ BYTE Session::makeCheckSum(CPacket* packet, WORD msgType)
 		pBuf++;
 	}
 
-	return checkSum;
+	return (BYTE)(checkSum % 256);
 }
 
 void Session::ReceiveHelper(int size)

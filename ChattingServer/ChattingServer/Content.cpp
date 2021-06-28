@@ -10,15 +10,15 @@
 
 using namespace std;
 
-extern DWORD g_SessionNo = 1;
-extern DWORD g_RoomNo = 1;
+extern DWORD g_SessionNo;
+extern DWORD g_RoomNo;
 extern unordered_map<DWORD, Session*> g_sessions;
 extern unordered_map<DWORD, User*> g_users;
 extern unordered_map<DWORD, Room*> g_rooms;
 
 bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 {
-	wprintf_s(L"패킷 수신 [UserNo: %d][msgType: %d\n", from, msgType);
+	wprintf_s(L"패킷 수신 [UserNo: %d][msgType: %d]\n", from, msgType);
 
 	switch (msgType)
 	{
@@ -50,8 +50,9 @@ bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 bool ReqLogin(DWORD from, CPacket* packet)
 {
 	WCHAR nickName[15];
+	Session* fromSession = FindSession(from);
 
-	packet->GetData(nickName, _countof(nickName));
+	packet->GetData(nickName, dfNICK_MAX_LEN);
 
 	// 중복 검사
 	for (auto iter = g_users.begin(); iter != g_users.end(); ++iter)
@@ -61,14 +62,16 @@ bool ReqLogin(DWORD from, CPacket* packet)
 			wprintf_s(L"중복된 이름[%s] 입니다.\n", nickName);
 			ResLogin(from, df_RESULT_LOGIN_DNICK);
 
-			g_sessions[from]->SetDisconnect();
+			fromSession->SetDisconnect();
 
 			return false;
 		}
 	}
 
-	wcscpy_s(g_users[from]->mName, _countof(g_users[from]->mName), nickName);
-	g_users[from]->mbLogin = true;
+	User* user = FindUser(from);
+
+	wcscpy_s(user->mName, _countof(user->mName), nickName);
+	user->mbLogin = true;
 
 	ResLogin(from, df_RESULT_LOGIN_OK);
 
@@ -87,33 +90,41 @@ void ResLogin(DWORD to, BYTE result)
 
 bool ReqRoomList(DWORD from, CPacket* packet)
 {
-	User* user = g_users[from];
+	User* user = FindUser(from);
 
-	if (user->mRoomNo == 0)
+	if (user->mRoomNo != 0)
 	{
-		wprintf_s(L"해당 유저[%d, %s]는 로비에 있습니다.\n", from, user->mName);
+		wprintf_s(L"해당 유저[%d, %s]는 로비에 있지 않습니다.\n", from, user->mName);
 
 		return false;
 	}
 
-	ResRoomList(from, user->mRoomNo);
+	ResRoomList(from);
 
 	return true;
 }
 
-void ResRoomList(DWORD to, DWORD roomNo)
+void ResRoomList(DWORD to)
 {
 	CPacket sendPacket;
 	st_PACKET_HEADER sendHeader;
 
-	CreateResRoomListPacket(&sendHeader, &sendPacket, roomNo);
+	CreateResRoomListPacket(&sendHeader, &sendPacket);
 
 	SendUnicast(to, &sendHeader, &sendPacket);
 }
 
 bool ReqRoomCreate(DWORD client, CPacket* packet)
 {
-	User* user = g_users[client];
+	User* user = FindUser(client);
+
+	if (user->mbLogin == false)
+	{
+		wprintf_s(L"해당 유저[%d, %s]는 로그인하지 않았습니다.\n", user->mUserNo, user->mName);
+		ResRoomCreate(client, df_RESULT_ROOM_CREATE_ETC, g_RoomNo);
+
+		return false;
+	}
 
 	if (user->mRoomNo != 0)
 	{
@@ -127,18 +138,22 @@ bool ReqRoomCreate(DWORD client, CPacket* packet)
 	WORD titleSize;
 
 	*packet >> titleSize;
-	packet->GetData(roomTitle, titleSize);
+	packet->GetData(roomTitle, titleSize / sizeof(WCHAR));
 
-	if (titleSize > sizeof(roomTitle))
+	if (titleSize >= sizeof(roomTitle))
 	{
 		wprintf_s(L"방 이름 길이가 256를 초과합니다.\n");
 		ResRoomCreate(client, df_RESULT_ROOM_CREATE_ETC, g_RoomNo);
 
 		return false;
 	}
+
 	// 중복 처리
 	for (auto iter = g_rooms.begin(); iter != g_rooms.end(); ++iter)
 	{
+		if (iter->second == nullptr)
+			continue;
+
 		if (wcscmp(iter->second->mTitle, roomTitle) == 0)
 		{
 			wprintf_s(L"중복된 방 이름[%s] 입니다.\n", roomTitle);
@@ -148,6 +163,16 @@ bool ReqRoomCreate(DWORD client, CPacket* packet)
 		}
 	}
 
+	Room* room = new Room;
+	room->mRoomNo = g_RoomNo;
+	wcscpy_s(room->mTitle, _countof(room->mTitle), roomTitle);
+
+	InsertRoomData(g_RoomNo, room);
+
+
+
+	wprintf_s(L"방 생성 [UserNo:%d][Room:%s] [TotalRoom:%d]\n",
+		client, roomTitle, g_rooms.size());
 
 	ResRoomCreate(client, df_RESULT_ROOM_CREATE_OK, g_RoomNo);
 
@@ -163,22 +188,143 @@ void ResRoomCreate(DWORD client, BYTE result, DWORD roomNo)
 
 	CreateResRoomCreatePacket(&sendHeader, &sendPacket, result, roomNo);
 
-	SendBroadcast(&sendHeader, &sendPacket);
+	if (result == df_RESULT_ROOM_CREATE_OK)
+	{
+		SendBroadcast(&sendHeader, &sendPacket);
+	}
+	else
+	{
+		SendUnicast(client, &sendHeader, &sendPacket);
+	}
 }
 
 bool ReqRoomEnter(DWORD client, CPacket* packet)
 {
+	User* user = FindUser(client);
+	DWORD roomNo;
+	*packet >> roomNo;
+
+	if (user->mbLogin == false)
+	{
+		wprintf_s(L"해당 유저[%d, %s]는 로그인하지 않았습니다.\n", user->mUserNo, user->mName);
+		ResRoomEnter(client, df_RESULT_ROOM_ENTER_ETC, roomNo);
+
+		return false;
+	}
+
+	for (auto iter = g_rooms.begin(); iter != g_rooms.end(); ++iter)
+	{
+		if (iter->second == nullptr)
+			continue;
+
+		if (iter->second->mRoomNo == roomNo)
+		{
+			ResRoomEnter(client, df_RESULT_ROOM_ENTER_OK, roomNo);
+
+			InsertUserToRoom(client, iter->second);
+
+			ResRoomOtherUserEnter(client, roomNo);
+
+			return true;
+		}
+	}
+
+	ResRoomEnter(client, df_RESULT_ROOM_ENTER_NOT, roomNo);
+
 	return false;
+}
+
+void ResRoomEnter(DWORD from, BYTE result, DWORD roomNo)
+{
+	CPacket sendPacket;
+	st_PACKET_HEADER sendHeader;
+
+	CreateResRoomEnterPacket(&sendHeader, &sendPacket, result, roomNo);
+
+	SendUnicast(from, &sendHeader, &sendPacket);
+}
+
+void ResRoomOtherUserEnter(DWORD client, DWORD roomNo)
+{
+	CPacket sendPacket;
+	st_PACKET_HEADER sendHeader;
+
+	User* user = FindUser(client);
+
+	CreateResOtherUserRoomEnterPacket(&sendHeader, &sendPacket, user->mName, client);
+
+	SendBroadcast_room(roomNo, client, &sendHeader, &sendPacket);
 }
 
 bool ReqChat(DWORD client, CPacket* packet)
 {
-	return false;
+	User* user = FindUser(client);
+
+	if (user->mRoomNo == 0)
+	{
+		return false;
+	}
+
+	WORD size;
+	*packet >> size;
+	WCHAR msg[512];
+
+	packet->GetData(msg, size);
+	msg[size] = L'\0';
+
+	ResChat(client, user->mRoomNo, size, msg);
+
+	return true;
+}
+
+void ResChat(DWORD from, DWORD roomNo, WORD msgSize, const WCHAR* msg)
+{
+	CPacket sendPacket;
+	st_PACKET_HEADER sendHeader;
+
+	CreateResChatPacket(&sendHeader, &sendPacket, from, msgSize, msg);
+
+	SendBroadcast_room(roomNo, from, &sendHeader, &sendPacket);
 }
 
 bool ReqRoomLeave(DWORD client, CPacket* packet)
 {
-	return false;
+	User* user = FindUser(client);
+	Room* room = FindRoom(user->mRoomNo);
+
+	ResRoomLeave(client, user->mRoomNo);
+
+	for (auto iter = room->mUserList.begin(); iter != room->mUserList.end();)
+	{
+		if (*iter == client)
+		{
+			room->mUserList.erase(iter);
+			break;
+		}
+		else
+		{
+			++iter;
+		}
+	}
+
+	if (room->mUserList.empty())
+	{
+		DeleteRoomData(user->mRoomNo);
+	}
+
+	user->mRoomNo = 0;
+
+	return true;
+}
+
+void ResRoomLeave(DWORD client, DWORD roomNo)
+{
+	CPacket sendPacket;
+	st_PACKET_HEADER sendHeader;
+
+	CreateResRoomLeavePacket(&sendHeader, &sendPacket, client);
+
+	SendBroadcast_room(roomNo, client, &sendHeader, &sendPacket);
 }
 
 void SendUnicast(DWORD to, st_PACKET_HEADER* header, CPacket* packet)
@@ -196,14 +342,19 @@ void SendBroadcast(st_PACKET_HEADER* header, CPacket* packet)
 {
 	for (auto iter = g_sessions.begin(); iter != g_sessions.end(); ++iter)
 	{
+		if (iter->second == nullptr)
+			continue;
+
 		SendUnicast(iter->first, header, packet);
 	}
 }
 
 void SendBroadcast_room(DWORD roomNo, DWORD from, st_PACKET_HEADER* header, CPacket* packet)
 {
-	for (auto iter = g_rooms[roomNo]->mUserList.begin();
-		iter != g_rooms[roomNo]->mUserList.end(); ++iter)
+	Room* room = FindRoom(roomNo);
+
+	for (auto iter = room->mUserList.begin();
+		iter != room->mUserList.end(); ++iter)
 	{
 		DWORD userNo = *iter;
 

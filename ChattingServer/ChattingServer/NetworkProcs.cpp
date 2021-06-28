@@ -11,6 +11,7 @@
 #include "CPacket.h"
 #include "User.h"
 #include "Container.h"
+#include "PacketCreater.h"
 
 using namespace std;
 
@@ -31,6 +32,7 @@ void CreateServer()
 	}
 
 	SOCKADDR_IN addr;
+	ZeroMemory(&addr, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(dfNETWORK_PORT);
 	addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
@@ -64,6 +66,8 @@ void CreateServer()
 
 		exit(1);
 	}
+
+	wprintf_s(L"Server Open...\n");
 }
 
 void NetWorkProc()
@@ -72,7 +76,7 @@ void NetWorkProc()
 	FD_SET wset;
 	FD_ZERO(&rset);
 	FD_ZERO(&wset);
-	DWORD sessionKeyTable[FD_SETSIZE];
+	DWORD sessionKeyTable[FD_SETSIZE] = { 0, };
 
 	FD_SET(g_listenSocket, &rset);
 
@@ -94,6 +98,9 @@ void NetWorkProc()
 	{
 		Session* session = iter->second;
 		iter++; // 미리 증가
+
+		if (session == nullptr)
+			continue;
 
 		sessionKeyTable[count] = session->mSessionNo;
 		FD_SET(session->mSocket, &rset);
@@ -139,18 +146,19 @@ void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset)
 
 	for (int i = 0; i < FD_SETSIZE; ++i)
 	{
-		DWORD key = keyTable[i];
-		if (g_sessions[key] == nullptr)
+		Session* session = FindSession(keyTable[i]);
+
+		if (session == nullptr)
 			continue;
 
-		if (FD_ISSET(g_sessions[key]->mSocket, wset))
+		if (FD_ISSET(session->mSocket, wset))
 		{
-			g_sessions[key]->writePacket();
+			session->writePacket();
 		}
 
-		if (FD_ISSET(g_sessions[key]->mSocket, rset))
+		if (FD_ISSET(session->mSocket, rset))
 		{
-			g_sessions[key]->receivePacket();
+			session->receivePacket();
 		}
 
 		// DisconnectProc
@@ -160,9 +168,15 @@ void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset)
 void AcceptProc()
 {
 	SOCKADDR_IN clientAddr;
-	int len = sizeof(len);
+	int len = sizeof(clientAddr);
 
 	SOCKET client = accept(g_listenSocket, (SOCKADDR*)&clientAddr, &len);
+
+	WCHAR temp[16] = { 0, };
+	InetNtop(AF_INET, &clientAddr.sin_addr, temp, 16);
+
+	wprintf_s(L"\nAccept: IP - %s, 포트 - %d [UserNo: %d]\n",
+		temp, ntohs(clientAddr.sin_port), g_SessionNo);
 
 	if (client == INVALID_SOCKET)
 	{
@@ -172,6 +186,7 @@ void AcceptProc()
 		{
 			return;
 		}
+
 		LogError(L"Accept 에러", g_listenSocket);
 
 		exit(1);
@@ -192,8 +207,8 @@ void AcceptProc()
 	// 껍데기 유저
 	User* user = new User(g_SessionNo);
 
-	InsertSessionData(session);
-	InsertUserData(user);
+	InsertSessionData(g_SessionNo, session);
+	InsertUserData(g_SessionNo, user);
 
 	g_SessionNo++;
 }
@@ -206,19 +221,4 @@ void LogError(const WCHAR* msg, SOCKET sock)
 	{
 		closesocket(sock);
 	}
-}
-
-BYTE makeCheckSum(CPacket* packet, WORD msgType)
-{
-	int size = packet->GetSize();
-	BYTE* pBuf = (BYTE*)packet->GetBufferPtr();
-	BYTE checkSum = 0;
-
-	for (int i = 0; i < size; ++i)
-	{
-		checkSum += *pBuf;
-		++pBuf;
-	}
-
-	return checkSum % 256;
 }

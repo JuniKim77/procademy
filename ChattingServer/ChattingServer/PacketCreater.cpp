@@ -3,6 +3,7 @@
 #include "CPacket.h"
 #include "User.h"
 #include <unordered_map>
+#include "Container.h"
 
 using namespace std;
 
@@ -16,21 +17,32 @@ void CreateResLoginPacket(st_PACKET_HEADER* header, CPacket* packet, BYTE result
 	FillHeader(header, packet, df_RES_LOGIN);
 }
 
-void CreateResRoomListPacket(st_PACKET_HEADER* header, CPacket* packet, DWORD roomNo)
+void CreateResRoomListPacket(st_PACKET_HEADER* header, CPacket* packet)
 {
-	Room* room = g_rooms[roomNo];
+	*packet << (WORD)g_rooms.size();
 
-	WORD size = (WORD)wcslen(room->mTitle);
-
-	*packet << roomNo << size;
-
-	packet->PutData(room->mTitle, size);
-
-	*packet << (BYTE)room->mUserList.size();
-
-	for (auto iter = room->mUserList.begin(); iter != room->mUserList.end(); ++iter)
+	for (auto iter = g_rooms.begin(); iter != g_rooms.end(); ++iter)
 	{
-		packet->PutData(g_users[*iter]->GetName(), 15);
+		Room* room = iter->second;
+
+		if (room == nullptr)
+		{
+			continue;
+		}
+
+		*packet << room->mRoomNo;
+
+		WORD size = wcslen(room->mTitle) * sizeof(WCHAR);
+		*packet << size;
+		packet->PutData(room->mTitle, size / sizeof(WCHAR));
+
+		*packet << (BYTE)room->mUserList.size();
+		for (auto iter = room->mUserList.begin(); iter != room->mUserList.end(); ++iter)
+		{
+			User* user = FindUser(*iter);
+
+			packet->PutData(user->mName, dfNICK_MAX_LEN);
+		}
 	}
 
 	FillHeader(header, packet, df_RES_ROOM_LIST);
@@ -38,14 +50,85 @@ void CreateResRoomListPacket(st_PACKET_HEADER* header, CPacket* packet, DWORD ro
 
 void CreateResRoomCreatePacket(st_PACKET_HEADER* header, CPacket* packet, BYTE result, DWORD roomNo)
 {
+	*packet << result;
 
+	if (result == df_RESULT_ROOM_CREATE_OK)
+	{
+		Room* room = FindRoom(roomNo);
+
+		*packet << roomNo;
+		WORD size = wcslen(room->mTitle) * sizeof(WCHAR);
+
+		*packet << size;
+		packet->PutData(room->mTitle, size / sizeof(WCHAR));
+	}
+
+	FillHeader(header, packet, df_RES_ROOM_CREATE);
+}
+
+void CreateResRoomEnterPacket(st_PACKET_HEADER* header, CPacket* packet, BYTE result, DWORD roomNo)
+{
+	*packet << result;
+
+	if (result == df_RESULT_ROOM_ENTER_OK)
+	{
+		*packet << roomNo;
+		Room* room = FindRoom(roomNo);
+
+		WORD size = wcslen(room->mTitle) * sizeof(WCHAR);
+
+		*packet << size;
+		packet->PutData(room->mTitle, size / sizeof(WCHAR));
+
+		*packet << (BYTE)room->mUserList.size();
+
+		for (auto iter = room->mUserList.begin(); iter != room->mUserList.end(); ++iter)
+		{
+			User* user = FindUser(*iter);
+
+			packet->PutData(user->mName, _countof(user->mName));
+			*packet << user->mUserNo;
+		}
+	}
+
+	FillHeader(header, packet, df_RES_ROOM_ENTER);
+}
+
+void CreateResChatPacket(st_PACKET_HEADER* header, CPacket* packet, DWORD from, WORD msgSize, const WCHAR* msg)
+{
+	*packet << from << msgSize;
+	packet->PutData(msg, msgSize);
+
+	FillHeader(header, packet, df_RES_CHAT);
+}
+
+void CreateResRoomLeavePacket(st_PACKET_HEADER* header, CPacket* packet, DWORD from)
+{
+	*packet << from;
+
+	FillHeader(header, packet, df_RES_ROOM_LEAVE);
+}
+
+void CreateResRoomDeletePacket(st_PACKET_HEADER* header, CPacket* packet, DWORD roomNo)
+{
+	*packet << roomNo;
+
+	FillHeader(header, packet, df_RES_ROOM_DELETE);
+}
+
+void CreateResOtherUserRoomEnterPacket(st_PACKET_HEADER* header, CPacket* packet, const WCHAR* name, DWORD userNo)
+{
+	packet->PutData(name, 15);
+	*packet << userNo;
+
+	FillHeader(header, packet, df_RES_USER_ENTER);
 }
 
 BYTE makeCheckSum(CPacket* packet, WORD msgType)
 {
 	int size = packet->GetSize();
 	BYTE* pBuf = (BYTE*)packet->GetBufferPtr();
-	BYTE checkSum = 0;
+	int checkSum = msgType;
 
 	for (int i = 0; i < size; ++i)
 	{
@@ -53,7 +136,7 @@ BYTE makeCheckSum(CPacket* packet, WORD msgType)
 		++pBuf;
 	}
 
-	return checkSum % 256;
+	return (BYTE)(checkSum % 256);
 }
 
 void FillHeader(st_PACKET_HEADER* header, CPacket* packet, WORD msgType)
