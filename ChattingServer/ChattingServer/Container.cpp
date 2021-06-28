@@ -16,8 +16,16 @@ void InsertSessionData(DWORD sessionNo, Session* session)
 
 void DeleteSessionData(DWORD sessionNo)
 {
+	auto iter = g_sessions.find(sessionNo);
+
+	if (iter == g_sessions.end())
+	{
+		return;
+	}
+
 	delete g_sessions[sessionNo];
 	g_sessions[sessionNo] = nullptr;
+	g_sessions.erase(iter);
 }
 
 void UpdateSessionData(DWORD sessionNo, Session* session)
@@ -32,8 +40,16 @@ void InsertUserData(DWORD userNo, User* user)
 
 void DeleteUserData(DWORD userNo)
 {
+	auto iter = g_users.find(userNo);
+
+	if (iter == g_users.end())
+	{
+		return;
+	}
+
 	delete g_users[userNo];
 	g_users[userNo] = nullptr;
+	g_users.erase(iter);
 }
 
 void UpdateUserData(DWORD userNo, User* user)
@@ -48,8 +64,16 @@ void InsertRoomData(DWORD roomNo, Room* room)
 
 void DeleteRoomData(DWORD roomNo)
 {
+	auto iter = g_rooms.find(roomNo);
+
+	if (iter == g_rooms.end())
+	{
+		return;
+	}
+
 	delete g_rooms[roomNo];
 	g_rooms[roomNo] = nullptr;
+	g_rooms.erase(iter);
 }
 
 void UpdateRoomData(DWORD roomNo, Room* room)

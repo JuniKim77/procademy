@@ -38,7 +38,7 @@ bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 		return ReqChat(from, packet);
 		break;
 	case df_REQ_ROOM_LEAVE:
-		return ReqRoomLeave(from, packet);
+		return ReqRoomLeave(from);
 		break;
 	default:
 		break;
@@ -285,7 +285,7 @@ void ResChat(DWORD from, DWORD roomNo, WORD msgSize, const WCHAR* msg)
 	SendBroadcast_room(roomNo, from, &sendHeader, &sendPacket);
 }
 
-bool ReqRoomLeave(DWORD client, CPacket* packet)
+bool ReqRoomLeave(DWORD client)
 {
 	User* user = FindUser(client);
 	Room* room = FindRoom(user->mRoomNo);
@@ -341,13 +341,16 @@ void ResRoomDelete(DWORD roomNo)
 
 void SendUnicast(DWORD to, st_PACKET_HEADER* header, CPacket* packet)
 {
-	if (g_users[to] == nullptr)
+	Session* session = FindSession(to);
+
+	if (session == nullptr)
 	{
 		wprintf_s(L"SendUnicast Dest Client is Null\n");
 		return;
 	}
-	g_sessions[to]->sendPacket((char*)header, sizeof(st_PACKET_HEADER));
-	g_sessions[to]->sendPacket(packet->GetBufferPtr(), packet->GetSize());
+
+	session->sendPacket((char*)header, sizeof(st_PACKET_HEADER));
+	session->sendPacket(packet->GetBufferPtr(), packet->GetSize());
 }
 
 void SendBroadcast(st_PACKET_HEADER* header, CPacket* packet)

@@ -12,6 +12,7 @@
 #include "User.h"
 #include "Container.h"
 #include "PacketCreater.h"
+#include "Content.h"
 
 using namespace std;
 
@@ -162,7 +163,24 @@ void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset)
 		}
 
 		// DisconnectProc
+		if (session->mbAlive == false)
+		{
+			DisconnectProc(session->mSessionNo);
+		}
 	}
+}
+
+void DisconnectProc(DWORD sessionKey)
+{
+	User* user = FindUser(sessionKey);
+
+	if (user->mRoomNo != 0)
+	{
+		ReqRoomLeave(sessionKey);
+	}
+
+	DeleteSessionData(sessionKey);
+	DeleteUserData(sessionKey);
 }
 
 void AcceptProc()
@@ -175,7 +193,7 @@ void AcceptProc()
 	WCHAR temp[16] = { 0, };
 	InetNtop(AF_INET, &clientAddr.sin_addr, temp, 16);
 
-	wprintf_s(L"\nAccept: IP - %s, 포트 - %d [UserNo: %d]\n",
+	wprintf_s(L"Accept: IP - %s, 포트 - %d [UserNo: %d]\n",
 		temp, ntohs(clientAddr.sin_port), g_SessionNo);
 
 	if (client == INVALID_SOCKET)

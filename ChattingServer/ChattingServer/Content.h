@@ -18,7 +18,7 @@ void ResRoomEnter(DWORD from, BYTE result, DWORD roomNo);
 void ResRoomOtherUserEnter(DWORD client, DWORD roomNo);
 bool ReqChat(DWORD client, CPacket* packet);
 void ResChat(DWORD from, DWORD roomNo, WORD msgSize, const WCHAR* msg);
-bool ReqRoomLeave(DWORD from, CPacket* packet);
+bool ReqRoomLeave(DWORD from);
 void ResRoomLeave(DWORD client, DWORD roomNo);
 void ResRoomDelete(DWORD roomNo);
 

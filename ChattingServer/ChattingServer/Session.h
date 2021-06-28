@@ -32,7 +32,7 @@ public:
 private:
 	bool readMessage(st_PACKET_HEADER* header);
 	BYTE makeCheckSum(CPacket* packet, WORD msgType);
-	void ReceiveHelper(int size);
+	bool ReceiveHelper(int size);
 	void WriteHelper(int size);
 
 private:

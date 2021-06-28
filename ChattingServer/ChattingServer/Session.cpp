@@ -46,8 +46,14 @@ void Session::receivePacket()
 		size = freeSize;
 	}
 
-	ReceiveHelper(size);
-	ReceiveHelper(remain);
+	if (ReceiveHelper(size) == false)
+	{
+		return;
+	}
+	if (ReceiveHelper(remain) == false)
+	{
+		return;
+	}
 
 	while (1)
 	{
@@ -151,10 +157,10 @@ BYTE Session::makeCheckSum(CPacket* packet, WORD msgType)
 	return (BYTE)(checkSum % 256);
 }
 
-void Session::ReceiveHelper(int size)
+bool Session::ReceiveHelper(int size)
 {
 	if (size == 0)
-		return;
+		return true;
 
 	int retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), size, 0);
 
@@ -163,14 +169,18 @@ void Session::ReceiveHelper(int size)
 		int err = WSAGetLastError();
 
 		if (err == WSAEWOULDBLOCK)
-			return;
+			return true;
 
+		wprintf_s(L"Error: %d\n", err);
+		wprintf_s(L"Disconnect [UserNo: %d]\n", mSessionNo);
 		SetDisconnect();
 
-		return;
+		return false;
 	}
 
 	mRecvBuffer.MoveRear(retval);
+
+	return true;
 }
 
 void Session::WriteHelper(int size)
