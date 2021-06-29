@@ -30,13 +30,13 @@ int main()
 	{
 		int ran = enqueueProc(&ringBuffer);
 
-		//printf("After Enqueue::: Ran: %d\n", ran);
-		//ringBuffer.printInfo();
+		/*printf("After Enqueue::: Ran: %d\n", ran);
+		ringBuffer.printInfo();*/
 
 		ran = dequeueProc(&ringBuffer);
 
-		//printf("After Enqueue::: Ran: %d\n", ran);
-		//ringBuffer.printInfo();
+		/*printf("After Enqueue::: Ran: %d\n", ran);
+		ringBuffer.printInfo();*/
 	}
 
 	return 0;
@@ -47,6 +47,21 @@ int dequeueProc(RingBuffer* ringBuffer)
 	char buffer[STR_SIZE + 1];
 
 	int ran = rand() % (STR_SIZE + 1);
+
+	/*int dDequeSize = ringBuffer->DirectDequeueSize();
+
+	if (ran <= dDequeSize)
+	{
+		memcpy(buffer, ringBuffer->GetFrontBufferPtr(), dDequeSize);
+		buffer[dDequeSize] = '\0';
+		ringBuffer->MoveFront(dDequeSize);
+
+		return dDequeSize;
+	}
+	else
+	{
+
+	}*/
 
 	int size = ringBuffer->Dequeue(buffer, ran);
 
@@ -60,10 +75,13 @@ int enqueueProc(RingBuffer* ringBuffer)
 {
 	char buffer[STR_SIZE + 1];
 
+	// 랜덤 숫자 맞큼 넣을 것
 	int ran = rand() % (STR_SIZE + 1);
 
+	// 램덤 숫자와 현재 위치의 합이 문자열 크기보다 크면...
 	if (cur + ran > STR_SIZE)
 	{
+		// 가능한 만큼 미리 복사하고... 나머지 따로 복사
 		int poss = STR_SIZE - cur;
 		memcpy(buffer, szTest + cur, poss);
 		memcpy(buffer + poss, szTest, ran - poss);
@@ -75,9 +93,39 @@ int enqueueProc(RingBuffer* ringBuffer)
 
 	buffer[ran] = '\0';
 
-	int size = ringBuffer->Enqueue(buffer, ran);
+	int dEneueSize = ringBuffer->DirectEnqueueSize();
 
-	cur = (cur + size) % STR_SIZE;
+	if (ran < dEneueSize)
+	{
+		memcpy(ringBuffer->GetRearBufferPtr(), buffer, ran);
 
-	return size;
+		ringBuffer->MoveRear(ran);
+
+		cur = (cur + ran) % STR_SIZE;
+
+		return ran;
+	}
+	else
+	{
+		memcpy(ringBuffer->GetRearBufferPtr(), buffer, dEneueSize);
+
+		ringBuffer->MoveRear(dEneueSize);
+
+		if (ringBuffer->IsFrontZero())
+		{
+			cur = (cur + dEneueSize) % (STR_SIZE + 1);
+		}
+		else
+		{
+			cur = (cur + dEneueSize) % STR_SIZE;
+		}
+
+		return dEneueSize;
+	}
+
+	/*int size = ringBuffer->Enqueue(buffer, ran);
+
+	cur = (cur + size) % STR_SIZE;*/
+
+	//return size;
 }

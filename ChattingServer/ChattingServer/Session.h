@@ -3,6 +3,7 @@
 #include <wtypes.h>
 #include <unordered_map>
 #include "RingBuffer.h"
+#include <stack>
 
 struct st_PACKET_HEADER;
 class CPacket;
@@ -22,18 +23,18 @@ public:
 	/// <summary>
 	/// 받은 패킷을 리시브 링버퍼에 넣는 함수
 	/// </summary>
-	void receivePacket();
+	void receivePacket(); // 완료
 	/// <summary>
 	/// 리시브 링버퍼에서 패킷을 꺼내와서 로직 처리하는 함수
 	/// </summary>
-	bool receiveProc();
-	void writePacket();
-	void sendPacket(char* buffer, int size);
+	void sendPacket(char* buffer, int size); // 완성
+	bool receiveProc(); // 완성
+	void writeProc();
 
 private:
-	bool readMessage(st_PACKET_HEADER* header);
+	bool readMessage(st_PACKET_HEADER* header); // 완료
 	BYTE makeCheckSum(CPacket* packet, WORD msgType);
-	bool ReceiveHelper(int size);
+	bool ReceiveHelper(int size); // 완성
 	void WriteHelper(int size);
 
 private:
@@ -45,4 +46,5 @@ private:
 	DWORD mSessionNo;
 	bool mbLogin = false;
 	bool mbAlive = true;
+	std::stack<WORD> mCheckSums;
 };
