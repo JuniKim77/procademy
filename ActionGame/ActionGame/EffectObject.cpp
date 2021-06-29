@@ -16,18 +16,21 @@ EffectObject::~EffectObject()
 {
 }
 
-void EffectObject::Render(BYTE* pDest, int destWidth, int destHeight, int destPitch)
+void EffectObject::Render(BYTE* pDest, int destWidth, int destHeight, int destPitch, COORD* camera)
 {
+	int x = mCurX - camera->X;
+	int y = mCurY - camera->Y;
+
 	if (mbEffectBegin && !mbEndFrame)
 	{
 		if (IsPlayer())
 		{
-			gSpriteDib.DrawSprite(GetSprite(), mCurX, mCurY, pDest, destWidth,
+			gSpriteDib.DrawSprite(GetSprite(), x, y, pDest, destWidth,
 				destHeight, destPitch);
 		}
 		else
 		{
-			gSpriteDib.DrawSpriteRed(GetSprite(), mCurX, mCurY, pDest, destWidth,
+			gSpriteDib.DrawSpriteRed(GetSprite(), x, y, pDest, destWidth,
 				destHeight, destPitch);
 		}
 	}

@@ -9,10 +9,10 @@
 #include "PacketCreater.h"
 #include "CPacket.h"
 
-#define dfRANGE_MOVE_TOP	50
-#define dfRANGE_MOVE_LEFT	10
-#define dfRANGE_MOVE_RIGHT	630
-#define dfRANGE_MOVE_BOTTOM	470
+//#define dfRANGE_MOVE_TOP	50
+//#define dfRANGE_MOVE_LEFT	10
+//#define dfRANGE_MOVE_RIGHT	630
+//#define dfRANGE_MOVE_BOTTOM	470
 
 extern Session g_session;
 
@@ -31,22 +31,25 @@ PlayerObject::~PlayerObject()
 {
 }
 
-void PlayerObject::Render(BYTE* pDest, int destWidth, int destHeight, int destPitch)
+void PlayerObject::Render(BYTE* pDest, int destWidth, int destHeight, int destPitch, COORD* camera)
 {
-	gSpriteDib.DrawSprite50(eSHADOW, mCurX, mCurY, pDest,
+	int x = mCurX - camera->X;
+	int y = mCurY - camera->Y;
+
+	gSpriteDib.DrawSprite50(eSHADOW, x, y, pDest,
 		destWidth, destHeight, destPitch);
 	if (mbPlayerCharacter)
 	{
-		gSpriteDib.DrawSprite(GetSprite(), mCurX, mCurY, pDest, destWidth,
+		gSpriteDib.DrawSprite(GetSprite(), x, y, pDest, destWidth,
 			destHeight, destPitch);
 	}
 	else
 	{
-		gSpriteDib.DrawSpriteRed(GetSprite(), mCurX, mCurY, pDest, destWidth,
+		gSpriteDib.DrawSpriteRed(GetSprite(), x, y, pDest, destWidth,
 			destHeight, destPitch);
 	}
 
-	gSpriteDib.DrawSprite(eGUAGE_HP, mCurX - 35, mCurY + 9, pDest, destWidth,
+	gSpriteDib.DrawSprite(eGUAGE_HP, x - 35, y + 9, pDest, destWidth,
 		destHeight, destPitch, GetHP());
 }
 

@@ -244,6 +244,11 @@ void Session::readMessage(stHeader* header)
 		DamageProc(&packet);
 		break;
 	}
+	case dfPACKET_SC_SYNC:
+	{
+		SyncProc(&packet);
+		break;
+	}
 	default:
 		break;
 	}
@@ -458,6 +463,27 @@ void Session::DamageProc(CPacket* packet)
 	attacker->CreateEffect();
 
 	wprintf_s(L"캐릭터 공격 받음. ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(),
+		target->GetCurX(),
+		target->GetCurY());
+}
+
+void Session::SyncProc(CPacket* packet)
+{
+	DWORD targetID;
+	WORD x;
+	WORD y;
+
+	*packet >> targetID >> x >> y;
+
+	PlayerObject* target = (PlayerObject*)SearchObject(targetID);
+
+	if (target == nullptr)
+		return;
+
+	target->SetPosition(x, y);
+
+	wprintf_s(L"캐릭터 동기화. ID: %d, X : %d, Y: %d\n",
 		target->GetObectID(),
 		target->GetCurX(),
 		target->GetCurY());

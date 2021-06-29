@@ -67,5 +67,6 @@ enum ESprite
 	eEFFECT_SPARK_04,
 	eGUAGE_HP,
 	eSHADOW,
-	eSPRITE_MAX
+	eTILE,
+	eSPRITE_MAX,
 };

@@ -40,6 +40,7 @@ public:
 	void AttackProc2(CPacket* packet);
 	void AttackProc3(CPacket* packet);
 	void DamageProc(CPacket* packet);
+	void SyncProc(CPacket* packet);
 
 protected:
 	BaseObject* SearchObject(int id);

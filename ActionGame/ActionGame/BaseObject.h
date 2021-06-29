@@ -21,7 +21,7 @@ public:
 	int GetSprite() { return mSpriteNow; }
 	bool IsEndFrame() { return mbEndFrame; }
 	void NextFrame();
-	virtual void Render(BYTE* pDest, int destWidth, int destHeight, int destPitch) = 0;
+	virtual void Render(BYTE* pDest, int destWidth, int destHeight, int destPitch, COORD* camera) = 0;
 	virtual void Run() = 0;
 	void SetPosition(int x, int y);
 	void SetSprite(int spriteBegin, int spriteEnd, int frameDelay);

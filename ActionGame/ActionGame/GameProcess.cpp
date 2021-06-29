@@ -13,6 +13,7 @@ extern DWORD gOldTime;
 Process gGameState = PROCESS_GAME;
 extern FrameSkip gFrameSkipper;
 extern HWND gMainWindow;
+extern BaseObject* gPlayerObject;
 //int gIDCounter;
 
 void InitializeGame()
@@ -83,6 +84,7 @@ void InitializeGame()
 	gSpriteDib.LoadDibSprite(eEFFECT_SPARK_04, L"SpriteData\\xSpark_4.bmp", 70, 70);
 	gSpriteDib.LoadDibSprite(eGUAGE_HP, L"SpriteData\\HPGuage.bmp", 0, 0);
 	gSpriteDib.LoadDibSprite(eSHADOW, L"SpriteData\\Shadow.bmp", 32, 4);
+	gSpriteDib.LoadDibSprite(eTILE, L"SpriteData\\Tile_01.bmp", 0, 0);
 }
 
 void ContentLoad()
@@ -213,13 +215,45 @@ void Update()
 
 void Render()
 {
-	gSpriteDib.DrawImage(eMAP, 0, 0, gScreenDib.GetDibBuffer(), gScreenDib.GetWidth(), gScreenDib.GetHeight(),
-		gScreenDib.GetPitch());
+	if (gPlayerObject == nullptr)
+		return;
+
+	COORD playerLocation = { gPlayerObject->GetCurX(), gPlayerObject->GetCurY() };
+	COORD cameraLocation = { max(playerLocation.X - dfSCREEN_WIDTH / 2, 0), max(playerLocation.Y - dfSCREEN_HEIGHT / 2, 0) };
+
+	if (playerLocation.X > (dfRANGE_MOVE_RIGHT - dfSCREEN_WIDTH / 2))
+	{
+		cameraLocation.X -= ((playerLocation.X + dfSCREEN_WIDTH / 2) - dfRANGE_MOVE_RIGHT);
+	}
+
+	if (playerLocation.Y > (dfRANGE_MOVE_BOTTOM - dfSCREEN_HEIGHT / 2))
+	{
+		cameraLocation.Y -= ((playerLocation.Y + dfSCREEN_HEIGHT / 2) - dfRANGE_MOVE_BOTTOM);
+	}
+
+	int startX = -(cameraLocation.X % 64);
+	int startY = -(cameraLocation.Y % 64);
+
+	for (int i = 0; i < 9; ++i)
+	{
+		startX = -(cameraLocation.X % 64);
+
+		for (int j = 0; j < 11; ++j)
+		{
+			gSpriteDib.DrawImage(eTILE, startX, startY, gScreenDib.GetDibBuffer(), gScreenDib.GetWidth(), gScreenDib.GetHeight(),
+				gScreenDib.GetPitch());
+
+			startX += 64;
+		}
+
+		startY += 64;
+	}
 
 	for (auto iter = gObjectList.begin(); iter != gObjectList.end(); iter++)
 	{
+		// wprintf_s(L"Camera X(%d) - Y(%d)\n", cameraLocation.X, cameraLocation.Y);
 		(*iter)->Render(gScreenDib.GetDibBuffer(), gScreenDib.GetWidth(), gScreenDib.GetHeight(),
-			gScreenDib.GetPitch());
+			gScreenDib.GetPitch(), &cameraLocation);
 	}
 }
 
