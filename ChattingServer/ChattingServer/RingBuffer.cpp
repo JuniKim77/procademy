@@ -103,9 +103,9 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 		return 0;
 	}
 
-	if (iSize > GetFreeSize())
+	while (iSize > GetFreeSize())
 	{
-		return Enqueue(chpData, GetFreeSize());
+		Resize(mCapacity * 2);
 	}
 
 	if (mRear >= mFront)

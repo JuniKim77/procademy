@@ -131,6 +131,10 @@ bool Session::readMessage(st_PACKET_HEADER* header)
 		return false;
 	}
 
+	/*wprintf_s(L"%d[%x] - %d[%x] - %d[%x] - %d[%x]\n", header->byCode, header->byCode,
+		header->byCheckSum, header->byCheckSum, header->wMsgType, header->wMsgType,
+		header->wPayloadSize, header->wPayloadSize);*/
+
 	if (!PacketProc(mSessionNo, header->wMsgType, &packet))
 	{
 		wprintf(L"Abnormal User [UserNo: %d]\n", mSessionNo);

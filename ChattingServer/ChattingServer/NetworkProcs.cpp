@@ -123,6 +123,19 @@ void NetWorkProc()
 			count = 0;
 		}
 	}
+	/*Session* session = FindSession(1);
+	if (session != nullptr)
+	{
+		sessionKeyTable[0] = session->mSessionNo;
+		FD_SET(session->mSocket, &rset);
+
+		if (session->mSendBuffer.GetUseSize() > 0)
+		{
+			FD_SET(session->mSocket, &wset);
+		}
+
+		count++;
+	}*/
 	
 	if (count > 0)
 	{

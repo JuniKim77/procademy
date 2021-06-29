@@ -351,10 +351,6 @@ bool ReqStressEcho(DWORD from, CPacket* packet)
 
 	SendUnicast(from, &sendHeader, &sendPacket);
 
-	Session* session = FindSession(from);
-
-	session->mSendBuffer.printInfo();
-
 	return true;
 }
 
