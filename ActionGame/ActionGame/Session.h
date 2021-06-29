@@ -1,5 +1,6 @@
 #pragma once
-#define SERVER_PORT (5000)
+//#define SERVER_PORT (5000)
+#define SERVER_PORT (20000)
 #define WM_SOCKET (WM_USER+1)
 
 //#include <WinSock2.h>
