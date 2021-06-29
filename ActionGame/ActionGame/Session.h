@@ -1,5 +1,6 @@
 #pragma once
-#define SERVER_PORT (5000)
+//#define SERVER_PORT (5000)
+#define SERVER_PORT (20000)
 #define WM_SOCKET (WM_USER+1)
 
 //#include <WinSock2.h>
@@ -39,6 +40,7 @@ public:
 	void AttackProc2(CPacket* packet);
 	void AttackProc3(CPacket* packet);
 	void DamageProc(CPacket* packet);
+	void SyncProc(CPacket* packet);
 
 protected:
 	BaseObject* SearchObject(int id);

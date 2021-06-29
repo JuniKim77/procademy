@@ -71,11 +71,13 @@ int RingBuffer::GetFreeSize(void)
 
 int RingBuffer::DirectEnqueueSize(void)
 {
+	// Rear가 움직인다...
+	// 역방향의 경우, f의 뒤는 항시 비어야 하므로, -1...
 	if (mRear < mFront)
 	{
 		return mFront - mRear - 1;
 	}
-
+	// 순방향의 경우, mFront가 0인 경우, 마지막 칸을 비워 둬야 한다...
 	if (mFront == 0)
 	{
 		return mCapacity - mRear;
@@ -88,11 +90,14 @@ int RingBuffer::DirectEnqueueSize(void)
 
 int RingBuffer::DirectDequeueSize(void)
 {
+	// Front가 움직여 나간다...
+	// 순방향 경우 인덱스 차 반환
 	if (mRear >= mFront)
 	{
 		return mRear - mFront;
 	}
 
+	// 경계 포함이라 +1까지...
 	return mCapacity - mFront + 1;
 }
 
@@ -109,7 +114,7 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 	}
 
 	if (mRear >= mFront)
-	{		
+	{
 		int possibleToEnd = DirectEnqueueSize();
 
 		if (iSize <= possibleToEnd)
@@ -148,7 +153,7 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 		return Dequeue(chpDest, GetUseSize());
 	}
 
-	if (mFront > mRear) 
+	if (mFront > mRear)
 	{
 		int possibleToEnd = DirectDequeueSize();
 
@@ -218,14 +223,24 @@ bool RingBuffer::MoveRear(int iSize)
 	{
 		return false;
 	}
-
+	// 순방향의 경우...
 	if (mRear >= mFront)
 	{
+		// 바로 넣을 수 있는 크기..
 		int possibleToEnd = DirectEnqueueSize();
 
+		// 그 것보다 넣은 자료양이 적다면.. 그냥 넣자!
 		if (iSize <= possibleToEnd)
 		{
-			mRear += iSize;
+			// 인덱스가 범위를 초과하는 경우를 방지함...
+			if (IsFrontZero())
+			{
+				mRear += iSize;
+			}
+			else
+			{
+				mRear = (mRear + iSize) % (mCapacity + 1);
+			}
 
 			return true;
 		}
@@ -236,7 +251,7 @@ bool RingBuffer::MoveRear(int iSize)
 
 		return true;
 	}
-
+	// 역방향은 그냥 넣으면 끝...
 	mRear += iSize;
 
 	return true;
@@ -248,14 +263,14 @@ bool RingBuffer::MoveFront(int iSize)
 	{
 		return false;
 	}
-
+	// 역방향의 경우,,,
 	if (mFront > mRear)
 	{
 		int possibleToEnd = DirectDequeueSize();
 
 		if (iSize <= possibleToEnd)
 		{
-			mFront += iSize;
+			mFront = (mFront + iSize) % (mCapacity + 1);
 
 			return true;
 		}
@@ -266,7 +281,7 @@ bool RingBuffer::MoveFront(int iSize)
 
 		return true;
 	}
-
+	// 순방향이면 그냥 넣으면 끝...
 	mFront += iSize;
 
 	return true;
@@ -304,5 +319,3 @@ void RingBuffer::printInfo()
 
 	printf("Size: %d, F: %d, R: %d, Buffer: %s\n", GetUseSize(), mFront, mRear, buffer);
 }
-
-

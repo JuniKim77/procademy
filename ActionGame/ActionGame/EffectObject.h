@@ -7,7 +7,7 @@ class EffectObject : public BaseObject
 public:
 	EffectObject();
 	virtual ~EffectObject();
-	virtual void Render(BYTE* pDest, int destWidth, int destHeight, int destPitch);
+	virtual void Render(BYTE* pDest, int destWidth, int destHeight, int destPitch, COORD* camera);
 	virtual void Run();
 
 private:
