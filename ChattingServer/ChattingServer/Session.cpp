@@ -33,26 +33,24 @@ void Session::receivePacket()
 {
 	int freeSize = mRecvBuffer.GetFreeSize();
 	int directEnqueueSize = mRecvBuffer.DirectEnqueueSize();
-	int remain = 0;
-	int size = 0;
 
 	if (freeSize > directEnqueueSize)
 	{
-		size = directEnqueueSize;
-		remain = freeSize - directEnqueueSize;
+		if (ReceiveHelper(directEnqueueSize) == false)
+		{
+			return;
+		}
+		if (ReceiveHelper(freeSize - directEnqueueSize) == false)
+		{
+			return;
+		}
 	}
 	else
 	{
-		size = freeSize;
-	}
-
-	if (ReceiveHelper(size) == false)
-	{
-		return;
-	}
-	if (ReceiveHelper(remain) == false)
-	{
-		return;
+		if (ReceiveHelper(freeSize) == false)
+		{
+			return;
+		}
 	}
 
 	while (1)
@@ -61,6 +59,15 @@ void Session::receivePacket()
 		{
 			break;
 		}
+	}
+}
+
+void Session::sendPacket(char* buffer, int size)
+{
+	int enqueueSize = mSendBuffer.Enqueue(buffer, size);
+	if (enqueueSize != size)
+	{
+		wprintf_s(L"[UserNo: %d] Enqueue ¿¡·¯\n", mSessionNo);
 	}
 }
 
@@ -90,30 +97,36 @@ bool Session::receiveProc()
 	return readMessage(&header);
 }
 
-void Session::writePacket()
+void Session::writeProc()
 {
-	int useSize = mSendBuffer.GetUseSize();
-	int directDequeueSize = mSendBuffer.DirectDequeueSize();
-	int size = 0;
-	int remain = 0;
+	int directPoss = mSendBuffer.DirectDequeueSize();
 
-	if (useSize > directDequeueSize)
+	int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), directPoss, 0);
+
+	mSendBuffer.MoveFront(sendSize);
+
+	if (mSendBuffer.GetUseSize() > 0)
 	{
-		size = directDequeueSize;
-		remain = useSize - size;
+		int sendSize2 = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.GetUseSize(), 0);
+
+		mSendBuffer.MoveFront(sendSize2);
+
+		sendSize += sendSize2;
 	}
-	else
+
+	if (sendSize == SOCKET_ERROR)
 	{
-		size = useSize;
+		int err = WSAGetLastError();
+
+		if (err == WSAEWOULDBLOCK)
+		{
+			return;
+		}
+
+		SetDisconnect();
+
+		return;
 	}
-
-	WriteHelper(size);
-	WriteHelper(remain);
-}
-
-void Session::sendPacket(char* buffer, int size)
-{
-	mSendBuffer.Enqueue(buffer, size);
 }
 
 bool Session::readMessage(st_PACKET_HEADER* header)
@@ -121,6 +134,8 @@ bool Session::readMessage(st_PACKET_HEADER* header)
 	CPacket packet;
 	mRecvBuffer.Dequeue(packet.GetBufferPtr(), header->wPayloadSize);
 	packet.MoveRear(header->wPayloadSize);
+
+	mCheckSums.push(header->byCheckSum);
 
 	BYTE checkSum = makeCheckSum(&packet, header->wMsgType);
 	if (checkSum != header->byCheckSum)

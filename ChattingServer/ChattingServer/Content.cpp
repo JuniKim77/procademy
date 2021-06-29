@@ -349,6 +349,25 @@ bool ReqStressEcho(DWORD from, CPacket* packet)
 
 	CreateResStressEcho(&sendHeader, &sendPacket, packet);
 
+	Session* session = FindSession(from);
+
+	if (session == nullptr)
+		return false;
+
+	WORD top = session->mCheckSums.top();
+
+	if (sendHeader.byCheckSum == (BYTE)((top + 1) % 256) && sendHeader.byCode == 0x89)
+	{
+		session->mCheckSums.pop();
+		wprintf_s(L"[UserNo: %d] Send 성공\n", from);
+	}
+	else
+	{
+		wprintf_s(L"[UserNo: %d] Send 실패\n", from);
+
+		return false;
+	}
+
 	SendUnicast(from, &sendHeader, &sendPacket);
 
 	return true;

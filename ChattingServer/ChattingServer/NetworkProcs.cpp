@@ -167,7 +167,7 @@ void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset)
 
 		if (FD_ISSET(session->mSocket, wset))
 		{
-			session->writePacket();
+			session->writeProc();
 		}
 
 		if (FD_ISSET(session->mSocket, rset))
