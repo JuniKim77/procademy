@@ -35,8 +35,6 @@ public:
 private:
 	bool readMessage(st_PACKET_HEADER* header); // 완료
 	BYTE makeCheckSum(CPacket* packet, WORD msgType);
-	bool ReceiveHelper(int size); // 완성
-	void WriteHelper(int size);
 
 private:
 	SOCKET mSocket;
@@ -47,8 +45,4 @@ private:
 	DWORD mSessionNo;
 	bool mbLogin = false;
 	bool mbAlive = true;
-	std::stack<WORD> mCheckSums;
-	std::stack<WORD> mRecvSizes;
-	std::vector<st_PACKET_HEADER> mRecvHeaders;
-	int mSendCount = 0;
 };

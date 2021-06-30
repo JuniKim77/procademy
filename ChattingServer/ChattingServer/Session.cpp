@@ -31,26 +31,23 @@ void Session::printInfo() const
 
 void Session::receivePacket()
 {
-	int freeSize = mRecvBuffer.GetFreeSize();
-	int directEnqueueSize = mRecvBuffer.DirectEnqueueSize();
+	int dSize = mRecvBuffer.DirectEnqueueSize();
+	int retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
 
-	if (freeSize > directEnqueueSize)
+	mRecvBuffer.MoveRear(retval);
+
+	if (retval == SOCKET_ERROR)
 	{
-		if (ReceiveHelper(directEnqueueSize) == false)
-		{
+		int err = WSAGetLastError();
+
+		if (err == WSAEWOULDBLOCK)
 			return;
-		}
-		if (ReceiveHelper(freeSize - directEnqueueSize) == false)
-		{
-			return;
-		}
-	}
-	else
-	{
-		if (ReceiveHelper(freeSize) == false)
-		{
-			return;
-		}
+
+		wprintf_s(L"Error: %d\n", err);
+		wprintf_s(L"Disconnect [UserNo: %d]\n", mSessionNo);
+		SetDisconnect();
+
+		return;
 	}
 
 	while (1)
@@ -99,45 +96,27 @@ bool Session::receiveProc()
 
 void Session::writeProc()
 {
-	if (mSendCount == 5)
+	int totalSendSize = 0;
+
+	while (1)
 	{
-		int test = 0;
-	}
-	if (mSendCount == 6)
-	{
-		int test = 0;
-	}
-	if (mSendCount == 7)
-	{
-		int test = 0;
-	}
+		if (mSendBuffer.GetUseSize() == 0)
+		{
+			break;
+		}
 
-	if (mSendBuffer.GetUseSize() < mRecvSizes.top())
-		return;
+		int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.DirectDequeueSize(), 0);
 
-	int directPoss = mSendBuffer.DirectDequeueSize();
+		if (sendSize == 0)
+		{
+			break;
+		}
 
-	int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), directPoss, 0);
-
-	mSendBuffer.MoveFront(sendSize);
-
-	if (mSendBuffer.GetUseSize() > 0)
-	{
-		int sendSize2 = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.GetUseSize(), 0);
-
-		mSendBuffer.MoveFront(sendSize2);
-
-		sendSize += sendSize2;
+		mSendBuffer.MoveFront(sendSize);
+		totalSendSize += sendSize;
 	}
 
-	if (sendSize != (mRecvSizes.top() + 6))
-	{
-		int test = 0;
-	}
-
-	mRecvSizes.pop();
-
-	if (sendSize == SOCKET_ERROR)
+	if (totalSendSize == SOCKET_ERROR)
 	{
 		int err = WSAGetLastError();
 
@@ -150,8 +129,6 @@ void Session::writeProc()
 
 		return;
 	}
-
-	mSendCount++;
 }
 
 bool Session::readMessage(st_PACKET_HEADER* header)
@@ -160,14 +137,10 @@ bool Session::readMessage(st_PACKET_HEADER* header)
 	mRecvBuffer.Dequeue(packet.GetBufferPtr(), header->wPayloadSize);
 	packet.MoveRear(header->wPayloadSize);
 
-	mCheckSums.push(header->byCheckSum);
-	mRecvSizes.push(header->wPayloadSize);
-	mRecvHeaders.push_back(*header);
-
 	BYTE checkSum = makeCheckSum(&packet, header->wMsgType);
 	if (checkSum != header->byCheckSum)
 	{
-		wprintf(L"CheckSum Error [UserNo: %d]\n", mSessionNo);
+		wprintf(L"Read Message CheckSum Error [UserNo: %d]\n", mSessionNo);
 		SetDisconnect();
 
 		return false;
@@ -180,7 +153,7 @@ bool Session::readMessage(st_PACKET_HEADER* header)
 
 		return false;
 	}
-
+	
 	return true;
 }
 
@@ -197,54 +170,4 @@ BYTE Session::makeCheckSum(CPacket* packet, WORD msgType)
 	}
 
 	return (BYTE)(checkSum % 256);
-}
-
-bool Session::ReceiveHelper(int size)
-{
-	if (size == 0)
-		return true;
-
-	int retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), size, 0);
-
-	if (retval == SOCKET_ERROR)
-	{
-		int err = WSAGetLastError();
-
-		if (err == WSAEWOULDBLOCK)
-			return true;
-
-		wprintf_s(L"Error: %d\n", err);
-		wprintf_s(L"Disconnect [UserNo: %d]\n", mSessionNo);
-		SetDisconnect();
-
-		return false;
-	}
-
-	mRecvBuffer.MoveRear(retval);
-
-	return true;
-}
-
-void Session::WriteHelper(int size)
-{
-	if (size == 0)
-		return;
-
-	int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), size, 0);
-
-	if (sendSize == SOCKET_ERROR || sendSize < size)
-	{
-		int err = WSAGetLastError();
-
-		if (err == WSAEWOULDBLOCK)
-		{
-			return;
-		}
-
-		SetDisconnect();
-
-		return;
-	}
-
-	mSendBuffer.MoveFront(sendSize);
 }
