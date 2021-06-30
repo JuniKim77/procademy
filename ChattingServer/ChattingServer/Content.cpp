@@ -359,7 +359,7 @@ bool ReqStressEcho(DWORD from, CPacket* packet)
 	if (sendHeader.byCheckSum == (BYTE)((top + 1) % 256) && sendHeader.byCode == 0x89)
 	{
 		session->mCheckSums.pop();
-		wprintf_s(L"[UserNo: %d] Send 성공\n", from);
+		//wprintf_s(L"[UserNo: %d] Send 성공\n", from);
 	}
 	else
 	{

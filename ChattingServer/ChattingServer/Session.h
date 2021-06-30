@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "RingBuffer.h"
 #include <stack>
+#include <vector>
 
 struct st_PACKET_HEADER;
 class CPacket;
@@ -47,4 +48,7 @@ private:
 	bool mbLogin = false;
 	bool mbAlive = true;
 	std::stack<WORD> mCheckSums;
+	std::stack<WORD> mRecvSizes;
+	std::vector<st_PACKET_HEADER> mRecvHeaders;
+	int mSendCount = 0;
 };

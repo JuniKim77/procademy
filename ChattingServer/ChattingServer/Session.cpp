@@ -99,6 +99,22 @@ bool Session::receiveProc()
 
 void Session::writeProc()
 {
+	if (mSendCount == 5)
+	{
+		int test = 0;
+	}
+	if (mSendCount == 6)
+	{
+		int test = 0;
+	}
+	if (mSendCount == 7)
+	{
+		int test = 0;
+	}
+
+	if (mSendBuffer.GetUseSize() < mRecvSizes.top())
+		return;
+
 	int directPoss = mSendBuffer.DirectDequeueSize();
 
 	int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), directPoss, 0);
@@ -114,6 +130,13 @@ void Session::writeProc()
 		sendSize += sendSize2;
 	}
 
+	if (sendSize != (mRecvSizes.top() + 6))
+	{
+		int test = 0;
+	}
+
+	mRecvSizes.pop();
+
 	if (sendSize == SOCKET_ERROR)
 	{
 		int err = WSAGetLastError();
@@ -127,6 +150,8 @@ void Session::writeProc()
 
 		return;
 	}
+
+	mSendCount++;
 }
 
 bool Session::readMessage(st_PACKET_HEADER* header)
@@ -136,6 +161,8 @@ bool Session::readMessage(st_PACKET_HEADER* header)
 	packet.MoveRear(header->wPayloadSize);
 
 	mCheckSums.push(header->byCheckSum);
+	mRecvSizes.push(header->wPayloadSize);
+	mRecvHeaders.push_back(*header);
 
 	BYTE checkSum = makeCheckSum(&packet, header->wMsgType);
 	if (checkSum != header->byCheckSum)
@@ -145,10 +172,6 @@ bool Session::readMessage(st_PACKET_HEADER* header)
 
 		return false;
 	}
-
-	/*wprintf_s(L"%d[%x] - %d[%x] - %d[%x] - %d[%x]\n", header->byCode, header->byCode,
-		header->byCheckSum, header->byCheckSum, header->wMsgType, header->wMsgType,
-		header->wPayloadSize, header->wPayloadSize);*/
 
 	if (!PacketProc(mSessionNo, header->wMsgType, &packet))
 	{
