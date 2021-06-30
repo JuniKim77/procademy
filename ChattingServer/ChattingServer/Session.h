@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "RingBuffer.h"
 #include <stack>
+#include <vector>
 
 struct st_PACKET_HEADER;
 class CPacket;
@@ -34,8 +35,6 @@ public:
 private:
 	bool readMessage(st_PACKET_HEADER* header); // 완료
 	BYTE makeCheckSum(CPacket* packet, WORD msgType);
-	bool ReceiveHelper(int size); // 완성
-	void WriteHelper(int size);
 
 private:
 	SOCKET mSocket;
@@ -46,5 +45,4 @@ private:
 	DWORD mSessionNo;
 	bool mbLogin = false;
 	bool mbAlive = true;
-	std::stack<WORD> mCheckSums;
 };
