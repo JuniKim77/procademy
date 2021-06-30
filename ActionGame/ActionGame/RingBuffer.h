@@ -1,11 +1,11 @@
 #pragma once
 
-#define BUFFER_SIZE (150)
+#define BUFFER_SIZE (1500)
 
 class RingBuffer
 {
 	enum {
-		DEFAULT_SIZE = 10000
+		DEFAULT_SIZE = 1000
 	};
 
 public:
