@@ -163,9 +163,9 @@ void ProfileDataOutText(const WCHAR* szFileName)
 		WCHAR callTxt[32];
 
 		swprintf_s(nameTxt, _countof(nameTxt), L"%s |", gProfiles[i].szName);
-		swprintf_s(avgTxt, _countof(avgTxt), L"%.4lfus |", avg);
-		swprintf_s(minTxt, _countof(minTxt), L"%.4lfus |", gProfiles[i].iMin[0] / freq);
-		swprintf_s(maxTxt, _countof(maxTxt), L"%.4lfus |", gProfiles[i].iMax[0] / freq);
+		swprintf_s(avgTxt, _countof(avgTxt), L"%.4lf |", avg);
+		swprintf_s(minTxt, _countof(minTxt), L"%.4lf |", gProfiles[i].iMin[0] / freq);
+		swprintf_s(maxTxt, _countof(maxTxt), L"%.4lf |", gProfiles[i].iMax[0] / freq);
 		swprintf_s(callTxt, _countof(callTxt), L"%lld |", gProfiles[i].iCall);
 
 		swprintf_s(line, _countof(line), tableSet,

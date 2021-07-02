@@ -5,55 +5,43 @@
 #include "MyHashMap.h"
 #include "BinaryTree.h"
 
+/// <summary>
+/// 0 ~ 0x7ffff 까지 범위로 랜덤 숫자 반환
+/// </summary>
+/// <param name="num"></param>
 void getRandNum(unsigned int* num);
-void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance);
-bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance);
-bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance);
+/// <summary>
+/// 맨 상위 비트 값을 결정하고 하위 비트에서 랜덤 하게 값을 생성
+/// </summary>
+/// <param name="output"></param>
+/// <param name="msb"></param>
+void getRandBiasedNum(unsigned int* output, int msb);
+void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance, bool biased, int msb);
+bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance, bool biased, int msb);
+bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance, bool biased, int msb);
+/// <summary>
+/// 일반 랜덤 숫자로 테스트
+/// </summary>
+void TestNormalDistributionNumber(int count);
+/// <summary>
+/// 한 쪽으로 쏠려있는 숫자들로 테스트
+/// </summary>
+/// <param name="groupNum">나눌 계층 수</param>
+void TestBiasedDistributionNumber(int groupNum, int count);
 
 int main()
 {
-	ProfileReset();
-	RedBlackTree rbTree;
-	MyHashMap myHash;
-	BinaryTree bTree;
 	srand(time(NULL));
 
-	std::unordered_set<unsigned int> setNums;
-
-	for (int i = 0; i < 100000; i++)
+	for (int t = 1; t <= 20; ++t)
 	{
-		insertNum(bTree, rbTree, myHash, setNums, false);
+		TestNormalDistributionNumber(t);
 	}
 
-	for (int i = 0; i < 200000; ++i)
+	for (int t = 1; t <= 20; ++t)
 	{
-		unsigned int num;
-		getRandNum(&num);
-
-		if ((num & 1) == 1)
-		{
-			insertNum(bTree, rbTree, myHash, setNums, true);
-		}
-		else
-		{
-			if (!deleteNum(bTree, rbTree, myHash, setNums, true))
-			{
-				printf("Delete error\n");
-			}
-		}
-
-		if (!rbTree.CheckBalance())
-		{
-			printf("Balance error\n");
-		}
+		TestBiasedDistributionNumber(8, t);
 	}
-
-	for (int i = 0; i < 100000; ++i)
-	{
-		searchNum(bTree, rbTree, myHash, setNums, true);
-	}
-
-	ProfileDataOutText(TEXT("Profile"));
 
 	return 0;
 }
@@ -62,7 +50,7 @@ void getRandNum(unsigned int* number)
 {
 	unsigned int num = rand();
 
-	num <<= 16;
+	num <<= 15;
 
 	num |= rand();
 
@@ -71,11 +59,33 @@ void getRandNum(unsigned int* number)
 	*number = num;
 }
 
-void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance)
+void getRandBiasedNum(unsigned int* output, int msb)
+{
+	unsigned int num = rand();
+
+	num <<= 15;
+
+	num |= rand();
+
+	num &= 0xffff;
+
+	num |= (msb << 16);
+
+	*output = num;
+}
+
+void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance, bool biased = false, int msb = 0)
 {
 	unsigned int num;
 
-	getRandNum(&num);
+	if (biased)
+	{
+		getRandBiasedNum(&num, msb);
+	}
+	else
+	{
+		getRandNum(&num);
+	}
 
 	while (1)
 	{
@@ -84,7 +94,14 @@ void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 		if (ret.second == true)
 			break;
 
-		getRandNum(&num);
+		if (biased)
+		{
+			getRandBiasedNum(&num, msb);
+		}
+		else
+		{
+			getRandNum(&num);
+		}
 	}
 
 	if (checkPerformance)
@@ -109,14 +126,21 @@ void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 	}
 }
 
-bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance)
+bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance, bool biased = false, int msb = 0)
 {
 	unsigned int num;
 	bool ret = true;
 	bool ret2 = true;
 	bool ret3 = true;
 
-	getRandNum(&num);
+	if (biased)
+	{
+		getRandBiasedNum(&num, msb);
+	}
+	else
+	{
+		getRandNum(&num);
+	}
 
 	while (1)
 	{
@@ -124,7 +148,14 @@ bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 
 		if (iter == setNum.end())
 		{
-			getRandNum(&num);
+			if (biased)
+			{
+				getRandBiasedNum(&num, msb);
+			}
+			else
+			{
+				getRandNum(&num);
+			}
 		}
 		else
 		{
@@ -157,11 +188,18 @@ bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 	return ret && ret2 && ret3;
 }
 
-bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance)
+bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance, bool biased = false, int msb = 0)
 {
 	unsigned int num;
 
-	getRandNum(&num);
+	if (biased)
+	{
+		getRandBiasedNum(&num, msb);
+	}
+	else
+	{
+		getRandNum(&num);
+	}
 
 	std::unordered_set<unsigned int>::iterator iter;
 
@@ -171,7 +209,14 @@ bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 
 		if (iter == setNum.end())
 		{
-			getRandNum(&num);
+			if (biased)
+			{
+				getRandBiasedNum(&num, msb);
+			}
+			else
+			{
+				getRandNum(&num);
+			}
 		}
 		else
 		{
@@ -218,4 +263,105 @@ bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 	}
 
 	return found && found1 && found2;
+}
+
+void TestNormalDistributionNumber(int count)
+{
+	ProfileReset();
+	RedBlackTree rbTree;
+	MyHashMap myHash;
+	BinaryTree bTree;
+
+	std::unordered_set<unsigned int> setNums;
+
+	for (int i = 0; i < 100000; i++)
+	{
+		insertNum(bTree, rbTree, myHash, setNums, false);
+	}
+
+	for (int i = 0; i < 200000; ++i)
+	{
+		unsigned int num;
+		getRandNum(&num);
+
+		if ((num & 1) == 1)
+		{
+			insertNum(bTree, rbTree, myHash, setNums, true);
+		}
+		else
+		{
+			if (!deleteNum(bTree, rbTree, myHash, setNums, true))
+			{
+				printf("Delete error\n");
+			}
+		}
+
+		if (!rbTree.CheckBalance())
+		{
+			printf("Balance error\n");
+		}
+	}
+
+	for (int i = 0; i < 100000; ++i)
+	{
+		searchNum(bTree, rbTree, myHash, setNums, true);
+	}
+
+	WCHAR file_name[32] = { 0, };
+	swprintf_s(file_name, _countof(file_name), L"Profile_Normal_%d_", count);
+	ProfileDataOutText(file_name);
+}
+
+void TestBiasedDistributionNumber(int groupNum, int count)
+{
+	ProfileReset();
+	RedBlackTree rbTree;
+	MyHashMap myHash;
+	BinaryTree bTree;
+
+	int size = 100000;
+	int eachSize = size / groupNum;
+
+	std::unordered_set<unsigned int> setNums;
+
+	for (int g = 0; g < groupNum; ++g)
+	{
+		for (int i = 0; i < eachSize; i++)
+		{
+			insertNum(bTree, rbTree, myHash, setNums, false, true, g);
+		}
+	}
+	
+
+	for (int i = 0; i < 200000; ++i)
+	{
+		unsigned int num;
+		getRandNum(&num);
+
+		if ((num & 1) == 1)
+		{
+			insertNum(bTree, rbTree, myHash, setNums, true);
+		}
+		else
+		{
+			if (!deleteNum(bTree, rbTree, myHash, setNums, true))
+			{
+				printf("Delete error\n");
+			}
+		}
+
+		if (!rbTree.CheckBalance())
+		{
+			printf("Balance error\n");
+		}
+	}
+
+	for (int i = 0; i < 100000; ++i)
+	{
+		searchNum(bTree, rbTree, myHash, setNums, true);
+	}
+
+	WCHAR file_name[32] = { 0, };
+	swprintf_s(file_name, _countof(file_name), L"Profile_Biased_%d_", count);
+	ProfileDataOutText(file_name);
 }
