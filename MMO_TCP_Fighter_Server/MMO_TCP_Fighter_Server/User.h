@@ -1,38 +1,22 @@
 #pragma once
 
 #include <wtypes.h>
-#include <list>
-
-class CPacket;
-struct st_PACKET_HEADER;
-
-struct Room
-{
-	DWORD mRoomNo;
-	WCHAR mTitle[256];
-	std::list<DWORD> mUserList;
-};
+#include "Sector.h"
 
 struct User
 {
-	DWORD mUserNo;
-	DWORD mRoomNo;
-	WCHAR mName[15];
-	bool mbLogin = false;
+	DWORD userNo;
+	DWORD sessionNo;
 
-	User(DWORD userNo)
-		: mUserNo(userNo)
-		, mRoomNo(0)
-	{
-		memset(mName, 0, sizeof(mName));
-	}
+	DWORD action;
+	BYTE direction;
+	BYTE moveDirection;
 
-	User(DWORD userNo, const WCHAR* name)
-		: mUserNo(userNo)
-		, mRoomNo(0)
-	{
-		wcscpy_s(mName, _countof(mName), name);
+	short x;
+	short y;
 
-		mName[_countof(mName) - 1] = L'\0';
-	}
+	st_Sector curSector;
+	st_Sector oldSector;
+
+	char hp;
 };

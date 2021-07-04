@@ -38,6 +38,7 @@ private:
 	RingBuffer mSendBuffer;
 	RingBuffer mRecvBuffer;
 	DWORD mSessionNo;
+	ULONGLONG mLastRecvTime;
 	// bool mbLogin = false;
 	bool mbAlive = true;
 };

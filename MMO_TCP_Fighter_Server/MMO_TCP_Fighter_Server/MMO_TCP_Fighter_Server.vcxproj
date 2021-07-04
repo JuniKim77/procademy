@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="Container.cpp" />
     <ClCompile Include="Content.cpp" />
     <ClCompile Include="CPacket.cpp" />
@@ -148,10 +149,12 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NetworkProcs.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
+    <ClCompile Include="Sector.cpp" />
     <ClCompile Include="Session.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ActionDefine.h" />
+    <ClInclude Include="CLogger.h" />
     <ClInclude Include="Container.h" />
     <ClInclude Include="Content.h" />
     <ClInclude Include="CPacket.h" />
@@ -160,6 +163,7 @@
     <ClInclude Include="NetworkProcs.h" />
     <ClInclude Include="PacketDefine.h" />
     <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="Sector.h" />
     <ClInclude Include="Session.h" />
     <ClInclude Include="User.h" />
   </ItemGroup>

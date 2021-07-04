@@ -50,6 +50,8 @@ void Session::receiveProc()
 		return;
 	}
 
+	mLastRecvTime = GetTickCount64();
+
 	while (1)
 	{
 		if (completeRecvPacket() == false)

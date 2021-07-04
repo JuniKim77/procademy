@@ -30,6 +30,9 @@
 #define dfRANGE_MOVE_LEFT	0
 #define dfRANGE_MOVE_RIGHT	6400
 #define dfRANGE_MOVE_BOTTOM	6400
+#define dfSECTOR_SIZE (128)
+#define dfSECTOR_MAX_X (dfRANGE_MOVE_RIGHT / dfSECTOR_SIZE)
+#define dfSECTOR_MAX_Y (dfRANGE_MOVE_BOTTOM / dfSECTOR_SIZE)
 
 //---------------------------------------------------------------
 // 공격범위.

@@ -11,6 +11,7 @@
 #include "CPacket.h"
 #include "User.h"
 #include "Container.h"
+#include "CLogger.h"
 //#include "PacketCreater.h"
 //#include "Content.h"
 
@@ -20,6 +21,7 @@ SOCKET g_listenSocket;
 DWORD g_SessionNo = 1;
 unordered_map<DWORD, Session*> g_sessions;
 unordered_map<DWORD, User*> g_users;
+extern CLogger g_Logger;
 
 void CreateServer()
 {
@@ -66,7 +68,7 @@ void CreateServer()
 		exit(1);
 	}
 
-	wprintf_s(L"Server Open...\n");
+	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"서버 시작...");
 }
 
 void NetWorkProc()
@@ -225,10 +227,10 @@ void AcceptProc()
 	g_SessionNo++;
 }
 
-void LogError(const WCHAR* msg, SOCKET sock)
+void LogError(const WCHAR* msg, SOCKET sock, int logLevel)
 {
 	int err = WSAGetLastError();
-	wprintf_s(L"%s : %d\n", msg, err);
+	g_Logger._Log(logLevel, L"%s : %d\n", msg, err);
 	if (sock != INVALID_SOCKET)
 	{
 		closesocket(sock);
