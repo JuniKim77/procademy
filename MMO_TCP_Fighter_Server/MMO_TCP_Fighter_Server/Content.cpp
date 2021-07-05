@@ -8,6 +8,8 @@
 #include "Container.h"
 #include "CPacket.h"
 #include "ActionDefine.h"
+#include "PacketCreater.h"
+#include "NetworkProcs.h"
 
 extern CLogger g_Logger;
 
@@ -39,6 +41,7 @@ bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 
 	return true;
 }
+
 
 bool CS_MoveStart(DWORD from, CPacket* packet)
 {
@@ -72,12 +75,18 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 	if (abs(user->x - x) > dfERROR_RANGE || abs(user->y - y) > dfERROR_RANGE)
 	{
 		// 싱크 메세지 송신
+		CPacket Packet;
+		cpSC_Synchronize(&Packet, user->userNo, user->x, user->y);
+		SendPacket_Around(user->userNo, &Packet, true);
 
 		x = user->x;
 		y = user->y;
+
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
+			from, direction, x, y);
 	}
 
-	// 방향과 액션의 값이 같음.
+	// 이동 방향과 액션의 값이 같음.
 	user->action = direction;
 	user->moveDirection = direction;
 	// 단순 좌우 방향 변경
@@ -100,7 +109,15 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 	user->x = x;
 	user->y = y;
 
-	// 주변 섹테에 메세지 전송
+	if (Sector_UpdateUser(user))
+	{
+		UserSectorUpdatePacket(user);
+	}
+
+	// 주변 섹터에 메세지 전송
+	CPacket Packet;
+	cpSC_MoveStart(&Packet, user->userNo, user->moveDirection, user->x, user->y);
+	SendPacket_Around(user->userNo, &Packet);
 
 	return true;
 }
@@ -137,9 +154,15 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 	if (abs(user->x - x) > dfERROR_RANGE || abs(user->y - y) > dfERROR_RANGE)
 	{
 		// 싱크 메세지 송신
+		CPacket Packet;
+		cpSC_Synchronize(&Packet, user->userNo, user->x, user->y);
+		SendPacket_Around(user->userNo, &Packet, true);
 
 		x = user->x;
 		y = user->y;
+
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
+			from, direction, x, y);
 	}
 
 	user->action = dfAction_STAND;
@@ -149,7 +172,15 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 	user->x = x;
 	user->y = y;
 
-	// 섹션 메세지 송신
+	if (Sector_UpdateUser(user))
+	{
+		UserSectorUpdatePacket(user);
+	}
+
+	// 주변 섹션 메세지 송신
+	CPacket Packet;
+	cpSC_MoveStop(&Packet, user->userNo, user->direction, user->x, user->y);
+	SendPacket_Around(user->userNo, &Packet);
 
 	return true;
 }
@@ -174,7 +205,172 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 [Attacker: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
 
+	User* attacker = FindUser(from);
 
+	if (attacker == nullptr)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 유저 [UserNo: %d]\n", from);
+
+		return false;
+	}
+
+	// 싱크 맞춤
+	if (abs(attacker->x - x) > dfERROR_RANGE || abs(attacker->y - y) > dfERROR_RANGE)
+	{
+		// 싱크 메세지 송신
+		CPacket Packet;
+		cpSC_Synchronize(&Packet, attacker->userNo, attacker->x, attacker->y);
+		SendPacket_Around(attacker->userNo, &Packet, true);
+
+		x = attacker->x;
+		y = attacker->y;
+
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
+			from, direction, x, y);
+	}
+
+	attacker->direction = direction;
+	attacker->x = x;
+	attacker->y = y;
+
+	if (Sector_UpdateUser(attacker))
+	{
+		UserSectorUpdatePacket(attacker);
+	}
+
+	CPacket Packet;
+	cpSC_Attack1(&Packet, attacker->userNo, attacker->direction, attacker->x, attacker->y);
+	SendPacket_Around(attacker->userNo, &Packet);
+
+	switch (attacker->direction)
+	{
+	case dfACTION_MOVE_LL:
+	{
+		// 지금 섹터 조사
+		int sectorX = attacker->curSector.x;
+		int sectorY = attacker->curSector.y;
+
+		for (auto iter = g_Sector[sectorY][sectorX].begin();
+			iter != g_Sector[sectorY][sectorX].end(); ++iter)
+		{
+			User* user = *iter;
+
+			if ((attacker->x - user->x) <= dfATTACK1_RANGE_X &&
+				(attacker->x - user->x) > 0 &&
+				abs(attacker->y - user->y) <= dfATTACK1_RANGE_Y)
+			{
+				user->hp -= dfATTACK1_DAMAGE;
+				Packet.Clear();
+
+				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+				SendPacket_Around(user->userNo, &Packet, true);
+
+				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+					from, direction, user->userNo, x, y);
+			}
+		}
+		// 인접 섹터 조사
+		sectorX -= 1;
+		sectorY -= 1;
+
+		if (sectorX >= 0)
+		{
+			for (int i = 0; i < 3; ++i, ++sectorY)
+			{
+				if (sectorY < 0 || sectorY >= dfSECTOR_MAX_Y)
+				{
+					continue;
+				}
+
+				for (auto iter = g_Sector[sectorY][sectorX].begin();
+					iter != g_Sector[sectorY][sectorX].end(); ++iter)
+				{
+					User* user = *iter;
+
+					if ((attacker->x - user->x) <= dfATTACK1_RANGE_X &&
+						(attacker->x - user->x) > 0 &&
+						abs(attacker->y - user->y) <= dfATTACK1_RANGE_Y)
+					{
+						user->hp -= dfATTACK1_DAMAGE;
+						Packet.Clear();
+
+						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+						SendPacket_Around(user->userNo, &Packet, true);
+
+						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+							from, direction, user->userNo, x, y);
+					}
+				}
+			}
+		}
+
+		break;
+	}
+	case dfACTION_MOVE_RR:
+	{
+		// 지금 섹터 조사
+		int sectorX = attacker->curSector.x;
+		int sectorY = attacker->curSector.y;
+
+		for (auto iter = g_Sector[sectorY][sectorX].begin();
+			iter != g_Sector[sectorY][sectorX].end(); ++iter)
+		{
+			User* user = *iter;
+
+			if ((user->x - attacker->x) <= dfATTACK1_RANGE_X &&
+				(user->x - attacker->x) > 0 &&
+				abs(user->y - attacker->y) <= dfATTACK1_RANGE_Y)
+			{
+				user->hp -= dfATTACK1_DAMAGE;
+				Packet.Clear();
+
+				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+				SendPacket_Around(user->userNo, &Packet, true);
+
+				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+					from, direction, user->userNo, x, y);
+			}
+		}
+		// 인접 섹터 조사
+		sectorX += 1;
+		sectorY -= 1;
+
+		if (sectorX < dfSECTOR_MAX_X)
+		{
+			for (int i = 0; i < 3; ++i, ++sectorY)
+			{
+				if (sectorY < 0 || sectorY >= dfSECTOR_MAX_Y)
+				{
+					continue;
+				}
+
+				for (auto iter = g_Sector[sectorY][sectorX].begin();
+					iter != g_Sector[sectorY][sectorX].end(); ++iter)
+				{
+					User* user = *iter;
+
+					if ((user->x - attacker->x) <= dfATTACK1_RANGE_X &&
+						(user->x - attacker->x) > 0 &&
+						abs(user->y - attacker->y) <= dfATTACK1_RANGE_Y)
+					{
+						user->hp -= dfATTACK1_DAMAGE;
+						Packet.Clear();
+
+						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+						SendPacket_Around(user->userNo, &Packet, true);
+
+						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+							from, direction, user->userNo, x, y);
+					}
+				}
+			}
+		}
+
+		break;
+	}
+	default:
+		break;
+	}
 
 	return true;
 }
@@ -198,6 +394,174 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 [Attacker: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
+
+	User* attacker = FindUser(from);
+
+	if (attacker == nullptr)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 유저 [UserNo: %d]\n", from);
+
+		return false;
+	}
+
+	// 싱크 맞춤
+	if (abs(attacker->x - x) > dfERROR_RANGE || abs(attacker->y - y) > dfERROR_RANGE)
+	{
+		// 싱크 메세지 송신
+		CPacket Packet;
+		cpSC_Synchronize(&Packet, attacker->userNo, attacker->x, attacker->y);
+		SendPacket_Around(attacker->userNo, &Packet, true);
+
+		x = attacker->x;
+		y = attacker->y;
+
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
+			from, direction, x, y);
+	}
+
+	attacker->direction = direction;
+	attacker->x = x;
+	attacker->y = y;
+
+	if (Sector_UpdateUser(attacker))
+	{
+		UserSectorUpdatePacket(attacker);
+	}
+
+	CPacket Packet;
+	cpSC_Attack2(&Packet, attacker->userNo, attacker->direction, attacker->x, attacker->y);
+	SendPacket_Around(attacker->userNo, &Packet);
+
+	switch (attacker->direction)
+	{
+	case dfACTION_MOVE_LL:
+	{
+		// 지금 섹터 조사
+		int sectorX = attacker->curSector.x;
+		int sectorY = attacker->curSector.y;
+
+		for (auto iter = g_Sector[sectorY][sectorX].begin();
+			iter != g_Sector[sectorY][sectorX].end(); ++iter)
+		{
+			User* user = *iter;
+
+			if ((attacker->x - user->x) <= dfATTACK2_RANGE_X &&
+				(attacker->x - user->x) > 0 &&
+				abs(attacker->y - user->y) <= dfATTACK2_RANGE_Y)
+			{
+				user->hp -= dfATTACK2_DAMAGE;
+				Packet.Clear();
+
+				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+				SendPacket_Around(user->userNo, &Packet, true);
+
+				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+					from, direction, user->userNo, x, y);
+			}
+		}
+		// 인접 섹터 조사
+		sectorX -= 1;
+		sectorY -= 1;
+
+		if (sectorX >= 0)
+		{
+			for (int i = 0; i < 3; ++i, ++sectorY)
+			{
+				if (sectorY < 0 || sectorY >= dfSECTOR_MAX_Y)
+				{
+					continue;
+				}
+
+				for (auto iter = g_Sector[sectorY][sectorX].begin();
+					iter != g_Sector[sectorY][sectorX].end(); ++iter)
+				{
+					User* user = *iter;
+
+					if ((attacker->x - user->x) <= dfATTACK2_RANGE_X &&
+						(attacker->x - user->x) > 0 &&
+						abs(attacker->y - user->y) <= dfATTACK2_RANGE_Y)
+					{
+						user->hp -= dfATTACK2_DAMAGE;
+						Packet.Clear();
+
+						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+						SendPacket_Around(user->userNo, &Packet, true);
+
+						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+							from, direction, user->userNo, x, y);
+					}
+				}
+			}
+		}
+
+		break;
+	}
+	case dfACTION_MOVE_RR:
+	{
+		// 지금 섹터 조사
+		int sectorX = attacker->curSector.x;
+		int sectorY = attacker->curSector.y;
+
+		for (auto iter = g_Sector[sectorY][sectorX].begin();
+			iter != g_Sector[sectorY][sectorX].end(); ++iter)
+		{
+			User* user = *iter;
+
+			if ((user->x - attacker->x) <= dfATTACK2_RANGE_X &&
+				(user->x - attacker->x) > 0 &&
+				abs(user->y - attacker->y) <= dfATTACK2_RANGE_Y)
+			{
+				user->hp -= dfATTACK2_DAMAGE;
+				Packet.Clear();
+
+				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+				SendPacket_Around(user->userNo, &Packet, true);
+
+				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+					from, direction, user->userNo, x, y);
+			}
+		}
+		// 인접 섹터 조사
+		sectorX += 1;
+		sectorY -= 1;
+
+		if (sectorX < dfSECTOR_MAX_X)
+		{
+			for (int i = 0; i < 3; ++i, ++sectorY)
+			{
+				if (sectorY < 0 || sectorY >= dfSECTOR_MAX_Y)
+				{
+					continue;
+				}
+
+				for (auto iter = g_Sector[sectorY][sectorX].begin();
+					iter != g_Sector[sectorY][sectorX].end(); ++iter)
+				{
+					User* user = *iter;
+
+					if ((user->x - attacker->x) <= dfATTACK2_RANGE_X &&
+						(user->x - attacker->x) > 0 &&
+						abs(user->y - attacker->y) <= dfATTACK2_RANGE_Y)
+					{
+						user->hp -= dfATTACK2_DAMAGE;
+						Packet.Clear();
+
+						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+						SendPacket_Around(user->userNo, &Packet, true);
+
+						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+							from, direction, user->userNo, x, y);
+					}
+				}
+			}
+		}
+
+		break;
+	}
+	default:
+		break;
+	}
+
 	return true;
 }
 
@@ -220,5 +584,178 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 [Attacker: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
+
+	User* attacker = FindUser(from);
+
+	if (attacker == nullptr)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 유저 [UserNo: %d]\n", from);
+
+		return false;
+	}
+
+	// 싱크 맞춤
+	if (abs(attacker->x - x) > dfERROR_RANGE || abs(attacker->y - y) > dfERROR_RANGE)
+	{
+		// 싱크 메세지 송신
+		CPacket Packet;
+		cpSC_Synchronize(&Packet, attacker->userNo, attacker->x, attacker->y);
+		SendPacket_Around(attacker->userNo, &Packet, true);
+
+		x = attacker->x;
+		y = attacker->y;
+
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
+			from, direction, x, y);
+	}
+
+	attacker->direction = direction;
+	attacker->x = x;
+	attacker->y = y;
+
+	if (Sector_UpdateUser(attacker))
+	{
+		UserSectorUpdatePacket(attacker);
+	}
+
+	CPacket Packet;
+	cpSC_Attack3(&Packet, attacker->userNo, attacker->direction, attacker->x, attacker->y);
+	SendPacket_Around(attacker->userNo, &Packet);
+
+	switch (attacker->direction)
+	{
+	case dfACTION_MOVE_LL:
+	{
+		// 지금 섹터 조사
+		int sectorX = attacker->curSector.x;
+		int sectorY = attacker->curSector.y;
+
+		for (auto iter = g_Sector[sectorY][sectorX].begin();
+			iter != g_Sector[sectorY][sectorX].end(); ++iter)
+		{
+			User* user = *iter;
+
+			if ((attacker->x - user->x) <= dfATTACK3_RANGE_X &&
+				(attacker->x - user->x) > 0 &&
+				abs(attacker->y - user->y) <= dfATTACK3_RANGE_Y)
+			{
+				user->hp -= dfATTACK3_DAMAGE;
+				Packet.Clear();
+
+				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+				SendPacket_Around(user->userNo, &Packet, true);
+
+				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+					from, direction, user->userNo, x, y);
+			}
+		}
+		// 인접 섹터 조사
+		sectorX -= 1;
+		sectorY -= 1;
+
+		if (sectorX >= 0)
+		{
+			for (int i = 0; i < 3; ++i, ++sectorY)
+			{
+				if (sectorY < 0 || sectorY >= dfSECTOR_MAX_Y)
+				{
+					continue;
+				}
+
+				for (auto iter = g_Sector[sectorY][sectorX].begin();
+					iter != g_Sector[sectorY][sectorX].end(); ++iter)
+				{
+					User* user = *iter;
+
+					if ((attacker->x - user->x) <= dfATTACK3_RANGE_X &&
+						(attacker->x - user->x) > 0 &&
+						abs(attacker->y - user->y) <= dfATTACK3_RANGE_Y)
+					{
+						user->hp -= dfATTACK3_DAMAGE;
+						Packet.Clear();
+
+						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+						SendPacket_Around(user->userNo, &Packet, true);
+
+						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+							from, direction, user->userNo, x, y);
+					}
+				}
+			}
+		}
+
+		break;
+	}
+	case dfACTION_MOVE_RR:
+	{
+		// 지금 섹터 조사
+		int sectorX = attacker->curSector.x;
+		int sectorY = attacker->curSector.y;
+
+		for (auto iter = g_Sector[sectorY][sectorX].begin();
+			iter != g_Sector[sectorY][sectorX].end(); ++iter)
+		{
+			User* user = *iter;
+
+			if ((user->x - attacker->x) <= dfATTACK3_RANGE_X &&
+				(user->x - attacker->x) > 0 &&
+				abs(user->y - attacker->y) <= dfATTACK3_RANGE_Y)
+			{
+				user->hp -= dfATTACK3_DAMAGE;
+				Packet.Clear();
+
+				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+				SendPacket_Around(user->userNo, &Packet, true);
+
+				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+					from, direction, user->userNo, x, y);
+			}
+		}
+		// 인접 섹터 조사
+		sectorX += 1;
+		sectorY -= 1;
+
+		if (sectorX < dfSECTOR_MAX_X)
+		{
+			for (int i = 0; i < 3; ++i, ++sectorY)
+			{
+				if (sectorY < 0 || sectorY >= dfSECTOR_MAX_Y)
+				{
+					continue;
+				}
+
+				for (auto iter = g_Sector[sectorY][sectorX].begin();
+					iter != g_Sector[sectorY][sectorX].end(); ++iter)
+				{
+					User* user = *iter;
+
+					if ((user->x - attacker->x) <= dfATTACK3_RANGE_X &&
+						(user->x - attacker->x) > 0 &&
+						abs(user->y - attacker->y) <= dfATTACK3_RANGE_Y)
+					{
+						user->hp -= dfATTACK3_DAMAGE;
+						Packet.Clear();
+
+						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
+						SendPacket_Around(user->userNo, &Packet, true);
+
+						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
+							from, direction, user->userNo, x, y);
+					}
+				}
+			}
+		}
+
+		break;
+	}
+	default:
+		break;
+	}
+
 	return true;
+}
+
+bool UserMoveCheck(int x, int y)
+{
+	return x >= 0 && x < dfRANGE_MOVE_RIGHT && y >= 0 && y < dfRANGE_MOVE_BOTTOM;
 }

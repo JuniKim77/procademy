@@ -26,7 +26,7 @@ public:
 	/// </summary>
 	void receivePacket(); // 완료
 	/// <summary>
-	/// 리시브 링버퍼에서 패킷을 꺼내와서 로직 처리하는 함수
+	/// 센드 링버퍼에 메시지를 넣어주는 함수
 	/// </summary>
 	void sendPacket(char* buffer, int size); // 완성
 	bool receiveProc(); // 완성

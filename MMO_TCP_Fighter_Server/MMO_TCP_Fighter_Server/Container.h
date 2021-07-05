@@ -5,7 +5,6 @@
 
 class Session;
 struct User;
-struct Room;
 
 void InsertSessionData(DWORD sessionNo, Session* session);
 void DeleteSessionData(DWORD sessionNo);

@@ -8,6 +8,7 @@
 #include "Session.h"
 #include "PacketCreater.h"
 #include "CPacket.h"
+#include "PacketDefine.h"
 
 //#define dfRANGE_MOVE_TOP	50
 //#define dfRANGE_MOVE_LEFT	10

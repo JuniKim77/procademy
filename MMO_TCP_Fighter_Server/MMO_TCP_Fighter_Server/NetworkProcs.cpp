@@ -12,8 +12,9 @@
 #include "User.h"
 #include "Container.h"
 #include "CLogger.h"
-//#include "PacketCreater.h"
-//#include "Content.h"
+#include "CPacket.h"
+#include "Sector.h"
+#include "PacketCreater.h"
 
 using namespace std;
 
@@ -22,6 +23,7 @@ DWORD g_SessionNo = 1;
 unordered_map<DWORD, Session*> g_sessions;
 unordered_map<DWORD, User*> g_users;
 extern CLogger g_Logger;
+extern std::list<User*> g_Sector[dfSECTOR_MAX_Y][dfSECTOR_MAX_X];
 
 void CreateServer()
 {
@@ -174,6 +176,10 @@ void DisconnectProc(DWORD sessionKey)
 	User* user = FindUser(sessionKey);
 
 	// 퇴장 로직 처리
+	CPacket packet;
+	cpSC_DeleteUser(&packet, user->userNo);
+
+	SendPacket_Around(user->userNo, &packet);
 
 	DeleteSessionData(sessionKey);
 	DeleteUserData(sessionKey);
@@ -219,10 +225,65 @@ void AcceptProc()
 		clientAddr.sin_addr.S_un.S_addr, g_SessionNo);
 
 	// 껍데기 유저
-	User* user = new User(g_SessionNo);
+	User* user = new User;
+	user->hp = 100;
+	/*int x = rand() % dfRANGE_MOVE_RIGHT;
+	int y = rand() % dfRANGE_MOVE_BOTTOM;*/
+	int x = g_SessionNo * 100;
+	int y = 100;
+	user->x = x;
+	user->y = y;
+	int sectorX = x / dfSECTOR_SIZE;
+	int sectorY = y / dfSECTOR_SIZE;
+	user->curSector.x = sectorX;
+	user->curSector.y = sectorY;
+	user->oldSector.x = sectorX;
+	user->oldSector.y = sectorY;
+	user->moveDirection = dfAction_STAND;
+	user->action = dfAction_STAND;
+
+	Sector_AddUser(user);
+
+	if ((rand() & 0x1) == 1)
+	{
+		user->direction = dfACTION_MOVE_RR;
+	}
+	else
+	{
+		user->direction = dfACTION_MOVE_LL;
+	}
+
+	user->sessionNo = g_SessionNo;
+	user->userNo = g_SessionNo;
 
 	InsertSessionData(g_SessionNo, session);
 	InsertUserData(g_SessionNo, user);
+
+	// 캐릭터 생성 메세지
+	CPacket packet;
+	cpSC_CreateMyUser(&packet, user->userNo, user->direction, user->x, user->y, user->hp);
+	SendPacket_Unicast(user->userNo, &packet);
+
+	// 주변 섹터 메시지 전송
+	packet.Clear();
+	cpSC_CreateOtherUser(&packet, user->userNo, user->direction, user->x, user->y, user->hp);
+	SendPacket_Around(user->userNo, &packet);
+
+	st_Sector_Around sectorAround;
+	GetSectorAround(sectorX, sectorY, &sectorAround);
+
+	for (int i = 0; i < sectorAround.count; ++i)
+	{
+		for (auto iter = g_Sector[sectorAround.around[i].y][sectorAround.around[i].x].begin();
+			iter != g_Sector[sectorAround.around[i].y][sectorAround.around[i].x].end(); iter++)
+		{
+			User* other = *iter;
+			packet.Clear();
+			cpSC_CreateOtherUser(&packet, other->userNo, other->direction, other->x, other->y, other->hp);
+
+			SendPacket_Unicast(user->userNo, &packet);
+		}
+	}
 
 	g_SessionNo++;
 }
@@ -234,5 +295,137 @@ void LogError(const WCHAR* msg, SOCKET sock, int logLevel)
 	if (sock != INVALID_SOCKET)
 	{
 		closesocket(sock);
+	}
+}
+
+void SendPacket_SectorOne(int sectorX, int sectorY, CPacket* packet, DWORD exceptSessionNo)
+{
+	for (auto iter = g_Sector[sectorY][sectorX].begin(); iter != g_Sector[sectorY][sectorX].end(); ++iter)
+	{
+		if ((*iter)->userNo == exceptSessionNo)
+			continue;
+
+		SendPacket_Unicast((*iter)->sessionNo, packet);
+	}
+}
+
+void SendPacket_Unicast(DWORD to, CPacket* packet)
+{
+	Session* session = FindSession(to);
+	User* user = FindUser(to);
+
+	if (session == nullptr || user == nullptr)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"SendUnicast Dest Client is Null\n");
+		return;
+	}
+
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Send Unicast [To: %d]\n", to);
+
+	session->sendPacket(packet->GetBufferPtr(), packet->GetSize());
+}
+
+void SendPacket_Around(DWORD to, CPacket* packet, bool sendMyself)
+{
+	User* user = FindUser(to);
+	st_Sector_Around sectors;
+
+	GetSectorAround(user->curSector.x, user->curSector.y, &sectors);
+
+	if (sendMyself)
+	{
+		for (int i = 0; i < sectors.count; ++i)
+		{
+			SendPacket_SectorOne(sectors.around[i].x, sectors.around[i].y, packet, 0);
+		}
+	}
+	else
+	{
+		for (int i = 0; i < sectors.count; ++i)
+		{
+			SendPacket_SectorOne(sectors.around[i].x, sectors.around[i].y, packet, to);
+		}
+	}
+	
+}
+
+void SendPacket_Broadcast(CPacket* packet)
+{
+	for (auto iter = g_sessions.begin(); iter != g_sessions.end(); ++iter)
+	{
+		if (iter->second == nullptr)
+			continue;
+
+		iter->second->sendPacket(packet->GetBufferPtr(), packet->GetSize());
+	}
+}
+
+void UserSectorUpdatePacket(User* user)
+{
+	st_Sector_Around removeSector;
+	st_Sector_Around addSector;
+	CPacket packet;
+
+	GetUpdateSectorAround(user, &removeSector, &addSector);
+
+	cpSC_DeleteUser(&packet, user->userNo);
+
+	for (int cnt = 0; cnt < removeSector.count; ++cnt)
+	{
+		SendPacket_SectorOne(removeSector.around[cnt].x, removeSector.around[cnt].y, &packet, 0);
+	}
+
+	for (int cnt = 0; cnt < removeSector.count; ++cnt)
+	{
+		auto* userList = &g_Sector[removeSector.around[cnt].y][removeSector.around[cnt].x];
+
+		for (auto iter = userList->begin(); iter != userList->end(); ++iter)
+		{
+			packet.Clear();
+			cpSC_DeleteUser(&packet, (*iter)->userNo);
+			SendPacket_Unicast(user->sessionNo, &packet);
+		}
+	}
+
+	packet.Clear();
+	cpSC_CreateOtherUser(&packet, user->sessionNo, user->direction, user->x, user->y, user->hp);
+
+	for (int cnt = 0; cnt < addSector.count; ++cnt)
+	{
+		SendPacket_SectorOne(addSector.around[cnt].x, addSector.around[cnt].y, &packet, 0);
+	}
+
+	for (int cnt = 0; cnt < addSector.count; ++cnt)
+	{
+		auto* userList = &g_Sector[addSector.around[cnt].y][addSector.around[cnt].x];
+
+		for (auto iter = userList->begin(); iter != userList->end(); ++iter)
+		{
+			packet.Clear();
+			
+			User* pUser = *iter;
+
+			if (pUser == user)
+				continue;
+
+			cpSC_CreateOtherUser(&packet, pUser->userNo, pUser->direction, pUser->x, pUser->y, pUser->hp);
+			SendPacket_Unicast(user->sessionNo, &packet);
+
+			packet.Clear();
+			switch (pUser->action)
+			{
+			case dfACTION_MOVE_LL:
+			case dfACTION_MOVE_LU:
+			case dfACTION_MOVE_UU:
+			case dfACTION_MOVE_RU:
+			case dfACTION_MOVE_RR:
+			case dfACTION_MOVE_RD:
+			case dfACTION_MOVE_DD:
+			case dfACTION_MOVE_LD:
+				cpSC_MoveStart(&packet, pUser->userNo, pUser->moveDirection, pUser->x, pUser->y);
+				SendPacket_Unicast(user->userNo, &packet);
+				break;
+			}
+		}
 	}
 }

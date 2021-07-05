@@ -15,7 +15,7 @@ struct st_Sector_Around
 	st_Sector around[9];
 };
 
-class User;
+struct User;
 
 extern std::list<User*> g_Sector[dfSECTOR_MAX_Y][dfSECTOR_MAX_X];
 

@@ -14,6 +14,7 @@ class Session
 	friend void NetWorkProc(); 
 	friend void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset);
 	
+
 public:
 	Session(SOCKET socket, u_short port, u_long ip, DWORD sessionNo);
 	~Session();
@@ -25,11 +26,12 @@ public:
 	/// </summary>
 	void receiveProc();
 	/// <summary>
-	/// 리시브 링버퍼에서 패킷을 꺼내와서 로직 처리하는 함수
+	/// 센드 링버퍼에 메시지를 넣어주는 함수
 	/// </summary>
 	void sendPacket(char* buffer, int size);
 	bool completeRecvPacket();
 	void writeProc();
+	DWORD GetSessionNo() { return mSessionNo; }
 
 private:
 	SOCKET mSocket;

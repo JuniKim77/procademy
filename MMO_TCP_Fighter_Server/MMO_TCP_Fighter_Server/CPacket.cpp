@@ -2,8 +2,6 @@
 #include <malloc.h>
 #include <string.h>
 
-#define DEBUG
-
 CPacket::CPacket()
 	: CPacket(eBUFFER_DEFAULT)
 {
@@ -36,8 +34,8 @@ void CPacket::Release(void)
 void CPacket::Clear(void)
 {
 	mSize = 0;
-	mFront = 0;
-	mRear = mFront;
+	mFront = mBuffer;
+	mRear = mBuffer;
 }
 
 int CPacket::MoveFront(int iSize)

@@ -1,6 +1,7 @@
 #include "PacketCreater.h"
-#include <wchar.h>
 #include "CPacket.h"
+#include "PacketDefine.h"
+#include <stdio.h>
 
 void CreateMoveStartPacket(CPacket* packet, BYTE direction, WORD x, WORD y)
 {

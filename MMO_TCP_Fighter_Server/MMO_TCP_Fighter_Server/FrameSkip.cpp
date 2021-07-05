@@ -22,16 +22,15 @@ bool FrameSkip::IsSkip()
 
 void FrameSkip::CheckTime()
 {
-	int curTick = timeGetTime();
+	ULONGLONG curTick = GetTickCount64();
 	
-	int timePeriod = curTick - mOldTick;
+	ULONGLONG timePeriod = curTick - mOldTick;
 
 	mOldTick = curTick;
 
 	mTotalTick += timePeriod;
-	mFrameCounter++;
 
-	mTimeRemain += (timePeriod - 20);
+	mTimeRemain += timePeriod;
 }
 
 void FrameSkip::RunSleep()
@@ -58,4 +57,9 @@ void FrameSkip::Refresh()
 	mOldFrameCounter = mFrameCounter;
 	mFrameCounter = 0;
 	mTotalTick -= 1000;
+}
+
+void FrameSkip::UpdateRemain()
+{
+	mTimeRemain -= 20;
 }

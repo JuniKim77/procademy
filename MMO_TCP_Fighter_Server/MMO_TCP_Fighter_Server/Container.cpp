@@ -1,5 +1,6 @@
 #include "Container.h"
 #include "User.h"
+#include "Session.h"
 
 using namespace std;
 
