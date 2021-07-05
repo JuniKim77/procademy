@@ -113,11 +113,13 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 	{
 		UserSectorUpdatePacket(user);
 	}
-
-	// 주변 섹터에 메세지 전송
-	CPacket Packet;
-	cpSC_MoveStart(&Packet, user->userNo, user->moveDirection, user->x, user->y);
-	SendPacket_Around(user->userNo, &Packet);
+	else
+	{
+		// 주변 섹터에 메세지 전송
+		CPacket Packet;
+		cpSC_MoveStart(&Packet, user->userNo, user->moveDirection, user->x, user->y);
+		SendPacket_Around(user->userNo, &Packet);
+	}
 
 	return true;
 }
@@ -176,11 +178,13 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 	{
 		UserSectorUpdatePacket(user);
 	}
-
-	// 주변 섹션 메세지 송신
-	CPacket Packet;
-	cpSC_MoveStop(&Packet, user->userNo, user->direction, user->x, user->y);
-	SendPacket_Around(user->userNo, &Packet);
+	else
+	{
+		// 주변 섹션 메세지 송신
+		CPacket Packet;
+		cpSC_MoveStop(&Packet, user->userNo, user->direction, user->x, user->y);
+		SendPacket_Around(user->userNo, &Packet);
+	}
 
 	return true;
 }

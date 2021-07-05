@@ -33,6 +33,7 @@ void UpdateGame()
 
 	if (gFrameSkipper.GetTotalTick() >= 1000)
 	{
+		// g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[Frame Count: %d]\n", gFrameSkipper.GetFrameCount());
 		gFrameSkipper.Refresh();
 	}
 
@@ -109,10 +110,10 @@ void UpdateGame()
 			break;
 		}
 
-		if (Sector_UpdateUser(user))
+		/*if (Sector_UpdateUser(user))
 		{
 			UserSectorUpdatePacket(user);
-		}
+		}*/
 	}
 }
 

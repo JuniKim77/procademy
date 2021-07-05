@@ -70,7 +70,7 @@ void CreateServer()
 		exit(1);
 	}
 
-	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"서버 시작...");
+	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"서버 시작...\n");
 }
 
 void NetWorkProc()

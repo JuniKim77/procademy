@@ -62,4 +62,5 @@ void FrameSkip::Refresh()
 void FrameSkip::UpdateRemain()
 {
 	mTimeRemain -= 20;
+	mFrameCounter++;
 }
