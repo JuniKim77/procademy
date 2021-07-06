@@ -30,6 +30,7 @@ public:
 	void operator=(const TEST& other)
 	{
 		mNum = other.mNum;
+		cout << "Operator = call [Num: " << mNum << "]" << endl;
 	}
 
 	~TEST()
@@ -103,6 +104,24 @@ int main()
 			cout << test[i].mNum << " ";
 		}
 		cout << endl << endl;
+
+		unordered_map<int, TEST> m1;
+
+		m1[t1.mNum] = t1;
+		m1[t2.mNum] = t2;
+		m1[t3.mNum] = t3;
+		m1.insert(make_pair(t4.mNum, t4));
+		m1.insert(make_pair(t5.mNum, t5));
+		m1.insert(make_pair(t5.mNum, t6));
+
+		list<TEST> l1;
+
+		l1.push_back(t1);
+		l1.push_back(t2);
+		l1.push_back(t3);
+		l1.push_back(t4);
+
+
 	}
 
 	return 0;
