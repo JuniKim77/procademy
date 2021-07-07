@@ -372,6 +372,7 @@ void UserSectorUpdatePacket(User* user)
 
 	for (int cnt = 0; cnt < removeSector.count; ++cnt)
 	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sector [X: %d][Y: %d] ");
 		SendPacket_SectorOne(removeSector.around[cnt].x, removeSector.around[cnt].y, &packet, 0);
 	}
 

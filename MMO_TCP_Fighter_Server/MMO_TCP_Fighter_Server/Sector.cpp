@@ -46,6 +46,7 @@ bool Sector_UpdateUser(User* user)
 		st_Sector_Around sectorAround;
 		GetSectorAround(sectorX, sectorY, &sectorAround);
 
+		// 주변 섹터 상태 출력
 		for (int i = 0; i < sectorAround.count; ++i)
 		{
 			g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[%d] [X: %d][Y: %d]: ", i, sectorAround.around[i].x, sectorAround.around[i].y);
