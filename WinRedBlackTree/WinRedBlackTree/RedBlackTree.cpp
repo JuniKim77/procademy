@@ -52,6 +52,10 @@ bool RedBlackTree::InsertNode(int data)
 
 			node = node->left;
 		}
+		else if (node->data == data)
+		{
+			return false;
+		}
 		else
 		{
 			if (node->right == Nil)
