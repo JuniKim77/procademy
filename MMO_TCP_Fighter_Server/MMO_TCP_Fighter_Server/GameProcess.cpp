@@ -18,6 +18,7 @@ void InitializeGame()
 {
 	gFrameSkipper.CheckTime();
 	gFrameSkipper.Reset();
+	g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
 }
 
 void UpdateGame()
@@ -33,7 +34,7 @@ void UpdateGame()
 
 	if (gFrameSkipper.GetTotalTick() >= 1000)
 	{
-		// g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[Frame Count: %d]\n", gFrameSkipper.GetFrameCount());
+		//g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[Frame Count: %d]\n", gFrameSkipper.GetFrameCount());
 		gFrameSkipper.Refresh();
 	}
 
@@ -51,7 +52,7 @@ void UpdateGame()
 
 		// 수신 종료 처리
 
-		switch (user->action)
+		switch (user->moveDirection)
 		{
 		case dfACTION_MOVE_LL:
 			if (UserMoveCheck(user->x - dfSPEED_PLAYER_X, user->y))
@@ -106,14 +107,14 @@ void UpdateGame()
 			}
 			break;
 		default:
-			return;
+			continue;
 			break;
 		}
 
-		/*if (Sector_UpdateUser(user))
+		if (Sector_UpdateUser(user))
 		{
 			UserSectorUpdatePacket(user);
-		}*/
+		}
 	}
 }
 

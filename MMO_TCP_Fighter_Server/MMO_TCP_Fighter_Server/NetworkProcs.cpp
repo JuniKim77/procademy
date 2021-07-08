@@ -179,10 +179,13 @@ void DisconnectProc(DWORD sessionKey)
 	CPacket packet;
 	cpSC_DeleteUser(&packet, user->userNo);
 
-	SendPacket_Around(user->userNo, &packet);
+	Sector_RemoveUser(user);
 
+	SendPacket_Around(user->userNo, &packet);
 	DeleteSessionData(sessionKey);
 	DeleteUserData(sessionKey);
+
+	
 }
 
 void AcceptProc()
@@ -227,10 +230,8 @@ void AcceptProc()
 	// ²®µ¥±â À¯Àú
 	User* user = new User;
 	user->hp = 100;
-	/*int x = rand() % dfRANGE_MOVE_RIGHT;
-	int y = rand() % dfRANGE_MOVE_BOTTOM;*/
-	int x = g_SessionNo * 100;
-	int y = 100;
+	int x = rand() % dfRANGE_MOVE_RIGHT;
+	int y = rand() % dfRANGE_MOVE_BOTTOM;
 	user->x = x;
 	user->y = y;
 	int sectorX = x / dfSECTOR_SIZE;
@@ -278,6 +279,9 @@ void AcceptProc()
 			iter != g_Sector[sectorAround.around[i].y][sectorAround.around[i].x].end(); iter++)
 		{
 			User* other = *iter;
+			if (other == user)
+				continue;
+
 			packet.Clear();
 			cpSC_CreateOtherUser(&packet, other->userNo, other->direction, other->x, other->y, other->hp);
 
@@ -302,10 +306,12 @@ void SendPacket_SectorOne(int sectorX, int sectorY, CPacket* packet, DWORD excep
 {
 	for (auto iter = g_Sector[sectorY][sectorX].begin(); iter != g_Sector[sectorY][sectorX].end(); ++iter)
 	{
-		if ((*iter)->userNo == exceptSessionNo)
+		if ((*iter)->sessionNo == exceptSessionNo)
 			continue;
 
 		SendPacket_Unicast((*iter)->sessionNo, packet);
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sector Sent Message [X: %d][Y: %d][userNo: %d]\n",
+			sectorX, sectorY, (*iter)->userNo);
 	}
 }
 
@@ -319,8 +325,6 @@ void SendPacket_Unicast(DWORD to, CPacket* packet)
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"SendUnicast Dest Client is Null\n");
 		return;
 	}
-
-	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Send Unicast [To: %d]\n", to);
 
 	session->sendPacket(packet->GetBufferPtr(), packet->GetSize());
 }
@@ -368,11 +372,21 @@ void UserSectorUpdatePacket(User* user)
 
 	GetUpdateSectorAround(user, &removeSector, &addSector);
 
+	for (int cnt = 0; cnt < removeSector.count; ++cnt)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Removed Sector [X: %d][Y: %d]\n",
+			removeSector.around[cnt].x, removeSector.around[cnt].y);
+	}
+	for (int cnt = 0; cnt < addSector.count; ++cnt)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Added Sector [X: %d][Y: %d]\n",
+			addSector.around[cnt].x, addSector.around[cnt].y);
+	}
+
 	cpSC_DeleteUser(&packet, user->userNo);
 
 	for (int cnt = 0; cnt < removeSector.count; ++cnt)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sector [X: %d][Y: %d] ");
 		SendPacket_SectorOne(removeSector.around[cnt].x, removeSector.around[cnt].y, &packet, 0);
 	}
 

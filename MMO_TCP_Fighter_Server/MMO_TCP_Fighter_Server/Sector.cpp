@@ -10,6 +10,8 @@ void Sector_AddUser(User* user)
 	int sectorX = user->curSector.x;
 	int sectorY = user->curSector.y;
 
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Add to Sector [X: %d][Y: %d]\n",
+		user->userNo, sectorX, sectorY);
 	g_Sector[sectorY][sectorX].push_back(user);
 }
 
@@ -22,6 +24,8 @@ void Sector_RemoveUser(User* user)
 	{
 		if (user == *iter)
 		{
+			g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Remove from Sector [X: %d][Y: %d]\n",
+				user->userNo, sectorX, sectorY);
 			g_Sector[sectorY][sectorX].erase(iter);
 
 			return;

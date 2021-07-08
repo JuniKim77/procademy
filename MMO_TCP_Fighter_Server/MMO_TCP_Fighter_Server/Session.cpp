@@ -34,6 +34,13 @@ void Session::receiveProc()
 	int dSize = mRecvBuffer.DirectEnqueueSize();
 	int retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
 
+	if (mRecvBuffer.GetRearBufferPtr() > 0 && retval == 0)
+	{
+		SetDisconnect();
+
+		return;
+	}
+
 	mRecvBuffer.MoveRear(retval);
 
 	if (retval == SOCKET_ERROR)

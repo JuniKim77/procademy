@@ -79,11 +79,11 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 		cpSC_Synchronize(&Packet, user->userNo, user->x, user->y);
 		SendPacket_Around(user->userNo, &Packet, true);
 
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d]\n",
+			from, direction, x, y, user->x, user->y);
+
 		x = user->x;
 		y = user->y;
-
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
-			from, direction, x, y);
 	}
 
 	// 이동 방향과 액션의 값이 같음.
@@ -109,16 +109,14 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 	user->x = x;
 	user->y = y;
 
+	// 주변 섹터에 메세지 전송
+	CPacket Packet;
+	cpSC_MoveStart(&Packet, user->userNo, user->moveDirection, user->x, user->y);
+	SendPacket_Around(user->userNo, &Packet);
+
 	if (Sector_UpdateUser(user))
 	{
 		UserSectorUpdatePacket(user);
-	}
-	else
-	{
-		// 주변 섹터에 메세지 전송
-		CPacket Packet;
-		cpSC_MoveStart(&Packet, user->userNo, user->moveDirection, user->x, user->y);
-		SendPacket_Around(user->userNo, &Packet);
 	}
 
 	return true;
@@ -160,11 +158,11 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 		cpSC_Synchronize(&Packet, user->userNo, user->x, user->y);
 		SendPacket_Around(user->userNo, &Packet, true);
 
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d]\n",
+			from, direction, x, y, user->x, user->y);
+
 		x = user->x;
 		y = user->y;
-
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
-			from, direction, x, y);
 	}
 
 	user->action = dfAction_STAND;
@@ -174,16 +172,14 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 	user->x = x;
 	user->y = y;
 
+	// 주변 섹션 메세지 송신
+	CPacket Packet;
+	cpSC_MoveStop(&Packet, user->userNo, user->direction, user->x, user->y);
+	SendPacket_Around(user->userNo, &Packet);
+
 	if (Sector_UpdateUser(user))
 	{
 		UserSectorUpdatePacket(user);
-	}
-	else
-	{
-		// 주변 섹션 메세지 송신
-		CPacket Packet;
-		cpSC_MoveStop(&Packet, user->userNo, user->direction, user->x, user->y);
-		SendPacket_Around(user->userNo, &Packet);
 	}
 
 	return true;
@@ -233,6 +229,8 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 			from, direction, x, y);
 	}
 
+	attacker->action = dfACTION_ATTACK1;
+	attacker->moveDirection = dfAction_STAND;
 	attacker->direction = direction;
 	attacker->x = x;
 	attacker->y = y;
@@ -423,6 +421,8 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 			from, direction, x, y);
 	}
 
+	attacker->action = dfACTION_ATTACK2;
+	attacker->moveDirection = dfAction_STAND;
 	attacker->direction = direction;
 	attacker->x = x;
 	attacker->y = y;
@@ -613,6 +613,8 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 			from, direction, x, y);
 	}
 
+	attacker->action = dfACTION_ATTACK3;
+	attacker->moveDirection = dfAction_STAND;
 	attacker->direction = direction;
 	attacker->x = x;
 	attacker->y = y;
