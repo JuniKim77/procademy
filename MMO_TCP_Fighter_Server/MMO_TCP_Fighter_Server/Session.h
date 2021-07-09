@@ -6,35 +6,34 @@
 #include <stack>
 #include <vector>
 
-struct st_PACKET_HEADER;
+struct stHeader;
 class CPacket;
 
 class Session
 {
-	friend bool ReqStressEcho(DWORD from, CPacket* packet);
 	friend void NetWorkProc(); 
 	friend void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset);
-	
+	friend void AcceptProc();
+
 public:
 	Session(SOCKET socket, u_short port, u_long ip, DWORD sessionNo);
 	~Session();
 	void SetDisconnect() { mbAlive = false; }
 	void printInfo() const;
-	void setLogin() { mbLogin = true; }
+	// void setLogin() { mbLogin = true; }
 	/// <summary>
 	/// 받은 패킷을 리시브 링버퍼에 넣는 함수
 	/// </summary>
-	void receivePacket(); // 완료
+	void receiveProc();
 	/// <summary>
 	/// 센드 링버퍼에 메시지를 넣어주는 함수
 	/// </summary>
-	void sendPacket(char* buffer, int size); // 완성
-	bool receiveProc(); // 완성
+	void sendPacket(char* buffer, int size);
+	bool completeRecvPacket();
 	void writeProc();
-
-private:
-	bool readMessage(st_PACKET_HEADER* header); // 완료
-	BYTE makeCheckSum(CPacket* packet, WORD msgType);
+	DWORD GetSessionNo() { return mSessionNo; }
+	ULONGLONG GetLastRecvTime() { return mLastRecvTime; }
+	bool IsAlive() { return mbAlive; }
 
 private:
 	SOCKET mSocket;
@@ -43,6 +42,7 @@ private:
 	RingBuffer mSendBuffer;
 	RingBuffer mRecvBuffer;
 	DWORD mSessionNo;
-	bool mbLogin = false;
+	ULONGLONG mLastRecvTime;
+	// bool mbLogin = false;
 	bool mbAlive = true;
 };

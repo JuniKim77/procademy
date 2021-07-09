@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일\Network">
+      <UniqueIdentifier>{e926ed76-c6cc-4eaa-81d0-80d3fc0dd199}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Content">
+      <UniqueIdentifier>{a1a885bc-c5e4-48aa-8fec-4329d486a050}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Tool">
+      <UniqueIdentifier>{5826e94e-d1a6-46e3-b39b-15e96a3744cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Process">
+      <UniqueIdentifier>{2f2ec082-7212-4e67-bb66-95a406e3cfa3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Network">
+      <UniqueIdentifier>{4cf3c129-bd73-4d0d-9cf0-05d342bb1bf6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Content">
+      <UniqueIdentifier>{46f4626c-569e-4f9a-b7f3-7cabe69b9001}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Process">
+      <UniqueIdentifier>{803c0a33-f168-47b0-8675-c7ba7b6b1d99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Tool">
+      <UniqueIdentifier>{0e8eacc4-337a-48e1-b8c1-1d8cae86c424}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="NetworkProcs.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="Content.cpp">
+      <Filter>소스 파일\Content</Filter>
+    </ClCompile>
+    <ClCompile Include="Container.cpp">
+      <Filter>소스 파일\Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="CPacket.cpp">
+      <Filter>소스 파일\Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameSkip.cpp">
+      <Filter>소스 파일\Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="RingBuffer.cpp">
+      <Filter>소스 파일\Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="GameProcess.cpp">
+      <Filter>소스 파일\Process</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>소스 파일\Process</Filter>
+    </ClCompile>
+    <ClCompile Include="CLogger.cpp">
+      <Filter>소스 파일\Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="Sector.cpp">
+      <Filter>소스 파일\Content</Filter>
+    </ClCompile>
+    <ClCompile Include="PacketCreater.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="NetworkProcs.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Content.h">
+      <Filter>헤더 파일\Content</Filter>
+    </ClInclude>
+    <ClInclude Include="Container.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="CPacket.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameSkip.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="RingBuffer.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="GameProcess.h">
+      <Filter>헤더 파일\Process</Filter>
+    </ClInclude>
+    <ClInclude Include="ActionDefine.h">
+      <Filter>헤더 파일\Content</Filter>
+    </ClInclude>
+    <ClInclude Include="User.h">
+      <Filter>헤더 파일\Content</Filter>
+    </ClInclude>
+    <ClInclude Include="PacketDefine.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="CLogger.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="Sector.h">
+      <Filter>헤더 파일\Content</Filter>
+    </ClInclude>
+    <ClInclude Include="PacketCreater.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
