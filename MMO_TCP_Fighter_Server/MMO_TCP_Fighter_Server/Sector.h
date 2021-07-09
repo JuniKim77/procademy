@@ -28,7 +28,7 @@ void Sector_AddUser(User* user);
 /// 유저의 현재 좌표를 섹터 좌표로 변환해 삭제하는 함수
 /// </summary>
 /// <param name="user"></param>
-void Sector_RemoveUser(User* user);
+void Sector_RemoveUser(User* user, bool isCurrent = false);
 /// <summary>
 /// 유저의 섹터 이동시 섹터 정보 업데이트
 /// </summary>

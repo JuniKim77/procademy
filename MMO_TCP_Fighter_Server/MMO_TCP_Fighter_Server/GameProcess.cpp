@@ -38,14 +38,25 @@ void UpdateGame()
 		gFrameSkipper.Refresh();
 	}
 
+	ULONGLONG curTime = GetTickCount64();
+
 	for (auto iter = g_users.begin(); iter != g_users.end();)
 	{
 		User* user = iter->second;
 		Session* session = FindSession(user->userNo);
 
 		iter++;
+		// HP가 0이하면 종료 처리..
 		if (user->hp <= 0)
 		{
+			//DisconnectProc(session->GetSessionNo());
+			continue;
+		}
+
+		if (curTime - session->GetLastRecvTime() > 60000)
+		{
+			g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Time Out!\n",
+				user->userNo);
 			DisconnectProc(session->GetSessionNo());
 			continue;
 		}

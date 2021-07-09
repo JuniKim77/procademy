@@ -15,10 +15,22 @@ void Sector_AddUser(User* user)
 	g_Sector[sectorY][sectorX].push_back(user);
 }
 
-void Sector_RemoveUser(User* user)
+void Sector_RemoveUser(User* user, bool isCurrent)
 {
-	int sectorX = user->oldSector.x;
-	int sectorY = user->oldSector.y;
+	int sectorX;
+	int sectorY;
+
+	if (isCurrent)
+	{
+		sectorX = user->curSector.x;
+		sectorY = user->curSector.y;
+	}
+	else
+	{
+		sectorX = user->oldSector.x;
+		sectorY = user->oldSector.y;
+	}
+	
 
 	for (auto iter = g_Sector[sectorY][sectorX].begin(); iter != g_Sector[sectorY][sectorX].end(); ++iter)
 	{
@@ -31,6 +43,9 @@ void Sector_RemoveUser(User* user)
 			return;
 		}
 	}
+
+	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Remove Not Found [X: %d][Y: %d]\n",
+		user->userNo, sectorX, sectorY);
 }
 
 bool Sector_UpdateUser(User* user)
@@ -47,22 +62,22 @@ bool Sector_UpdateUser(User* user)
 		Sector_AddUser(user);
 		Sector_RemoveUser(user);
 
-		st_Sector_Around sectorAround;
-		GetSectorAround(sectorX, sectorY, &sectorAround);
+		//st_Sector_Around sectorAround;
+		//GetSectorAround(sectorX, sectorY, &sectorAround);
 
-		// 주변 섹터 상태 출력
-		for (int i = 0; i < sectorAround.count; ++i)
-		{
-			g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[%d] [X: %d][Y: %d]: ", i, sectorAround.around[i].x, sectorAround.around[i].y);
-			
-			for (auto iter = g_Sector[sectorAround.around[i].y][sectorAround.around[i].x].begin();
-				iter != g_Sector[sectorAround.around[i].y][sectorAround.around[i].x].end(); ++iter)
-			{
-				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[User: %d] ", (*iter)->userNo);
-			}
-			g_Logger._Log(dfLOG_LEVEL_DEBUG, L"\n");
-		}
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"=======================\n");
+		//// 주변 섹터 상태 출력
+		//for (int i = 0; i < sectorAround.count; ++i)
+		//{
+		//	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[%d] [X: %d][Y: %d]: ", i, sectorAround.around[i].x, sectorAround.around[i].y);
+		//	
+		//	for (auto iter = g_Sector[sectorAround.around[i].y][sectorAround.around[i].x].begin();
+		//		iter != g_Sector[sectorAround.around[i].y][sectorAround.around[i].x].end(); ++iter)
+		//	{
+		//		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[User: %d] ", (*iter)->userNo);
+		//	}
+		//	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"\n");
+		//}
+		//g_Logger._Log(dfLOG_LEVEL_DEBUG, L"=======================\n");
 
 		return true;
 	}

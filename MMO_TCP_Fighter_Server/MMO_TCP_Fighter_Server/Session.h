@@ -13,7 +13,7 @@ class Session
 {
 	friend void NetWorkProc(); 
 	friend void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset);
-	
+	friend void AcceptProc();
 
 public:
 	Session(SOCKET socket, u_short port, u_long ip, DWORD sessionNo);
@@ -32,6 +32,8 @@ public:
 	bool completeRecvPacket();
 	void writeProc();
 	DWORD GetSessionNo() { return mSessionNo; }
+	ULONGLONG GetLastRecvTime() { return mLastRecvTime; }
+	bool IsAlive() { return mbAlive; }
 
 private:
 	SOCKET mSocket;

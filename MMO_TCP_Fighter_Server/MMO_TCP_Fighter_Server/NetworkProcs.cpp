@@ -178,10 +178,9 @@ void DisconnectProc(DWORD sessionKey)
 	// 퇴장 로직 처리
 	CPacket packet;
 	cpSC_DeleteUser(&packet, user->userNo);
+	SendPacket_Around(user->userNo, &packet, true);
 
-	Sector_RemoveUser(user);
-
-	SendPacket_Around(user->userNo, &packet);
+	Sector_RemoveUser(user, true);
 	DeleteSessionData(sessionKey);
 	DeleteUserData(sessionKey);
 
@@ -242,6 +241,7 @@ void AcceptProc()
 	user->oldSector.y = sectorY;
 	user->moveDirection = dfAction_STAND;
 	user->action = dfAction_STAND;
+	session->mLastRecvTime = GetTickCount64();
 
 	Sector_AddUser(user);
 
