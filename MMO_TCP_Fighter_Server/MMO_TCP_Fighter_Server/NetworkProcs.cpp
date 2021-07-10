@@ -44,14 +44,14 @@ void CreateServer()
 
 	if (g_listenSocket == INVALID_SOCKET)
 	{
-		LogError(L"소켓 생성 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : 소켓 생성 에러", g_listenSocket);
 
 		exit(1);
 	}
 
 	if (bind(g_listenSocket, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR)
 	{
-		LogError(L"바인딩 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : 바인딩 에러", g_listenSocket);
 
 		exit(1);
 	}
@@ -59,18 +59,18 @@ void CreateServer()
 	u_long on = 1;
 	if (ioctlsocket(g_listenSocket, FIONBIO, &on) == SOCKET_ERROR)
 	{
-		LogError(L"논블락 소켓 전환 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : 논블락 소켓 전환 에러", g_listenSocket);
 
 		exit(1);
 	}
 
 	if (listen(g_listenSocket, SOMAXCONN) == SOCKET_ERROR) {
-		LogError(L"리스닝 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : 리스닝 에러", g_listenSocket);
 
 		exit(1);
 	}
 
-	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"서버 시작...\n");
+	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"서버 시작... [Port: %d]\n", dfNETWORK_PORT);
 }
 
 void NetWorkProc()
@@ -83,7 +83,7 @@ void NetWorkProc()
 	int count = 0;
 
 	FD_SET(g_listenSocket, &rset);
-	sessionKeyTable[0] = g_listenSocket;
+	sessionKeyTable[0] = (DWORD)g_listenSocket;
 
 	count++;
 
@@ -114,7 +114,7 @@ void NetWorkProc()
 			memset(sessionKeyTable, 0, sizeof(sessionKeyTable));
 
 			FD_SET(g_listenSocket, &rset);
-			sessionKeyTable[0] = g_listenSocket;
+			sessionKeyTable[0] = (DWORD)g_listenSocket;
 
 			count = 1;
 		}
@@ -211,13 +211,11 @@ void AcceptProc()
 	WCHAR temp[16] = { 0, };
 	InetNtop(AF_INET, &clientAddr.sin_addr, temp, 16);
 
-	wprintf_s(L"Accept: IP - %s, 포트 - %d [UserNo: %d]\n",
+	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"Accept: IP - %s, 포트 - %d [UserNo: %d]\n",
 		temp, ntohs(clientAddr.sin_port), g_SessionNo);
 
 	u_long on = 1;
 	if (ioctlsocket(client, FIONBIO, &on) == SOCKET_ERROR) {
-		// ???
-
 		LogError(L"논블락 소켓 전환 에러", client);
 
 		exit(1);
@@ -295,7 +293,7 @@ void AcceptProc()
 void LogError(const WCHAR* msg, SOCKET sock, int logLevel)
 {
 	int err = WSAGetLastError();
-	g_Logger._Log(logLevel, L"%s : %d\n", msg, err);
+	g_Logger._Log(logLevel, L"%s > %d\n", msg, err);
 	if (sock != INVALID_SOCKET)
 	{
 		closesocket(sock);
@@ -322,7 +320,7 @@ void SendPacket_Unicast(DWORD to, CPacket* packet)
 
 	if (session == nullptr || user == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"SendUnicast Dest Client is Null\n");
+		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"SendUnicast Dest Client is Null\n");
 		return;
 	}
 

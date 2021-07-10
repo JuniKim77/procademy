@@ -1,13 +1,17 @@
+#include <WinSock2.h>
+#include <WS2tcpip.h>
 #include "Session.h"
 #include "CPacket.h"
 #include <unordered_map>
 #include "User.h"
 #include "PacketDefine.h"
 #include "Content.h"
+#include "CLogger.h"
 
 using namespace std;
 
 extern unordered_map<DWORD, User*> g_users;
+extern CLogger g_Logger;
 
 Session::Session(SOCKET socket, u_short port, u_long ip, DWORD sessionNo)
 	: mSocket(socket)
@@ -72,7 +76,7 @@ void Session::sendPacket(char* buffer, int size)
 	int enqueueSize = mSendBuffer.Enqueue(buffer, size);
 	if (enqueueSize != size)
 	{
-		wprintf_s(L"[UserNo: %d] Enqueue 에러\n", mSessionNo);
+		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] 링버퍼 꽉 참\n", mSessionNo);
 	}
 }
 
@@ -87,7 +91,11 @@ bool Session::completeRecvPacket()
 	if (header.byCode != dfPACKET_CODE)
 	{
 		// 비정상 유저
-		wprintf(L"Code Error [UserNo: %d]\n", mSessionNo);
+		WCHAR temp[16] = { 0, };
+		InetNtop(AF_INET, &mIP, temp, 16);
+
+		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"비정상 유저: [IP: %s][Port: %d] [UserNo: %d]\n",
+			temp, mPort, mSessionNo);
 
 		SetDisconnect();
 
@@ -105,7 +113,12 @@ bool Session::completeRecvPacket()
 
 	if (!PacketProc(mSessionNo, header.byType, &packet))
 	{
-		wprintf(L"비정상 유저 [UserNo: %d]\n", mSessionNo);
+		WCHAR temp[16] = { 0, };
+		InetNtop(AF_INET, &mIP, temp, 16);
+
+		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"비정상 유저: [IP: %s][Port: %d] [UserNo: %d]\n",
+			temp, mPort, mSessionNo);
+
 		SetDisconnect();
 
 		return false;

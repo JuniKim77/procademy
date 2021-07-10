@@ -15,5 +15,4 @@ public:
 
 private:
 	int mLogLevel = dfLOG_LEVEL_DEBUG;
-	WCHAR mFileName[32] = L"Error_Log";
 };
