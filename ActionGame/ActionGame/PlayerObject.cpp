@@ -315,6 +315,14 @@ void PlayerObject::CreateEffect()
 	}
 }
 
+void PlayerObject::CreateEffectMySelf()
+{
+	BaseObject* effect = new EffectObject;
+	effect->SetEnemy();
+	effect->SetPosition(mCurX, mCurY - 60);
+	gObjectList.push_back(effect);
+}
+
 void PlayerObject::SetActionMove(bool sendMsg)
 {
 	switch (mActionCur)

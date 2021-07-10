@@ -344,17 +344,17 @@ void Session::AttackProc1(CPacket* packet)
 
 	*packet >> ID >> direction >> x >> y;
 
-	BaseObject* target = SearchObject(ID);
+	BaseObject* attacker = SearchObject(ID);
 
-	if (target == nullptr)
+	if (attacker == nullptr)
 		return;
 
-	target->SetPosition(x, y);
-	target->ActionInput(dfACTION_ATTACK1);
+	attacker->SetPosition(x, y);
+	attacker->ActionInput(dfACTION_ATTACK1);
 	wprintf_s(L"캐릭터 공격 1. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+		attacker->GetObectID(),
+		attacker->GetCurX(),
+		attacker->GetCurY());
 }
 
 void Session::AttackProc2(CPacket* packet)
@@ -366,17 +366,17 @@ void Session::AttackProc2(CPacket* packet)
 
 	*packet >> ID >> direction >> x >> y;
 
-	BaseObject* target = SearchObject(ID);
+	BaseObject* attacker = SearchObject(ID);
 
-	if (target == nullptr)
+	if (attacker == nullptr)
 		return;
 
-	target->SetPosition(x, y);
-	target->ActionInput(dfACTION_ATTACK2);
+	attacker->SetPosition(x, y);
+	attacker->ActionInput(dfACTION_ATTACK2);
 	wprintf_s(L"캐릭터 공격 2. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+		attacker->GetObectID(),
+		attacker->GetCurX(),
+		attacker->GetCurY());
 }
 
 void Session::AttackProc3(CPacket* packet)
@@ -388,17 +388,17 @@ void Session::AttackProc3(CPacket* packet)
 
 	*packet >> ID >> direction >> x >> y;
 
-	BaseObject* target = SearchObject(ID);
+	BaseObject* attacker = SearchObject(ID);
 
-	if (target == nullptr)
+	if (attacker == nullptr)
 		return;
 
-	target->SetPosition(x, y);
-	target->ActionInput(dfACTION_ATTACK3);
+	attacker->SetPosition(x, y);
+	attacker->ActionInput(dfACTION_ATTACK3);
 	wprintf_s(L"캐릭터 공격 2. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+		attacker->GetObectID(),
+		attacker->GetCurX(),
+		attacker->GetCurY());
 }
 
 void Session::DamageProc(CPacket* packet)
@@ -412,11 +412,19 @@ void Session::DamageProc(CPacket* packet)
 	PlayerObject* attacker = (PlayerObject*)SearchObject(attackID);
 	PlayerObject* target = (PlayerObject*)SearchObject(damageID);
 
-	if (attacker == nullptr || target == nullptr)
+	if (target == nullptr)
 		return;
 
 	target->SetHP(damageHP);
-	attacker->CreateEffect();
+
+	if (attacker == nullptr)
+	{
+		target->CreateEffectMySelf();
+	}
+	else
+	{
+		attacker->CreateEffect();
+	}
 
 	wprintf_s(L"캐릭터 공격 받음. ID: %d, X : %d, Y: %d\n",
 		target->GetObectID(),
