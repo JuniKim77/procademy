@@ -6,7 +6,7 @@
 #define PROFILE_MAX (50)
 #define NAME_MAX (20)
 #define FILE_NAME_MAX (80)
-#define COLUMN_SIZE (5)
+#define COLUMN_SIZE (6)
 
 typedef struct
 {
@@ -20,6 +20,7 @@ typedef struct
 	__int64			iMax[2];			// 최대 사용시간 카운터 Time.	(초단위로 계산하여 저장 / [0] 가장최대 [1] 다음 최대 [2])
 
 	__int64			iCall;				// 누적 호출 횟수.
+	int				iDepth;				// 깊이
 
 } PROFILE_SAMPLE;
 
@@ -40,6 +41,7 @@ struct Setting
 /////////////////////////////////////////////////////////////////////////////
 void ProfileBegin(const WCHAR* szName);
 void ProfileEnd(const WCHAR* szName);
+void ProfileSetDepth(int depth, const WCHAR* szName);
 
 /////////////////////////////////////////////////////////////////////////////
 // Profiling 된 데이타를 Text 파일로 출력한다.
