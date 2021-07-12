@@ -3,8 +3,6 @@
 
 class RedBlackTree
 {
-	friend LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-
 	enum class NODE_COLOR
 	{
 		BLACK = 0,
@@ -39,17 +37,35 @@ public:
 	/// <param name="data"></param>
 	void InsertNode(int data);
 	/// <summary>
+	/// 삽입 시 찾기 깊이 확인
+	/// </summary>
+	/// <param name="data"></param>
+	/// <returns></returns>
+	int GetDepthInsertNode(int data);
+	/// <summary>
 	/// 데이터 삭제
 	/// </summary>
 	/// <param name="data"></param>
 	/// <returns></returns>
 	bool DeleteNode(int data);
 	/// <summary>
+	/// 삭제 시 찾기 깊이 확인
+	/// </summary>
+	/// <param name="data"></param>
+	/// <returns></returns>
+	int GetDepthDeleteNode(int data);
+	/// <summary>
 	/// WinAPI 뷰어
 	/// </summary>
 	/// <param name="hWnd"></param>
 	void printTreeWin(HWND hWnd);
 	bool SearchData(int data);
+	/// <summary>
+	/// 조회 시 찾기 깊이 확인
+	/// </summary>
+	/// <param name="data"></param>
+	/// <returns></returns>
+	int GetDepthSearchData(int data);
 	bool CheckBalance();
 
 private:

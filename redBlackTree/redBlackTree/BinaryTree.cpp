@@ -55,6 +55,40 @@ void BinaryTree::InsertNode(int data)
 	}
 }
 
+int BinaryTree::GetDepthInsertNode(int data)
+{
+	Node* node = mRoot;
+	if (node == nullptr)
+		return 0;
+
+	int count = 1;
+
+	while (1)
+	{
+		if (node->data > data)
+		{
+			if (node->left == nullptr)
+			{
+				return count;
+			}
+
+			node = node->left;
+		}
+		else
+		{
+			if (node->right == nullptr)
+			{
+				return count;
+			}
+
+			node = node->right;
+		}
+		++count;
+	}
+
+	return count;
+}
+
 void BinaryTree::printTree()
 {
 	printHelper(mRoot, 0);
@@ -170,11 +204,64 @@ bool BinaryTree::DeleteNode(int data)
 	return true;
 }
 
+int BinaryTree::GetDepthDeleteNode(int data)
+{
+	Node* pNode = SearchHelper(data);
+
+	if (pNode == nullptr)
+		return -1;
+
+	// 데이터가 발견된 경우
+	// 양 노드를 다 갖고 있는 경우
+	if (pNode->left != nullptr && pNode->right != nullptr)
+	{
+		Node* rightMin = pNode->right;
+		int count = 1;
+
+		while (rightMin->left != nullptr)
+		{
+			rightMin = rightMin->left;
+			count++;
+		}
+
+		return count;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 bool BinaryTree::SearchData(int data)
 {
 	Node* node = SearchHelper(data);
 
 	return node != nullptr && node->data == data;
+}
+
+int BinaryTree::GetDepthSearchData(int data)
+{
+	Node* pNode = mRoot;
+	int count = 0;
+
+	while (pNode != nullptr)
+	{
+		if (pNode->data == data)
+		{
+			return count;
+		}
+		else if (pNode->data > data)
+		{
+			pNode = pNode->left;
+		}
+		else
+		{
+			pNode = pNode->right;
+		}
+		++count;
+	}
+
+	return -1;
 }
 
 BinaryTree::Node* BinaryTree::SearchHelper(int data)

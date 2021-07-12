@@ -24,9 +24,12 @@ public:
 	BinaryTree();
 	~BinaryTree();
 	void InsertNode(int data);
+	int GetDepthInsertNode(int data);
 	void printTree();
 	bool DeleteNode(int data);
+	int GetDepthDeleteNode(int data);
 	bool SearchData(int data);
+	int GetDepthSearchData(int data);
 	
 
 private:

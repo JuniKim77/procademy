@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include "MyHashMap.h"
 #include "BinaryTree.h"
+#include <iostream>
 
 /// <summary>
 /// 0 ~ 0x7ffff 까지 범위로 랜덤 숫자 반환
@@ -31,14 +32,23 @@ void TestBiasedDistributionNumber(int groupNum, int count);
 
 int main()
 {
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 
-	for (int t = 1; t <= 20; ++t)
+	int begin;
+	int end;
+
+	std::cout << "Begin: ";
+	std::cin >> begin;
+
+	std::cout << "End: ";
+	std::cin >> end;
+
+	for (int t = begin; t <= end; ++t)
 	{
 		TestNormalDistributionNumber(t);
 	}
 
-	for (int t = 1; t <= 20; ++t)
+	for (int t = begin; t <= end; ++t)
 	{
 		TestBiasedDistributionNumber(8, t);
 	}
@@ -106,10 +116,14 @@ void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 
 	if (checkPerformance)
 	{
+		int depth = rbTree.GetDepthInsertNode(num);
+		ProfileSetDepth(depth, L"RedBlackInsert");
 		PRO_BEGIN(L"RedBlackInsert");
 		rbTree.InsertNode(num);
 		PRO_END(L"RedBlackInsert");
 
+		depth = bTree.GetDepthInsertNode(num);
+		ProfileSetDepth(depth, L"BinaryTreeInsert");
 		PRO_BEGIN(L"BinaryTreeInsert");
 		bTree.InsertNode(num);
 		PRO_END(L"BinaryTreeInsert");
@@ -161,10 +175,14 @@ bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 		{
 			if (checkPerformance)
 			{
+				int depth = rbTree.GetDepthDeleteNode(num);
+				ProfileSetDepth(depth, L"RedBlackDelete");
 				PRO_BEGIN(L"RedBlackDelete");
 				ret = rbTree.DeleteNode(*iter);
 				PRO_END(L"RedBlackDelete");
 
+				depth = bTree.GetDepthDeleteNode(num);
+				ProfileSetDepth(depth, L"BinaryTreeDelete");
 				PRO_BEGIN(L"BinaryTreeDelete");
 				ret2 = bTree.DeleteNode(*iter);
 				PRO_END(L"BinaryTreeDelete");
@@ -230,10 +248,14 @@ bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 
 	if (checkPerformance)
 	{
+		int depth = rbTree.GetDepthSearchData(num);
+		ProfileSetDepth(depth, L"RedBlackSearch");
 		PRO_BEGIN(L"RedBlackSearch");
 		found = rbTree.SearchData(*iter);
 		PRO_END(L"RedBlackSearch");
 
+		depth = bTree.GetDepthSearchData(num);
+		ProfileSetDepth(depth, L"BinaryTreeSearch");
 		PRO_BEGIN(L"BinaryTreeSearch");
 		found1 = bTree.SearchData(*iter);
 		PRO_END(L"BinaryTreeSearch");
@@ -296,10 +318,10 @@ void TestNormalDistributionNumber(int count)
 			}
 		}
 
-		if (!rbTree.CheckBalance())
+		/*if (!rbTree.CheckBalance())
 		{
 			printf("Balance error\n");
-		}
+		}*/
 	}
 
 	for (int i = 0; i < 100000; ++i)
@@ -350,10 +372,10 @@ void TestBiasedDistributionNumber(int groupNum, int count)
 			}
 		}
 
-		if (!rbTree.CheckBalance())
+		/*if (!rbTree.CheckBalance())
 		{
 			printf("Balance error\n");
-		}
+		}*/
 	}
 
 	for (int i = 0; i < 100000; ++i)
