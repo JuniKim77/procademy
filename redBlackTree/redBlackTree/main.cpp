@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include "MyHashMap.h"
 #include "BinaryTree.h"
+#include <iostream>
 
 /// <summary>
 /// 0 ~ 0x7ffff 까지 범위로 랜덤 숫자 반환
@@ -33,12 +34,21 @@ int main()
 {
 	srand((unsigned int)time(NULL));
 
-	for (int t = 1; t <= 1; ++t)
+	int begin;
+	int end;
+
+	std::cout << "Begin: ";
+	std::cin >> begin;
+
+	std::cout << "End: ";
+	std::cin >> end;
+
+	for (int t = begin; t <= end; ++t)
 	{
 		TestNormalDistributionNumber(t);
 	}
 
-	for (int t = 1; t <= 1; ++t)
+	for (int t = begin; t <= end; ++t)
 	{
 		TestBiasedDistributionNumber(8, t);
 	}
@@ -286,12 +296,12 @@ void TestNormalDistributionNumber(int count)
 
 	std::unordered_set<unsigned int> setNums;
 
-	for (int i = 0; i < 10000; i++)
+	for (int i = 0; i < 100000; i++)
 	{
 		insertNum(bTree, rbTree, myHash, setNums, false);
 	}
 
-	for (int i = 0; i < 20000; ++i)
+	for (int i = 0; i < 200000; ++i)
 	{
 		unsigned int num;
 		getRandNum(&num);
@@ -314,7 +324,7 @@ void TestNormalDistributionNumber(int count)
 		}*/
 	}
 
-	for (int i = 0; i < 10000; ++i)
+	for (int i = 0; i < 100000; ++i)
 	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
@@ -331,7 +341,7 @@ void TestBiasedDistributionNumber(int groupNum, int count)
 	MyHashMap myHash;
 	BinaryTree bTree;
 
-	int size = 10000;
+	int size = 100000;
 	int eachSize = size / groupNum;
 
 	std::unordered_set<unsigned int> setNums;
@@ -345,7 +355,7 @@ void TestBiasedDistributionNumber(int groupNum, int count)
 	}
 	
 
-	for (int i = 0; i < 20000; ++i)
+	for (int i = 0; i < 200000; ++i)
 	{
 		unsigned int num;
 		getRandNum(&num);
@@ -368,7 +378,7 @@ void TestBiasedDistributionNumber(int groupNum, int count)
 		}*/
 	}
 
-	for (int i = 0; i < 10000; ++i)
+	for (int i = 0; i < 100000; ++i)
 	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
