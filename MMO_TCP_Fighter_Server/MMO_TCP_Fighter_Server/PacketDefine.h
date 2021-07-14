@@ -1,44 +1,22 @@
-/////////////////////////////////////////////////////////////////////
-// www.gamecodi.com						이주행 master@gamecodi.com
-//
-//
-/////////////////////////////////////////////////////////////////////
-/*---------------------------------------------------------------
-
-패킷데이터 정의.
-
-
-자신의 캐릭터에 대한 패킷을 서버에게 보낼 때, 모두 자신이 먼저
-액션을 취함과 동시에 패킷을 서버로 보내주도록 한다.
-
-- 이동 키 입력 시 이동동작을 취함과 동시에 이동 패킷을 보내도록 한다.
-- 공격키 입력 시 공격 동작을 취하면서 패킷을 보낸다.
-- 충돌 처리 및 데미지에 대한 정보는 서버에서 처리 후 통보하게 된다.
-
----------------------------------------------------------------*/
-
-#include <wtypes.h>
 #ifndef __PACKET_DEFINE__
 #define __PACKET_DEFINE__
 
-//---------------------------------------------------------------
-// 패킷헤더.
-//
-//---------------------------------------------------------------
-/*
+#define dfNETWORK_PORT		20000
+
+
+
+struct stHeader
+{
 	BYTE	byCode;			// 패킷코드 0x89 고정.
 	BYTE	bySize;			// 패킷 사이즈.
 	BYTE	byType;			// 패킷타입.
-*/
-#pragma pack(push, 1)
-struct stHeader
-{
-	BYTE byCode;
-	BYTE bySize;
-	BYTE byType;
 };
 
-#define dfPACKET_CODE (0x89)
+
+#define dfPACKET_CODE		0x89
+
+
+
 #define	dfPACKET_SC_CREATE_MY_CHARACTER			0
 //---------------------------------------------------------------
 // 클라이언트 자신의 캐릭터 할당		Server -> Client
@@ -49,44 +27,30 @@ struct stHeader
 // 이 패킷을 받으면 자신의 ID,X,Y,HP 를 저장하고 캐릭터를 생성시켜야 한다.
 //
 //	4	-	ID
-//	1	-	Direction	(LL / RR)
+//	1	-	Direction
 //	2	-	X
 //	2	-	Y
 //	1	-	HP
 //
 //---------------------------------------------------------------
-struct scCreateMyCharacter
-{
-	DWORD ID;
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-	BYTE HP;
-};
+
 
 #define	dfPACKET_SC_CREATE_OTHER_CHARACTER		1
 //---------------------------------------------------------------
 // 다른 클라이언트의 캐릭터 생성 패킷		Server -> Client
 //
 // 처음 서버에 접속시 이미 접속되어 있던 캐릭터들의 정보
-// 또는 게임중에 접속된 클라이언트들의 생성용 정보.
+// 또는 게임중에 접속된 클라이언트들의 생성 용 정보.
 //
 //
 //	4	-	ID
-//	1	-	Direction	(LL / RR)
+//	1	-	Direction
 //	2	-	X
 //	2	-	Y
 //	1	-	HP
 //
 //---------------------------------------------------------------
-struct scCreateOtherCharacter
-{
-	DWORD ID;
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-	BYTE HP;
-};
+
 
 #define	dfPACKET_SC_DELETE_CHARACTER			2
 //---------------------------------------------------------------
@@ -97,10 +61,8 @@ struct scCreateOtherCharacter
 //	4	-	ID
 //
 //---------------------------------------------------------------
-struct scDeleteCharacter
-{
-	DWORD ID;
-};
+
+
 
 #define	dfPACKET_CS_MOVE_START					10
 //---------------------------------------------------------------
@@ -117,12 +79,6 @@ struct scDeleteCharacter
 //	2	-	Y
 //
 //---------------------------------------------------------------
-struct csMoveStart
-{
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-};
 #define dfPACKET_MOVE_DIR_LL					0
 #define dfPACKET_MOVE_DIR_LU					1
 #define dfPACKET_MOVE_DIR_UU					2
@@ -131,6 +87,9 @@ struct csMoveStart
 #define dfPACKET_MOVE_DIR_RD					5
 #define dfPACKET_MOVE_DIR_DD					6
 #define dfPACKET_MOVE_DIR_LD					7
+
+
+
 
 #define	dfPACKET_SC_MOVE_START					11
 //---------------------------------------------------------------
@@ -148,32 +107,22 @@ struct csMoveStart
 //	2	-	Y
 //
 //---------------------------------------------------------------
-struct scMoveStart
-{
-	DWORD ID;
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-};
+
+
+
 
 #define	dfPACKET_CS_MOVE_STOP					12
 //---------------------------------------------------------------
 // 캐릭터 이동중지 패킷						Client -> Server
 //
 // 이동중 키보드 입력이 없어서 정지되었을 때, 이 패킷을 서버에 보내준다.
-// 이동중 방향 전환시에는 스탑을 보내지 않는다.
 //
 //	1	-	Direction	( 방향 디파인 값 좌/우만 사용 )
 //	2	-	X
 //	2	-	Y
 //
 //---------------------------------------------------------------
-struct csMoveStop
-{
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-};
+
 
 #define	dfPACKET_SC_MOVE_STOP					13
 //---------------------------------------------------------------
@@ -188,13 +137,8 @@ struct csMoveStop
 //	2	-	Y
 //
 //---------------------------------------------------------------
-struct scMoveStop
-{
-	DWORD ID;
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-};
+
+
 
 #define	dfPACKET_CS_ATTACK1						20
 //---------------------------------------------------------------
@@ -210,12 +154,6 @@ struct scMoveStop
 //	2	-	Y	
 //
 //---------------------------------------------------------------
-struct csAttack1
-{
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-};
 
 #define	dfPACKET_SC_ATTACK1						21
 //---------------------------------------------------------------
@@ -230,13 +168,8 @@ struct csAttack1
 //	2	-	Y
 //
 //---------------------------------------------------------------
-struct scAttack1
-{
-	DWORD ID;
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-};
+
+
 
 #define	dfPACKET_CS_ATTACK2						22
 //---------------------------------------------------------------
@@ -252,12 +185,6 @@ struct scAttack1
 //	2	-	Y
 //
 //---------------------------------------------------------------
-struct csAttack2
-{
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-};
 
 #define	dfPACKET_SC_ATTACK2						23
 //---------------------------------------------------------------
@@ -272,13 +199,6 @@ struct csAttack2
 //	2	-	Y
 //
 //---------------------------------------------------------------
-struct scAttack2
-{
-	DWORD ID;
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-};
 
 #define	dfPACKET_CS_ATTACK3						24
 //---------------------------------------------------------------
@@ -294,12 +214,6 @@ struct scAttack2
 //	2	-	Y
 //
 //---------------------------------------------------------------
-struct csAttack3
-{
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-};
 
 #define	dfPACKET_SC_ATTACK3						25
 //---------------------------------------------------------------
@@ -314,13 +228,10 @@ struct csAttack3
 //	2	-	Y
 //
 //---------------------------------------------------------------
-struct scAttack3
-{
-	DWORD ID;
-	BYTE Direction;
-	WORD X;
-	WORD Y;
-};
+
+
+
+
 
 #define	dfPACKET_SC_DAMAGE						30
 //---------------------------------------------------------------
@@ -333,28 +244,7 @@ struct scAttack3
 //	1	-	DamageHP	( 피해자 HP )
 //
 //---------------------------------------------------------------
-struct scDamage
-{
-	DWORD AttackID;
-	DWORD DamageID;
-	BYTE DamageHP;
-};
 
-// 사용안함...
-#define	dfPACKET_CS_SYNC						250
-//---------------------------------------------------------------
-// 동기화를 위한 패킷					Client -> Server
-//
-//
-//	2	-	X
-//	2	-	Y
-//
-//---------------------------------------------------------------
-struct csSync
-{
-	WORD X;
-	WORD Y;
-};
 
 #define	dfPACKET_SC_SYNC						251
 //---------------------------------------------------------------
@@ -368,13 +258,25 @@ struct csSync
 //	2	-	Y
 //
 //---------------------------------------------------------------
-struct scSync
-{
-	DWORD ID;
-	WORD X;
-	WORD Y;
-};
 
-#pragma pack(pop)
+
+
+#define	dfPACKET_CS_ECHO						252
+//---------------------------------------------------------------
+// Echo 용 패킷					Client -> Server
+//
+//	4	-	Time
+//
+//---------------------------------------------------------------
+
+#define	dfPACKET_SC_ECHO						253
+//---------------------------------------------------------------
+// Echo 응답 패킷				Server -> Client
+//
+//	4	-	Time
+//
+//---------------------------------------------------------------
+
+
+
 #endif
-

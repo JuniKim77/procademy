@@ -32,6 +32,8 @@ bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 	case dfPACKET_CS_ATTACK3:
 		return CS_Attack3(from, packet);
 		break;
+	case dfPACKET_CS_ECHO:
+		break;
 	default:
 		// Log...
 		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 메세지 수신 [SessionNo: %d]\n",

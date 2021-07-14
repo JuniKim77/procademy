@@ -15,4 +15,5 @@ void cpSC_Attack2(CPacket* packet, DWORD id, BYTE direction, WORD x, WORD y);
 void cpSC_Attack3(CPacket* packet, DWORD id, BYTE direction, WORD x, WORD y);
 void cpSC_Damage(CPacket* packet, DWORD attackID, DWORD damageID, BYTE damageHP);
 void cpSC_Synchronize(CPacket* packet, DWORD id, WORD x, WORD y);
+void cpSC_Echo(CPacket* packet, DWORD time);
 void FillHeader(stHeader* header, BYTE msgType, BYTE msgSize);

@@ -112,6 +112,17 @@ void cpSC_Synchronize(CPacket* packet, DWORD id, WORD x, WORD y)
 	*packet << id << x << y;
 }
 
+void cpSC_Echo(CPacket* packet, DWORD time)
+{
+	stHeader header;
+
+	FillHeader(&header, dfPACKET_SC_ECHO, 4);
+
+	packet->PutData((char*)&header, sizeof(stHeader));
+
+	*packet << time;
+}
+
 void FillHeader(stHeader* header, BYTE msgType, BYTE msgSize)
 {
 	header->byCode = dfPACKET_CODE;
