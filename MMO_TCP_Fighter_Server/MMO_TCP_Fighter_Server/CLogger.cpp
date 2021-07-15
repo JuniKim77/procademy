@@ -7,6 +7,9 @@
 
 void CLogger::_Log(int logLevel, const WCHAR* format, ...)
 {
+    if (logLevel == dfLOG_LEVEL_DEBUG && mLogLevel > logLevel)
+        return;
+
     WCHAR log[dfLOG_SIZE] = { 0, };
     WCHAR* pLog = log;
     int count = 0;
