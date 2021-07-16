@@ -23,34 +23,30 @@ bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 /// <summary>
 /// 일반 랜덤 숫자로 테스트
 /// </summary>
-void TestNormalDistributionNumber(int count);
+void TestNormalDistributionNumber();
 /// <summary>
 /// 한 쪽으로 쏠려있는 숫자들로 테스트
 /// </summary>
 /// <param name="groupNum">나눌 계층 수</param>
-void TestBiasedDistributionNumber(int groupNum, int count);
+void TestBiasedDistributionNumber(int groupNum);
 
 int main()
 {
 	srand((unsigned int)time(NULL));
 
-	int begin;
-	int end;
+	int count;
 
-	std::cout << "Begin: ";
-	std::cin >> begin;
+	std::cout << "Count: ";
+	std::cin >> count;
 
-	std::cout << "End: ";
-	std::cin >> end;
-
-	for (int t = begin; t <= end; ++t)
+	for (int t = 1; t <= count; ++t)
 	{
-		TestNormalDistributionNumber(t);
+		TestNormalDistributionNumber();
 	}
 
-	for (int t = begin; t <= end; ++t)
+	for (int t = 1; t <= count; ++t)
 	{
-		TestBiasedDistributionNumber(8, t);
+		TestBiasedDistributionNumber(8);
 	}
 
 	return 0;
@@ -287,7 +283,7 @@ bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 	return found && found1 && found2;
 }
 
-void TestNormalDistributionNumber(int count)
+void TestNormalDistributionNumber()
 {
 	ProfileReset();
 	RedBlackTree rbTree;
@@ -330,11 +326,11 @@ void TestNormalDistributionNumber(int count)
 	}
 
 	WCHAR file_name[32] = { 0, };
-	swprintf_s(file_name, _countof(file_name), L"Profile_Normal_%d_", count);
+	swprintf_s(file_name, _countof(file_name), L"Profile_Normal");
 	ProfileDataOutText(file_name);
 }
 
-void TestBiasedDistributionNumber(int groupNum, int count)
+void TestBiasedDistributionNumber(int groupNum)
 {
 	ProfileReset();
 	RedBlackTree rbTree;
@@ -384,6 +380,6 @@ void TestBiasedDistributionNumber(int groupNum, int count)
 	}
 
 	WCHAR file_name[32] = { 0, };
-	swprintf_s(file_name, _countof(file_name), L"Profile_Biased_%d_", count);
+	swprintf_s(file_name, _countof(file_name), L"Profile_Biased");
 	ProfileDataOutText(file_name);
 }

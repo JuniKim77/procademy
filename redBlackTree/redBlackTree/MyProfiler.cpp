@@ -98,14 +98,11 @@ void ProfileDataOutText(const WCHAR* szFileName)
 	localtime_s(&t, &newTime);
 	WCHAR fileName[FILE_NAME_MAX];
 
-	/*swprintf_s(fileName, _countof(fileName), L"%s_%04d%02d%02d_%02d%02d%02d.txt",
+	swprintf_s(fileName, _countof(fileName), L"%s_%04d%02d%02d.txt",
 		szFileName,
 		t.tm_year + 1900,
 		t.tm_mon + 1,
-		t.tm_mday,
-		t.tm_hour,
-		t.tm_min,
-		t.tm_sec);		*/
+		t.tm_mday);		
 	swprintf_s(fileName, _countof(fileName), L"%s.txt",	szFileName);
 
 	_wfopen_s(&fout, fileName, L"a");
