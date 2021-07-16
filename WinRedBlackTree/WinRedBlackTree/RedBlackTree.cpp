@@ -52,6 +52,10 @@ bool RedBlackTree::InsertNode(int data)
 
 			node = node->left;
 		}
+		else if (node->data == data)
+		{
+			return false;
+		}
 		else
 		{
 			if (node->right == Nil)
@@ -276,6 +280,51 @@ void RedBlackTree::deleteNodePrint(Node* del)
 	printNode(del);
 	wprintf_s(L"\nParent: ");
 	printNode(del->parent);
+}
+
+bool RedBlackTree::CheckBalance()
+{
+	mBalanced = true;
+	mNumBlack = -1;
+
+	checkBalanceHelper(mRoot, 0);
+
+	return mBalanced;
+}
+
+void RedBlackTree::checkBalanceHelper(Node* root, int blackCount)
+{
+	if (!mBalanced)
+		return;
+
+	if (root == Nil)
+	{
+		if (mNumBlack != -1)
+		{
+			if (mNumBlack != blackCount)
+			{
+				mBalanced = false;
+			}
+		}
+		else
+		{
+			mNumBlack = blackCount;
+		}
+
+		return;
+	}
+
+	if (root->color == NODE_COLOR::BLACK)
+	{
+		checkBalanceHelper(root->left, blackCount + 1);
+		checkBalanceHelper(root->right, blackCount + 1);
+	}
+	else
+	{
+		checkBalanceHelper(root->left, blackCount);
+		checkBalanceHelper(root->right, blackCount);
+	}
+
 }
 
 void RedBlackTree::printWinHelper(HDC hdc, Node* root, int beginX, int endX, int depth)

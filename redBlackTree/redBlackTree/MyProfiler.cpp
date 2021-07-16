@@ -30,7 +30,7 @@ void ProfileEnd(const WCHAR* szName)
 
 	int idx = SearchName(szName);
 
-	__int64 time = end.QuadPart - gProfiles[idx].lStartTime.QuadPart;
+	LONGLONG time = end.QuadPart - gProfiles[idx].lStartTime.QuadPart;
 
 	gProfiles[idx].iTotalTime += time;
 	++gProfiles[idx].iCall;
@@ -57,6 +57,13 @@ void ProfileEnd(const WCHAR* szName)
 		gProfiles[idx].iMin[0] = gProfiles[idx].iMin[1];
 		gProfiles[idx].iMin[1] = temp;
 	}
+}
+
+void ProfileSetDepth(int depth, const WCHAR* szName)
+{
+	int idx = SearchName(szName);
+
+	gProfiles[idx].iDepth += depth;
 }
 
 void ProfileDataOutText(const WCHAR* szFileName)
@@ -91,14 +98,12 @@ void ProfileDataOutText(const WCHAR* szFileName)
 	localtime_s(&t, &newTime);
 	WCHAR fileName[FILE_NAME_MAX];
 
-	swprintf_s(fileName, _countof(fileName), L"%s_%04d%02d%02d_%02d%02d%02d.txt",
+	swprintf_s(fileName, _countof(fileName), L"%s_%04d%02d%02d.txt",
 		szFileName,
 		t.tm_year + 1900,
 		t.tm_mon + 1,
-		t.tm_mday,
-		t.tm_hour,
-		t.tm_min,
-		t.tm_sec);		
+		t.tm_mday);		
+	swprintf_s(fileName, _countof(fileName), L"%s.txt",	szFileName);
 
 	_wfopen_s(&fout, fileName, L"a");
 
@@ -107,23 +112,39 @@ void ProfileDataOutText(const WCHAR* szFileName)
 	div[setting.totalSize - 2] = L'\n';
 	div[setting.totalSize - 1] = L'\0';
 
-	fwprintf_s(fout, L"%ls\n", div);
+	fwprintf_s(fout, L"%ls", div);
 
-	WCHAR* tableName = new WCHAR[setting.totalSize];
+	WCHAR* tableName = new WCHAR[120];
 	WCHAR tableSet[FILE_NAME_MAX];
-	swprintf_s(tableSet, FILE_NAME_MAX, L"%%%dls%%%dls%%%dls%%%dls%%%dls",
+	swprintf_s(tableSet, FILE_NAME_MAX, L"%%%dls%%%dls%%%dls%%%dls%%%dls%%%dls",
 		setting.colSize[0], 
 		setting.colSize[1], 
 		setting.colSize[2], 
 		setting.colSize[3], 
-		setting.colSize[4]);
+		setting.colSize[4],
+		setting.colSize[5]);
 
-	swprintf_s(tableName, setting.totalSize, tableSet,
-		L"Name  |",
-		L"Average  |",
-		L"Min   |",
-		L"Max   |",
-		L"Call   |");
+	WCHAR nameTag[32];
+	WCHAR avgTag[32];
+	WCHAR minTag[32];
+	WCHAR maxTag[32];
+	WCHAR callTag[32];
+	WCHAR depthTag[32];
+
+	swprintf_s(nameTag, _countof(nameTag), L"%s  |", setting.colNames[0]);
+	swprintf_s(avgTag, _countof(avgTag), L"%s  |", setting.colNames[1]);
+	swprintf_s(minTag, _countof(minTag), L"%s  |", setting.colNames[2]);
+	swprintf_s(maxTag, _countof(maxTag), L"%s  |", setting.colNames[3]);
+	swprintf_s(callTag, _countof(callTag), L"%s  |", setting.colNames[4]);
+	swprintf_s(depthTag, _countof(depthTag), L"%s  |", setting.colNames[5]);
+
+	swprintf_s(tableName, 120, tableSet,
+		nameTag,
+		avgTag,
+		minTag,
+		maxTag,
+		callTag,
+		depthTag);
 
 	fwprintf_s(fout, L"%ls\n", tableName);
 	fwprintf_s(fout, L"%ls", div);
@@ -145,8 +166,8 @@ void ProfileDataOutText(const WCHAR* szFileName)
 		{
 			for (int j = 0; j < 2; ++j)
 			{
-				time -= gProfiles[i].iMax[i];
-				time -= gProfiles[i].iMin[i];
+				time -= gProfiles[i].iMax[j];
+				time -= gProfiles[i].iMin[j];
 			}
 
 			avg = time / freq / (gProfiles[i].iCall - 4);
@@ -155,31 +176,31 @@ void ProfileDataOutText(const WCHAR* szFileName)
 		{
 			avg = time / freq / (gProfiles[i].iCall);
 		}
-		
-		
 
 		WCHAR nameTxt[32];
 		WCHAR avgTxt[32];
 		WCHAR minTxt[32];
 		WCHAR maxTxt[32];
 		WCHAR callTxt[32];
+		WCHAR depthTxt[32];
 
 		swprintf_s(nameTxt, _countof(nameTxt), L"%s |", gProfiles[i].szName);
-		swprintf_s(avgTxt, _countof(avgTxt), L"%.4lfus |", avg);
-		swprintf_s(minTxt, _countof(minTxt), L"%.4lfus |", gProfiles[i].iMin[0] / freq);
-		swprintf_s(maxTxt, _countof(maxTxt), L"%.4lfus |", gProfiles[i].iMax[0] / freq);
+		swprintf_s(avgTxt, _countof(avgTxt), L"%.4lf |", avg);
+		swprintf_s(minTxt, _countof(minTxt), L"%.4lf |", gProfiles[i].iMin[0] / freq);
+		swprintf_s(maxTxt, _countof(maxTxt), L"%.4lf |", gProfiles[i].iMax[0] / freq);
 		swprintf_s(callTxt, _countof(callTxt), L"%lld |", gProfiles[i].iCall);
+		swprintf_s(depthTxt, _countof(depthTxt), L"%.2f |", gProfiles[i].iDepth / (double)gProfiles[i].iCall);
 
 		swprintf_s(line, _countof(line), tableSet,
 			nameTxt,
 			avgTxt,
 			minTxt,
 			maxTxt,
-			callTxt);
+			callTxt,
+			depthTxt);
 
 		fwprintf_s(fout, L"%ls\n", line);
 	}
-	fwprintf_s(fout, L"\n");
 	fwprintf_s(fout, L"%ls", div);
 
 	fclose(fout);

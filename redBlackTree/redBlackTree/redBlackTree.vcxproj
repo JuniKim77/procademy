@@ -141,13 +141,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BinaryTree.cpp" />
     <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MyHashMap.cpp" />
     <ClCompile Include="MyProfiler.cpp" />
     <ClCompile Include="RedBlackTree.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BinaryTree.h" />
     <ClInclude Include="CSVReader.h" />
+    <ClInclude Include="MyHashMap.h" />
     <ClInclude Include="MyProfiler.h" />
     <ClInclude Include="RedBlackTree.h" />
   </ItemGroup>

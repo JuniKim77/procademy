@@ -73,6 +73,40 @@ void RedBlackTree::InsertNode(int data)
 	}
 }
 
+int RedBlackTree::GetDepthInsertNode(int data)
+{
+	Node* node = mRoot;
+	if (node == Nil)
+		return 0;
+
+	int count = 1;
+
+	while (1)
+	{
+		if (node->data > data)
+		{
+			if (node->left == Nil)
+			{
+				return count;
+			}
+
+			node = node->left;
+		}
+		else
+		{
+			if (node->right == Nil)
+			{
+				return count;
+			}
+
+			node = node->right;
+		}
+		++count;
+	}
+
+	return count;
+}
+
 bool RedBlackTree::DeleteNode(int data)
 {
 	Node* pNode = SearchHelper(data);
@@ -205,6 +239,34 @@ bool RedBlackTree::DeleteNode(int data)
 	return true;
 }
 
+int RedBlackTree::GetDepthDeleteNode(int data)
+{
+	Node* pNode = SearchHelper(data);
+
+	if (pNode == Nil)
+		return -1;
+
+	// 데이터가 발견된 경우
+	// 양 노드를 다 갖고 있는 경우
+	if (pNode->left != Nil && pNode->right != Nil)
+	{
+		Node* rightMin = pNode->right;
+		int count = 1;
+
+		while (rightMin->left != Nil)
+		{
+			rightMin = rightMin->left;
+			count++;
+		}
+
+		return count;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 void RedBlackTree::printTreeWin(HWND hWnd)
 {
 	HDC hdc = GetDC(hWnd);
@@ -223,7 +285,77 @@ bool RedBlackTree::SearchData(int data)
 {
 	Node* node = SearchHelper(data);
 
-	return node != Nil;
+	return node != Nil && node->data == data;
+}
+
+int RedBlackTree::GetDepthSearchData(int data)
+{
+	Node* pNode = mRoot;
+	int count = 0;
+
+	while (pNode != Nil)
+	{
+		if (pNode->data == data)
+		{
+			return count;
+		}
+		else if (pNode->data > data)
+		{
+			pNode = pNode->left;
+		}
+		else
+		{
+			pNode = pNode->right;
+		}
+		++count;
+	}
+
+	return -1;
+}
+
+bool RedBlackTree::CheckBalance()
+{
+	mBalanced = true;
+	mNumBlack = -1;
+
+	checkBalanceHelper(mRoot, 0);
+
+	return mBalanced;
+}
+
+void RedBlackTree::checkBalanceHelper(Node* root, int blackCount)
+{
+	if (!mBalanced)
+		return;
+
+	if (root == Nil)
+	{
+		if (mNumBlack != -1)
+		{
+			if (mNumBlack != blackCount)
+			{
+				mBalanced = false;
+			}
+		}
+		else
+		{
+			mNumBlack = blackCount;
+		}
+
+		return;
+	}
+
+	if (root->color == NODE_COLOR::BLACK)
+	{
+		checkBalanceHelper(root->left, blackCount + 1);
+		checkBalanceHelper(root->right, blackCount + 1);
+	}
+	else
+	{
+		checkBalanceHelper(root->left, blackCount);
+		checkBalanceHelper(root->right, blackCount);
+	}
+	
 }
 
 void RedBlackTree::printWinHelper(HDC hdc, Node* root, int beginX, int endX, int depth)

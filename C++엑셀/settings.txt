@@ -1,0 +1,2 @@
+Average(us),Min(us),Max(us),Call,Depth
+RedBlackInsert,BinaryTreeInsert,HashTableInsert,RedBlackDelete,BinaryTreeDelete,BinaryTreeDelete,BinaryTreeDelete,BinaryTreeDelete,HashTableSearch
