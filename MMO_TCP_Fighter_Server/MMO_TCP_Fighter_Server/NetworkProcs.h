@@ -17,7 +17,7 @@ void NetWorkProc();
 void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset);
 void DisconnectProc(DWORD sessionKey);
 void AcceptProc();
-void LogError(const WCHAR* msg, SOCKET sock, int logLevel = dfLOG_LEVEL_DEBUG);
+void LogError(const WCHAR* msg, SOCKET sock, int logLevel = dfLOG_LEVEL_ERROR);
 /// <summary>
 /// 특정 섹터 1개에 있는 모든 클라이언트들에게 메시지 보내기
 /// </summary>

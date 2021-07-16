@@ -18,6 +18,7 @@ public:
 	void SetActionAttack2(bool sendMsg = true);
 	void SetActionAttack3(bool sendMsg = true);
 	void CreateEffect();
+	void CreateEffectMySelf();
 	void SetActionMove(bool sendMsg = true);
 	void SetActionStand(bool sendMsg = true);
 	void SetHP(char hp) { mHP = hp; }

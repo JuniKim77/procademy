@@ -33,6 +33,7 @@ public:
 	void writeProc();
 	DWORD GetSessionNo() { return mSessionNo; }
 	ULONGLONG GetLastRecvTime() { return mLastRecvTime; }
+	void SetLastRecvTime(ULONGLONG time) { mLastRecvTime = time; }
 	bool IsAlive() { return mbAlive; }
 
 private:

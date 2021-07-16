@@ -14,7 +14,7 @@ int main()
 	setlocale(LC_ALL, "");
 	// LoadData();
 	CreateServer();
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 	InitializeGame();
 
 	while (!g_Shutdown)

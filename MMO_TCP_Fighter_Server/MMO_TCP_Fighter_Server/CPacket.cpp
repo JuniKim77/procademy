@@ -370,7 +370,7 @@ int CPacket::PutData(const wchar_t* chpSrc, int iLength)
 
 CPacket& CPacket::operator<<(const char* s)
 {
-	int len = strlen(s);
+	size_t len = strlen(s);
 
 	PutData(s, len);
 
@@ -379,7 +379,7 @@ CPacket& CPacket::operator<<(const char* s)
 
 CPacket& CPacket::operator<<(const wchar_t* s)
 {
-	int len = wcslen(s);
+	size_t len = wcslen(s);
 
 	PutData(s, len);
 

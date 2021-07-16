@@ -32,6 +32,9 @@ bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 	case dfPACKET_CS_ATTACK3:
 		return CS_Attack3(from, packet);
 		break;
+	case dfPACKET_CS_ECHO:
+		return CS_Echo(from, packet);
+		break;
 	default:
 		// Log...
 		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 메세지 수신 [SessionNo: %d]\n",
@@ -66,7 +69,7 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 	User* user = FindUser(from);
 	if (user == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"세션 존재 & 존재하지 않는 유저 [UserNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"세션 존재 & 존재하지 않는 유저 [UserNo: %d]\n", from);
 
 		return false;
 	}
@@ -145,7 +148,7 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 	User* user = FindUser(from);
 	if (user == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"세션 존재 & 존재하지 않는 유저 [UserNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"세션 존재 & 존재하지 않는 유저 [UserNo: %d]\n", from);
 
 		return false;
 	}
@@ -209,7 +212,7 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 
 	if (attacker == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 유저 [UserNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 유저 [UserNo: %d]\n", from);
 
 		return false;
 	}
@@ -401,7 +404,7 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 
 	if (attacker == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 유저 [UserNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 유저 [UserNo: %d]\n", from);
 
 		return false;
 	}
@@ -593,7 +596,7 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 
 	if (attacker == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 유저 [UserNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 유저 [UserNo: %d]\n", from);
 
 		return false;
 	}
@@ -757,6 +760,32 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 	default:
 		break;
 	}
+
+	return true;
+}
+
+bool CS_Echo(DWORD from, CPacket* packet)
+{
+	Session* session = FindSession(from);
+
+	if (session == nullptr)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+
+		return false;
+	}
+
+	DWORD time;
+
+	*packet >> time;
+
+	ULONGLONG curTime = GetTickCount64();
+	CPacket Packet;
+
+	session->SetLastRecvTime(curTime);
+	
+	cpSC_Echo(&Packet, time);
+	SendPacket_Unicast(from, &Packet);	
 
 	return true;
 }
