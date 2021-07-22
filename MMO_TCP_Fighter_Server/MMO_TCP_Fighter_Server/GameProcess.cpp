@@ -20,7 +20,7 @@ void InitializeGame()
 {
 	gFrameSkipper.CheckTime();
 	gFrameSkipper.Reset();
-	g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
+	g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
 }
 
 void UpdateGame()

@@ -37,7 +37,7 @@ bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 		break;
 	default:
 		// Log...
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 메세지 수신 [SessionNo: %d]\n",
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Unexpected Message Type [SessionNo: %d]\n",
 			from);
 		break;
 	}
@@ -52,7 +52,7 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);	
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Non-Exist Session [SessionNo: %d]\n", from);	
 
 		return false;
 	}
@@ -70,7 +70,7 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 	User* user = FindUser(from);
 	if (user == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"세션 존재 & 존재하지 않는 유저 [UserNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Exist Session & Non-Exist User [UserNo: %d]\n", from);
 
 		return false;
 	}
@@ -133,7 +133,7 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Non-Exist Session [SessionNo: %d]\n", from);
 
 		return false;
 	}
@@ -152,7 +152,7 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 	User* user = FindUser(from);
 	if (user == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"세션 존재 & 존재하지 않는 유저 [UserNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Exist Session & Non-Exist User [UserNo: %d]\n", from);
 
 		return false;
 	}
@@ -199,7 +199,7 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Non-Exist Session [SessionNo: %d]\n", from);
 
 		return false;
 	}
@@ -218,7 +218,7 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 
 	if (attacker == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 유저 [UserNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Exist Session & Non-Exist User [UserNo: %d]\n", from);
 
 		return false;
 	}
@@ -397,7 +397,7 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Non-Exist Session [SessionNo: %d]\n", from);
 
 		return false;
 	}
@@ -416,7 +416,7 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 
 	if (attacker == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 유저 [UserNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Exist Session & Non-Exist User [UserNo: %d]\n", from);
 
 		return false;
 	}
@@ -595,7 +595,7 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Non-Exist Session [SessionNo: %d]\n", from);
 
 		return false;
 	}
@@ -614,7 +614,7 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 
 	if (attacker == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 유저 [UserNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Exist Session & Non-Exist User [UserNo: %d]\n", from);
 
 		return false;
 	}
@@ -793,7 +793,7 @@ bool CS_Echo(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Non-Exist Session [SessionNo: %d]\n", from);
 
 		return false;
 	}

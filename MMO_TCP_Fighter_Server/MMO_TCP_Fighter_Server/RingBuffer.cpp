@@ -270,7 +270,9 @@ bool RingBuffer::MoveFront(int iSize)
 
 		if (iSize <= possibleToEnd)
 		{
-			mFront = (mFront + iSize) % (mCapacity + 1);
+			mFront += iSize;
+
+			if (mFront > )
 
 			return true;
 		}

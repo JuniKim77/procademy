@@ -167,18 +167,18 @@ void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (WSAGETSELECTERROR(lParam))
 	{
-		g_session.ErrorQuit(L"Select 에러", __FILEW__, __LINE__);
+		g_session.ErrorQuit(L"Select Error", __FILEW__, __LINE__);
 	}
 
 	switch (WSAGETSELECTEVENT(lParam))
 	{
 	case FD_CONNECT:
 		g_session.mbConnected = true;
-		wprintf_s(L"접속 성공\n");
+		wprintf_s(L"Connect Success\n");
 		break;
 	case FD_CLOSE:
 		g_session.Disconnect();
-		g_session.ErrorQuit(L"접속 종료", __FILEW__, __LINE__);
+		g_session.ErrorQuit(L"Disconnect", __FILEW__, __LINE__);
 		break;
 	case FD_READ:
 		g_session.ReceivePacket();

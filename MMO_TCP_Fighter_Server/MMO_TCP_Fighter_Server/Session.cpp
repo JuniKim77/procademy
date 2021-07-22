@@ -76,7 +76,7 @@ void Session::sendPacket(char* buffer, int size)
 	int enqueueSize = mSendBuffer.Enqueue(buffer, size);
 	if (enqueueSize != size)
 	{
-		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] 링버퍼 꽉 참\n", mSessionNo);
+		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Send Ringbuffer is full\n", mSessionNo);
 	}
 }
 
@@ -94,7 +94,7 @@ bool Session::completeRecvPacket()
 		WCHAR temp[16] = { 0, };
 		InetNtop(AF_INET, &mIP, temp, 16);
 
-		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"비정상 유저: [IP: %s][Port: %d] [UserNo: %d]\n",
+		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"Abnormal User: [IP: %s][Port: %d] [UserNo: %d]\n",
 			temp, mPort, mSessionNo);
 
 		SetDisconnect();
@@ -116,7 +116,7 @@ bool Session::completeRecvPacket()
 		WCHAR temp[16] = { 0, };
 		InetNtop(AF_INET, &mIP, temp, 16);
 
-		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"비정상 유저: [IP: %s][Port: %d] [UserNo: %d]\n",
+		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"Abnormal User: [IP: %s][Port: %d] [UserNo: %d]\n",
 			temp, mPort, mSessionNo);
 
 		SetDisconnect();
@@ -139,11 +139,6 @@ void Session::writeProc()
 		}
 
 		int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.DirectDequeueSize(), 0);
-
-		if (sendSize == 0)
-		{
-			break;
-		}
 
 		if (sendSize == SOCKET_ERROR)
 		{

@@ -44,14 +44,14 @@ void CreateServer()
 
 	if (g_listenSocket == INVALID_SOCKET)
 	{
-		LogError(L"SOCKET ERROR : 소켓 생성 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : Socket Create Error", g_listenSocket);
 
 		exit(1);
 	}
 
 	if (bind(g_listenSocket, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR)
 	{
-		LogError(L"SOCKET ERROR : 바인딩 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : Binding Error", g_listenSocket);
 
 		exit(1);
 	}
@@ -59,18 +59,18 @@ void CreateServer()
 	u_long on = 1;
 	if (ioctlsocket(g_listenSocket, FIONBIO, &on) == SOCKET_ERROR)
 	{
-		LogError(L"SOCKET ERROR : 논블락 소켓 전환 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : NonBlocked Socket Error", g_listenSocket);
 
 		exit(1);
 	}
 
 	if (listen(g_listenSocket, SOMAXCONN) == SOCKET_ERROR) {
-		LogError(L"SOCKET ERROR : 리스닝 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : Listening Error", g_listenSocket);
 
 		exit(1);
 	}
 
-	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"서버 시작... [Port: %d]\n", dfNETWORK_PORT);
+	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"Server begin... [Port: %d]\n", dfNETWORK_PORT);
 }
 
 void NetWorkProc()
@@ -211,12 +211,12 @@ void AcceptProc()
 	WCHAR temp[16] = { 0, };
 	InetNtop(AF_INET, &clientAddr.sin_addr, temp, 16);
 
-	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"Accept: IP - %s, 포트 - %d [UserNo: %d]\n",
+	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"Accept: IP - %s, Port - %d [UserNo: %d]\n",
 		temp, ntohs(clientAddr.sin_port), g_SessionNo);
 
 	u_long on = 1;
 	if (ioctlsocket(client, FIONBIO, &on) == SOCKET_ERROR) {
-		LogError(L"논블락 소켓 전환 에러", client);
+		LogError(L"NonBlocked Socket Error", client);
 
 		exit(1);
 	}

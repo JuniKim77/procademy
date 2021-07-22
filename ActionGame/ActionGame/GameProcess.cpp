@@ -126,7 +126,11 @@ void UpdateGame()
 	{
 		gFrameSkipper.Refresh();
 		WCHAR msg[32] = { 0, };
-		swprintf_s(msg, L"LogicFrame:%d, ID: %d", gFrameSkipper.GetOldFrameCount(), gPlayerObject->GetObectID());
+		if (gPlayerObject != nullptr)
+		{
+			swprintf_s(msg, L"LogicFrame:%d, ID: %d", gFrameSkipper.GetOldFrameCount(), gPlayerObject->GetObectID());
+		}
+		
 		SetWindowText(gMainWindow, msg);
 	}
 
