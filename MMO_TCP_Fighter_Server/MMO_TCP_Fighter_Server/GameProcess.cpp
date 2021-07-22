@@ -7,9 +7,11 @@
 #include "NetworkProcs.h"
 #include "Content.h"
 #include "CLogger.h"
+#include <conio.h>
 
 using namespace std;
 
+extern bool g_Shutdown;
 extern unordered_map<DWORD, User*> g_users;
 extern FrameSkip gFrameSkipper;
 extern CLogger g_Logger;
@@ -18,7 +20,7 @@ void InitializeGame()
 {
 	gFrameSkipper.CheckTime();
 	gFrameSkipper.Reset();
-	g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
+	g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
 }
 
 void UpdateGame()
@@ -137,6 +139,31 @@ void UpdateGame()
 
 void ServerControl()
 {
+	if (_kbhit())
+	{
+		WCHAR key = _getwch();
+
+		// Q키 : 프로그램 종료
+		if (key == L'Q')
+		{
+			g_Shutdown = true;
+		}
+		// I키 : 키 정보
+		if (key == L'I')
+		{
+			wprintf_s(L"Program Exit : Shift + Q\nDebug Mode : Shift + D\nError Mode : Shift + E\n");
+		}
+		// D키 : 디버그 모드 전환
+		if (key == L'D')
+		{
+			g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
+		}
+		// E키 : 에러 모드 전환
+		if (key == L'E')
+		{
+			g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
+		}
+	}
 }
 
 void Monitor()
