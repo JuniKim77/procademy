@@ -308,8 +308,10 @@ void SendPacket_SectorOne(int sectorX, int sectorY, CPacket* packet, DWORD excep
 			continue;
 
 		SendPacket_Unicast((*iter)->sessionNo, packet);
+#ifdef DEBUG
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sector Sent Message [X: %d][Y: %d][userNo: %d]\n",
 			sectorX, sectorY, (*iter)->userNo);
+#endif
 	}
 }
 
@@ -370,6 +372,8 @@ void UserSectorUpdatePacket(User* user)
 
 	GetUpdateSectorAround(user, &removeSector, &addSector);
 
+	// 섹터 삭제 추가 로그
+#ifdef DEBUG
 	for (int cnt = 0; cnt < removeSector.count; ++cnt)
 	{
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Removed Sector [X: %d][Y: %d]\n",
@@ -380,6 +384,7 @@ void UserSectorUpdatePacket(User* user)
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Added Sector [X: %d][Y: %d]\n",
 			addSector.around[cnt].x, addSector.around[cnt].y);
 	}
+#endif
 
 	cpSC_DeleteUser(&packet, user->userNo);
 

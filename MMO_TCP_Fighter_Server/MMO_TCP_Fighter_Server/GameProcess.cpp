@@ -18,7 +18,7 @@ void InitializeGame()
 {
 	gFrameSkipper.CheckTime();
 	gFrameSkipper.Reset();
-	g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
+	g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
 }
 
 void UpdateGame()
@@ -34,7 +34,14 @@ void UpdateGame()
 
 	if (gFrameSkipper.GetTotalTick() >= 1000)
 	{
-		//g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[Frame Count: %d]\n", gFrameSkipper.GetFrameCount());
+		int frameCount = gFrameSkipper.GetFrameCount();
+
+		if (frameCount >= 52 || frameCount <= 48)
+		{
+			g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[Frame Count: %d][Loop Count: %d]\n", 
+				gFrameSkipper.GetFrameCount(), gFrameSkipper.GetLoopCounter());
+		}
+
 		gFrameSkipper.Refresh();
 	}
 
@@ -53,6 +60,7 @@ void UpdateGame()
 			continue;
 		}
 
+		// 수신 종료 처리
 		if (curTime - session->GetLastRecvTime() > 60000)
 		{
 			g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Time Out!\n",
@@ -60,8 +68,6 @@ void UpdateGame()
 			DisconnectProc(session->GetSessionNo());
 			continue;
 		}
-
-		// 수신 종료 처리
 
 		switch (user->moveDirection)
 		{

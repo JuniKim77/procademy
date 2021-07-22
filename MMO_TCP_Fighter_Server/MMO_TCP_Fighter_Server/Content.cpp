@@ -52,7 +52,7 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);	
 
 		return false;
 	}
@@ -62,10 +62,11 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 	short y;
 
 	*packet >> direction >> x >> y;
-
+#ifdef DEBUG
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Move Start [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
-
+#endif
+	
 	User* user = FindUser(from);
 	if (user == nullptr)
 	{
@@ -81,10 +82,11 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 		CPacket Packet;
 		cpSC_Synchronize(&Packet, user->userNo, user->x, user->y);
 		SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d]\n",
 			from, direction, x, y, user->x, user->y);
-
+#endif
+		
 		x = user->x;
 		y = user->y;
 	}
@@ -131,7 +133,7 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
 
 		return false;
 	}
@@ -142,8 +144,10 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 
 	*packet >> direction >> x >> y;
 
+#ifdef DEBUG
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Move Stop [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
+#endif
 
 	User* user = FindUser(from);
 	if (user == nullptr)
@@ -160,9 +164,10 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 		CPacket Packet;
 		cpSC_Synchronize(&Packet, user->userNo, user->x, user->y);
 		SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d]\n",
 			from, direction, x, y, user->x, user->y);
+#endif		
 
 		x = user->x;
 		y = user->y;
@@ -194,7 +199,7 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
 
 		return false;
 	}
@@ -204,9 +209,10 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 	short y;
 
 	*packet >> direction >> x >> y;
-
+#ifdef DEBUG
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 [Attacker: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
+#endif
 
 	User* attacker = FindUser(from);
 
@@ -227,9 +233,10 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 
 		x = attacker->x;
 		y = attacker->y;
-
+#ifdef DEBUG
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
 			from, direction, x, y);
+#endif
 	}
 
 	attacker->action = dfACTION_ATTACK1;
@@ -269,9 +276,10 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 
 				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 				SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 					from, direction, user->userNo, x, y);
+#endif
 			}
 		}
 		// 인접 섹터 조사
@@ -301,9 +309,10 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 
 						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 						SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 							from, direction, user->userNo, x, y);
+#endif
 					}
 				}
 			}
@@ -331,9 +340,10 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 
 				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 				SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 					from, direction, user->userNo, x, y);
+#endif
 			}
 		}
 		// 인접 섹터 조사
@@ -363,9 +373,10 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 
 						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 						SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 							from, direction, user->userNo, x, y);
+#endif
 					}
 				}
 			}
@@ -386,7 +397,7 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
 
 		return false;
 	}
@@ -396,9 +407,10 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 	short y;
 
 	*packet >> direction >> x >> y;
-
+#ifdef DEBUG
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 [Attacker: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
+#endif	
 
 	User* attacker = FindUser(from);
 
@@ -419,9 +431,10 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 
 		x = attacker->x;
 		y = attacker->y;
-
+#ifdef DEBUG
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
 			from, direction, x, y);
+#endif
 	}
 
 	attacker->action = dfACTION_ATTACK2;
@@ -461,9 +474,10 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 
 				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 				SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 					from, direction, user->userNo, x, y);
+#endif
 			}
 		}
 		// 인접 섹터 조사
@@ -493,9 +507,10 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 
 						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 						SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 							from, direction, user->userNo, x, y);
+#endif
 					}
 				}
 			}
@@ -523,9 +538,10 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 
 				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 				SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 					from, direction, user->userNo, x, y);
+#endif
 			}
 		}
 		// 인접 섹터 조사
@@ -555,9 +571,10 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 
 						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 						SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 							from, direction, user->userNo, x, y);
+#endif
 					}
 				}
 			}
@@ -578,7 +595,7 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
 
 		return false;
 	}
@@ -588,9 +605,10 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 	short y;
 
 	*packet >> direction >> x >> y;
-
+#ifdef DEBUG
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 [Attacker: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
+#endif
 
 	User* attacker = FindUser(from);
 
@@ -611,9 +629,10 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 
 		x = attacker->x;
 		y = attacker->y;
-
+#ifdef DEBUG
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
 			from, direction, x, y);
+#endif
 	}
 
 	attacker->action = dfACTION_ATTACK3;
@@ -653,9 +672,10 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 
 				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 				SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 					from, direction, user->userNo, x, y);
+#endif
 			}
 		}
 		// 인접 섹터 조사
@@ -685,9 +705,10 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 
 						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 						SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 							from, direction, user->userNo, x, y);
+#endif
 					}
 				}
 			}
@@ -715,9 +736,10 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 
 				cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 				SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 					from, direction, user->userNo, x, y);
+#endif
 			}
 		}
 		// 인접 섹터 조사
@@ -747,9 +769,10 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 
 						cpSC_Damage(&Packet, attacker->userNo, user->userNo, user->hp);
 						SendPacket_Around(user->userNo, &Packet, true);
-
+#ifdef DEBUG
 						g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 HIT [Attacker: %d][Direction: %d][Dest: %d][X: %d][Y: %d]\n",
 							from, direction, user->userNo, x, y);
+#endif
 					}
 				}
 			}
@@ -770,7 +793,7 @@ bool CS_Echo(DWORD from, CPacket* packet)
 
 	if (session == nullptr)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
+		g_Logger._Log(dfLOG_LEVEL_ERROR, L"존재하지 않는 세션 [SessionNo: %d]\n", from);
 
 		return false;
 	}

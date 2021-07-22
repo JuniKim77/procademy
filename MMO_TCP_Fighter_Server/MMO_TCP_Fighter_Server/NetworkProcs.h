@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wtypes.h>
-
+//#define DEBUG
 #define dfNETWORK_PORT 20000
 #define dfLOG_LEVEL_DEBUG (0)
 #define dfLOG_LEVEL_ERROR (1)
