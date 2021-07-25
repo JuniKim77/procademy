@@ -1,6 +1,6 @@
 #pragma comment(lib, "ws2_32")
 
-#define DEBUG
+//#define DEBUG
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <WS2tcpip.h>
 #include "Session.h"
@@ -11,10 +11,12 @@
 #include "EffectObject.h"
 #include "ActionDefine.h"
 #include "CPacket.h"
+#include "CLogger.h"
 
 extern HWND gMainWindow;
 extern myList<BaseObject*> gObjectList;
 extern BaseObject* gPlayerObject;
+extern CLogger g_Logger;
 
 Session::Session()
 	: mSocket(INVALID_SOCKET)
@@ -42,13 +44,14 @@ bool Session::Connect(HWND hWnd)
 	addr.sin_port = htons(SERVER_PORT);
 
 #ifdef DEBUG
-	InetPton(AF_INET, L"127.0.0.1", &addr.sin_addr);
+	
 #else
-	WCHAR ServerIP[16] = { 0, };
+	InetPton(AF_INET, L"127.0.0.1", &addr.sin_addr);
+#endif // DEBUG
+	/*WCHAR ServerIP[16] = { 0, };
 	wprintf_s(L"Server IP: ");
 	_getws_s(ServerIP);
-	InetPton(AF_INET, ServerIP, &addr.sin_addr);
-#endif // DEBUG
+	InetPton(AF_INET, ServerIP, &addr.sin_addr);*/
 
 	int asyncselectRetval = WSAAsyncSelect(mSocket, hWnd, WM_SOCKET,
 		FD_READ | FD_WRITE | FD_CLOSE | FD_CONNECT);
@@ -247,7 +250,7 @@ void Session::CreateMyPlayer(CPacket* packet)
 	gPlayerObject = player;
 	gObjectList.push_back(gPlayerObject);
 
-	wprintf_s(L"Create Character ID: %d, X : %d, Y: %d\n",
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Create Character ID: %d, X : %d, Y: %d\n",
 		player->GetObectID(), player->GetCurX(), player->GetCurY());
 }
 
@@ -269,7 +272,7 @@ void Session::CreateOtherPlayer(CPacket* packet)
 	player->SetEnemy();
 	gObjectList.push_back(player);
 
-	wprintf_s(L"Create Enemy ID: %d, X : %d, Y: %d\n",
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Create Enemy ID: %d, X : %d, Y: %d\n",
 		player->GetObectID(), player->GetCurX(), player->GetCurY());
 }
 
@@ -285,10 +288,9 @@ void Session::DeletePlayer(CPacket* packet)
 		return;
 
 	target->SetDestroy();
-	wprintf_s(L"Delete Character ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Delete Character ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(), target->GetCurX(), target->GetCurY());
 }
 
 void Session::MoveStartPlayer(CPacket* packet)
@@ -307,10 +309,9 @@ void Session::MoveStartPlayer(CPacket* packet)
 
 	target->SetPosition(x, y);
 	target->ActionInput(direction);
-	wprintf_s(L"Move Character. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Move Character ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(), target->GetCurX(), target->GetCurY());
 }
 
 void Session::MoveStopPlayer(CPacket* packet)
@@ -329,10 +330,9 @@ void Session::MoveStopPlayer(CPacket* packet)
 
 	target->SetPosition(x, y);
 	target->ActionInput(dfAction_STAND);
-	wprintf_s(L"Stop Character. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Stop Character ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(), target->GetCurX(), target->GetCurY());
 }
 
 void Session::AttackProc1(CPacket* packet)
@@ -351,10 +351,8 @@ void Session::AttackProc1(CPacket* packet)
 
 	attacker->SetPosition(x, y);
 	attacker->ActionInput(dfACTION_ATTACK1);
-	wprintf_s(L"Attack 1. ID: %d, X : %d, Y: %d\n",
-		attacker->GetObectID(),
-		attacker->GetCurX(),
-		attacker->GetCurY());
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Attack 1. ID: %d, X : %d, Y: %d\n",
+		attacker->GetObectID(), attacker->GetCurX(), attacker->GetCurY());
 }
 
 void Session::AttackProc2(CPacket* packet)
@@ -373,10 +371,8 @@ void Session::AttackProc2(CPacket* packet)
 
 	attacker->SetPosition(x, y);
 	attacker->ActionInput(dfACTION_ATTACK2);
-	wprintf_s(L"Attack 2. ID: %d, X : %d, Y: %d\n",
-		attacker->GetObectID(),
-		attacker->GetCurX(),
-		attacker->GetCurY());
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Attack 2. ID: %d, X : %d, Y: %d\n",
+		attacker->GetObectID(), attacker->GetCurX(), attacker->GetCurY());
 }
 
 void Session::AttackProc3(CPacket* packet)
@@ -395,10 +391,8 @@ void Session::AttackProc3(CPacket* packet)
 
 	attacker->SetPosition(x, y);
 	attacker->ActionInput(dfACTION_ATTACK3);
-	wprintf_s(L"Attack 3. ID: %d, X : %d, Y: %d\n",
-		attacker->GetObectID(),
-		attacker->GetCurX(),
-		attacker->GetCurY());
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Attack 3. ID: %d, X : %d, Y: %d\n",
+		attacker->GetObectID(), attacker->GetCurX(), attacker->GetCurY());
 }
 
 void Session::DamageProc(CPacket* packet)
@@ -426,10 +420,8 @@ void Session::DamageProc(CPacket* packet)
 		attacker->CreateEffect();
 	}
 
-	wprintf_s(L"Get Damage. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Get Damage. ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(), target->GetCurX(), target->GetCurY());
 }
 
 void Session::SyncProc(CPacket* packet)
@@ -447,10 +439,8 @@ void Session::SyncProc(CPacket* packet)
 
 	target->SetPosition(x, y);
 
-	wprintf_s(L"Sync. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync. ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(), target->GetCurX(), target->GetCurY());
 }
 
 BaseObject* Session::SearchObject(int id)

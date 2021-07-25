@@ -144,6 +144,7 @@
     <ClInclude Include="ActionDefine.h" />
     <ClInclude Include="ActionGame.h" />
     <ClInclude Include="BaseObject.h" />
+    <ClInclude Include="CLogger.h" />
     <ClInclude Include="CPacket.h" />
     <ClInclude Include="EffectObject.h" />
     <ClInclude Include="EObjectType.h" />
@@ -165,6 +166,7 @@
   <ItemGroup>
     <ClCompile Include="ActionGame.cpp" />
     <ClCompile Include="BaseObject.cpp" />
+    <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="CPacket.cpp" />
     <ClCompile Include="EffectObject.cpp" />
     <ClCompile Include="FrameSkip.cpp" />

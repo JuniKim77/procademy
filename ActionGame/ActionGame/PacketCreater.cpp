@@ -2,6 +2,9 @@
 #include "CPacket.h"
 #include "PacketDefine.h"
 #include <stdio.h>
+#include "CLogger.h"
+
+extern CLogger g_Logger;
 
 void CreateMoveStartPacket(CPacket* packet, BYTE direction, WORD x, WORD y)
 {
@@ -82,31 +85,31 @@ void LogPacket(CPacket* packet, DWORD id)
 	{
 	case dfPACKET_CS_MOVE_START:
 	{
-		wprintf_s(L"# PACKET_MOVE_START # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"# PACKET_MOVE_START # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
 			id, direction, x, y);
 		break;
 	}
 	case dfPACKET_CS_MOVE_STOP:
 	{
-		wprintf_s(L"# PACKET_MOVESTOP # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"# PACKET_MOVESTOP # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
 			id, direction, x, y);
 		break;
 	}
 	case dfPACKET_CS_ATTACK1:
 	{
-		wprintf_s(L"# PACKET_ATTACK1 # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"# PACKET_ATTACK1 # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
 			id, direction, x, y);
 		break;
 	}
 	case dfPACKET_CS_ATTACK2:
 	{
-		wprintf_s(L"# PACKET_ATTACK2 # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"# PACKET_ATTACK2 # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
 			id, direction, x, y);
 		break;
 	}
 	case dfPACKET_CS_ATTACK3:
 	{
-		wprintf_s(L"# PACKET_ATTACK3 # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"# PACKET_ATTACK3 # SessionID:%d / Direction:%d / X:%d / Y:%d\n",
 			id, direction, x, y);
 		break;
 	}
