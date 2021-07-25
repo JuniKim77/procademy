@@ -8,6 +8,7 @@
 #include "Content.h"
 #include "CLogger.h"
 #include <conio.h>
+#include "MyProfiler.h"
 
 using namespace std;
 
@@ -151,7 +152,7 @@ void ServerControl()
 		// I키 : 키 정보
 		if (key == L'I')
 		{
-			wprintf_s(L"Program Exit : Shift + Q\nDebug Mode : Shift + D\nError Mode : Shift + E\n");
+			wprintf_s(L"Program Exit : Shift + Q\nDebug Mode : Shift + D\nError Mode : Shift + E\nProfile Write : Shift + H");
 		}
 		// D키 : 디버그 모드 전환
 		if (key == L'D')
@@ -162,6 +163,12 @@ void ServerControl()
 		if (key == L'E')
 		{
 			g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
+		}
+
+		if (key == L'H')
+		{
+			ProfileDataOutText(L"Profile");
+			ProfileReset();
 		}
 	}
 }

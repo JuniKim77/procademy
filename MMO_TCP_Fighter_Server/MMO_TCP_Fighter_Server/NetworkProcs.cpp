@@ -180,6 +180,8 @@ void DisconnectProc(DWORD sessionKey)
 	cpSC_DeleteUser(&packet, user->userNo);
 	SendPacket_Around(user->userNo, &packet, true);
 
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Disconnect [UserNo: %d]\n", user->userNo);
+
 	Sector_RemoveUser(user, true);
 	DeleteSessionData(sessionKey);
 	DeleteUserData(sessionKey);

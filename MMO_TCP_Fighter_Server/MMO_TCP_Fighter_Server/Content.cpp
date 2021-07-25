@@ -82,10 +82,9 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 		CPacket Packet;
 		cpSC_Synchronize(&Packet, user->userNo, user->x, user->y);
 		SendPacket_Around(user->userNo, &Packet, true);
-#ifdef DEBUG
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d]\n",
-			from, direction, x, y, user->x, user->y);
-#endif
+
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
+			from, direction, x, y, user->x, user->y, user->hp);
 		
 		x = user->x;
 		y = user->y;
@@ -164,10 +163,9 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 		CPacket Packet;
 		cpSC_Synchronize(&Packet, user->userNo, user->x, user->y);
 		SendPacket_Around(user->userNo, &Packet, true);
-#ifdef DEBUG
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d]\n",
-			from, direction, x, y, user->x, user->y);
-#endif		
+
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
+			from, direction, x, y, user->x, user->y, user->hp);
 
 		x = user->x;
 		y = user->y;
@@ -231,12 +229,11 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 		cpSC_Synchronize(&Packet, attacker->userNo, attacker->x, attacker->y);
 		SendPacket_Around(attacker->userNo, &Packet, true);
 
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
+			from, direction, x, y, attacker->x, attacker->y, attacker->hp);
+
 		x = attacker->x;
 		y = attacker->y;
-#ifdef DEBUG
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
-			from, direction, x, y);
-#endif
 	}
 
 	attacker->action = dfACTION_ATTACK1;
@@ -429,12 +426,11 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 		cpSC_Synchronize(&Packet, attacker->userNo, attacker->x, attacker->y);
 		SendPacket_Around(attacker->userNo, &Packet, true);
 
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
+			from, direction, x, y, attacker->x, attacker->y, attacker->hp);
+
 		x = attacker->x;
 		y = attacker->y;
-#ifdef DEBUG
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
-			from, direction, x, y);
-#endif
 	}
 
 	attacker->action = dfACTION_ATTACK2;
@@ -627,12 +623,12 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 		cpSC_Synchronize(&Packet, attacker->userNo, attacker->x, attacker->y);
 		SendPacket_Around(attacker->userNo, &Packet, true);
 
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
+			from, direction, x, y, attacker->x, attacker->y, attacker->hp);
+
 		x = attacker->x;
 		y = attacker->y;
-#ifdef DEBUG
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Send [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
-			from, direction, x, y);
-#endif
+
 	}
 
 	attacker->action = dfACTION_ATTACK3;
