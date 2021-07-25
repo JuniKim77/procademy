@@ -56,11 +56,11 @@ void UpdateGame()
 
 		iter++;
 		// HP가 0이하면 종료 처리..
-		if (user->hp <= 0)
-		{
-			//DisconnectProc(session->GetSessionNo());
-			continue;
-		}
+		//if (user->hp <= 0)
+		//{
+		//	//DisconnectProc(session->GetSessionNo());
+		//	continue;
+		//}
 
 		// 수신 종료 처리
 		if (curTime - session->GetLastRecvTime() > 60000)

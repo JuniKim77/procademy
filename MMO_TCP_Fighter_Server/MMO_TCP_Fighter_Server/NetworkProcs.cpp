@@ -183,8 +183,6 @@ void DisconnectProc(DWORD sessionKey)
 	Sector_RemoveUser(user, true);
 	DeleteSessionData(sessionKey);
 	DeleteUserData(sessionKey);
-
-	
 }
 
 void AcceptProc()

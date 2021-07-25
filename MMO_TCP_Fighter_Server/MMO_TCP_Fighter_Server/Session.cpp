@@ -35,17 +35,29 @@ void Session::printInfo() const
 
 void Session::receiveProc()
 {
+	if (mRecvBuffer.GetFreeSize() == 0)
+	{
+		return;
+	}
+
+	/*char buffer[10000];
+
+	int retval = recv(mSocket, buffer, mRecvBuffer.GetFreeSize(), 0);
+
+	mRecvBuffer.Enqueue(buffer, retval);*/
+
 	int dSize = mRecvBuffer.DirectEnqueueSize();
 	int retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
 
 	// Select 모델에서 반응이 왔고, 링버퍼의 여유도 있는데, retval이 0인거면 종료 메세지!
 	// 이후 아무것도 처리 안하고 나감.
-	if (mRecvBuffer.GetRearBufferPtr() > 0 && retval == 0)
+	if (retval == 0)
 	{
 		SetDisconnect();
 
 		return;
 	}
+
 	// 소켓 에러인데, 우드블락도 아니면 소켓 이상한 것! -> 종료!
 	if (retval == SOCKET_ERROR)
 	{
@@ -60,6 +72,27 @@ void Session::receiveProc()
 	}
 
 	mRecvBuffer.MoveRear(retval);
+
+	if (retval == dSize)
+	{
+		dSize = mRecvBuffer.DirectEnqueueSize();
+		retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
+
+		if (retval == SOCKET_ERROR)
+		{
+			int err = WSAGetLastError();
+
+			if (err == WSAEWOULDBLOCK)
+				return;
+
+			SetDisconnect();
+
+			return;
+		}
+
+		mRecvBuffer.MoveRear(retval);
+	}
+
 	mLastRecvTime = GetTickCount64();
 	// 받았으면 다 처리해주는게 기본
 	while (1)
@@ -158,6 +191,12 @@ void Session::writeProc()
 		totalSendSize += sendSize;
 	}
 
+	/*char buffer[10000];
+
+	mSendBuffer.Peek(buffer, mSendBuffer.GetUseSize());
+
+	int totalSendSize = send(mSocket,buffer, mSendBuffer.GetUseSize(), 0);
+
 	if (totalSendSize == SOCKET_ERROR)
 	{
 		int err = WSAGetLastError();
@@ -171,4 +210,6 @@ void Session::writeProc()
 
 		return;
 	}
+
+	mSendBuffer.MoveFront(totalSendSize);*/
 }

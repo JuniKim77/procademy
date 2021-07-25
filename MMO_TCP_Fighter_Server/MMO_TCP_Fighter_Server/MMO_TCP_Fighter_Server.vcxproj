@@ -144,9 +144,11 @@
     <ClCompile Include="Container.cpp" />
     <ClCompile Include="Content.cpp" />
     <ClCompile Include="CPacket.cpp" />
+    <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="FrameSkip.cpp" />
     <ClCompile Include="GameProcess.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MyProfiler.cpp" />
     <ClCompile Include="NetworkProcs.cpp" />
     <ClCompile Include="PacketCreater.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
@@ -159,8 +161,10 @@
     <ClInclude Include="Container.h" />
     <ClInclude Include="Content.h" />
     <ClInclude Include="CPacket.h" />
+    <ClInclude Include="CSVReader.h" />
     <ClInclude Include="FrameSkip.h" />
     <ClInclude Include="GameProcess.h" />
+    <ClInclude Include="MyProfiler.h" />
     <ClInclude Include="NetworkProcs.h" />
     <ClInclude Include="PacketCreater.h" />
     <ClInclude Include="PacketDefine.h" />

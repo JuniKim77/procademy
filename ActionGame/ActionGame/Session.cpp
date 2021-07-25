@@ -1,6 +1,6 @@
 #pragma comment(lib, "ws2_32")
 
-//#define DEBUG
+#define DEBUG
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <WS2tcpip.h>
 #include "Session.h"
