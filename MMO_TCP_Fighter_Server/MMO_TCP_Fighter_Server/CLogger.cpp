@@ -10,11 +10,21 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
     if (logLevel == dfLOG_LEVEL_DEBUG && mLogLevel > logLevel)
         return;
 
+    tm t;
+    time_t curTime;
+
+    time(&curTime);
+    localtime_s(&t, &curTime);
+
     WCHAR log[dfLOG_SIZE] = { 0, };
     WCHAR* pLog = log;
-    int count = 0;
 
     va_list ap;
+
+    int lenval = swprintf_s(pLog, dfLOG_SIZE, L"[%02d:%02d:%02d] ",
+        t.tm_hour, t.tm_min, t.tm_sec);
+
+    int count = lenval;
 
     va_start(ap, format);
     {
@@ -68,12 +78,6 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
 	{
         wprintf_s(log);
 	}
-
-    tm t;
-    time_t curTime;
-
-    time(&curTime);
-    localtime_s(&t, &curTime);
 
     WCHAR fileName[80];
 
