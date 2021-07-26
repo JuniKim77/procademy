@@ -12,6 +12,7 @@ using namespace std;
 
 extern unordered_map<DWORD, User*> g_users;
 extern CLogger g_Logger;
+extern char g_writeType;
 
 Session::Session(SOCKET socket, u_short port, u_long ip, DWORD sessionNo)
 	: mSocket(socket)
@@ -75,6 +76,8 @@ void Session::receiveProc()
 
 	if (retval == dSize)
 	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Receive Enqueue Boundary..\n", mSessionNo);
+
 		dSize = mRecvBuffer.DirectEnqueueSize();
 		retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
 
@@ -162,54 +165,87 @@ bool Session::completeRecvPacket()
 
 void Session::writeProc()
 {
-	int totalSendSize = 0;
-
-	while (1)
-	{
-		if (mSendBuffer.GetUseSize() == 0)
+	if (g_writeType == 'A')
+		while (1)
 		{
-			break;
-		}
-
-		int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.DirectDequeueSize(), 0);
-
-		if (sendSize == SOCKET_ERROR)
-		{
-			int err = WSAGetLastError();
-
-			if (err == WSAEWOULDBLOCK)
+			if (mSendBuffer.GetUseSize() == 0)
 			{
+				break;
+			}
+
+			int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.DirectDequeueSize(), 0);
+
+			if (mSendBuffer.GetUseSize() > mSendBuffer.DirectDequeueSize())
+			{
+				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Send Dequeue Boundary..\n", mSessionNo);
+			}
+
+			if (sendSize == SOCKET_ERROR)
+			{
+				int err = WSAGetLastError();
+
+				if (err == WSAEWOULDBLOCK)
+				{
+					return;
+				}
+
+				SetDisconnect();
+
 				return;
 			}
 
-			SetDisconnect();
-
-			return;
+			mSendBuffer.MoveFront(sendSize);
 		}
-
-		mSendBuffer.MoveFront(sendSize);
-		totalSendSize += sendSize;
-	}
-
-	/*char buffer[10000];
-
-	mSendBuffer.Peek(buffer, mSendBuffer.GetUseSize());
-
-	int totalSendSize = send(mSocket,buffer, mSendBuffer.GetUseSize(), 0);
-
-	if (totalSendSize == SOCKET_ERROR)
+	else
 	{
-		int err = WSAGetLastError();
-
-		if (err == WSAEWOULDBLOCK)
+		if (mSendBuffer.GetUseSize() > mSendBuffer.DirectDequeueSize())
 		{
-			return;
+			char buffer[10000];
+
+			mSendBuffer.Peek(buffer, mSendBuffer.GetUseSize());
+
+			int totalSendSize = send(mSocket, buffer, mSendBuffer.GetUseSize(), 0);
+
+			if (totalSendSize == SOCKET_ERROR)
+			{
+				int err = WSAGetLastError();
+
+				if (err == WSAEWOULDBLOCK)
+				{
+					return;
+				}
+
+				SetDisconnect();
+
+				return;
+			}
+
+			mSendBuffer.MoveFront(totalSendSize);
 		}
+		else
+		{
+			int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.DirectDequeueSize(), 0);
 
-		SetDisconnect();
+			if (mSendBuffer.GetUseSize() > mSendBuffer.DirectDequeueSize())
+			{
+				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Send Dequeue Boundary..\n", mSessionNo);
+			}
 
-		return;
+			if (sendSize == SOCKET_ERROR)
+			{
+				int err = WSAGetLastError();
+
+				if (err == WSAEWOULDBLOCK)
+				{
+					return;
+				}
+
+				SetDisconnect();
+
+				return;
+			}
+
+			mSendBuffer.MoveFront(sendSize);
+		}
 	}
-
-	mSendBuffer.MoveFront(totalSendSize);*/
 }

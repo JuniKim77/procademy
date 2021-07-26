@@ -16,6 +16,7 @@ extern bool g_Shutdown;
 extern unordered_map<DWORD, User*> g_users;
 extern FrameSkip gFrameSkipper;
 extern CLogger g_Logger;
+char g_writeType = 'A';
 
 void InitializeGame()
 {
@@ -152,7 +153,7 @@ void ServerControl()
 		// I키 : 키 정보
 		if (key == L'I')
 		{
-			wprintf_s(L"Program Exit : Shift + Q\nDebug Mode : Shift + D\nError Mode : Shift + E\nProfile Write : Shift + H");
+			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\nWriteModeA[A]\nWriteModeB[B] [Cur: %c]\n", g_writeType);
 		}
 		// D키 : 디버그 모드 전환
 		if (key == L'D')
@@ -169,6 +170,14 @@ void ServerControl()
 		{
 			ProfileDataOutText(L"Profile");
 			ProfileReset();
+		}
+		if (key == L'A')
+		{
+			g_writeType = 'A';
+		}
+		if (key == L'B')
+		{
+			g_writeType = 'B';
 		}
 	}
 }

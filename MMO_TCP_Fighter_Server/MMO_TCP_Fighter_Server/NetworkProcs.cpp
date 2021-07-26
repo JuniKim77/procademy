@@ -15,6 +15,7 @@
 #include "CPacket.h"
 #include "Sector.h"
 #include "PacketCreater.h"
+#include "MyProfiler.h"
 
 using namespace std;
 
@@ -153,7 +154,9 @@ void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset)
 
 		if (FD_ISSET(session->mSocket, wset))
 		{
+			ProfileBegin(L"WriteProc");
 			session->writeProc();
+			ProfileEnd(L"WriteProc");
 			--numSelected;
 		}
 

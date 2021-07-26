@@ -25,6 +25,7 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
         t.tm_hour, t.tm_min, t.tm_sec);
 
     int count = lenval;
+    pLog += lenval;
 
     va_start(ap, format);
     {
