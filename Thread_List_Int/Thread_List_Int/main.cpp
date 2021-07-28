@@ -1,3 +1,4 @@
+#include <conio.h>
 #include <process.h>
 #include <Windows.h>
 #include <stdio.h>
@@ -33,7 +34,8 @@ int main()
 
 	while (1)
 	{
-		char ch = getchar();
+		char ch = _getch();
+		rewind(stdin);
 
 		if (ch == 'x')
 		{
@@ -76,21 +78,19 @@ unsigned int __stdcall PrintThreadFunc(void* pvParam)
 		{
 			AcquireSRWLockShared(&g_srwNums);
 
-			if (g_nums.size() == 0)
+			if (g_nums.size() > 0)
 			{
-				break;
+				auto iter = g_nums.begin();
+
+				wprintf_s(L"%d", *iter);
+				iter++;
+
+				for (; iter != g_nums.end(); ++iter)
+				{
+					wprintf_s(L"-%d", *iter);
+				}
+				wprintf_s(L"\n");
 			}
-
-			auto iter = g_nums.begin();
-
-			wprintf_s(L"%d", *iter);
-			iter++;
-
-			for (; iter != g_nums.end(); ++iter)
-			{
-				wprintf_s(L"-%d", *iter);
-			}
-			wprintf_s(L"\n");
 
 			ReleaseSRWLockShared(&g_srwNums);
 			break;
@@ -181,32 +181,55 @@ unsigned int __stdcall WorkerThreadFunc(void* pvParam)
 
 unsigned int __stdcall SaveThreadFunc(void* pvParam)
 {
-	FILE* fout;
-	_wfopen_s(&fout, L"result.txt", L"a");
+	HANDLE hArray[2] = { g_ExitEvent, g_SaveEvent };
 
-	AcquireSRWLockShared(&g_srwNums);
-
-	if (g_nums.size() == 0)
+	while (1)
 	{
-		fclose(fout);
-		return 0;
+		DWORD retval = WaitForMultipleObjects(2, hArray, false, INFINITE);
+
+		switch (retval)
+		{
+		case WAIT_FAILED:
+			wprintf_s(L"Handle Error %d\n", GetLastError());
+			return -1;
+		case WAIT_TIMEOUT:
+		{
+			wprintf_s(L"Timeout Error %d\n", GetLastError());
+			break;
+		}
+		case WAIT_OBJECT_0:
+			return 0;
+		case WAIT_OBJECT_0 + 1:
+		{
+			AcquireSRWLockShared(&g_srwNums);
+
+			if (g_nums.size() > 0)
+			{
+				FILE* fout;
+				_wfopen_s(&fout, L"result.txt", L"a");
+
+				auto iter = g_nums.begin();
+
+				fwprintf_s(fout, L"%d", *iter);
+				iter++;
+
+				for (; iter != g_nums.end(); ++iter)
+				{
+					fwprintf_s(fout, L"-%d", *iter);
+				}
+
+				fwprintf_s(fout, L"\n");
+				fclose(fout);
+			}
+
+			ReleaseSRWLockShared(&g_srwNums);
+
+			break;
+		}
+		default:
+			break;
+		}
 	}
-
-	auto iter = g_nums.begin();
-
-	fwprintf_s(fout, L"%d", *iter);
-	iter++;
-
-	for (; iter != g_nums.end(); ++iter)
-	{
-		fwprintf_s(fout, L"-%d", *iter);
-	}
-
-	fwprintf_s(fout, L"\n");
-
-	ReleaseSRWLockShared(&g_srwNums);
-
-	fclose(fout);
 
 	return 0;
 }
