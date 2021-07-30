@@ -7,18 +7,22 @@
 #include "NetworkProcs.h"
 #include "Content.h"
 #include "CLogger.h"
+#include <conio.h>
+#include "MyProfiler.h"
 
 using namespace std;
 
+extern bool g_Shutdown;
 extern unordered_map<DWORD, User*> g_users;
 extern FrameSkip gFrameSkipper;
 extern CLogger g_Logger;
+char g_writeType = 'A';
 
 void InitializeGame()
 {
 	gFrameSkipper.CheckTime();
 	gFrameSkipper.Reset();
-	g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
+	g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
 }
 
 void UpdateGame()
@@ -34,7 +38,14 @@ void UpdateGame()
 
 	if (gFrameSkipper.GetTotalTick() >= 1000)
 	{
-		//g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[Frame Count: %d]\n", gFrameSkipper.GetFrameCount());
+		int frameCount = gFrameSkipper.GetFrameCount();
+
+		if (frameCount >= 52 || frameCount <= 48)
+		{
+			g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[Frame Count: %d][Loop Count: %d]\n", 
+				gFrameSkipper.GetFrameCount(), gFrameSkipper.GetLoopCounter());
+		}
+
 		gFrameSkipper.Refresh();
 	}
 
@@ -47,12 +58,13 @@ void UpdateGame()
 
 		iter++;
 		// HP가 0이하면 종료 처리..
-		if (user->hp <= 0)
-		{
-			//DisconnectProc(session->GetSessionNo());
-			continue;
-		}
+		//if (user->hp <= 0)
+		//{
+		//	//DisconnectProc(session->GetSessionNo());
+		//	continue;
+		//}
 
+		// 수신 종료 처리
 		if (curTime - session->GetLastRecvTime() > 60000)
 		{
 			g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Time Out!\n",
@@ -60,8 +72,6 @@ void UpdateGame()
 			DisconnectProc(session->GetSessionNo());
 			continue;
 		}
-
-		// 수신 종료 처리
 
 		switch (user->moveDirection)
 		{
@@ -131,6 +141,45 @@ void UpdateGame()
 
 void ServerControl()
 {
+	if (_kbhit())
+	{
+		WCHAR key = _getwch();
+
+		// Q키 : 프로그램 종료
+		if (key == L'Q')
+		{
+			g_Shutdown = true;
+		}
+		// I키 : 키 정보
+		if (key == L'I')
+		{
+			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\nWriteModeA[A]\nWriteModeB[B] [Cur: %c]\n", g_writeType);
+		}
+		// D키 : 디버그 모드 전환
+		if (key == L'D')
+		{
+			g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
+		}
+		// E키 : 에러 모드 전환
+		if (key == L'E')
+		{
+			g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
+		}
+
+		if (key == L'H')
+		{
+			ProfileDataOutText(L"Profile");
+			ProfileReset();
+		}
+		if (key == L'A')
+		{
+			g_writeType = 'A';
+		}
+		if (key == L'B')
+		{
+			g_writeType = 'B';
+		}
+	}
 }
 
 void Monitor()

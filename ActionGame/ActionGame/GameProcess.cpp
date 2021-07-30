@@ -8,6 +8,8 @@
 #include "ActionDefine.h"
 #include <stdio.h>
 #include "FrameSkip.h"
+#include <conio.h>
+#include "CLogger.h"
 
 extern DWORD gOldTime;
 Process gGameState = PROCESS_GAME;
@@ -15,6 +17,7 @@ extern FrameSkip gFrameSkipper;
 extern HWND gMainWindow;
 extern BaseObject* gPlayerObject;
 //int gIDCounter;
+extern CLogger g_Logger;
 
 void InitializeGame()
 {
@@ -126,7 +129,11 @@ void UpdateGame()
 	{
 		gFrameSkipper.Refresh();
 		WCHAR msg[32] = { 0, };
-		swprintf_s(msg, L"LogicFrame:%d, ID: %d", gFrameSkipper.GetOldFrameCount(), gPlayerObject->GetObectID());
+		if (gPlayerObject != nullptr)
+		{
+			swprintf_s(msg, L"LogicFrame:%d, ID: %d", gFrameSkipper.GetOldFrameCount(), gPlayerObject->GetObectID());
+		}
+		
 		SetWindowText(gMainWindow, msg);
 	}
 
@@ -190,6 +197,27 @@ void KeyProcess()
 	}
 
 	gPlayerObject->ActionInput(action);
+
+	if (_kbhit())
+	{
+		WCHAR key = _getwch();
+
+		if (key == L'I')
+		{
+			wprintf_s(L"Program Exit : Shift + Q\nDebug Mode : Shift + D\nDebug Off : Shift + E");
+		}
+
+		// D키 : 디버그 모드 전환
+		if (key == L'D')
+		{
+			g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
+		}
+		// E키 : 에러 모드 전환
+		if (key == L'E')
+		{
+			g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
+		}
+	}
 }
 
 void Update()
@@ -260,7 +288,7 @@ void Render()
 void SortYaxis()
 {
 	int count = gObjectList.size();
-	myList<BaseObject*>::iterator lastIter = --gObjectList.end();
+	myList<BaseObject*>::iterator lastIter = gObjectList.end();
 
 	while (count > 1)
 	{
@@ -268,7 +296,7 @@ void SortYaxis()
 		BaseObject* obj = nullptr;
 		myList<BaseObject*>::iterator maxIter = gObjectList.begin();
 
-		for (auto iter = gObjectList.begin(); iter != gObjectList.end(); iter++)
+		for (auto iter = gObjectList.begin(); iter != lastIter; iter++)
 		{
 			if ((*iter)->GetCurY() > max)
 			{
@@ -277,8 +305,9 @@ void SortYaxis()
 			}
 		}
 
-		gObjectList.swapNode(maxIter, lastIter);
 		--lastIter;
+		gObjectList.swapNode(maxIter, lastIter);
+		
 		count--;
 	}
 }

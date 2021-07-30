@@ -19,6 +19,7 @@ int main()
 
 	while (!g_Shutdown)
 	{
+		gFrameSkipper.AddLoopCounter();
 		NetWorkProc();
 		UpdateGame();
 		ServerControl();

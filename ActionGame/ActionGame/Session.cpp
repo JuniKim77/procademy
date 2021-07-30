@@ -1,6 +1,6 @@
 #pragma comment(lib, "ws2_32")
 
-#define DEBUG
+//#define DEBUG
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <WS2tcpip.h>
 #include "Session.h"
@@ -11,10 +11,12 @@
 #include "EffectObject.h"
 #include "ActionDefine.h"
 #include "CPacket.h"
+#include "CLogger.h"
 
 extern HWND gMainWindow;
 extern myList<BaseObject*> gObjectList;
 extern BaseObject* gPlayerObject;
+extern CLogger g_Logger;
 
 Session::Session()
 	: mSocket(INVALID_SOCKET)
@@ -35,26 +37,27 @@ bool Session::Connect(HWND hWnd)
 
 	mSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (mSocket == INVALID_SOCKET)
-		ErrorQuit(L"소켓 생성 에러", __FILEW__, __LINE__);
+		ErrorQuit(L"Socket Create Error", __FILEW__, __LINE__);
 
 	SOCKADDR_IN addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(SERVER_PORT);
 
 #ifdef DEBUG
-	InetPton(AF_INET, L"127.0.0.1", &addr.sin_addr);
+	
 #else
-	WCHAR ServerIP[16];
-	wprintf_s(L"서버 IP: ");
-	_getws_s(ServerIP);
-	InetPton(AF_INET, ServerIP, &addr.sin_addr);
+	InetPton(AF_INET, L"127.0.0.1", &addr.sin_addr);
 #endif // DEBUG
+	/*WCHAR ServerIP[16] = { 0, };
+	wprintf_s(L"Server IP: ");
+	_getws_s(ServerIP);
+	InetPton(AF_INET, ServerIP, &addr.sin_addr);*/
 
 	int asyncselectRetval = WSAAsyncSelect(mSocket, hWnd, WM_SOCKET,
 		FD_READ | FD_WRITE | FD_CLOSE | FD_CONNECT);
 
 	if (asyncselectRetval == SOCKET_ERROR) {
-		ErrorDisplay(L"소켓 모델 전환 에러");
+		ErrorDisplay(L"Socket Transform Error");
 		return false;
 	}
 
@@ -63,7 +66,7 @@ bool Session::Connect(HWND hWnd)
 	{
 		int err = WSAGetLastError();
 		if (err != WSAEWOULDBLOCK) {
-			ErrorDisplay(L"연결 에러");
+			ErrorDisplay(L"Connection Error");
 			return false;
 		}
 	}
@@ -81,7 +84,7 @@ void Session::SendPacket(char* packet, int size)
 	int retval = mSendBuffer.Enqueue(packet, size);
 
 	if (retval < size)
-		ErrorQuit(L"Send Error: 서버 연결 장애", __FILEW__, __LINE__);
+		ErrorQuit(L"Send Error to sendBuffer", __FILEW__, __LINE__);
 }
 
 void Session::writeProc()
@@ -119,7 +122,7 @@ void Session::ReceivePacket()
 		if (err == WSAEWOULDBLOCK)
 			return;
 
-		ErrorQuit(L"Receive Error: 서버 연결 장애", __FILEW__, __LINE__);
+		ErrorQuit(L"Receive Error to recv buffer", __FILEW__, __LINE__);
 
 		return;
 	}
@@ -136,7 +139,7 @@ void Session::recvProc()
 		mRecvBuffer.Peek((char*)&header, sizeof(stHeader));
 
 		if (header.byCode != 0x89)
-			ErrorQuit(L"서버 이상", __FILEW__, __LINE__);
+			ErrorQuit(L"Code is not matched", __FILEW__, __LINE__);
 
 		if (mRecvBuffer.GetUseSize() < header.bySize + sizeof(stHeader))
 			break;
@@ -215,7 +218,7 @@ void Session::ErrorQuit(const WCHAR* msg, const WCHAR* fileName, unsigned int li
 	int err = WSAGetLastError();
 	WCHAR errorMsg[100];
 	wprintf(L"%s : %d\n", fileName, lineNum);
-	swprintf_s(errorMsg, 100, L"%s code : %d", msg, err);
+	swprintf_s(errorMsg, _countof(errorMsg), L"%s code : %d\n", msg, err);
 	MessageBox(gMainWindow, errorMsg, L"접속종료", MB_OK);
 
 	exit(1);
@@ -225,7 +228,7 @@ void Session::ErrorDisplay(const WCHAR* msg)
 {
 	int err = WSAGetLastError();
 	WCHAR errorMsg[100];
-	swprintf_s(errorMsg, _countof(errorMsg), L"%s code : %d", msg, err);
+	swprintf_s(errorMsg, _countof(errorMsg), L"%s code : %d\n", msg, err);
 	MessageBox(gMainWindow, errorMsg, L"에러 발생", MB_OK);
 }
 
@@ -247,7 +250,7 @@ void Session::CreateMyPlayer(CPacket* packet)
 	gPlayerObject = player;
 	gObjectList.push_back(gPlayerObject);
 
-	wprintf_s(L"내 캐릭터 생성 ID: %d, X : %d, Y: %d\n",
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Create Character ID: %d, X : %d, Y: %d\n",
 		player->GetObectID(), player->GetCurX(), player->GetCurY());
 }
 
@@ -269,7 +272,7 @@ void Session::CreateOtherPlayer(CPacket* packet)
 	player->SetEnemy();
 	gObjectList.push_back(player);
 
-	wprintf_s(L"적 캐릭터 생성 ID: %d, X : %d, Y: %d\n",
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Create Enemy ID: %d, X : %d, Y: %d\n",
 		player->GetObectID(), player->GetCurX(), player->GetCurY());
 }
 
@@ -285,10 +288,9 @@ void Session::DeletePlayer(CPacket* packet)
 		return;
 
 	target->SetDestroy();
-	wprintf_s(L"캐릭터 삭제 ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Delete Character ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(), target->GetCurX(), target->GetCurY());
 }
 
 void Session::MoveStartPlayer(CPacket* packet)
@@ -307,10 +309,9 @@ void Session::MoveStartPlayer(CPacket* packet)
 
 	target->SetPosition(x, y);
 	target->ActionInput(direction);
-	wprintf_s(L"캐릭터 이동 시작. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Move Character ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(), target->GetCurX(), target->GetCurY());
 }
 
 void Session::MoveStopPlayer(CPacket* packet)
@@ -329,10 +330,9 @@ void Session::MoveStopPlayer(CPacket* packet)
 
 	target->SetPosition(x, y);
 	target->ActionInput(dfAction_STAND);
-	wprintf_s(L"캐릭터 정지. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Stop Character ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(), target->GetCurX(), target->GetCurY());
 }
 
 void Session::AttackProc1(CPacket* packet)
@@ -351,10 +351,8 @@ void Session::AttackProc1(CPacket* packet)
 
 	attacker->SetPosition(x, y);
 	attacker->ActionInput(dfACTION_ATTACK1);
-	wprintf_s(L"캐릭터 공격 1. ID: %d, X : %d, Y: %d\n",
-		attacker->GetObectID(),
-		attacker->GetCurX(),
-		attacker->GetCurY());
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Attack 1. ID: %d, X : %d, Y: %d\n",
+		attacker->GetObectID(), attacker->GetCurX(), attacker->GetCurY());
 }
 
 void Session::AttackProc2(CPacket* packet)
@@ -373,10 +371,8 @@ void Session::AttackProc2(CPacket* packet)
 
 	attacker->SetPosition(x, y);
 	attacker->ActionInput(dfACTION_ATTACK2);
-	wprintf_s(L"캐릭터 공격 2. ID: %d, X : %d, Y: %d\n",
-		attacker->GetObectID(),
-		attacker->GetCurX(),
-		attacker->GetCurY());
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Attack 2. ID: %d, X : %d, Y: %d\n",
+		attacker->GetObectID(), attacker->GetCurX(), attacker->GetCurY());
 }
 
 void Session::AttackProc3(CPacket* packet)
@@ -395,10 +391,8 @@ void Session::AttackProc3(CPacket* packet)
 
 	attacker->SetPosition(x, y);
 	attacker->ActionInput(dfACTION_ATTACK3);
-	wprintf_s(L"캐릭터 공격 2. ID: %d, X : %d, Y: %d\n",
-		attacker->GetObectID(),
-		attacker->GetCurX(),
-		attacker->GetCurY());
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Attack 3. ID: %d, X : %d, Y: %d\n",
+		attacker->GetObectID(), attacker->GetCurX(), attacker->GetCurY());
 }
 
 void Session::DamageProc(CPacket* packet)
@@ -426,10 +420,8 @@ void Session::DamageProc(CPacket* packet)
 		attacker->CreateEffect();
 	}
 
-	wprintf_s(L"캐릭터 공격 받음. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Get Damage. ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(), target->GetCurX(), target->GetCurY());
 }
 
 void Session::SyncProc(CPacket* packet)
@@ -447,10 +439,8 @@ void Session::SyncProc(CPacket* packet)
 
 	target->SetPosition(x, y);
 
-	wprintf_s(L"캐릭터 동기화. ID: %d, X : %d, Y: %d\n",
-		target->GetObectID(),
-		target->GetCurX(),
-		target->GetCurY());
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync. ID: %d, X : %d, Y: %d\n",
+		target->GetObectID(), target->GetCurX(), target->GetCurY());
 }
 
 BaseObject* Session::SearchObject(int id)
