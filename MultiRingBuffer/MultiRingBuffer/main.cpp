@@ -8,7 +8,7 @@
 #include <iostream>
 
 #define WORKER_SIZE (3)
-#define WAIT_TIME (5)
+#define WAIT_TIME (0)
 
 using namespace std;
 
@@ -113,13 +113,6 @@ unsigned int __stdcall WorkerFunc(void* pvParam)
 
 		g_msgQ.Dequeue((char*)&header, sizeof(header));
 
-		if (header.shType == dfTYPE_ADD_STR)
-		{
-			AcquireSRWLockExclusive(&g_srwlockList);
-			g_List.push_back(g_msg.substr(0, header.shStrLen));
-			ReleaseSRWLockExclusive(&g_srwlockList);
-		}
-
 		g_msgQ.Unlock(false);	
 
 		if (g_msgQ.GetUseSize() > 0)
@@ -129,6 +122,11 @@ unsigned int __stdcall WorkerFunc(void* pvParam)
 
 		switch (header.shType)
 		{
+		case dfTYPE_ADD_STR:
+			AcquireSRWLockExclusive(&g_srwlockList);
+			g_List.push_back(g_msg.substr(0, header.shStrLen));
+			ReleaseSRWLockExclusive(&g_srwlockList);
+			break;
 		case dfTYPE_DEL_STR:
 		{
 			AcquireSRWLockExclusive(&g_srwlockList);
