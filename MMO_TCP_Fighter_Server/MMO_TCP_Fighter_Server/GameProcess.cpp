@@ -40,11 +40,11 @@ void UpdateGame()
 	{
 		int frameCount = gFrameSkipper.GetFrameCount();
 
-		if (frameCount >= 52 || frameCount <= 48)
+		/*if (frameCount >= 52 || frameCount <= 48)
 		{
-			g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[Frame Count: %d][Loop Count: %d]\n", 
-				gFrameSkipper.GetFrameCount(), gFrameSkipper.GetLoopCounter());
-		}
+			gFrameSkipper.PrintStatus();
+		}*/
+		gFrameSkipper.PrintStatus();
 
 		gFrameSkipper.Refresh();
 	}
