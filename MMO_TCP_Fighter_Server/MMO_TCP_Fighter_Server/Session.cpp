@@ -76,7 +76,7 @@ void Session::receiveProc()
 
 	if (retval == dSize)
 	{
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Receive Enqueue Boundary..\n", mSessionNo);
+		//g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Receive Enqueue Boundary..\n", mSessionNo);
 
 		dSize = mRecvBuffer.DirectEnqueueSize();
 		retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
@@ -165,87 +165,29 @@ bool Session::completeRecvPacket()
 
 void Session::writeProc()
 {
-	if (g_writeType == 'A')
-		while (1)
-		{
-			if (mSendBuffer.GetUseSize() == 0)
-			{
-				break;
-			}
-
-			int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.DirectDequeueSize(), 0);
-
-			if (mSendBuffer.GetUseSize() > mSendBuffer.DirectDequeueSize())
-			{
-				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Send Dequeue Boundary..\n", mSessionNo);
-			}
-
-			if (sendSize == SOCKET_ERROR)
-			{
-				int err = WSAGetLastError();
-
-				if (err == WSAEWOULDBLOCK)
-				{
-					return;
-				}
-
-				SetDisconnect();
-
-				return;
-			}
-
-			mSendBuffer.MoveFront(sendSize);
-		}
-	else
+	while (1)
 	{
-		if (mSendBuffer.GetUseSize() > mSendBuffer.DirectDequeueSize())
+		if (mSendBuffer.GetUseSize() == 0)
 		{
-			char buffer[10000];
+			break;
+		}
 
-			mSendBuffer.Peek(buffer, mSendBuffer.GetUseSize());
+		int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.DirectDequeueSize(), 0);
 
-			int totalSendSize = send(mSocket, buffer, mSendBuffer.GetUseSize(), 0);
+		if (sendSize == SOCKET_ERROR)
+		{
+			int err = WSAGetLastError();
 
-			if (totalSendSize == SOCKET_ERROR)
+			if (err == WSAEWOULDBLOCK)
 			{
-				int err = WSAGetLastError();
-
-				if (err == WSAEWOULDBLOCK)
-				{
-					return;
-				}
-
-				SetDisconnect();
-
 				return;
 			}
 
-			mSendBuffer.MoveFront(totalSendSize);
+			SetDisconnect();
+
+			return;
 		}
-		else
-		{
-			int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.DirectDequeueSize(), 0);
 
-			if (mSendBuffer.GetUseSize() > mSendBuffer.DirectDequeueSize())
-			{
-				g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Send Dequeue Boundary..\n", mSessionNo);
-			}
-
-			if (sendSize == SOCKET_ERROR)
-			{
-				int err = WSAGetLastError();
-
-				if (err == WSAEWOULDBLOCK)
-				{
-					return;
-				}
-
-				SetDisconnect();
-
-				return;
-			}
-
-			mSendBuffer.MoveFront(sendSize);
-		}
+		mSendBuffer.MoveFront(sendSize);
 	}
 }
