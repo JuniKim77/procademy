@@ -99,9 +99,9 @@ unsigned int __stdcall UpdateThreadFunc(void* pvParam)
 
 		int retval = InterlockedIncrement((LONG*)&g_Data);
 
-		if (g_Data % 1000 == 0)
+		if (retval % 1000 == 0)
 		{
-			wprintf_s(L"g_Data: %d\n", g_Data);
+			wprintf_s(L"g_Data: %d\n", retval);
 		}
 	}
 
