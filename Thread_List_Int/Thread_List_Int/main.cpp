@@ -7,7 +7,6 @@
 
 std::list<int> g_nums;
 SRWLOCK g_srwNums;
-HANDLE g_TimerEvent;
 HANDLE g_SaveEvent;
 HANDLE g_ExitEvent;
 
@@ -19,7 +18,6 @@ unsigned int __stdcall SaveThreadFunc(void* pvParam);
 int main()
 {
 	InitializeSRWLock(&g_srwNums);
-	g_TimerEvent = CreateEvent(nullptr, true, false, nullptr);
 	g_SaveEvent = CreateEvent(nullptr, false, false, nullptr);
 	g_ExitEvent = CreateEvent(nullptr, true, false, nullptr);
 	HANDLE hArray[6];
@@ -50,7 +48,6 @@ int main()
 
 	WaitForMultipleObjects(6, hArray, true, INFINITE);
 
-	CloseHandle(g_TimerEvent);
 	CloseHandle(g_SaveEvent);
 	CloseHandle(g_ExitEvent);
 	for (int i = 0; i < 6; ++i)
@@ -63,11 +60,9 @@ int main()
 
 unsigned int __stdcall PrintThreadFunc(void* pvParam)
 {
-	HANDLE hArray[2] = { g_ExitEvent, g_TimerEvent };
-
 	while (1)
 	{
-		DWORD retval = WaitForMultipleObjects(2, hArray, false, 1000);
+		DWORD retval = WaitForSingleObject(g_ExitEvent, 1000);
 
 		switch (retval)
 		{
@@ -107,11 +102,9 @@ unsigned int __stdcall PrintThreadFunc(void* pvParam)
 
 unsigned int __stdcall DeleteThreadFunc(void* pvParam)
 {
-	HANDLE hArray[2] = { g_ExitEvent, g_TimerEvent };
-
 	while (1)
 	{
-		DWORD retval = WaitForMultipleObjects(2, hArray, false, 333);
+		DWORD retval = WaitForSingleObject(g_ExitEvent, 333);
 
 		switch (retval)
 		{
@@ -147,11 +140,9 @@ unsigned int __stdcall WorkerThreadFunc(void* pvParam)
 {
 	srand(time(nullptr));
 
-	HANDLE hArray[2] = { g_ExitEvent, g_TimerEvent };
-
 	while (1)
 	{
-		DWORD retval = WaitForMultipleObjects(2, hArray, false, 1000);
+		DWORD retval = WaitForSingleObject(g_ExitEvent, 1000);
 
 		switch (retval)
 		{
@@ -160,9 +151,9 @@ unsigned int __stdcall WorkerThreadFunc(void* pvParam)
 			return -1;
 		case WAIT_TIMEOUT:
 		{
-			AcquireSRWLockExclusive(&g_srwNums);
-
 			int num = rand();
+
+			AcquireSRWLockExclusive(&g_srwNums);
 
 			g_nums.push_back(num);
 

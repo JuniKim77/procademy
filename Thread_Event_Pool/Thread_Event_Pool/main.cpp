@@ -1,6 +1,7 @@
 #include <process.h>
 #include <Windows.h>
 #include <stdio.h>
+#include <conio.h>
 
 HANDLE hThreadEvent;
 HANDLE hExitEvent;
@@ -20,7 +21,7 @@ int main()
 
 	while (1)
 	{
-		char ch = getchar();
+		char ch = _getch();
 
 		if (ch == 'x')
 		{
