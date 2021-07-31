@@ -2,11 +2,18 @@
 #include <stdio.h>
 #include <cstring>
 #include <random>
+#include <conio.h>
 
 #define STR_SIZE (120)
+#define TIME_PERIOD (50)
+unsigned int __stdcall dequeueProc(void* pvParam);
+unsigned int __stdcall enqueueProc(void* pvParam);
+int dequeueProcess();
+int enqueueProcess();
 
-int dequeueProc(RingBuffer* ringBuffer);
-int enqueueProc(RingBuffer* ringBuffer);
+RingBuffer ringBuffer(BUFFER_SIZE);
+HANDLE g_event;
+SRWLOCK g_srwlock;
 
 char szTest[] = "1234567890 abcdefghijklmnopqrstuvwxyz 1234567890 abcdefghijklmnopqrstuvwxyz 1234567890 abcdefghijklmnopqrstuvwxyz 123456";
 int cur = 0;
@@ -15,34 +22,47 @@ int main()
 {
 	system(" mode  con lines=30   cols=120 ");
 
-	printf("Seed: ");
+	/*printf("Seed: ");
 	int seed = 10;
 	scanf_s("%d", &seed);
 	printf("Ring Buffer Size: ");
 	int ringSize = BUFFER_SIZE;
-	scanf_s("%d", &ringSize);
-
-	RingBuffer ringBuffer(ringSize);
+	scanf_s("%d", &ringSize);*/
+	int seed = 10;
 
 	srand(seed);
 
+	HANDLE hArray[2];
+	hArray[0] = (HANDLE)_beginthreadex(nullptr, 0, enqueueProc, nullptr, 0, nullptr);
+	hArray[1] = (HANDLE)_beginthreadex(nullptr, 0, dequeueProc, nullptr, 0, nullptr);
+	InitializeSRWLock(&g_srwlock);
+
+	g_event = CreateEvent(nullptr, false, false, nullptr);
+
 	while (1)
 	{
-		int ran = enqueueProc(&ringBuffer);
+		char ch = _getch();
+		rewind(stdin);
 
-		/*printf("After Enqueue::: Ran: %d\n", ran);
-		ringBuffer.printInfo();*/
+		if (ch == 'q')
+		{
+			SetEvent(g_event);
+			break;
+		}
+	}
 
-		ran = dequeueProc(&ringBuffer);
+	WaitForMultipleObjects(2, hArray, true, INFINITE);
 
-		/*printf("After Enqueue::: Ran: %d\n", ran);
-		ringBuffer.printInfo();*/
+	CloseHandle(g_event);
+	for (int i = 0; i < 2; ++i)
+	{
+		CloseHandle(hArray[i]);
 	}
 
 	return 0;
 }
 
-int dequeueProc(RingBuffer* ringBuffer)
+int dequeueProcess()
 {
 	char buffer[STR_SIZE + 1];
 
@@ -62,8 +82,15 @@ int dequeueProc(RingBuffer* ringBuffer)
 	{
 
 	}*/
+	//ringBuffer.Lock(false);
+	if (ringBuffer.GetUseSize() == 0)
+	{
+		ringBuffer.Unlock(false);
+		return 0;
+	}
 
-	int size = ringBuffer->Dequeue(buffer, ran);
+	int size = ringBuffer.Dequeue(buffer, ran);
+	//ringBuffer.Unlock(false);
 
 	buffer[size] = '\0';
 	printf(buffer);
@@ -71,7 +98,7 @@ int dequeueProc(RingBuffer* ringBuffer)
 	return size;
 }
 
-int enqueueProc(RingBuffer* ringBuffer)
+int enqueueProcess()
 {
 	char buffer[STR_SIZE + 1];
 
@@ -79,6 +106,50 @@ int enqueueProc(RingBuffer* ringBuffer)
 	int ran = rand() % (STR_SIZE + 1);
 
 	// 램덤 숫자와 현재 위치의 합이 문자열 크기보다 크면...
+	//if (cur + ran > STR_SIZE)
+	//{
+	//	// 가능한 만큼 미리 복사하고... 나머지 따로 복사
+	//	int poss = STR_SIZE - cur;
+	//	memcpy(buffer, szTest + cur, poss);
+	//	memcpy(buffer + poss, szTest, ran - poss);
+	//}
+	//else
+	//{
+	//	memcpy(buffer, szTest + cur, ran);
+	//}
+
+	//buffer[ran] = '\0';
+
+	//int dEneueSize = ringBuffer.DirectEnqueueSize();
+
+	//if (ran < dEneueSize)
+	//{
+	//	memcpy(ringBuffer.GetRearBufferPtr(), buffer, ran);
+
+	//	ringBuffer.MoveRear(ran);
+
+	//	cur = (cur + ran) % STR_SIZE;
+
+	//	return ran;
+	//}
+	//else
+	//{
+	//	memcpy(ringBuffer.GetRearBufferPtr(), buffer, dEneueSize);
+
+	//	ringBuffer.MoveRear(dEneueSize);
+
+	//	if (ringBuffer.IsFrontZero())
+	//	{
+	//		cur = (cur + dEneueSize) % (STR_SIZE + 1);
+	//	}
+	//	else
+	//	{
+	//		cur = (cur + dEneueSize) % STR_SIZE;
+	//	}
+
+	//	return dEneueSize;
+	//}
+
 	if (cur + ran > STR_SIZE)
 	{
 		// 가능한 만큼 미리 복사하고... 나머지 따로 복사
@@ -93,39 +164,72 @@ int enqueueProc(RingBuffer* ringBuffer)
 
 	buffer[ran] = '\0';
 
-	int dEneueSize = ringBuffer->DirectEnqueueSize();
+	//ringBuffer.Lock(false);
+	int size = ringBuffer.Enqueue(buffer, ran);
+	//ringBuffer.Unlock(false);
 
-	if (ran < dEneueSize)
+	cur = (cur + size) % STR_SIZE;
+
+	return size;
+}
+
+unsigned int __stdcall dequeueProc(void* pvParam)
+{
+	srand(100);
+
+	while (1)
 	{
-		memcpy(ringBuffer->GetRearBufferPtr(), buffer, ran);
+		DWORD time = rand() % TIME_PERIOD + 10;
 
-		ringBuffer->MoveRear(ran);
+		DWORD retval = WaitForSingleObject(g_event, time);
 
-		cur = (cur + ran) % STR_SIZE;
-
-		return ran;
+		switch (retval)
+		{
+		case WAIT_FAILED:
+			wprintf_s(L"Handle Error: %d\n", GetLastError());
+			return -1;
+		case WAIT_TIMEOUT:
+		{
+			dequeueProcess();
+			break;
+		}
+		case WAIT_OBJECT_0:
+			SetEvent(g_event);
+			return 0;
+		default:
+			break;
+		}
 	}
-	else
+	return 0;
+}
+
+unsigned int __stdcall enqueueProc(void* pvParam)
+{
+	srand(1000);
+
+	while (1)
 	{
-		memcpy(ringBuffer->GetRearBufferPtr(), buffer, dEneueSize);
+		DWORD time = rand() % TIME_PERIOD + 10;
 
-		ringBuffer->MoveRear(dEneueSize);
+		DWORD retval = WaitForSingleObject(g_event, time);
 
-		if (ringBuffer->IsFrontZero())
+		switch (retval)
 		{
-			cur = (cur + dEneueSize) % (STR_SIZE + 1);
-		}
-		else
+		case WAIT_FAILED:
+			wprintf_s(L"Handle Error: %d\n", GetLastError());
+			return -1;
+		case WAIT_TIMEOUT:
 		{
-			cur = (cur + dEneueSize) % STR_SIZE;
+			enqueueProcess();
+			break;
 		}
-
-		return dEneueSize;
+		case WAIT_OBJECT_0:
+			SetEvent(g_event);
+			return 0;
+		default:
+			break;
+		}
 	}
 
-	/*int size = ringBuffer->Enqueue(buffer, ran);
-
-	cur = (cur + size) % STR_SIZE;*/
-
-	//return size;
+	return 0;
 }
