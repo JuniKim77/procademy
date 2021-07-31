@@ -11,11 +11,11 @@
 #include "CPacket.h"
 #include "User.h"
 #include "Container.h"
-#include "CLogger.h"
 #include "CPacket.h"
 #include "Sector.h"
 #include "PacketCreater.h"
 #include "MyProfiler.h"
+#include "PacketDefine.h"
 
 using namespace std;
 
@@ -232,6 +232,8 @@ void AcceptProc()
 	user->hp = 100;
 	int x = rand() % dfRANGE_MOVE_RIGHT;
 	int y = rand() % dfRANGE_MOVE_BOTTOM;
+	/*int x = g_SessionNo * 100;
+	int y = g_SessionNo * 100;*/
 	user->x = x;
 	user->y = y;
 	int sectorX = x / dfSECTOR_SIZE;

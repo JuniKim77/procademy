@@ -2,7 +2,8 @@
 
 #include <wtypes.h>
 #include <unordered_map>
-#include "RingBuffer.h"
+//#include "RingBuffer.h"
+#include "CStreamQ.h"
 #include <stack>
 #include <vector>
 
@@ -40,8 +41,8 @@ private:
 	SOCKET mSocket;
 	u_short mPort;
 	u_long mIP;
-	RingBuffer mSendBuffer;
-	RingBuffer mRecvBuffer;
+	CStreamQ mSendBuffer;
+	CStreamQ mRecvBuffer;
 	DWORD mSessionNo;
 	ULONGLONG mLastRecvTime;
 	// bool mbLogin = false;

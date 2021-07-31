@@ -144,6 +144,7 @@
     <ClCompile Include="Container.cpp" />
     <ClCompile Include="Content.cpp" />
     <ClCompile Include="CPacket.cpp" />
+    <ClCompile Include="CStreamQ.cpp" />
     <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="FrameSkip.cpp" />
     <ClCompile Include="GameProcess.cpp" />
@@ -161,6 +162,7 @@
     <ClInclude Include="Container.h" />
     <ClInclude Include="Content.h" />
     <ClInclude Include="CPacket.h" />
+    <ClInclude Include="CStreamQ.h" />
     <ClInclude Include="CSVReader.h" />
     <ClInclude Include="FrameSkip.h" />
     <ClInclude Include="GameProcess.h" />

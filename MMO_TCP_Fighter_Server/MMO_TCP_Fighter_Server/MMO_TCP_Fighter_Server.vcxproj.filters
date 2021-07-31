@@ -81,6 +81,9 @@
     <ClCompile Include="CSVReader.cpp">
       <Filter>소스 파일\Tool</Filter>
     </ClCompile>
+    <ClCompile Include="CStreamQ.cpp">
+      <Filter>소스 파일\Tool</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NetworkProcs.h">
@@ -129,6 +132,9 @@
       <Filter>헤더 파일\Tool</Filter>
     </ClInclude>
     <ClInclude Include="CSVReader.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="CStreamQ.h">
       <Filter>헤더 파일\Tool</Filter>
     </ClInclude>
   </ItemGroup>
