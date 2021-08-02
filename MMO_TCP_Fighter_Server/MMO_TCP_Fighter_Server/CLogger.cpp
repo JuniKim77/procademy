@@ -56,6 +56,10 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
                     val_f = va_arg(ap, double);
                     len = swprintf_s(pLog, dfLOG_SIZE - count, L"%.3f", val_f);
                     break;
+                case 'u':
+                    val = va_arg(ap, int);
+                    len = swprintf_s(pLog, dfLOG_SIZE - count, L"%u", (unsigned int)val);
+                    break;
                 default:
                     // ¿¡·¯?
                     break;

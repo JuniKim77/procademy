@@ -42,8 +42,7 @@ void UpdateGame()
 
 		if (frameCount >= 52 || frameCount <= 48)
 		{
-			g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[Frame Count: %d][Loop Count: %d]\n", 
-				gFrameSkipper.GetFrameCount(), gFrameSkipper.GetLoopCounter());
+			gFrameSkipper.PrintStatus();
 		}
 
 		gFrameSkipper.Refresh();
@@ -144,6 +143,7 @@ void ServerControl()
 	if (_kbhit())
 	{
 		WCHAR key = _getwch();
+		rewind(stdin);
 
 		// Q키 : 프로그램 종료
 		if (key == L'Q')
@@ -153,32 +153,29 @@ void ServerControl()
 		// I키 : 키 정보
 		if (key == L'I')
 		{
-			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\nWriteModeA[A]\nWriteModeB[B] [Cur: %c]\n", g_writeType);
+			wprintf(L"==========================\n");
+			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\n");
+			wprintf(L"==========================\n");
 		}
 		// D키 : 디버그 모드 전환
 		if (key == L'D')
 		{
 			g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
+			wprintf_s(L"Set Debug Mode\n");
+
 		}
 		// E키 : 에러 모드 전환
 		if (key == L'E')
 		{
 			g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
+			wprintf_s(L"Set Error Mode\n");
 		}
 
 		if (key == L'H')
 		{
 			ProfileDataOutText(L"Profile");
 			ProfileReset();
-		}
-		if (key == L'A')
-		{
-			g_writeType = 'A';
-		}
-		if (key == L'B')
-		{
-			g_writeType = 'B';
-		}
+		}		
 	}
 }
 

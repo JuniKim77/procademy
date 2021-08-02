@@ -782,7 +782,7 @@ void SC_Syncronize(DWORD userNo, short* x, short* y)
 	SendPacket_Around(userNo, &Packet);
 
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
-		userNo, user->direction, *x, *y, user->x, user->y, user->hp);
+		userNo, user->moveDirection, *x, *y, user->x, user->y, user->hp);
 
 	*x = user->x;
 	*y = user->y;

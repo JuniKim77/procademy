@@ -243,7 +243,7 @@ void AcceptProc()
 	user->oldSector.x = sectorX;
 	user->oldSector.y = sectorY;
 	user->moveDirection = dfAction_STAND;
-	user->action = dfAction_STAND;
+	//user->action = dfAction_STAND;
 	session->mLastRecvTime = GetTickCount64();
 
 	Sector_AddUser(user);
@@ -287,6 +287,8 @@ void AcceptProc()
 
 			packet.Clear();
 			cpSC_CreateOtherUser(&packet, other->userNo, other->direction, other->x, other->y, other->hp);
+
+			// 움직이고 있었다면...
 
 			SendPacket_Unicast(user->userNo, &packet);
 		}
@@ -390,14 +392,14 @@ void UserSectorUpdatePacket(User* user)
 			addSector.around[cnt].x, addSector.around[cnt].y);
 	}
 #endif
-
+	// 1. removeSecotr에 삭제 패킷 보내기
 	cpSC_DeleteUser(&packet, user->userNo);
 
 	for (int cnt = 0; cnt < removeSector.count; ++cnt)
 	{
 		SendPacket_SectorOne(removeSector.around[cnt].x, removeSector.around[cnt].y, &packet, 0);
 	}
-
+	// 2. 움직인 유저에게 삭제 패킷 보내기
 	for (int cnt = 0; cnt < removeSector.count; ++cnt)
 	{
 		auto* userList = &g_Sector[removeSector.around[cnt].y][removeSector.around[cnt].x];
@@ -410,6 +412,7 @@ void UserSectorUpdatePacket(User* user)
 		}
 	}
 
+	// 3-1. AddSector에 캐릭터 생성 패킷 보내기
 	packet.Clear();
 	cpSC_CreateOtherUser(&packet, user->sessionNo, user->direction, user->x, user->y, user->hp);
 
@@ -417,6 +420,16 @@ void UserSectorUpdatePacket(User* user)
 	{
 		SendPacket_SectorOne(addSector.around[cnt].x, addSector.around[cnt].y, &packet, 0);
 	}
+	// 3-2. AddSecotr에 생성된 캐릭터 이동 패킷 보내기
+	packet.Clear();
+	cpSC_MoveStart(&packet, user->sessionNo, user->moveDirection, user->x, user->y);
+
+	for (int cnt = 0; cnt < addSector.count; ++cnt)
+	{
+		SendPacket_SectorOne(addSector.around[cnt].x, addSector.around[cnt].y, &packet, 0);
+	}
+
+	// 4. 이동한 유저에게 AddSector에 있던 유저 생성 패킷 보내기
 
 	for (int cnt = 0; cnt < addSector.count; ++cnt)
 	{
@@ -435,7 +448,7 @@ void UserSectorUpdatePacket(User* user)
 			SendPacket_Unicast(user->sessionNo, &packet);
 
 			packet.Clear();
-			switch (pUser->action)
+			switch (pUser->moveDirection)
 			{
 			case dfACTION_MOVE_LL:
 			case dfACTION_MOVE_LU:
