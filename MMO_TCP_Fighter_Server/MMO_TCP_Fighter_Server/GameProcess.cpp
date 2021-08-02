@@ -145,26 +145,25 @@ void ServerControl()
 		WCHAR key = _getwch();
 		rewind(stdin);
 
-		// QŰ : ���α׷� ����
 		if (key == L'Q')
 		{
 			g_Shutdown = true;
 		}
-		// IŰ : Ű ����
+
 		if (key == L'I')
 		{
 			wprintf(L"==========================\n");
 			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\n");
 			wprintf(L"==========================\n");
 		}
-		// DŰ : ����� ��� ��ȯ
+
 		if (key == L'D')
 		{
 			g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
 			wprintf_s(L"Set Debug Mode\n");
 
 		}
-		// EŰ : ���� ��� ��ȯ
+
 		if (key == L'E')
 		{
 			g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);

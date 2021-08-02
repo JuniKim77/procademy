@@ -21,13 +21,13 @@ public:
 	void PrintStatus();
 
 private:
-	ULONGLONG mTotalTick; // ��� �ð�
+	ULONGLONG mTotalTick; // 
 	ULONGLONG mOldFrameCounter = 0;
-	ULONGLONG mTimeRemain; // ���� �ð� ����
+	ULONGLONG mTimeRemain; // 
 	ULONGLONG mOldTick; // 이전 프레임 시간
 	ULONGLONG mPrevTime;
 	ULONGLONG mMaxFrameTime;
 	ULONGLONG mMinFrameTime;
-	int mFrameCounter; // ������ ī����
-	int mLoopCounter = 0; // ���� ���� ī����
+	int mFrameCounter; // 
+	int mLoopCounter = 0; // 
 };
