@@ -204,17 +204,19 @@ void KeyProcess()
 
 		if (key == L'I')
 		{
-			wprintf_s(L"Program Exit : Shift + Q\nDebug Mode : Shift + D\nDebug Off : Shift + E");
+			wprintf_s(L"Program Exit : Shift + Q\nDebug Mode : Shift + D\nDebug Off : Shift + E\n");
 		}
 
 		// D키 : 디버그 모드 전환
 		if (key == L'D')
 		{
+			wprintf_s(L"Set Debug Mode\n");
 			g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
 		}
 		// E키 : 에러 모드 전환
 		if (key == L'E')
 		{
+			wprintf_s(L"Set Error Mode\n");
 			g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
 		}
 	}
@@ -228,7 +230,7 @@ void Update()
 		{
 			BaseObject* temp = *iter;
 
-			iter = gObjectList.erase(iter);			
+			iter = gObjectList.erase(iter);
 			delete temp;
 		}
 		else

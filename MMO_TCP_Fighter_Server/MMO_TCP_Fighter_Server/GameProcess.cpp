@@ -1,4 +1,4 @@
-#include "GameProcess.h"
+ï»¿#include "GameProcess.h"
 #include "FrameSkip.h"
 #include "User.h"
 #include <unordered_map>
@@ -40,11 +40,10 @@ void UpdateGame()
 	{
 		int frameCount = gFrameSkipper.GetFrameCount();
 
-		/*if (frameCount >= 52 || frameCount <= 48)
+		if (frameCount >= 52 || frameCount <= 48)
 		{
 			gFrameSkipper.PrintStatus();
-		}*/
-		gFrameSkipper.PrintStatus();
+		}
 
 		gFrameSkipper.Refresh();
 	}
@@ -57,14 +56,14 @@ void UpdateGame()
 		Session* session = FindSession(user->userNo);
 
 		iter++;
-		// HP°¡ 0ÀÌÇÏ¸é Á¾·á Ã³¸®..
+		// HPï¿½ï¿½ 0ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½..
 		//if (user->hp <= 0)
 		//{
 		//	//DisconnectProc(session->GetSessionNo());
 		//	continue;
 		//}
 
-		// ¼ö½Å Á¾·á Ã³¸®
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
 		if (curTime - session->GetLastRecvTime() > 60000)
 		{
 			g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Time Out!\n",
@@ -144,41 +143,39 @@ void ServerControl()
 	if (_kbhit())
 	{
 		WCHAR key = _getwch();
+		rewind(stdin);
 
-		// QÅ° : ÇÁ·Î±×·¥ Á¾·á
+		// QÅ° : ï¿½ï¿½ï¿½Î±×·ï¿½ ï¿½ï¿½ï¿½ï¿½
 		if (key == L'Q')
 		{
 			g_Shutdown = true;
 		}
-		// IÅ° : Å° Á¤º¸
+		// IÅ° : Å° ï¿½ï¿½ï¿½ï¿½
 		if (key == L'I')
 		{
-			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\nWriteModeA[A]\nWriteModeB[B] [Cur: %c]\n", g_writeType);
+			wprintf(L"==========================\n");
+			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\n");
+			wprintf(L"==========================\n");
 		}
-		// DÅ° : µð¹ö±× ¸ðµå ÀüÈ¯
+		// DÅ° : ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
 		if (key == L'D')
 		{
 			g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
+			wprintf_s(L"Set Debug Mode\n");
+
 		}
-		// EÅ° : ¿¡·¯ ¸ðµå ÀüÈ¯
+		// EÅ° : ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½È¯
 		if (key == L'E')
 		{
 			g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
+			wprintf_s(L"Set Error Mode\n");
 		}
 
 		if (key == L'H')
 		{
 			ProfileDataOutText(L"Profile");
 			ProfileReset();
-		}
-		if (key == L'A')
-		{
-			g_writeType = 'A';
-		}
-		if (key == L'B')
-		{
-			g_writeType = 'B';
-		}
+		}		
 	}
 }
 

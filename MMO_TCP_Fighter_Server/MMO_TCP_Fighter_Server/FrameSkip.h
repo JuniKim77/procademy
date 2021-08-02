@@ -1,4 +1,4 @@
-#pragma once
+О╩©#pragma once
 
 #include <wtypes.h>
 
@@ -21,13 +21,13 @@ public:
 	void PrintStatus();
 
 private:
-	ULONGLONG mTotalTick; // ╟Ф╟З ╫ц╟ё
+	ULONGLONG mTotalTick; // О©╫О©╫О©╫ О©╫ц╟О©╫
 	ULONGLONG mOldFrameCounter = 0;
-	ULONGLONG mTimeRemain; // Ё╡ю╨ ╫ц╟ё ╢╘юШ
-	ULONGLONG mOldTick; // юлюЭ ╥Гга ╫ц╟ё
-	ULONGLONG mOldFrameTime = 0; // юлюЭ ╥Гга ╫ц╟ё
-	ULONGLONG mMaxFramePeriod = 0;
-	ULONGLONG mMinFramePeriod = -1;
-	int mFrameCounter; // га╥╧юс д╚©Нем
-	int mLoopCounter = 0; // ╟тюс ╥Гга д╚©Нем
+	ULONGLONG mTimeRemain; // О©╫О©╫О©╫О©╫ О©╫ц╟О©╫ О©╫О©╫О©╫О©╫
+	ULONGLONG mOldTick; // Л²╢Л═└ М■└К═┬Л·└ Л▀°Й╟└
+	ULONGLONG mPrevTime;
+	ULONGLONG mMaxFrameTime;
+	ULONGLONG mMinFrameTime;
+	int mFrameCounter; // О©╫О©╫О©╫О©╫О©╫О©╫ д╚О©╫О©╫О©╫О©╫
+	int mLoopCounter = 0; // О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫ д╚О©╫О©╫О©╫О©╫
 };
