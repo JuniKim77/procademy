@@ -243,7 +243,7 @@ void AcceptProc()
 	user->oldSector.x = sectorX;
 	user->oldSector.y = sectorY;
 	user->moveDirection = dfAction_STAND;
-	//user->action = dfAction_STAND;
+	user->action = dfAction_STAND;
 	session->mLastRecvTime = GetTickCount64();
 
 	Sector_AddUser(user);
@@ -287,10 +287,25 @@ void AcceptProc()
 
 			packet.Clear();
 			cpSC_CreateOtherUser(&packet, other->userNo, other->direction, other->x, other->y, other->hp);
-
-			// 움직이고 있었다면...
-
 			SendPacket_Unicast(user->userNo, &packet);
+
+			packet.Clear();
+			switch (other->action)
+			{
+			case dfACTION_MOVE_LL:
+			case dfACTION_MOVE_LU:
+			case dfACTION_MOVE_UU:
+			case dfACTION_MOVE_RU:
+			case dfACTION_MOVE_RR:
+			case dfACTION_MOVE_RD:
+			case dfACTION_MOVE_DD:
+			case dfACTION_MOVE_LD:
+				cpSC_MoveStart(&packet, other->userNo, other->moveDirection, other->x, other->y);
+				SendPacket_Unicast(user->userNo, &packet);
+				break;
+			default:
+				break;
+			}
 		}
 	}
 
@@ -420,13 +435,28 @@ void UserSectorUpdatePacket(User* user)
 	{
 		SendPacket_SectorOne(addSector.around[cnt].x, addSector.around[cnt].y, &packet, 0);
 	}
-	// 3-2. AddSecotr에 생성된 캐릭터 이동 패킷 보내기
-	packet.Clear();
-	cpSC_MoveStart(&packet, user->sessionNo, user->moveDirection, user->x, user->y);
 
-	for (int cnt = 0; cnt < addSector.count; ++cnt)
+	// 3-2. AddSecotr에 생성된 캐릭터 이동 패킷 보내기
+	switch (user->action)
 	{
-		SendPacket_SectorOne(addSector.around[cnt].x, addSector.around[cnt].y, &packet, 0);
+	case dfACTION_MOVE_LL:
+	case dfACTION_MOVE_LU:
+	case dfACTION_MOVE_UU:
+	case dfACTION_MOVE_RU:
+	case dfACTION_MOVE_RR:
+	case dfACTION_MOVE_RD:
+	case dfACTION_MOVE_DD:
+	case dfACTION_MOVE_LD:
+		packet.Clear();
+		cpSC_MoveStart(&packet, user->sessionNo, user->moveDirection, user->x, user->y);
+
+		for (int cnt = 0; cnt < addSector.count; ++cnt)
+		{
+			SendPacket_SectorOne(addSector.around[cnt].x, addSector.around[cnt].y, &packet, 0);
+		}
+		break;
+	default:
+		break;
 	}
 
 	// 4. 이동한 유저에게 AddSector에 있던 유저 생성 패킷 보내기
@@ -447,8 +477,10 @@ void UserSectorUpdatePacket(User* user)
 			cpSC_CreateOtherUser(&packet, pUser->userNo, pUser->direction, pUser->x, pUser->y, pUser->hp);
 			SendPacket_Unicast(user->sessionNo, &packet);
 
+			// 이동 중 이였다면...
+
 			packet.Clear();
-			switch (pUser->moveDirection)
+			switch (pUser->action)
 			{
 			case dfACTION_MOVE_LL:
 			case dfACTION_MOVE_LU:
@@ -460,6 +492,8 @@ void UserSectorUpdatePacket(User* user)
 			case dfACTION_MOVE_LD:
 				cpSC_MoveStart(&packet, pUser->userNo, pUser->moveDirection, pUser->x, pUser->y);
 				SendPacket_Unicast(user->userNo, &packet);
+				break;
+			default:
 				break;
 			}
 		}
