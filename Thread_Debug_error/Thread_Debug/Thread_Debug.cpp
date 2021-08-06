@@ -145,17 +145,18 @@ void DeleteSession(DWORD dwSessionID)
 
 bool FindSessionList(DWORD dwSessionID)
 {
-	LockSession();
+	//LockSession();
 
 	list<st_SESSION *>::iterator SessionIter = g_SessionList.begin();
 	for ( ; SessionIter != g_SessionList.end(); SessionIter++ )
 	{
 		if ( dwSessionID == (*SessionIter)->SessionID )
 		{
+			//UnlockSession();
 			return true;
 		}
 	}
-	UnlockSession();
+	//UnlockSession();
 
 	return false;
 }
@@ -212,6 +213,7 @@ unsigned int WINAPI AcceptThread(LPVOID lpParam)
 			LockAccept();
 			g_AcceptPacketList.pop_front();
 			UnlockAccept();
+			OutputDebugString(L"Read AcceptPacket\n");
 
 			//----------------------------------------------------------
 			// SessionList 에 이미 존재하는 SessionID 인지 확인.  없는 경우만 등록.
@@ -232,6 +234,7 @@ unsigned int WINAPI AcceptThread(LPVOID lpParam)
 			dwSessionID = *g_DisconnectPacketList.begin();
 			g_DisconnectPacketList.pop_front();
 			UnlockDisconnect();
+			OutputDebugString(L"Read DisconnectPacket\n");
 
 			//----------------------------------------------------------
 			// SessionList 에 존재하는 SessionID 인지 확인.  있는 경우만 삭제
@@ -362,6 +365,7 @@ unsigned int WINAPI UpdateThread(LPVOID lpParam)
 			LockAction();
 			dwSessionID = *g_ActionPacketList.begin();
 			g_ActionPacketList.pop_front();
+			OutputDebugString(L"Read UpdatePacket\n");
 
 			//----------------------------------------------------------
 			// PlayerList 에 이미 존재하는 SessionID 인지 확인. 있는 경우만 해당 플레이어 찾아서 + 1
@@ -374,7 +378,7 @@ unsigned int WINAPI UpdateThread(LPVOID lpParam)
 				if ( dwSessionID == pPlayer->SessionID )
 				{
 					// 컨텐츠 업데이트 - Content 배열마다 + 1 후 출력
-					for ( int iCnt = 0; iCnt <= 3; iCnt++ )
+					for ( int iCnt = 0; iCnt < 3; iCnt++ )
 					{
 						pPlayer->Content[iCnt]++;
 					}
@@ -401,7 +405,7 @@ unsigned int WINAPI UpdateThread(LPVOID lpParam)
 /////////////////////////////////////////////////////////////////////////////////////
 void Initial()
 {
-	g_szDebug = new WCHAR[40];
+	g_szDebug = new WCHAR[100];
 
 	//------------------------------------------------
 	// 각각의 스레드를 깨울 이벤트
@@ -437,14 +441,14 @@ void Release()
 	while ( SessionIter != g_SessionList.end() )
 	{
 		delete *SessionIter;
-		g_SessionList.erase(SessionIter);
+		SessionIter = g_SessionList.erase(SessionIter);
 	}
 
 	list<st_PLAYER *>::iterator PlayerIter = g_PlayerList.begin();
 	while ( PlayerIter != g_PlayerList.end() )
 	{
 		delete *PlayerIter;
-		g_PlayerList.erase(PlayerIter);
+		PlayerIter = g_PlayerList.erase(PlayerIter);
 	}
 
 	delete[] g_szDebug;
@@ -504,8 +508,22 @@ int _tmain(int argc, _TCHAR* argv[])
 	// 스레드 종료 대기
 	//------------------------------------------------
 	HANDLE hThread[3] = {hAcceptThread, hIOThread, hUpdateThread};
-	WaitForMultipleObjects(dfTHREAD_NUM, hThread, TRUE, INFINITE);
+	DWORD retval = WaitForMultipleObjects(dfTHREAD_NUM, hThread, TRUE, INFINITE);
 
+	switch (retval)
+	{
+	case WAIT_FAILED:
+		wprintf_s(L"Main Thread Handle Error\n");
+		break;
+	case WAIT_TIMEOUT:
+		wprintf_s(L"Main Thread Timeout Error\n");
+		break;
+	case WAIT_OBJECT_0:
+		wprintf_s(L"None Error\n");
+		break;
+	default:		
+		break;
+	}
 
 	Release();
 
