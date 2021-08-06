@@ -11,6 +11,8 @@
 #include "PacketCreater.h"
 #include "NetworkProcs.h"
 
+//#define DEBUG2
+
 extern CLogger g_Logger;
 
 bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
@@ -48,15 +50,6 @@ bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 
 bool CS_MoveStart(DWORD from, CPacket* packet)
 {
-	Session* session = FindSession(from);
-
-	if (session == nullptr)
-	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Non-Exist Session [SessionNo: %d]\n", from);	
-
-		return false;
-	}
-
 	BYTE direction;
 	short x;
 	short y;
@@ -115,20 +108,19 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 	cpSC_MoveStart(&Packet, user->userNo, user->moveDirection, user->x, user->y);
 	SendPacket_Around(user->userNo, &Packet);
 
+#ifdef DEBUG2
+	if (user->action != direction || user->moveDirection != direction ||
+		user->x != x || user->y != y)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Move Start Error [UserNo: %d]\n", user->userNo);
+	}
+#endif
+
 	return true;
 }
 
 bool CS_MoveStop(DWORD from, CPacket* packet)
 {
-	Session* session = FindSession(from);
-
-	if (session == nullptr)
-	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Non-Exist Session [SessionNo: %d]\n", from);
-
-		return false;
-	}
-
 	BYTE direction;
 	short x;
 	short y;
@@ -171,6 +163,14 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 	CPacket Packet;
 	cpSC_MoveStop(&Packet, user->userNo, user->direction, user->x, user->y);
 	SendPacket_Around(user->userNo, &Packet);
+
+#ifdef DEBUG2
+	if (user->action != dfAction_STAND || user->moveDirection != dfAction_STAND ||
+		user->x != x || user->y != y)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Move Stop Error [UserNo: %d]\n", user->userNo);
+	}
+#endif
 
 	return true;
 }
@@ -361,6 +361,14 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 		break;
 	}
 
+#ifdef DEBUG2
+	if (attacker->action != dfACTION_ATTACK1 || attacker->moveDirection != dfAction_STAND ||
+		attacker->x != x || attacker->y != y)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Action Error [UserNo: %d]\n", attacker->userNo);
+	}
+#endif
+
 	return true;
 }
 
@@ -549,6 +557,14 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 	default:
 		break;
 	}
+
+#ifdef DEBUG2
+	if (attacker->action != dfACTION_ATTACK2 || attacker->moveDirection != dfAction_STAND ||
+		attacker->x != x || attacker->y != y)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Action Error [UserNo: %d]\n", attacker->userNo);
+	}
+#endif
 
 	return true;
 }
@@ -739,6 +755,14 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 		break;
 	}
 
+#ifdef DEBUG2
+	if (attacker->action != dfACTION_ATTACK3 || attacker->moveDirection != dfAction_STAND ||
+		attacker->x != x || attacker->y != y)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Action Error [UserNo: %d]\n", attacker->userNo);
+	}
+#endif
+
 	return true;
 }
 
@@ -779,10 +803,49 @@ void SC_Syncronize(DWORD userNo, short* x, short* y)
 	User* user = FindUser(userNo);
 	// 教农 皋技瘤 傈价
 	cpSC_Synchronize(&Packet, userNo, user->x, user->y);
-	SendPacket_Around(userNo, &Packet);
+	//SendPacket_Around(userNo, &Packet);
+	SendPacket_Unicast(userNo, &Packet);
 
-	/*g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
-		userNo, user->moveDirection, *x, *y, user->x, user->y, user->hp);*/
+	st_Sector_Around sectorAroundRemove;
+
+	GetSectorAround(*x / dfSECTOR_SIZE, *y / dfSECTOR_SIZE, &sectorAroundRemove);
+
+	for (int i = 0; i < sectorAroundRemove.count; ++i)
+	{
+		int sectorX = sectorAroundRemove.around[i].x;
+		int sectorY = sectorAroundRemove.around[i].y;
+		for (auto iter = g_Sector[sectorY][sectorX].begin(); iter != g_Sector[sectorY][sectorX].end(); ++iter)
+		{
+			if ((*iter) == user)
+				continue;
+
+			Packet.Clear();
+			cpSC_DeleteUser(&Packet, (*iter)->userNo);
+			SendPacket_Unicast(userNo, &Packet);
+		}
+	}
+
+	st_Sector_Around sectorAroundAdd;
+
+	GetSectorAround(user->curSector.x, user->curSector.y, &sectorAroundAdd);
+
+	for (int i = 0; i < sectorAroundAdd.count; ++i)
+	{
+		int sectorX = sectorAroundAdd.around[i].x;
+		int sectorY = sectorAroundAdd.around[i].y;
+		for (auto iter = g_Sector[sectorY][sectorX].begin(); iter != g_Sector[sectorY][sectorX].end(); ++iter)
+		{
+			if ((*iter) == user)
+				continue;
+
+			Packet.Clear();
+			cpSC_CreateOtherUser(&Packet, (*iter)->userNo, (*iter)->direction, (*iter)->x, (*iter)->y, (*iter)->hp);
+			SendPacket_Unicast(userNo, &Packet);
+		}
+	}
+
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
+		userNo, user->moveDirection, *x, *y, user->x, user->y, user->hp);
 
 	*x = user->x;
 	*y = user->y;

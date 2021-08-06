@@ -56,23 +56,22 @@ void UpdateGame()
 		Session* session = FindSession(user->userNo);
 
 		iter++;
-		// HP�� 0���ϸ� ���� ó��..
 		//if (user->hp <= 0)
 		//{
 		//	//DisconnectProc(session->GetSessionNo());
 		//	continue;
 		//}
 
-		// ���� ���� ó��
-		if (curTime - session->GetLastRecvTime() > 60000)
+		// Timeout Func
+		/*if (curTime - session->GetLastRecvTime() > 60000)
 		{
 			g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Time Out!\n",
 				user->userNo);
 			DisconnectProc(session->GetSessionNo());
 			continue;
-		}
+		}*/
 
-		switch (user->moveDirection)
+		switch (user->action)
 		{
 		case dfACTION_MOVE_LL:
 			if (UserMoveCheck(user->x - dfSPEED_PLAYER_X, user->y))

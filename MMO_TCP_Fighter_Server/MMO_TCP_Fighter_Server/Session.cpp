@@ -74,27 +74,27 @@ void Session::receiveProc()
 
 	mRecvBuffer.MoveRear(retval);
 
-	if (retval == dSize)
-	{
-		//g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Receive Enqueue Boundary..\n", mSessionNo);
+	//if (retval == dSize)
+	//{
+	//	//g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Receive Enqueue Boundary..\n", mSessionNo);
 
-		dSize = mRecvBuffer.DirectEnqueueSize();
-		retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
+	//	dSize = mRecvBuffer.DirectEnqueueSize();
+	//	retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
 
-		if (retval == SOCKET_ERROR)
-		{
-			int err = WSAGetLastError();
+	//	if (retval == SOCKET_ERROR)
+	//	{
+	//		int err = WSAGetLastError();
 
-			if (err == WSAEWOULDBLOCK)
-				return;
+	//		if (err == WSAEWOULDBLOCK)
+	//			return;
 
-			SetDisconnect();
+	//		SetDisconnect();
 
-			return;
-		}
+	//		return;
+	//	}
 
-		mRecvBuffer.MoveRear(retval);
-	}
+	//	mRecvBuffer.MoveRear(retval);
+	//}
 
 	mLastRecvTime = GetTickCount64();
 	// 받았으면 다 처리해주는게 기본

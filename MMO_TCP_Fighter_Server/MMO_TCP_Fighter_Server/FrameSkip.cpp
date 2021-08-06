@@ -55,7 +55,7 @@ void FrameSkip::Reset()
 	mFrameCounter = 0;
 	mTimeRemain = 0;
 	mMaxFrameTime = 0;
-	mMinFrameTime = -1;
+	mMinFrameTime = LLONG_MAX;
 }
 
 void FrameSkip::Refresh()
