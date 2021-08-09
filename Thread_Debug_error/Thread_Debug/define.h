@@ -14,6 +14,10 @@ struct st_PLAYER
 	int Content[3];
 };
 
+#define dfSESSION_NUM (5000)
+#define dfTHREAD_NUM	(3)
 
-#define dfTHREAD_NUM	3
+#define dfSESSION_NONE (0)
+#define dfSESSION_CONNECT (1)
+#define dfSESSION_LOGIN (2)
 #endif

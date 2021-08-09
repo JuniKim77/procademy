@@ -46,11 +46,6 @@ list<DWORD>			g_DisconnectPacketList;
 #define				LockDisconnect()	EnterCriticalSection(&g_Disconnect_cs)
 #define				UnlockDisconnect()	LeaveCriticalSection(&g_Disconnect_cs)
 
-
-
-
-
-
 ////////////////////////////////////////////////////////
 // Session 목록.
 //
@@ -70,16 +65,20 @@ list<st_SESSION *>		g_SessionList;
 ////////////////////////////////////////////////////////
 CRITICAL_SECTION		g_Player_cs;
 list<st_PLAYER *>		g_PlayerList;
+int g_SessionStatus[dfSESSION_NUM] = { 0, };
+st_SESSION* g_SessionArray[dfSESSION_NUM] = { nullptr, };
+st_PLAYER* g_PlayerArray[dfSESSION_NUM] = { nullptr, };
 
-void LockPlayer()
-{
-	EnterCriticalSection(&g_Player_cs);
-}
 
-void UnlockPlayer()
-{
-	LeaveCriticalSection(&g_Player_cs);
-}
+//void LockPlayer()
+//{
+//	EnterCriticalSection(&g_Player_cs);
+//}
+//
+//void UnlockPlayer()
+//{
+//	LeaveCriticalSection(&g_Player_cs);
+//}
 
 
 HANDLE	g_hExitThreadEvent;
@@ -87,35 +86,48 @@ HANDLE	g_hExitThreadEvent;
 HANDLE	g_hAcceptThreadEvent;
 HANDLE	g_hUpdateThreadEvent;
 
-
 WCHAR *g_szDebug;
-
-
 
 void NewSession(DWORD dwSessionID)
 {
 	st_SESSION *pSession = new st_SESSION;
 	pSession->SessionID = dwSessionID;
 	
-	LockSession();
+	//LockSession();
 	g_SessionList.push_back(pSession);
-	UnlockSession();
+	//UnlockSession();
 
 
 	st_PLAYER *pPlayer = new st_PLAYER;
 	pPlayer->SessionID = dwSessionID;
 	memset(pPlayer->Content, 0, sizeof(pPlayer->Content));
 
-	LockPlayer();
+	//LockPlayer();
 	g_PlayerList.push_back(pPlayer);
-	UnlockPlayer();
+	//UnlockPlayer();
+}
 
+void ConnectSession(DWORD dwSessionID)
+{
+	for (int i = 0; i < dfSESSION_NUM; ++i)
+	{
+		if (g_SessionStatus[i] == dfSESSION_NONE)
+		{
+			if (g_SessionArray[i] == nullptr)
+			{
+				g_SessionArray[i] = new st_SESSION;
+			}
+
+			g_SessionArray[i]->SessionID = dwSessionID;
+			g_SessionStatus[i] = dfSESSION_CONNECT;
+			break;
+		}
+	}
 }
 
 void DeleteSession(DWORD dwSessionID)
 {
-	LockSession();
-
+	//LockSession();
 	list<st_SESSION *>::iterator SessionIter = g_SessionList.begin();
 	for ( ; SessionIter != g_SessionList.end(); SessionIter++ )
 	{
@@ -126,9 +138,9 @@ void DeleteSession(DWORD dwSessionID)
 			break;
 		}
 	}
-	UnlockSession();
+	//UnlockSession();
 
-	LockPlayer();
+	//LockPlayer();
 	list<st_PLAYER *>::iterator PlayerIter = g_PlayerList.begin();
 	for ( ; PlayerIter != g_PlayerList.end(); PlayerIter++ )
 	{
@@ -139,7 +151,7 @@ void DeleteSession(DWORD dwSessionID)
 			break;
 		}
 	}
-	UnlockPlayer();
+	//UnlockPlayer();
 }
 
 
@@ -147,20 +159,67 @@ bool FindSessionList(DWORD dwSessionID)
 {
 	//LockSession();
 
-	list<st_SESSION *>::iterator SessionIter = g_SessionList.begin();
-	for ( ; SessionIter != g_SessionList.end(); SessionIter++ )
+	//list<st_SESSION *>::iterator SessionIter = g_SessionList.begin();
+	//for ( ; SessionIter != g_SessionList.end(); SessionIter++ )
+	//{
+	//	if ( dwSessionID == (*SessionIter)->SessionID )
+	//	{
+	//		//UnlockSession();
+	//		return true;
+	//	}
+	//}
+	//UnlockSession();
+
+	for (int i = 0; i < dfSESSION_NUM; ++i)
 	{
-		if ( dwSessionID == (*SessionIter)->SessionID )
+		if (g_SessionStatus[i] != dfSESSION_NONE && g_SessionArray[i]->SessionID == dwSessionID)
 		{
-			//UnlockSession();
 			return true;
 		}
 	}
-	//UnlockSession();
 
 	return false;
 }
 
+void UpdateSession(DWORD dwSessionID)
+{
+	for (int i = 0; i < dfSESSION_NUM; ++i)
+	{
+		if (g_SessionStatus[i] == dfSESSION_CONNECT)
+		{
+			if (g_PlayerArray[i] == nullptr)
+			{
+				g_PlayerArray[i] = new st_PLAYER;
+			}
+
+			g_PlayerArray[i]->SessionID = g_SessionArray[i]->SessionID;
+			memset(g_PlayerArray[i]->Content, 0, sizeof(g_PlayerArray[i]->Content));
+			g_SessionStatus[i] = dfSESSION_LOGIN;
+		}
+
+		if (g_SessionStatus[i] == dfSESSION_LOGIN && g_PlayerArray[i]->SessionID == dwSessionID)
+		{
+			for (int iCnt = 0; iCnt < 3; iCnt++)
+			{
+				g_PlayerArray[i]->Content[iCnt]++;
+			}
+			wprintf(L"UpdateThread - Session[%d] Content[%d] \n", dwSessionID, g_PlayerArray[i]->Content[0]);
+		}
+	}
+}
+
+void DisconnectSession(DWORD dwSessionID)
+{
+	for (int i = 0; i < dfSESSION_NUM; ++i)
+	{
+		if (g_SessionStatus[i] == dfSESSION_LOGIN && g_SessionArray[i]->SessionID == dwSessionID)
+		{
+			g_SessionStatus[i] = dfSESSION_NONE;
+			wprintf(L"DisconnectThread - Session[%d]\n", dwSessionID);
+			break;
+		}
+	}
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -213,14 +272,16 @@ unsigned int WINAPI AcceptThread(LPVOID lpParam)
 			LockAccept();
 			g_AcceptPacketList.pop_front();
 			UnlockAccept();
-			OutputDebugString(L"Read AcceptPacket\n");
+			//OutputDebugString(L"Read AcceptPacket\n");
 
 			//----------------------------------------------------------
 			// SessionList 에 이미 존재하는 SessionID 인지 확인.  없는 경우만 등록.
 			//----------------------------------------------------------
 			if ( !FindSessionList(dwSessionID) )
 			{
-				NewSession(dwSessionID);
+				/*NewSession(dwSessionID);
+				wprintf(L"AcceptThread - New Session[%d]\n", dwSessionID);*/
+				ConnectSession(dwSessionID);
 				wprintf(L"AcceptThread - New Session[%d]\n", dwSessionID);
 			}
 		}
@@ -228,23 +289,23 @@ unsigned int WINAPI AcceptThread(LPVOID lpParam)
 		//----------------------------------------------------------
 		// 접속해제 처리
 		//----------------------------------------------------------
-		while ( !g_DisconnectPacketList.empty() )
-		{
-			LockDisconnect();
-			dwSessionID = *g_DisconnectPacketList.begin();
-			g_DisconnectPacketList.pop_front();
-			UnlockDisconnect();
-			OutputDebugString(L"Read DisconnectPacket\n");
+		//while ( !g_DisconnectPacketList.empty() )
+		//{
+		//	LockDisconnect();
+		//	dwSessionID = *g_DisconnectPacketList.begin();
+		//	g_DisconnectPacketList.pop_front();
+		//	UnlockDisconnect();
+		//	//OutputDebugString(L"Read DisconnectPacket\n");
 
-			//----------------------------------------------------------
-			// SessionList 에 존재하는 SessionID 인지 확인.  있는 경우만 삭제
-			//----------------------------------------------------------
-			if ( FindSessionList(dwSessionID) )
-			{
-				DeleteSession(dwSessionID);
-				wprintf(L"AcceptThread - Delete Session[%d]\n", dwSessionID);
-			}
-		}
+		//	//----------------------------------------------------------
+		//	// SessionList 에 존재하는 SessionID 인지 확인.  있는 경우만 삭제
+		//	//----------------------------------------------------------
+		//	if ( FindSessionList(dwSessionID) )
+		//	{
+		//		DeleteSession(dwSessionID);
+		//		wprintf(L"AcceptThread - Delete Session[%d]\n", dwSessionID);
+		//	}
+		//}
 	}
 
 	wprintf(L"Accept Thread Exit\n");
@@ -274,19 +335,18 @@ unsigned int WINAPI IOThread(LPVOID lpParam)
 			SetEvent(g_hExitThreadEvent);
 			break;
 		}
-			
 
 		//----------------------------------------------------------
 		// 정상 로직처리 
 		//----------------------------------------------------------
 		iRand = rand() % 3;
-		dwSessionID = rand() % 5000;
+		dwSessionID = rand() % dfSESSION_NUM;
 		
 
 		switch ( iRand )
 		{
 		case 0:			// Accept 추가
-			wsprintf(g_szDebug, L"# IOThread AcceptPacket Insert [%d] \n", dwSessionID);
+			//wsprintf(g_szDebug, L"# IOThread AcceptPacket Insert [%d] \n", dwSessionID);
 			LockAccept();			
 			g_AcceptPacketList.push_back(dwSessionID);
 			UnlockAccept();
@@ -294,7 +354,7 @@ unsigned int WINAPI IOThread(LPVOID lpParam)
 			break;
 
 		case 1:			// Disconnect 추가
-			wsprintf(g_szDebug, L"# IOThread DisconnetPacket Insert [%d] \n", dwSessionID);
+			//wsprintf(g_szDebug, L"# IOThread DisconnetPacket Insert [%d] \n", dwSessionID);
 			LockDisconnect();			
 			g_DisconnectPacketList.push_back(dwSessionID);
 			UnlockDisconnect();
@@ -302,14 +362,14 @@ unsigned int WINAPI IOThread(LPVOID lpParam)
 			break;
 
 		case 2:			// Action 추가
-			wsprintf(g_szDebug, L"# IOThread ActionPacket Insert [%d] \n", dwSessionID);
+			//wsprintf(g_szDebug, L"# IOThread ActionPacket Insert [%d] \n", dwSessionID);
 			LockAction();
 			g_ActionPacketList.push_back(dwSessionID);
 			UnlockAction();
 			SetEvent(g_hUpdateThreadEvent);
 			break;
 		}
-		OutputDebugString(g_szDebug);
+		//OutputDebugString(g_szDebug);
 	}
 
 
@@ -353,7 +413,6 @@ unsigned int WINAPI UpdateThread(LPVOID lpParam)
 			break;
 		}
 
-
 		//----------------------------------------------------------
 		// 정상 로직처리 
 		//----------------------------------------------------------
@@ -365,29 +424,41 @@ unsigned int WINAPI UpdateThread(LPVOID lpParam)
 			LockAction();
 			dwSessionID = *g_ActionPacketList.begin();
 			g_ActionPacketList.pop_front();
-			OutputDebugString(L"Read UpdatePacket\n");
+			UnlockAction();
+			//OutputDebugString(L"Read UpdatePacket\n");
 
 			//----------------------------------------------------------
 			// PlayerList 에 이미 존재하는 SessionID 인지 확인. 있는 경우만 해당 플레이어 찾아서 + 1
 			//----------------------------------------------------------
-			LockPlayer();
-			list<st_PLAYER *>::iterator PlayerIter = g_PlayerList.begin();
-			for ( ; PlayerIter != g_PlayerList.end(); PlayerIter++ )
-			{
-				pPlayer = *PlayerIter;
-				if ( dwSessionID == pPlayer->SessionID )
-				{
-					// 컨텐츠 업데이트 - Content 배열마다 + 1 후 출력
-					for ( int iCnt = 0; iCnt < 3; iCnt++ )
-					{
-						pPlayer->Content[iCnt]++;
-					}
-					wprintf(L"UpdateThread - Session[%d] Content[%d] \n", dwSessionID, pPlayer->Content[0]);
-					break;
-				}
-			}
-			UnlockPlayer();
-			UnlockAction();
+			//LockPlayer();
+			//list<st_PLAYER *>::iterator PlayerIter = g_PlayerList.begin();
+			//for ( ; PlayerIter != g_PlayerList.end(); PlayerIter++ )
+			//{
+			//	pPlayer = *PlayerIter;
+			//	if ( dwSessionID == pPlayer->SessionID )
+			//	{
+			//		// 컨텐츠 업데이트 - Content 배열마다 + 1 후 출력
+			//		for ( int iCnt = 0; iCnt < 3; iCnt++ )
+			//		{
+			//			pPlayer->Content[iCnt]++;
+			//		}
+			//		wprintf(L"UpdateThread - Session[%d] Content[%d] \n", dwSessionID, pPlayer->Content[0]);
+			//		break;
+			//	}
+			//}
+			//UnlockPlayer();
+			UpdateSession(dwSessionID);
+		}
+
+		// 접속 종료 처리
+		while (!g_DisconnectPacketList.empty())
+		{
+			LockDisconnect();
+			dwSessionID = *g_DisconnectPacketList.begin();
+			g_DisconnectPacketList.pop_front();
+			UnlockDisconnect();
+
+			DisconnectSession(dwSessionID);
 		}
 
 	}
@@ -421,8 +492,8 @@ void Initial()
 	InitializeCriticalSection(&g_Accept_cs);
 	InitializeCriticalSection(&g_Action_cs);
 	InitializeCriticalSection(&g_Disconnect_cs);
-	InitializeCriticalSection(&g_Player_cs);
-	InitializeCriticalSection(&g_Session_cs);
+	//InitializeCriticalSection(&g_Player_cs);
+	//InitializeCriticalSection(&g_Session_cs);
 
 }
 
@@ -437,7 +508,7 @@ void Release()
 	g_DisconnectPacketList.clear();
 
 
-	list<st_SESSION *>::iterator SessionIter = g_SessionList.begin();
+	/*list<st_SESSION *>::iterator SessionIter = g_SessionList.begin();
 	while ( SessionIter != g_SessionList.end() )
 	{
 		delete *SessionIter;
@@ -449,6 +520,19 @@ void Release()
 	{
 		delete *PlayerIter;
 		PlayerIter = g_PlayerList.erase(PlayerIter);
+	}*/
+
+	for (int i = 0; i < dfSESSION_NUM; ++i)
+	{
+		if (g_SessionArray[i] != nullptr)
+		{
+			delete g_SessionArray[i];
+		}
+
+		if (g_PlayerArray[i] != nullptr)
+		{
+			delete g_PlayerArray[i];
+		}
 	}
 
 	delete[] g_szDebug;
@@ -456,8 +540,8 @@ void Release()
 	DeleteCriticalSection(&g_Accept_cs);
 	DeleteCriticalSection(&g_Action_cs);
 	DeleteCriticalSection(&g_Disconnect_cs);
-	DeleteCriticalSection(&g_Player_cs);
-	DeleteCriticalSection(&g_Session_cs);
+	//DeleteCriticalSection(&g_Player_cs);
+	//DeleteCriticalSection(&g_Session_cs);
 
 
 }
