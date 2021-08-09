@@ -75,6 +75,14 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 		SC_Syncronize(user->userNo, &x, &y);
 	}
 
+	user->UpdateTrack();
+	user->mExTrack.mAction = direction;
+	user->mExTrack.mMoveDirection = direction;
+	user->mExTrack.mClient.X = x;
+	user->mExTrack.mClient.Y = y;
+	user->mExTrack.mServer.X = user->x;
+	user->mExTrack.mServer.Y = user->y;
+
 	// 이동 방향과 액션의 값이 같음.
 	user->action = direction;
 	user->moveDirection = direction;
@@ -147,6 +155,14 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 		SC_Syncronize(user->userNo, &x, &y);
 	}
 
+	user->UpdateTrack();
+	user->mExTrack.mAction = dfAction_STAND;
+	user->mExTrack.mMoveDirection = dfAction_STAND;
+	user->mExTrack.mClient.X = x;
+	user->mExTrack.mClient.Y = y;
+	user->mExTrack.mServer.X = user->x;
+	user->mExTrack.mServer.Y = user->y;
+
 	user->action = dfAction_STAND;
 	user->moveDirection = dfAction_STAND;
 	user->direction = direction;
@@ -211,6 +227,14 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 		// 싱크 메세지 송신
 		SC_Syncronize(attacker->userNo, &x, &y);
 	}
+
+	attacker->UpdateTrack();
+	attacker->mExTrack.mAction = dfACTION_ATTACK1;
+	attacker->mExTrack.mMoveDirection = dfAction_STAND;
+	attacker->mExTrack.mClient.X = x;
+	attacker->mExTrack.mClient.Y = y;
+	attacker->mExTrack.mServer.X = attacker->x;
+	attacker->mExTrack.mServer.Y = attacker->y;
 
 	attacker->action = dfACTION_ATTACK1;
 	attacker->moveDirection = dfAction_STAND;
@@ -409,6 +433,14 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 		SC_Syncronize(attacker->userNo, &x, &y);
 	}
 
+	attacker->UpdateTrack();
+	attacker->mExTrack.mAction = dfACTION_ATTACK2;
+	attacker->mExTrack.mMoveDirection = dfAction_STAND;
+	attacker->mExTrack.mClient.X = x;
+	attacker->mExTrack.mClient.Y = y;
+	attacker->mExTrack.mServer.X = attacker->x;
+	attacker->mExTrack.mServer.Y = attacker->y;
+
 	attacker->action = dfACTION_ATTACK2;
 	attacker->moveDirection = dfAction_STAND;
 	attacker->direction = direction;
@@ -605,6 +637,14 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 		// 싱크 메세지 송신
 		SC_Syncronize(attacker->userNo, &x, &y);
 	}
+
+	attacker->UpdateTrack();
+	attacker->mExTrack.mAction = dfACTION_ATTACK3;
+	attacker->mExTrack.mMoveDirection = dfAction_STAND;
+	attacker->mExTrack.mClient.X = x;
+	attacker->mExTrack.mClient.Y = y;
+	attacker->mExTrack.mServer.X = attacker->x;
+	attacker->mExTrack.mServer.Y = attacker->y;
 
 	attacker->action = dfACTION_ATTACK3;
 	attacker->moveDirection = dfAction_STAND;
@@ -804,6 +844,7 @@ void SC_Syncronize(DWORD userNo, short* x, short* y)
 	// 싱크 메세지 전송
 	cpSC_Synchronize(&Packet, userNo, user->x, user->y);
 	//SendPacket_Around(userNo, &Packet);
+	//SendPacket_Unicast(userNo, &Packet);
 	SendPacket_Unicast(userNo, &Packet);
 
 	st_Sector_Around sectorAroundRemove;
@@ -844,8 +885,14 @@ void SC_Syncronize(DWORD userNo, short* x, short* y)
 		}
 	}
 
-	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
-		userNo, user->moveDirection, *x, *y, user->x, user->y, user->hp);
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Action: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
+		userNo, user->action, user->moveDirection, *x, *y, user->x, user->y, user->hp);
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"-- Ex[1] [UserNo: %d][Action: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d]\n",
+		userNo, user->mExTrack.mAction, user->mExTrack.mMoveDirection, user->mExTrack.mClient.X, user->mExTrack.mClient.Y, 
+		user->mExTrack.mServer.X, user->mExTrack.mServer.Y);
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"-- Ex[2] [UserNo: %d][Action: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d]\n",
+		userNo, user->mExExTrack.mAction, user->mExExTrack.mMoveDirection, user->mExExTrack.mClient.X, user->mExExTrack.mClient.Y, 
+		user->mExExTrack.mServer.X, user->mExExTrack.mServer.Y);
 
 	*x = user->x;
 	*y = user->y;

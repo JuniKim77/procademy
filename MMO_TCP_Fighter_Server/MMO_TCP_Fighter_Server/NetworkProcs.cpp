@@ -244,6 +244,8 @@ void AcceptProc()
 	user->oldSector.y = sectorY;
 	user->moveDirection = dfAction_STAND;
 	user->action = dfAction_STAND;
+	memset(&user->mExTrack, 0, sizeof(user->mExTrack));
+	memset(&user->mExExTrack, 0, sizeof(user->mExExTrack));
 	session->mLastRecvTime = GetTickCount64();
 
 	Sector_AddUser(user);

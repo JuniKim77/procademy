@@ -109,8 +109,8 @@ void Session::receiveProc()
 
 void Session::sendPacket(char* buffer, int size)
 {
-	//int enqueueSize = mSendBuffer.Enqueue(buffer, size);
-	int enqueueSize = mSendBuffer.Put(buffer, size);
+	int enqueueSize = mSendBuffer.Enqueue(buffer, size);
+	//int enqueueSize = mSendBuffer.Put(buffer, size);
 	if (enqueueSize != size)
 	{
 		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Send Ringbuffer is full\n", mSessionNo);
@@ -145,8 +145,8 @@ bool Session::completeRecvPacket()
 	mRecvBuffer.MoveFront(sizeof(header));
 
 	CPacket packet;
-	//mRecvBuffer.Dequeue(packet.GetBufferPtr(), header.bySize);
-	mRecvBuffer.Get(packet.GetBufferPtr(), header.bySize);
+	mRecvBuffer.Dequeue(packet.GetBufferPtr(), header.bySize);
+	//mRecvBuffer.Get(packet.GetBufferPtr(), header.bySize);
 	packet.MoveRear(header.bySize);
 
 	if (!PacketProc(mSessionNo, header.byType, &packet))
