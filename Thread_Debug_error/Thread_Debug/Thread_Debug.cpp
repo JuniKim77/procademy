@@ -52,19 +52,19 @@ list<DWORD>			g_DisconnectPacketList;
 // 접속이 완료시 (Accept 처리 완료)  st_SESSION 를 동적 생성하여, SessionList 에 포인터를 넣는다.
 // 그리고 접속이 끊어질 시 해당 세션을 삭제 한다.
 ////////////////////////////////////////////////////////
-CRITICAL_SECTION		g_Session_cs;
-list<st_SESSION *>		g_SessionList;
+//CRITICAL_SECTION		g_Session_cs;
+//list<st_SESSION *>		g_SessionList;
 
-#define	LockSession()	EnterCriticalSection(&g_Session_cs)
-#define UnlockSession()	LeaveCriticalSection(&g_Session_cs)
+//#define	LockSession()	EnterCriticalSection(&g_Session_cs)
+//#define UnlockSession()	LeaveCriticalSection(&g_Session_cs)
 
 ////////////////////////////////////////////////////////
 // Player 목록.
 //
 // Session 이 생성 후, 생성 될때 (Accept 처리 완료시)  st_PLAYER 객체도 함께 생성되어 여기에 등록 된다.
 ////////////////////////////////////////////////////////
-CRITICAL_SECTION		g_Player_cs;
-list<st_PLAYER *>		g_PlayerList;
+//CRITICAL_SECTION		g_Player_cs;
+//list<st_PLAYER *>		g_PlayerList;
 int g_SessionStatus[dfSESSION_NUM] = { 0, };
 st_SESSION* g_SessionArray[dfSESSION_NUM] = { nullptr, };
 st_PLAYER* g_PlayerArray[dfSESSION_NUM] = { nullptr, };
@@ -94,7 +94,7 @@ void NewSession(DWORD dwSessionID)
 	pSession->SessionID = dwSessionID;
 	
 	//LockSession();
-	g_SessionList.push_back(pSession);
+	//g_SessionList.push_back(pSession);
 	//UnlockSession();
 
 
@@ -103,7 +103,7 @@ void NewSession(DWORD dwSessionID)
 	memset(pPlayer->Content, 0, sizeof(pPlayer->Content));
 
 	//LockPlayer();
-	g_PlayerList.push_back(pPlayer);
+	//g_PlayerList.push_back(pPlayer);
 	//UnlockPlayer();
 }
 
@@ -128,29 +128,29 @@ void ConnectSession(DWORD dwSessionID)
 void DeleteSession(DWORD dwSessionID)
 {
 	//LockSession();
-	list<st_SESSION *>::iterator SessionIter = g_SessionList.begin();
-	for ( ; SessionIter != g_SessionList.end(); SessionIter++ )
-	{
-		if ( dwSessionID == (*SessionIter)->SessionID )
-		{
-			delete *SessionIter;
-			g_SessionList.erase(SessionIter);
-			break;
-		}
-	}
-	//UnlockSession();
+	//list<st_SESSION *>::iterator SessionIter = g_SessionList.begin();
+	//for ( ; SessionIter != g_SessionList.end(); SessionIter++ )
+	//{
+	//	if ( dwSessionID == (*SessionIter)->SessionID )
+	//	{
+	//		delete *SessionIter;
+	//		g_SessionList.erase(SessionIter);
+	//		break;
+	//	}
+	//}
+	////UnlockSession();
 
-	//LockPlayer();
-	list<st_PLAYER *>::iterator PlayerIter = g_PlayerList.begin();
-	for ( ; PlayerIter != g_PlayerList.end(); PlayerIter++ )
-	{
-		if ( dwSessionID == (*PlayerIter)->SessionID )
-		{
-			delete *PlayerIter;
-			g_PlayerList.erase(PlayerIter);
-			break;
-		}
-	}
+	////LockPlayer();
+	//list<st_PLAYER *>::iterator PlayerIter = g_PlayerList.begin();
+	//for ( ; PlayerIter != g_PlayerList.end(); PlayerIter++ )
+	//{
+	//	if ( dwSessionID == (*PlayerIter)->SessionID )
+	//	{
+	//		delete *PlayerIter;
+	//		g_PlayerList.erase(PlayerIter);
+	//		break;
+	//	}
+	//}
 	//UnlockPlayer();
 }
 
@@ -184,6 +184,7 @@ bool FindSessionList(DWORD dwSessionID)
 void UpdateSession(DWORD dwSessionID)
 {
 	for (int i = 0; i < dfSESSION_NUM; ++i)
+
 	{
 		if (g_SessionStatus[i] == dfSESSION_CONNECT)
 		{
