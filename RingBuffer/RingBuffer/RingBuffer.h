@@ -1,4 +1,6 @@
 #pragma once
+#include <process.h>
+#include <Windows.h>
 
 #define BUFFER_SIZE (150)
 
@@ -111,9 +113,13 @@ public:
 
 	bool IsFrontZero() { return mFront == 0; }
 
+	void Lock(bool readonly);
+	void Unlock(bool readonly);
+
 private:
 	int mFront;
 	int mRear;
 	char* mBuffer;
 	int mCapacity;
+	SRWLOCK mSrwLock;
 };

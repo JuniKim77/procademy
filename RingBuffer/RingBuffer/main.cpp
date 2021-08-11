@@ -2,11 +2,18 @@
 #include <stdio.h>
 #include <cstring>
 #include <random>
+#include <conio.h>
 
 #define STR_SIZE (120)
+#define TIME_PERIOD (50)
+unsigned int __stdcall dequeueProc(void* pvParam);
+unsigned int __stdcall enqueueProc(void* pvParam);
+int dequeueProcess();
+int enqueueProcess();
 
-int dequeueProc(RingBuffer* ringBuffer);
-int enqueueProc(RingBuffer* ringBuffer);
+RingBuffer ringBuffer(BUFFER_SIZE);
+HANDLE g_event;
+SRWLOCK g_srwlock;
 
 char szTest[] = "1234567890 abcdefghijklmnopqrstuvwxyz 1234567890 abcdefghijklmnopqrstuvwxyz 1234567890 abcdefghijklmnopqrstuvwxyz 123456";
 int cur = 0;
@@ -16,34 +23,40 @@ int main()
 	system(" mode  con lines=30   cols=120 ");
 	int seed = 10;
 	int ringSize = BUFFER_SIZE;
-	//printf("Seed: ");
-	//int seed = 10;
-	//scanf_s("%d", &seed);
-	//printf("Ring Buffer Size: ");
-	//int ringSize = BUFFER_SIZE;
-	//scanf_s("%d", &ringSize);
-
 	RingBuffer ringBuffer(ringSize);
 
 	srand(seed);
 
+	HANDLE hArray[2];
+	hArray[0] = (HANDLE)_beginthreadex(nullptr, 0, enqueueProc, nullptr, 0, nullptr);
+	hArray[1] = (HANDLE)_beginthreadex(nullptr, 0, dequeueProc, nullptr, 0, nullptr);
+	InitializeSRWLock(&g_srwlock);
+
+	g_event = CreateEvent(nullptr, false, false, nullptr);
+
 	while (1)
 	{
-		int ran = enqueueProc(&ringBuffer);
+		char ch = _getch();
+		rewind(stdin);
 
-		printf("After Enqueue::: Ran: %d\n", ran);
-		ringBuffer.printInfo();
-
-		ran = dequeueProc(&ringBuffer);
-
-		printf("After Enqueue::: Ran: %d\n", ran);
-		ringBuffer.printInfo();
+		if (ch == 'q')
+		{
+			SetEvent(g_event);
+			break;
+		}
 	}
+
+	WaitForMultipleObjects(2, hArray, true, INFINITE);
+
+	CloseHandle(g_event);
+	for (int i = 0; i < 2; ++i)
+	{
+		CloseHandle(hArray[i]);
 
 	return 0;
 }
 
-int dequeueProc(RingBuffer* ringBuffer)
+int dequeueProcess()
 {
 	char buffer[STR_SIZE + 1];
 
@@ -63,8 +76,15 @@ int dequeueProc(RingBuffer* ringBuffer)
 	{
 
 	}*/
+	//ringBuffer.Lock(false);
+	if (ringBuffer.GetUseSize() == 0)
+	{
+		ringBuffer.Unlock(false);
+		return 0;
+	}
 
-	int size = ringBuffer->Dequeue(buffer, ran);
+	int size = ringBuffer.Dequeue(buffer, ran);
+	//ringBuffer.Unlock(false);
 
 	buffer[size] = '\0';
 	//printf(buffer);
@@ -72,35 +92,35 @@ int dequeueProc(RingBuffer* ringBuffer)
 	return size;
 }
 
-int enqueueProc(RingBuffer* ringBuffer)
+int enqueueProcess()
 {
 	char buffer[STR_SIZE + 1];
 
-	// ∑£¥˝ º˝¿⁄ ∏¬≈≠ ≥÷¿ª ∞Õ
+	// ÎûúÎç§ Ïà´Ïûê ÎßûÌÅº ÎÑ£ÏùÑ Í≤É
 	int ran = rand() % (STR_SIZE + 1);
 
-	// ∑•¥˝ º˝¿⁄øÕ «ˆ¿Á ¿ßƒ°¿« «’¿Ã πÆ¿⁄ø≠ ≈©±‚∫∏¥Ÿ ≈©∏È...
-	if (cur + ran > STR_SIZE)
-	{
-		// ∞°¥…«— ∏∏≈≠ πÃ∏Æ ∫πªÁ«œ∞Ì... ≥™∏”¡ˆ µ˚∑Œ ∫πªÁ
-		int poss = STR_SIZE - cur;
-		memcpy(buffer, szTest + cur, poss);
-		memcpy(buffer + poss, szTest, ran - poss);
-	}
-	else
-	{
-		memcpy(buffer, szTest + cur, ran);
-	}
+	// Îû®Îç§ Ïà´ÏûêÏôÄ ÌòÑÏû¨ ÏúÑÏπòÏùò Ìï©Ïù¥ Î¨∏ÏûêÏó¥ ÌÅ¨Í∏∞Î≥¥Îã§ ÌÅ¨Î©¥...
+	//if (cur + ran > STR_SIZE)
+	//{
+	//	// Í∞ÄÎä•Ìïú ÎßåÌÅº ÎØ∏Î¶¨ Î≥µÏÇ¨ÌïòÍ≥†... ÎÇòÎ®∏ÏßÄ Îî∞Î°ú Î≥µÏÇ¨
+	//	int poss = STR_SIZE - cur;
+	//	memcpy(buffer, szTest + cur, poss);
+	//	memcpy(buffer + poss, szTest, ran - poss);
+	//}
+	//else
+	//{
+	//	memcpy(buffer, szTest + cur, ran);
+	//}
 
-	buffer[ran] = '\0';
+	//buffer[ran] = '\0';
 
-	//int dEneueSize = ringBuffer->DirectEnqueueSize();
+	//int dEneueSize = ringBuffer.DirectEnqueueSize();
 
 	//if (ran < dEneueSize)
 	//{
-	//	memcpy(ringBuffer->GetRearBufferPtr(), buffer, ran);
+	//	memcpy(ringBuffer.GetRearBufferPtr(), buffer, ran);
 
-	//	ringBuffer->MoveRear(ran);
+	//	ringBuffer.MoveRear(ran);
 
 	//	cur = (cur + ran) % STR_SIZE;
 
@@ -108,11 +128,11 @@ int enqueueProc(RingBuffer* ringBuffer)
 	//}
 	//else
 	//{
-	//	memcpy(ringBuffer->GetRearBufferPtr(), buffer, dEneueSize);
+	//	memcpy(ringBuffer.GetRearBufferPtr(), buffer, dEneueSize);
 
-	//	ringBuffer->MoveRear(dEneueSize);
+	//	ringBuffer.MoveRear(dEneueSize);
 
-	//	if (ringBuffer->IsFrontZero())
+	//	if (ringBuffer.IsFrontZero())
 	//	{
 	//		cur = (cur + dEneueSize) % (STR_SIZE + 1);
 	//	}
@@ -124,9 +144,86 @@ int enqueueProc(RingBuffer* ringBuffer)
 	//	return dEneueSize;
 	//}
 
-	int size = ringBuffer->Enqueue(buffer, ran);
+	if (cur + ran > STR_SIZE)
+	{
+		// Í∞ÄÎä•Ìïú ÎßåÌÅº ÎØ∏Î¶¨ Î≥µÏÇ¨ÌïòÍ≥†... ÎÇòÎ®∏ÏßÄ Îî∞Î°ú Î≥µÏÇ¨
+		int poss = STR_SIZE - cur;
+		memcpy(buffer, szTest + cur, poss);
+		memcpy(buffer + poss, szTest, ran - poss);
+	}
+	else
+	{
+		memcpy(buffer, szTest + cur, ran);
+	}
+
+	buffer[ran] = '\0';
+
+	//ringBuffer.Lock(false);
+	int size = ringBuffer.Enqueue(buffer, ran);
+	//ringBuffer.Unlock(false);
 
 	cur = (cur + size) % STR_SIZE;
 
 	return size;
+}
+
+unsigned int __stdcall dequeueProc(void* pvParam)
+{
+	srand(100);
+
+	while (1)
+	{
+		DWORD time = rand() % TIME_PERIOD + 10;
+
+		DWORD retval = WaitForSingleObject(g_event, time);
+
+		switch (retval)
+		{
+		case WAIT_FAILED:
+			wprintf_s(L"Handle Error: %d\n", GetLastError());
+			return -1;
+		case WAIT_TIMEOUT:
+		{
+			dequeueProcess();
+			break;
+		}
+		case WAIT_OBJECT_0:
+			SetEvent(g_event);
+			return 0;
+		default:
+			break;
+		}
+	}
+	return 0;
+}
+
+unsigned int __stdcall enqueueProc(void* pvParam)
+{
+	srand(1000);
+
+	while (1)
+	{
+		DWORD time = rand() % TIME_PERIOD + 10;
+
+		DWORD retval = WaitForSingleObject(g_event, time);
+
+		switch (retval)
+		{
+		case WAIT_FAILED:
+			wprintf_s(L"Handle Error: %d\n", GetLastError());
+			return -1;
+		case WAIT_TIMEOUT:
+		{
+			enqueueProcess();
+			break;
+		}
+		case WAIT_OBJECT_0:
+			SetEvent(g_event);
+			return 0;
+		default:
+			break;
+		}
+	}
+
+	return 0;
 }

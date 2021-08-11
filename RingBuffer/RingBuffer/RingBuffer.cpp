@@ -5,6 +5,7 @@
 RingBuffer::RingBuffer()
 	: RingBuffer(DEFAULT_SIZE)
 {
+	InitializeSRWLock(&mSrwLock);
 }
 
 RingBuffer::~RingBuffer()
@@ -114,7 +115,7 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 	}
 
 	if (mRear >= mFront)
-	{		
+	{
 		int possibleToEnd = DirectEnqueueSize();
 
 		if (iSize < possibleToEnd)
@@ -153,7 +154,7 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 		return Dequeue(chpDest, GetUseSize());
 	}
 
-	if (mFront > mRear) 
+	if (mFront > mRear)
 	{
 		int possibleToEnd = DirectDequeueSize();
 
@@ -320,4 +321,26 @@ void RingBuffer::printInfo()
 	printf("Size: %d, F: %d, R: %d, Buffer: %s\n", GetUseSize(), mFront, mRear, buffer);
 }
 
+void RingBuffer::Lock(bool readonly)
+{
+	if (readonly)
+	{
+		AcquireSRWLockShared(&mSrwLock);
+	}
+	else
+	{
+		AcquireSRWLockExclusive(&mSrwLock);
+	}
+}
 
+void RingBuffer::Unlock(bool readonly)
+{
+	if (readonly)
+	{
+		ReleaseSRWLockShared(&mSrwLock);
+	}
+	else
+	{
+		ReleaseSRWLockExclusive(&mSrwLock);
+	}
+}
