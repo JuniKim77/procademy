@@ -57,6 +57,7 @@ void FrameSkip::Refresh()
 	mOldFrameCounter = mFrameCounter;
 	mFrameCounter = 0;
 	mTotalTick -= 1000;
+	mLoopCounter = 0;
 }
 
 void FrameSkip::UpdateRemain()

@@ -15,6 +15,7 @@
 #include "CPacket.h"
 #include "Sector.h"
 #include "PacketCreater.h"
+#include "MyProfiler.h"
 
 using namespace std;
 
@@ -44,14 +45,14 @@ void CreateServer()
 
 	if (g_listenSocket == INVALID_SOCKET)
 	{
-		LogError(L"SOCKET ERROR : 소켓 생성 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : Socket Create Error", g_listenSocket);
 
 		exit(1);
 	}
 
 	if (bind(g_listenSocket, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR)
 	{
-		LogError(L"SOCKET ERROR : 바인딩 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : Binding Error", g_listenSocket);
 
 		exit(1);
 	}
@@ -59,18 +60,18 @@ void CreateServer()
 	u_long on = 1;
 	if (ioctlsocket(g_listenSocket, FIONBIO, &on) == SOCKET_ERROR)
 	{
-		LogError(L"SOCKET ERROR : 논블락 소켓 전환 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : NonBlocked Socket Error", g_listenSocket);
 
 		exit(1);
 	}
 
 	if (listen(g_listenSocket, SOMAXCONN) == SOCKET_ERROR) {
-		LogError(L"SOCKET ERROR : 리스닝 에러", g_listenSocket);
+		LogError(L"SOCKET ERROR : Listening Error", g_listenSocket);
 
 		exit(1);
 	}
 
-	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"서버 시작... [Port: %d]\n", dfNETWORK_PORT);
+	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"Server begin... [Port: %d]\n", dfNETWORK_PORT);
 }
 
 void NetWorkProc()
@@ -153,7 +154,9 @@ void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset)
 
 		if (FD_ISSET(session->mSocket, wset))
 		{
+			ProfileBegin(L"WriteProc");
 			session->writeProc();
+			ProfileEnd(L"WriteProc");
 			--numSelected;
 		}
 
@@ -180,11 +183,11 @@ void DisconnectProc(DWORD sessionKey)
 	cpSC_DeleteUser(&packet, user->userNo);
 	SendPacket_Around(user->userNo, &packet, true);
 
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Disconnect [UserNo: %d]\n", user->userNo);
+
 	Sector_RemoveUser(user, true);
 	DeleteSessionData(sessionKey);
 	DeleteUserData(sessionKey);
-
-	
 }
 
 void AcceptProc()
@@ -211,12 +214,12 @@ void AcceptProc()
 	WCHAR temp[16] = { 0, };
 	InetNtop(AF_INET, &clientAddr.sin_addr, temp, 16);
 
-	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"Accept: IP - %s, 포트 - %d [UserNo: %d]\n",
+	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"Accept: IP - %s, Port - %d [UserNo: %d]\n",
 		temp, ntohs(clientAddr.sin_port), g_SessionNo);
 
 	u_long on = 1;
 	if (ioctlsocket(client, FIONBIO, &on) == SOCKET_ERROR) {
-		LogError(L"논블락 소켓 전환 에러", client);
+		LogError(L"NonBlocked Socket Error", client);
 
 		exit(1);
 	}
@@ -308,8 +311,10 @@ void SendPacket_SectorOne(int sectorX, int sectorY, CPacket* packet, DWORD excep
 			continue;
 
 		SendPacket_Unicast((*iter)->sessionNo, packet);
+#ifdef DEBUG
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sector Sent Message [X: %d][Y: %d][userNo: %d]\n",
 			sectorX, sectorY, (*iter)->userNo);
+#endif
 	}
 }
 
@@ -370,6 +375,8 @@ void UserSectorUpdatePacket(User* user)
 
 	GetUpdateSectorAround(user, &removeSector, &addSector);
 
+	// 섹터 삭제 추가 로그
+#ifdef DEBUG
 	for (int cnt = 0; cnt < removeSector.count; ++cnt)
 	{
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Removed Sector [X: %d][Y: %d]\n",
@@ -380,6 +387,7 @@ void UserSectorUpdatePacket(User* user)
 		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Added Sector [X: %d][Y: %d]\n",
 			addSector.around[cnt].x, addSector.around[cnt].y);
 	}
+#endif
 
 	cpSC_DeleteUser(&packet, user->userNo);
 

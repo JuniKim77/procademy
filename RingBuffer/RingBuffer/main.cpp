@@ -21,14 +21,9 @@ int cur = 0;
 int main()
 {
 	system(" mode  con lines=30   cols=120 ");
-
-	/*printf("Seed: ");
 	int seed = 10;
-	scanf_s("%d", &seed);
-	printf("Ring Buffer Size: ");
 	int ringSize = BUFFER_SIZE;
-	scanf_s("%d", &ringSize);*/
-	int seed = 10;
+	RingBuffer ringBuffer(ringSize);
 
 	srand(seed);
 
@@ -57,7 +52,6 @@ int main()
 	for (int i = 0; i < 2; ++i)
 	{
 		CloseHandle(hArray[i]);
-	}
 
 	return 0;
 }
@@ -93,7 +87,7 @@ int dequeueProcess()
 	//ringBuffer.Unlock(false);
 
 	buffer[size] = '\0';
-	printf(buffer);
+	//printf(buffer);
 
 	return size;
 }
@@ -102,13 +96,13 @@ int enqueueProcess()
 {
 	char buffer[STR_SIZE + 1];
 
-	// ·£´ı ¼ıÀÚ ¸ÂÅ­ ³ÖÀ» °Í
+	// ëœë¤ ìˆ«ì ë§í¼ ë„£ì„ ê²ƒ
 	int ran = rand() % (STR_SIZE + 1);
 
-	// ·¥´ı ¼ıÀÚ¿Í ÇöÀç À§Ä¡ÀÇ ÇÕÀÌ ¹®ÀÚ¿­ Å©±âº¸´Ù Å©¸é...
+	// ë¨ë¤ ìˆ«ìì™€ í˜„ì¬ ìœ„ì¹˜ì˜ í•©ì´ ë¬¸ìì—´ í¬ê¸°ë³´ë‹¤ í¬ë©´...
 	//if (cur + ran > STR_SIZE)
 	//{
-	//	// °¡´ÉÇÑ ¸¸Å­ ¹Ì¸® º¹»çÇÏ°í... ³ª¸ÓÁö µû·Î º¹»ç
+	//	// ê°€ëŠ¥í•œ ë§Œí¼ ë¯¸ë¦¬ ë³µì‚¬í•˜ê³ ... ë‚˜ë¨¸ì§€ ë”°ë¡œ ë³µì‚¬
 	//	int poss = STR_SIZE - cur;
 	//	memcpy(buffer, szTest + cur, poss);
 	//	memcpy(buffer + poss, szTest, ran - poss);
@@ -152,7 +146,7 @@ int enqueueProcess()
 
 	if (cur + ran > STR_SIZE)
 	{
-		// °¡´ÉÇÑ ¸¸Å­ ¹Ì¸® º¹»çÇÏ°í... ³ª¸ÓÁö µû·Î º¹»ç
+		// ê°€ëŠ¥í•œ ë§Œí¼ ë¯¸ë¦¬ ë³µì‚¬í•˜ê³ ... ë‚˜ë¨¸ì§€ ë”°ë¡œ ë³µì‚¬
 		int poss = STR_SIZE - cur;
 		memcpy(buffer, szTest + cur, poss);
 		memcpy(buffer + poss, szTest, ran - poss);

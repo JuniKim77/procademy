@@ -60,8 +60,8 @@ int RingBuffer::GetUseSize(void)
 {
 	if (mRear >= mFront)
 		return mRear - mFront;
-	else
-		return mCapacity - (mFront - mRear) + 1;
+	else // f 바로 뒤는 넣을 수 없다.
+		return mCapacity - (mFront - mRear - 1);
 }
 
 int RingBuffer::GetFreeSize(void)
@@ -97,7 +97,7 @@ int RingBuffer::DirectDequeueSize(void)
 		return mRear - mFront;
 	}
 
-	// 경계 포함이라 +1까지...
+	// 끝까지 다 쓸 있어서 +1
 	return mCapacity - mFront + 1;
 }
 
@@ -117,7 +117,7 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 	{
 		int possibleToEnd = DirectEnqueueSize();
 
-		if (iSize <= possibleToEnd)
+		if (iSize < possibleToEnd)
 		{
 			memcpy(mBuffer + mRear, chpData, iSize);
 			mRear += iSize;
@@ -157,7 +157,7 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 	{
 		int possibleToEnd = DirectDequeueSize();
 
-		if (iSize <= possibleToEnd)
+		if (iSize < possibleToEnd)
 		{
 			memcpy(chpDest, mBuffer + mFront, iSize);
 			mFront += iSize;
@@ -197,7 +197,7 @@ int RingBuffer::Peek(char* chpDest, int iSize)
 	{
 		int possibleToEnd = DirectDequeueSize();
 
-		if (iSize <= possibleToEnd)
+		if (iSize < possibleToEnd)
 		{
 			memcpy(chpDest, mBuffer + mFront, iSize);
 
@@ -314,8 +314,10 @@ void RingBuffer::printInfo()
 	{
 		int poss = DirectDequeueSize();
 		memcpy(buffer, mBuffer + mFront, poss);
-		memcpy(buffer + poss, mBuffer, mRear - 1);
+		memcpy(buffer + poss, mBuffer, mRear);
 	}
 
 	printf("Size: %d, F: %d, R: %d, Buffer: %s\n", GetUseSize(), mFront, mRear, buffer);
 }
+
+

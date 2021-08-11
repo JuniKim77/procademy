@@ -75,6 +75,12 @@
     <ClCompile Include="PacketCreater.cpp">
       <Filter>소스 파일\Network</Filter>
     </ClCompile>
+    <ClCompile Include="MyProfiler.cpp">
+      <Filter>소스 파일\Tool</Filter>
+    </ClCompile>
+    <ClCompile Include="CSVReader.cpp">
+      <Filter>소스 파일\Tool</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NetworkProcs.h">
@@ -118,6 +124,12 @@
     </ClInclude>
     <ClInclude Include="PacketCreater.h">
       <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="MyProfiler.h">
+      <Filter>헤더 파일\Tool</Filter>
+    </ClInclude>
+    <ClInclude Include="CSVReader.h">
+      <Filter>헤더 파일\Tool</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
