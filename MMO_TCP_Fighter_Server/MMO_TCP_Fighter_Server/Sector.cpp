@@ -7,15 +7,12 @@ extern CLogger g_Logger;
 
 void Sector_AddUser(User* user)
 {
-	int sectorX = user->curSector.x;
-	int sectorY = user->curSector.y;
-
 #ifdef DEBUG
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Add to Sector [X: %d][Y: %d]\n",
 		user->userNo, sectorX, sectorY);
 #endif
 	
-	g_Sector[sectorY][sectorX].push_back(user);
+	g_Sector[user->curSector.y][user->curSector.x].push_back(user);
 }
 
 void Sector_RemoveUser(User* user, bool isCurrent)
@@ -35,23 +32,7 @@ void Sector_RemoveUser(User* user, bool isCurrent)
 	}
 	
 
-	for (auto iter = g_Sector[sectorY][sectorX].begin(); iter != g_Sector[sectorY][sectorX].end(); ++iter)
-	{
-		if (user == *iter)
-		{
-#ifdef DEBUG
-			g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Remove from Sector [X: %d][Y: %d]\n",
-				user->userNo, sectorX, sectorY);
-#endif
-			
-			g_Sector[sectorY][sectorX].erase(iter);
-
-			return;
-		}
-	}
-
-	g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Remove Not Found [X: %d][Y: %d]\n",
-		user->userNo, sectorX, sectorY);
+	g_Sector[sectorY][sectorX].remove(user);
 }
 
 bool Sector_UpdateUser(User* user)
@@ -61,7 +42,9 @@ bool Sector_UpdateUser(User* user)
 
 	if (sectorX != user->curSector.x || sectorY != user->curSector.y)
 	{
-		user->oldSector = user->curSector;
+		user->oldSector.x = user->curSector.x;
+		user->oldSector.y = user->curSector.y;
+
 		user->curSector.x = sectorX;
 		user->curSector.y = sectorY;
 

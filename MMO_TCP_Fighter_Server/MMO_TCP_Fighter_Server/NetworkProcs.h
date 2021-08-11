@@ -1,11 +1,8 @@
 #pragma once
 
 #include <wtypes.h>
+#include "CLogger.h"
 //#define DEBUG
-#define dfNETWORK_PORT 10150
-#define dfLOG_LEVEL_DEBUG (0)
-#define dfLOG_LEVEL_NOTICE (1)
-#define dfLOG_LEVEL_ERROR (2)
 
 class Session;
 class CPacket;

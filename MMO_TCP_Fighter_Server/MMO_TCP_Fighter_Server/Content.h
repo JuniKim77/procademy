@@ -13,3 +13,4 @@ bool CS_Attack2(DWORD from, CPacket* packet);
 bool CS_Attack3(DWORD from, CPacket* packet);
 bool CS_Echo(DWORD from, CPacket* packet);
 bool UserMoveCheck(int x, int y);
+void SC_Syncronize(DWORD userNo, short* x, short* y);

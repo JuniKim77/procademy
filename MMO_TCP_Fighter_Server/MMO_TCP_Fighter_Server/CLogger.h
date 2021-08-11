@@ -12,6 +12,7 @@ public:
 	CLogger() {}
 	void _Log(int logLevel, const WCHAR* format, ...);
 	void setLogLevel(int level) { mLogLevel = level; }
+	int getLogLevel() { return mLogLevel; }
 
 private:
 	int mLogLevel = dfLOG_LEVEL_DEBUG;

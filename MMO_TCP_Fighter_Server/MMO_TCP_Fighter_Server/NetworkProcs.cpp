@@ -11,11 +11,11 @@
 #include "CPacket.h"
 #include "User.h"
 #include "Container.h"
-#include "CLogger.h"
 #include "CPacket.h"
 #include "Sector.h"
 #include "PacketCreater.h"
 #include "MyProfiler.h"
+#include "PacketDefine.h"
 
 using namespace std;
 
@@ -232,6 +232,8 @@ void AcceptProc()
 	user->hp = 100;
 	int x = rand() % dfRANGE_MOVE_RIGHT;
 	int y = rand() % dfRANGE_MOVE_BOTTOM;
+	/*int x = g_SessionNo * 100;
+	int y = g_SessionNo * 100;*/
 	user->x = x;
 	user->y = y;
 	int sectorX = x / dfSECTOR_SIZE;
@@ -242,6 +244,8 @@ void AcceptProc()
 	user->oldSector.y = sectorY;
 	user->moveDirection = dfAction_STAND;
 	user->action = dfAction_STAND;
+	memset(&user->mExTrack, 0, sizeof(user->mExTrack));
+	memset(&user->mExExTrack, 0, sizeof(user->mExExTrack));
 	session->mLastRecvTime = GetTickCount64();
 
 	Sector_AddUser(user);
@@ -285,8 +289,25 @@ void AcceptProc()
 
 			packet.Clear();
 			cpSC_CreateOtherUser(&packet, other->userNo, other->direction, other->x, other->y, other->hp);
-
 			SendPacket_Unicast(user->userNo, &packet);
+
+			packet.Clear();
+			switch (other->action)
+			{
+			case dfACTION_MOVE_LL:
+			case dfACTION_MOVE_LU:
+			case dfACTION_MOVE_UU:
+			case dfACTION_MOVE_RU:
+			case dfACTION_MOVE_RR:
+			case dfACTION_MOVE_RD:
+			case dfACTION_MOVE_DD:
+			case dfACTION_MOVE_LD:
+				cpSC_MoveStart(&packet, other->userNo, other->moveDirection, other->x, other->y);
+				SendPacket_Unicast(user->userNo, &packet);
+				break;
+			default:
+				break;
+			}
 		}
 	}
 
@@ -388,14 +409,14 @@ void UserSectorUpdatePacket(User* user)
 			addSector.around[cnt].x, addSector.around[cnt].y);
 	}
 #endif
-
+	// 1. removeSecotr에 삭제 패킷 보내기
 	cpSC_DeleteUser(&packet, user->userNo);
 
 	for (int cnt = 0; cnt < removeSector.count; ++cnt)
 	{
 		SendPacket_SectorOne(removeSector.around[cnt].x, removeSector.around[cnt].y, &packet, 0);
 	}
-
+	// 2. 움직인 유저에게 삭제 패킷 보내기
 	for (int cnt = 0; cnt < removeSector.count; ++cnt)
 	{
 		auto* userList = &g_Sector[removeSector.around[cnt].y][removeSector.around[cnt].x];
@@ -408,6 +429,7 @@ void UserSectorUpdatePacket(User* user)
 		}
 	}
 
+	// 3-1. AddSector에 캐릭터 생성 패킷 보내기
 	packet.Clear();
 	cpSC_CreateOtherUser(&packet, user->sessionNo, user->direction, user->x, user->y, user->hp);
 
@@ -415,6 +437,31 @@ void UserSectorUpdatePacket(User* user)
 	{
 		SendPacket_SectorOne(addSector.around[cnt].x, addSector.around[cnt].y, &packet, 0);
 	}
+
+	// 3-2. AddSecotr에 생성된 캐릭터 이동 패킷 보내기
+	switch (user->action)
+	{
+	case dfACTION_MOVE_LL:
+	case dfACTION_MOVE_LU:
+	case dfACTION_MOVE_UU:
+	case dfACTION_MOVE_RU:
+	case dfACTION_MOVE_RR:
+	case dfACTION_MOVE_RD:
+	case dfACTION_MOVE_DD:
+	case dfACTION_MOVE_LD:
+		packet.Clear();
+		cpSC_MoveStart(&packet, user->sessionNo, user->moveDirection, user->x, user->y);
+
+		for (int cnt = 0; cnt < addSector.count; ++cnt)
+		{
+			SendPacket_SectorOne(addSector.around[cnt].x, addSector.around[cnt].y, &packet, 0);
+		}
+		break;
+	default:
+		break;
+	}
+
+	// 4. 이동한 유저에게 AddSector에 있던 유저 생성 패킷 보내기
 
 	for (int cnt = 0; cnt < addSector.count; ++cnt)
 	{
@@ -432,6 +479,8 @@ void UserSectorUpdatePacket(User* user)
 			cpSC_CreateOtherUser(&packet, pUser->userNo, pUser->direction, pUser->x, pUser->y, pUser->hp);
 			SendPacket_Unicast(user->sessionNo, &packet);
 
+			// 이동 중 이였다면...
+
 			packet.Clear();
 			switch (pUser->action)
 			{
@@ -445,6 +494,8 @@ void UserSectorUpdatePacket(User* user)
 			case dfACTION_MOVE_LD:
 				cpSC_MoveStart(&packet, pUser->userNo, pUser->moveDirection, pUser->x, pUser->y);
 				SendPacket_Unicast(user->userNo, &packet);
+				break;
+			default:
 				break;
 			}
 		}

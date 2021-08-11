@@ -1,9 +1,7 @@
 #ifndef __PACKET_DEFINE__
 #define __PACKET_DEFINE__
 
-#define dfNETWORK_PORT		20000
-
-
+#define dfNETWORK_PORT		10150
 
 struct stHeader
 {

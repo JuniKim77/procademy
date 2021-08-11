@@ -11,6 +11,8 @@
 #include "PacketCreater.h"
 #include "NetworkProcs.h"
 
+//#define DEBUG2
+
 extern CLogger g_Logger;
 
 bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
@@ -48,21 +50,12 @@ bool PacketProc(DWORD from, WORD msgType, CPacket* packet)
 
 bool CS_MoveStart(DWORD from, CPacket* packet)
 {
-	Session* session = FindSession(from);
-
-	if (session == nullptr)
-	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Non-Exist Session [SessionNo: %d]\n", from);	
-
-		return false;
-	}
-
 	BYTE direction;
 	short x;
 	short y;
 
 	*packet >> direction >> x >> y;
-#ifdef DEBUG
+#ifdef DEBUG1
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Move Start [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
 #endif
@@ -79,16 +72,16 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 	if (abs(user->x - x) > dfERROR_RANGE || abs(user->y - y) > dfERROR_RANGE)
 	{
 		// 教农 皋技瘤 价脚
-		CPacket Packet;
-		cpSC_Synchronize(&Packet, user->userNo, user->x, user->y);
-		SendPacket_Around(user->userNo, &Packet, true);
-
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
-			from, direction, x, y, user->x, user->y, user->hp);
-		
-		x = user->x;
-		y = user->y;
+		SC_Syncronize(user->userNo, &x, &y);
 	}
+
+	user->UpdateTrack();
+	user->mExTrack.mAction = direction;
+	user->mExTrack.mMoveDirection = direction;
+	user->mExTrack.mClient.X = x;
+	user->mExTrack.mClient.Y = y;
+	user->mExTrack.mServer.X = user->x;
+	user->mExTrack.mServer.Y = user->y;
 
 	// 捞悼 规氢苞 咀记狼 蔼捞 鞍澜.
 	user->action = direction;
@@ -123,27 +116,26 @@ bool CS_MoveStart(DWORD from, CPacket* packet)
 	cpSC_MoveStart(&Packet, user->userNo, user->moveDirection, user->x, user->y);
 	SendPacket_Around(user->userNo, &Packet);
 
+#ifdef DEBUG2
+	if (user->action != direction || user->moveDirection != direction ||
+		user->x != x || user->y != y)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Move Start Error [UserNo: %d]\n", user->userNo);
+	}
+#endif
+
 	return true;
 }
 
 bool CS_MoveStop(DWORD from, CPacket* packet)
 {
-	Session* session = FindSession(from);
-
-	if (session == nullptr)
-	{
-		g_Logger._Log(dfLOG_LEVEL_ERROR, L"Non-Exist Session [SessionNo: %d]\n", from);
-
-		return false;
-	}
-
 	BYTE direction;
 	short x;
 	short y;
 
 	*packet >> direction >> x >> y;
 
-#ifdef DEBUG
+#ifdef DEBUG1
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Move Stop [UserNo: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
 #endif
@@ -160,16 +152,16 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 	if (abs(user->x - x) > dfERROR_RANGE || abs(user->y - y) > dfERROR_RANGE)
 	{
 		// 教农 皋技瘤 价脚
-		CPacket Packet;
-		cpSC_Synchronize(&Packet, user->userNo, user->x, user->y);
-		SendPacket_Around(user->userNo, &Packet, true);
-
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
-			from, direction, x, y, user->x, user->y, user->hp);
-
-		x = user->x;
-		y = user->y;
+		SC_Syncronize(user->userNo, &x, &y);
 	}
+
+	user->UpdateTrack();
+	user->mExTrack.mAction = dfAction_STAND;
+	user->mExTrack.mMoveDirection = dfAction_STAND;
+	user->mExTrack.mClient.X = x;
+	user->mExTrack.mClient.Y = y;
+	user->mExTrack.mServer.X = user->x;
+	user->mExTrack.mServer.Y = user->y;
 
 	user->action = dfAction_STAND;
 	user->moveDirection = dfAction_STAND;
@@ -187,6 +179,14 @@ bool CS_MoveStop(DWORD from, CPacket* packet)
 	CPacket Packet;
 	cpSC_MoveStop(&Packet, user->userNo, user->direction, user->x, user->y);
 	SendPacket_Around(user->userNo, &Packet);
+
+#ifdef DEBUG2
+	if (user->action != dfAction_STAND || user->moveDirection != dfAction_STAND ||
+		user->x != x || user->y != y)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Move Stop Error [UserNo: %d]\n", user->userNo);
+	}
+#endif
 
 	return true;
 }
@@ -207,7 +207,7 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 	short y;
 
 	*packet >> direction >> x >> y;
-#ifdef DEBUG
+#ifdef DEBUG1
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_1 [Attacker: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
 #endif
@@ -225,16 +225,16 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 	if (abs(attacker->x - x) > dfERROR_RANGE || abs(attacker->y - y) > dfERROR_RANGE)
 	{
 		// 教农 皋技瘤 价脚
-		CPacket Packet;
-		cpSC_Synchronize(&Packet, attacker->userNo, attacker->x, attacker->y);
-		SendPacket_Around(attacker->userNo, &Packet, true);
-
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
-			from, direction, x, y, attacker->x, attacker->y, attacker->hp);
-
-		x = attacker->x;
-		y = attacker->y;
+		SC_Syncronize(attacker->userNo, &x, &y);
 	}
+
+	attacker->UpdateTrack();
+	attacker->mExTrack.mAction = dfACTION_ATTACK1;
+	attacker->mExTrack.mMoveDirection = dfAction_STAND;
+	attacker->mExTrack.mClient.X = x;
+	attacker->mExTrack.mClient.Y = y;
+	attacker->mExTrack.mServer.X = attacker->x;
+	attacker->mExTrack.mServer.Y = attacker->y;
 
 	attacker->action = dfACTION_ATTACK1;
 	attacker->moveDirection = dfAction_STAND;
@@ -385,6 +385,14 @@ bool CS_Attack1(DWORD from, CPacket* packet)
 		break;
 	}
 
+#ifdef DEBUG2
+	if (attacker->action != dfACTION_ATTACK1 || attacker->moveDirection != dfAction_STAND ||
+		attacker->x != x || attacker->y != y)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Action Error [UserNo: %d]\n", attacker->userNo);
+	}
+#endif
+
 	return true;
 }
 
@@ -404,7 +412,7 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 	short y;
 
 	*packet >> direction >> x >> y;
-#ifdef DEBUG
+#ifdef DEBUG1
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_2 [Attacker: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
 #endif	
@@ -422,16 +430,16 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 	if (abs(attacker->x - x) > dfERROR_RANGE || abs(attacker->y - y) > dfERROR_RANGE)
 	{
 		// 教农 皋技瘤 价脚
-		CPacket Packet;
-		cpSC_Synchronize(&Packet, attacker->userNo, attacker->x, attacker->y);
-		SendPacket_Around(attacker->userNo, &Packet, true);
-
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
-			from, direction, x, y, attacker->x, attacker->y, attacker->hp);
-
-		x = attacker->x;
-		y = attacker->y;
+		SC_Syncronize(attacker->userNo, &x, &y);
 	}
+
+	attacker->UpdateTrack();
+	attacker->mExTrack.mAction = dfACTION_ATTACK2;
+	attacker->mExTrack.mMoveDirection = dfAction_STAND;
+	attacker->mExTrack.mClient.X = x;
+	attacker->mExTrack.mClient.Y = y;
+	attacker->mExTrack.mServer.X = attacker->x;
+	attacker->mExTrack.mServer.Y = attacker->y;
 
 	attacker->action = dfACTION_ATTACK2;
 	attacker->moveDirection = dfAction_STAND;
@@ -582,6 +590,14 @@ bool CS_Attack2(DWORD from, CPacket* packet)
 		break;
 	}
 
+#ifdef DEBUG2
+	if (attacker->action != dfACTION_ATTACK2 || attacker->moveDirection != dfAction_STAND ||
+		attacker->x != x || attacker->y != y)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Action Error [UserNo: %d]\n", attacker->userNo);
+	}
+#endif
+
 	return true;
 }
 
@@ -601,7 +617,7 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 	short y;
 
 	*packet >> direction >> x >> y;
-#ifdef DEBUG
+#ifdef DEBUG1
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"CS Attack_3 [Attacker: %d][Direction: %d][X: %d][Y: %d]\n",
 		from, direction, x, y);
 #endif
@@ -619,17 +635,16 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 	if (abs(attacker->x - x) > dfERROR_RANGE || abs(attacker->y - y) > dfERROR_RANGE)
 	{
 		// 教农 皋技瘤 价脚
-		CPacket Packet;
-		cpSC_Synchronize(&Packet, attacker->userNo, attacker->x, attacker->y);
-		SendPacket_Around(attacker->userNo, &Packet, true);
-
-		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
-			from, direction, x, y, attacker->x, attacker->y, attacker->hp);
-
-		x = attacker->x;
-		y = attacker->y;
-
+		SC_Syncronize(attacker->userNo, &x, &y);
 	}
+
+	attacker->UpdateTrack();
+	attacker->mExTrack.mAction = dfACTION_ATTACK3;
+	attacker->mExTrack.mMoveDirection = dfAction_STAND;
+	attacker->mExTrack.mClient.X = x;
+	attacker->mExTrack.mClient.Y = y;
+	attacker->mExTrack.mServer.X = attacker->x;
+	attacker->mExTrack.mServer.Y = attacker->y;
 
 	attacker->action = dfACTION_ATTACK3;
 	attacker->moveDirection = dfAction_STAND;
@@ -780,6 +795,14 @@ bool CS_Attack3(DWORD from, CPacket* packet)
 		break;
 	}
 
+#ifdef DEBUG2
+	if (attacker->action != dfACTION_ATTACK3 || attacker->moveDirection != dfAction_STAND ||
+		attacker->x != x || attacker->y != y)
+	{
+		g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Action Error [UserNo: %d]\n", attacker->userNo);
+	}
+#endif
+
 	return true;
 }
 
@@ -812,4 +835,65 @@ bool CS_Echo(DWORD from, CPacket* packet)
 bool UserMoveCheck(int x, int y)
 {
 	return x >= 0 && x < dfRANGE_MOVE_RIGHT && y >= 0 && y < dfRANGE_MOVE_BOTTOM;
+}
+
+void SC_Syncronize(DWORD userNo, short* x, short* y)
+{
+	CPacket Packet;
+	User* user = FindUser(userNo);
+	// 教农 皋技瘤 傈价
+	cpSC_Synchronize(&Packet, userNo, user->x, user->y);
+	//SendPacket_Around(userNo, &Packet);
+	//SendPacket_Unicast(userNo, &Packet);
+	SendPacket_Unicast(userNo, &Packet);
+
+	st_Sector_Around sectorAroundRemove;
+
+	GetSectorAround(*x / dfSECTOR_SIZE, *y / dfSECTOR_SIZE, &sectorAroundRemove);
+
+	for (int i = 0; i < sectorAroundRemove.count; ++i)
+	{
+		int sectorX = sectorAroundRemove.around[i].x;
+		int sectorY = sectorAroundRemove.around[i].y;
+		for (auto iter = g_Sector[sectorY][sectorX].begin(); iter != g_Sector[sectorY][sectorX].end(); ++iter)
+		{
+			if ((*iter) == user)
+				continue;
+
+			Packet.Clear();
+			cpSC_DeleteUser(&Packet, (*iter)->userNo);
+			SendPacket_Unicast(userNo, &Packet);
+		}
+	}
+
+	st_Sector_Around sectorAroundAdd;
+
+	GetSectorAround(user->curSector.x, user->curSector.y, &sectorAroundAdd);
+
+	for (int i = 0; i < sectorAroundAdd.count; ++i)
+	{
+		int sectorX = sectorAroundAdd.around[i].x;
+		int sectorY = sectorAroundAdd.around[i].y;
+		for (auto iter = g_Sector[sectorY][sectorX].begin(); iter != g_Sector[sectorY][sectorX].end(); ++iter)
+		{
+			if ((*iter) == user)
+				continue;
+
+			Packet.Clear();
+			cpSC_CreateOtherUser(&Packet, (*iter)->userNo, (*iter)->direction, (*iter)->x, (*iter)->y, (*iter)->hp);
+			SendPacket_Unicast(userNo, &Packet);
+		}
+	}
+
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Sync Sent [UserNo: %d][Action: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d] [HP: %d]\n",
+		userNo, user->action, user->moveDirection, *x, *y, user->x, user->y, user->hp);
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"-- Ex[1] [UserNo: %d][Action: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d]\n",
+		userNo, user->mExTrack.mAction, user->mExTrack.mMoveDirection, user->mExTrack.mClient.X, user->mExTrack.mClient.Y, 
+		user->mExTrack.mServer.X, user->mExTrack.mServer.Y);
+	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"-- Ex[2] [UserNo: %d][Action: %d][Direction: %d][C_X: %d][C_Y: %d]->[S_X: %d][S_Y: %d]\n",
+		userNo, user->mExExTrack.mAction, user->mExExTrack.mMoveDirection, user->mExExTrack.mClient.X, user->mExExTrack.mClient.Y, 
+		user->mExExTrack.mServer.X, user->mExExTrack.mServer.Y);
+
+	*x = user->x;
+	*y = user->y;
 }

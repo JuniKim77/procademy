@@ -1,4 +1,4 @@
-#include "GameProcess.h"
+癤�#include "GameProcess.h"
 #include "FrameSkip.h"
 #include "User.h"
 #include <unordered_map>
@@ -42,8 +42,7 @@ void UpdateGame()
 
 		if (frameCount >= 52 || frameCount <= 48)
 		{
-			g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[Frame Count: %d][Loop Count: %d]\n", 
-				gFrameSkipper.GetFrameCount(), gFrameSkipper.GetLoopCounter());
+			gFrameSkipper.PrintStatus();
 		}
 
 		gFrameSkipper.Refresh();
@@ -57,23 +56,22 @@ void UpdateGame()
 		Session* session = FindSession(user->userNo);
 
 		iter++;
-		// HP가 0이하면 종료 처리..
 		//if (user->hp <= 0)
 		//{
 		//	//DisconnectProc(session->GetSessionNo());
 		//	continue;
 		//}
 
-		// 수신 종료 처리
-		if (curTime - session->GetLastRecvTime() > 60000)
+		// Timeout Func
+		/*if (curTime - session->GetLastRecvTime() > 60000)
 		{
 			g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Time Out!\n",
 				user->userNo);
 			DisconnectProc(session->GetSessionNo());
 			continue;
-		}
+		}*/
 
-		switch (user->moveDirection)
+		switch (user->action)
 		{
 		case dfACTION_MOVE_LL:
 			if (UserMoveCheck(user->x - dfSPEED_PLAYER_X, user->y))
@@ -144,41 +142,38 @@ void ServerControl()
 	if (_kbhit())
 	{
 		WCHAR key = _getwch();
+		rewind(stdin);
 
-		// Q키 : 프로그램 종료
 		if (key == L'Q')
 		{
 			g_Shutdown = true;
 		}
-		// I키 : 키 정보
+
 		if (key == L'I')
 		{
-			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\nWriteModeA[A]\nWriteModeB[B] [Cur: %c]\n", g_writeType);
+			wprintf(L"==========================\n");
+			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\n");
+			wprintf(L"==========================\n");
 		}
-		// D키 : 디버그 모드 전환
+
 		if (key == L'D')
 		{
 			g_Logger.setLogLevel(dfLOG_LEVEL_DEBUG);
+			wprintf_s(L"Set Debug Mode\n");
+
 		}
-		// E키 : 에러 모드 전환
+
 		if (key == L'E')
 		{
 			g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
+			wprintf_s(L"Set Error Mode\n");
 		}
 
 		if (key == L'H')
 		{
 			ProfileDataOutText(L"Profile");
 			ProfileReset();
-		}
-		if (key == L'A')
-		{
-			g_writeType = 'A';
-		}
-		if (key == L'B')
-		{
-			g_writeType = 'B';
-		}
+		}		
 	}
 }
 

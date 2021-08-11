@@ -3,6 +3,7 @@
 #include <wtypes.h>
 #include <unordered_map>
 #include "RingBuffer.h"
+//#include "CStreamQ.h"
 #include <stack>
 #include <vector>
 
@@ -40,6 +41,8 @@ private:
 	SOCKET mSocket;
 	u_short mPort;
 	u_long mIP;
+	/*CStreamQ mSendBuffer;
+	CStreamQ mRecvBuffer;*/
 	RingBuffer mSendBuffer;
 	RingBuffer mRecvBuffer;
 	DWORD mSessionNo;
