@@ -1,175 +1,265 @@
-#include <WinSock2.h>
+// Overlapped Event
+
+#pragma comment(lib, "ws2_32")
+#include <winsock2.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <process.h>
 
-#define BUFFSIZE (512)
+#define BUFSIZE 512
 
+// 소켓 정보 저장을 위한 구조체
 struct SOCKETINFO
 {
 	WSAOVERLAPPED overlapped;
 	SOCKET sock;
-	char buf[BUFFSIZE + 1];
+	char buf[BUFSIZE + 1];
 	int recvbytes;
 	int sendbytes;
 	WSABUF wsabuf;
 };
 
-int g_nTotalSockets = 0;
-SOCKETINFO* g_socketInfoArray[WSA_MAXIMUM_WAIT_EVENTS];
-WSAEVENT g_eventArray[WSA_MAXIMUM_WAIT_EVENTS];
+int nTotalSockets = 0;
+SOCKETINFO* SocketInfoArray[WSA_MAXIMUM_WAIT_EVENTS];
+WSAEVENT EventArray[WSA_MAXIMUM_WAIT_EVENTS];
 CRITICAL_SECTION cs;
 
-unsigned __stdcall WorkerThread(void* arg);
-bool AddSocketInfo(SOCKET sock);
+// 소켓 입출력 함수
+DWORD WINAPI WorkerThread(LPVOID arg);
+// 소켓 관리 함수
+BOOL AddSocketInfo(SOCKET sock);
 void RemoveSocketInfo(int index);
-void error_quit(const WCHAR* s);
 
 int main(int argc, char* argv[])
 {
+	int retval;
 	InitializeCriticalSection(&cs);
 
+	// 윈속 초기화
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 		return -1;
 
+	// socket()
 	SOCKET listen_sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (listen_sock == INVALID_SOCKET)
-	{
-		error_quit(L"Listen Socket Error");
-		return -1;
-	}
+	if (listen_sock == INVALID_SOCKET) printf("socket()\n");
 
+	// bind()
 	SOCKADDR_IN serveraddr;
+	ZeroMemory(&serveraddr, sizeof(serveraddr));
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_port = htons(9000);
-	serveraddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-	int retval = bind(listen_sock, (SOCKADDR*)&serveraddr, sizeof(serveraddr));
+	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	retval = bind(listen_sock, (SOCKADDR*)&serveraddr, sizeof(serveraddr));
+	if (retval == SOCKET_ERROR) printf("bind()\n");
 
-	if (retval == SOCKET_ERROR)
-	{
-		error_quit(L"Bind Error");
-		return -1;
-	}
-
+	// listen()
 	retval = listen(listen_sock, SOMAXCONN);
-	if (retval == SOCKET_ERROR)
-	{
-		error_quit(L"Listen Error");
-		return -1;
-	}
-	
-	// 더미 이벤트 생성
+	if (retval == SOCKET_ERROR) printf("listen()\n");
+
+	// 더미(dummy) 이벤트 객체 생성
 	WSAEVENT hEvent = WSACreateEvent();
 	if (hEvent == WSA_INVALID_EVENT)
-	{
-		error_quit(L"Event Create Error");
-		return -1;
-	}
+		printf("WSACreateEvent()\n");
+	EventArray[nTotalSockets++] = hEvent;
 
-	HANDLE hThread = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
-
-	if (hThread == NULL)
-	{
-		error_quit(L"Thread Create Error");
-		return -1;
-	}
+	// 스레드 생성
+	DWORD ThreadId;
+	HANDLE hThread = CreateThread(NULL, 0, WorkerThread,
+		NULL, 0, &ThreadId);
+	if (hThread == NULL) return -1;
 	CloseHandle(hThread);
 
-	while (1) 
-	{
+	while (1) {
+		// accept()
 		SOCKADDR_IN clientaddr;
 		int addrlen = sizeof(clientaddr);
 		SOCKET client_sock = accept(listen_sock, (SOCKADDR*)&clientaddr, &addrlen);
-		if (client_sock == INVALID_SOCKET)
-		{
-			error_quit(L"Accept Error");
+		if (client_sock == INVALID_SOCKET) {
+			printf("accept()\n");
+			continue;
+		}
+		printf("[TCP 서버] 클라이언트 접속: 포트 번호=%d\n",
+			ntohs(clientaddr.sin_port));
+
+		// 소켓 정보 추가
+		if (AddSocketInfo(client_sock) == FALSE) {
+			closesocket(client_sock);
+			printf("[TCP 서버] 클라이언트 종료: 포트 번호=%d\n",
+				ntohs(clientaddr.sin_port));
 			continue;
 		}
 
-		wprintf_s(L"[TCP server] client connect\n");
-
-		
-	}
-	
-}
-
-unsigned __stdcall WorkerThread(void* arg)
-{
-	while (1)
-	{
-		DWORD retval = WSAWaitForMultipleEvents(g_nTotalSockets, g_eventArray, false, WSA_INFINITE, false);
-
-		if (retval == WSA_WAIT_FAILED) {
-			error_quit(L"WaitForMulti error");
-			continue;
+		// 비동기 입출력 시작
+		SOCKETINFO* ptr = SocketInfoArray[nTotalSockets - 1];
+		DWORD recvbytes;
+		DWORD flags = 0;
+		int retval = WSARecv(ptr->sock, &(ptr->wsabuf), 1, &recvbytes,
+			&flags, &(ptr->overlapped), NULL);
+		if (retval == SOCKET_ERROR) {
+			if (WSAGetLastError() != WSA_IO_PENDING) {
+				printf("WSARecv()\n");
+				RemoveSocketInfo(nTotalSockets - 1);
+				continue;
+			}
 		}
 
-		retval -= WSA_WAIT_EVENT_0;
-		WSAResetEvent(g_eventArray[retval]);
-
+		// 소켓의 개수(nTotalSockets) 변화를 알림
+		if (WSASetEvent(EventArray[0]) == FALSE) {
+			printf("WSASetEvent()\n");
+			break;
+		}
 	}
+
+	// 윈속 종료
+	WSACleanup();
+	DeleteCriticalSection(&cs);
 	return 0;
 }
 
-bool AddSocketInfo(SOCKET sock)
+// 비동기 입출력 처리
+DWORD WINAPI WorkerThread(LPVOID arg)
 {
-	SOCKETINFO* pInfo;
-	WSAEVENT hEvent;
+	int retval;
 
-	EnterCriticalSection(&cs);
+	while (1) {
+		// 이벤트 객체 관찰
+		DWORD index = WSAWaitForMultipleEvents(nTotalSockets,
+			EventArray, FALSE, WSA_INFINITE, FALSE);
+		if (index == WSA_WAIT_FAILED) {
+			printf("WSAWaitForMultipleEvents()\n");
+			continue;
+		}
+		index -= WSA_WAIT_EVENT_0;
+		WSAResetEvent(EventArray[index]);
+		if (index == 0) continue;
 
-	if (g_nTotalSockets >= WSA_MAXIMUM_WAIT_EVENTS)
-	{
-		wprintf_s(L"[Error] socket is full\n");
-		goto Exit;
+		// 클라이언트 정보 얻기
+		SOCKETINFO* ptr = SocketInfoArray[index];
+		SOCKADDR_IN clientaddr;
+		int addrlen = sizeof(clientaddr);
+		getpeername(ptr->sock, (SOCKADDR*)&clientaddr, &addrlen);
+
+		// 비동기 입출력 결과 확인
+		DWORD cbTransferred, flags;
+		retval = WSAGetOverlappedResult(ptr->sock, &(ptr->overlapped),
+			&cbTransferred, FALSE, &flags);
+		if (retval == FALSE || cbTransferred == 0) {
+			if (retval == FALSE)
+				printf("WSAGetOverlappedResult()");
+			RemoveSocketInfo(index);
+			printf("[TCP 서버] 클라이언트 종료: 포트 번호=%d\n",
+				ntohs(clientaddr.sin_port));
+			continue;
+		}
+
+		// 데이터 전송량 갱신
+		if (ptr->recvbytes == 0) {
+			ptr->recvbytes = cbTransferred;
+			ptr->sendbytes = 0;
+			// 받은 데이터 출력
+			ptr->buf[ptr->recvbytes] = '\0';
+			printf("[TCP:%d] %s\n",
+				ntohs(clientaddr.sin_port), ptr->buf);
+		}
+		else {
+			ptr->sendbytes += cbTransferred;
+		}
+
+		if (ptr->recvbytes > ptr->sendbytes) {
+			// 데이터 보내기
+			ZeroMemory(&(ptr->overlapped), sizeof(ptr->overlapped));
+			ptr->overlapped.hEvent = EventArray[index];
+			ptr->wsabuf.buf = ptr->buf + ptr->sendbytes;
+			ptr->wsabuf.len = ptr->recvbytes - ptr->sendbytes;
+
+			DWORD sendbytes;
+			retval = WSASend(ptr->sock, &(ptr->wsabuf), 1, &sendbytes,
+				0, &(ptr->overlapped), NULL);
+			if (retval == SOCKET_ERROR) {
+				if (WSAGetLastError() != WSA_IO_PENDING) {
+					printf("WSASend()");
+				}
+				continue;
+			}
+		}
+		else {
+			ptr->recvbytes = 0;
+
+			// 데이터 받기
+			ZeroMemory(&(ptr->overlapped), sizeof(ptr->overlapped));
+			ptr->overlapped.hEvent = EventArray[index];
+			ptr->wsabuf.buf = ptr->buf;
+			ptr->wsabuf.len = BUFSIZE;
+
+			DWORD recvbytes;
+			flags = 0;
+			retval = WSARecv(ptr->sock, &(ptr->wsabuf), 1, &recvbytes,
+				&flags, &(ptr->overlapped), NULL);
+			if (retval == SOCKET_ERROR) {
+				if (WSAGetLastError() != WSA_IO_PENDING) {
+					printf("WSARecv()");
+				}
+				continue;
+			}
+		}
 	}
-
-	pInfo = new SOCKETINFO;
-
-	hEvent = WSACreateEvent();
-	
-	ZeroMemory(&(pInfo->overlapped), sizeof(pInfo->overlapped));
-	pInfo->overlapped.hEvent = hEvent;
-	pInfo->sock = sock;
-	pInfo->recvbytes = 0;
-	pInfo->sendbytes = 0;
-	pInfo->wsabuf.buf = pInfo->buf;
-	pInfo->wsabuf.len = BUFFSIZE;
-	g_socketInfoArray[g_nTotalSockets] = pInfo;
-	g_eventArray[g_nTotalSockets] = hEvent;
-	g_nTotalSockets++;
-
-	LeaveCriticalSection(&cs);
-	return true;
-
-Exit:
-	LeaveCriticalSection(&cs);
-	return false;
 }
 
+// 소켓 정보 추가
+BOOL AddSocketInfo(SOCKET sock)
+{
+	EnterCriticalSection(&cs);
+
+	if (nTotalSockets >= WSA_MAXIMUM_WAIT_EVENTS) {
+		printf("[오류] 소켓 정보를 추가할 수 없습니다!\n");
+		LeaveCriticalSection(&cs);
+		return FALSE;
+	}
+
+	SOCKETINFO* ptr = new SOCKETINFO;
+	if (ptr == NULL) {
+		printf("[오류] 메모리가 부족합니다!\n");
+		LeaveCriticalSection(&cs);
+		return FALSE;
+	}
+
+	WSAEVENT hEvent = WSACreateEvent();
+	if (hEvent == WSA_INVALID_EVENT) {
+		printf("WSACreateEvent()");
+		LeaveCriticalSection(&cs);
+		return FALSE;
+	}
+
+	ZeroMemory(&(ptr->overlapped), sizeof(ptr->overlapped));
+	ptr->overlapped.hEvent = hEvent;
+	ptr->sock = sock;
+	ptr->recvbytes = 0;
+	ptr->sendbytes = 0;
+	ptr->wsabuf.buf = ptr->buf;
+	ptr->wsabuf.len = BUFSIZE;
+	SocketInfoArray[nTotalSockets] = ptr;
+	EventArray[nTotalSockets] = hEvent;
+	nTotalSockets++;
+
+	LeaveCriticalSection(&cs);
+	return TRUE;
+}
+
+// 소켓 정보 삭제
 void RemoveSocketInfo(int index)
 {
 	EnterCriticalSection(&cs);
 
-	SOCKETINFO* pInfo = g_socketInfoArray[index];
-	closesocket(pInfo->sock);
-	delete pInfo;
-	WSACloseEvent(g_eventArray[index]);
+	SOCKETINFO* ptr = SocketInfoArray[index];
+	closesocket(ptr->sock);
+	delete ptr;
+	WSACloseEvent(EventArray[index]);
 
-	for (int i = index; i < g_nTotalSockets - 1; ++i)
-	{
-		g_socketInfoArray[i] = g_socketInfoArray[i + 1];
-		g_eventArray[i] = g_eventArray[i + 1];
+	for (int i = index; i < nTotalSockets; i++) {
+		SocketInfoArray[i] = SocketInfoArray[i + 1];
+		EventArray[i] = EventArray[i + 1];
 	}
-
-	g_nTotalSockets--;
+	nTotalSockets--;
 
 	LeaveCriticalSection(&cs);
-}
-
-void error_quit(const WCHAR* s)
-{
-	int err = WSAGetLastError();
-	wprintf_s(L"%s: %d\n", s, err);
 }
