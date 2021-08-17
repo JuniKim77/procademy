@@ -16,7 +16,9 @@ extern bool g_Shutdown;
 extern unordered_map<DWORD, User*> g_users;
 extern FrameSkip gFrameSkipper;
 extern CLogger g_Logger;
-char g_writeType = 'A';
+extern DWORD g_DisconnectCount;
+extern DWORD g_SessionNo;
+bool g_bMonitoring = false;
 
 void InitializeGame()
 {
@@ -38,6 +40,9 @@ void UpdateGame()
 
 	if (gFrameSkipper.GetTotalTick() >= 1000)
 	{
+		if (g_bMonitoring)
+			Monitor();
+
 		int frameCount = gFrameSkipper.GetFrameCount();
 
 		if (frameCount >= 52 || frameCount <= 48)
@@ -152,7 +157,7 @@ void ServerControl()
 		if (key == L'I')
 		{
 			wprintf(L"==========================\n");
-			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\n");
+			wprintf_s(L"Program Exit[Q]\nDebug Mode[D]\nError Mode[E]\nProfile Write[H]\nMonitoring Mode[M]\n");
 			wprintf(L"==========================\n");
 		}
 
@@ -169,6 +174,21 @@ void ServerControl()
 			wprintf_s(L"Set Error Mode\n");
 		}
 
+		if (key == L'M')
+		{
+			if (g_bMonitoring)
+			{
+				g_bMonitoring = false;
+				wprintf_s(L"Unset Monitoring Mode\n");
+			}
+			else
+			{
+				g_bMonitoring = true;
+				wprintf_s(L"Set Monitoring Mode\n");
+			}
+			
+		}
+
 		if (key == L'H')
 		{
 			ProfileDataOutText(L"Profile");
@@ -179,4 +199,10 @@ void ServerControl()
 
 void Monitor()
 {
+	wprintf_s(L"[User: %u] [Frame: %d]\n============================\n", g_SessionNo - g_DisconnectCount - 1, gFrameSkipper.GetFrameCount());
+	wprintf_s(L"[Loop/sec: %d]\n============================\n", gFrameSkipper.GetLoopCounter());
+	ProfilePrint();
+	wprintf_s(L"============================\n");
+
+	ProfileReset();
 }

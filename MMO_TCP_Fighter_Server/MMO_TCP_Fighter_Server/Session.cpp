@@ -12,7 +12,6 @@ using namespace std;
 
 extern unordered_map<DWORD, User*> g_users;
 extern CLogger g_Logger;
-extern char g_writeType;
 
 Session::Session(SOCKET socket, u_short port, u_long ip, DWORD sessionNo)
 	: mSocket(socket)
