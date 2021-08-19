@@ -72,6 +72,13 @@ int main(int argc, char* argv[])
 			printf("accept()");
 			continue;
 		}
+		int optval = 0;
+		int optlen = sizeof(optval);
+		if (setsockopt(client_sock, SOL_SOCKET, SO_SNDBUF, (char*)&optval, sizeof(optval)) == SOCKET_ERROR)
+		{
+			printf("setsockopt send size change\n");
+			continue;
+		}
 		if (!SetEvent(hEvent)) break;
 	}
 
