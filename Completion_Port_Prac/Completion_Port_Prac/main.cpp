@@ -12,22 +12,39 @@ using namespace std;
 
 #define dfTHREAD_NUM (4)
 
+struct OverlappedBuffer
+{
+	WSAOVERLAPPED overlapped;
+	bool type;
+	RingBuffer queue;
+};
+
 struct Session
 {
-	WSAOVERLAPPED recvOverlapped;
-	RingBuffer recvQueue;
-	WSAOVERLAPPED sendOverlapped;
-	RingBuffer sendQueue;
+	OverlappedBuffer recv;
+	OverlappedBuffer send;
 	SOCKET socket;
 	bool disconnect;
 	u_short port;
 	ULONG ip;
+
+	Session(SOCKET _socket, ULONG _ip, u_short _port)
+		: socket(_socket)
+		, ip(_ip)
+		, port(_port)
+		, disconnect(false)
+	{
+		ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
+		ZeroMemory(&send.overlapped, sizeof(send.overlapped));
+		recv.type = true;
+		send.type = false;
+	}
 };
 
 unsigned int WINAPI workerThread(LPVOID arg);
 unsigned int WINAPI acceptThread(LPVOID arg);
-void disconnectProc(Session* session);
-void setWSABuf(WSABUF* bufs, Session* session, bool isRecv);
+void DisconnectProc(Session* session);
+void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
 
 void errorLog(const WCHAR* s);
 
@@ -73,7 +90,8 @@ int main()
 		return -1;
 	}
 
-	HANDLE g_hcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
+	g_hcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
+
 	if (g_hcp == NULL)
 	{
 		errorLog(L"CreateIoCompletionPort");
@@ -147,62 +165,95 @@ unsigned int __stdcall workerThread(LPVOID arg)
 	while (1)
 	{
 		DWORD transferredSize = 0;
-		ULONG_PTR completionKey = 0;
-		LPOVERLAPPED* ptr = nullptr;
+		Session* completionKey = nullptr;
+		WSAOVERLAPPED* pOverlapped = nullptr;
 		Session* session = nullptr;
-		BOOL retval = GetQueuedCompletionStatus(g_hcp, &transferredSize, &completionKey, ptr, INFINITE);
+
+		BOOL retval = GetQueuedCompletionStatus(g_hcp, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
 
 		if (retval == FALSE)
 		{
 			errorLog(L"GetQueuedCompletionStatus");
 		}
 
-		if (*ptr == nullptr)  // I/O Fail
+		if (pOverlapped == nullptr)  // I/O Fail
 		{
 			continue;
 		}
 
-		session = (Session*)completionKey;
-
 		if (transferredSize == 0) // normal close
 		{
-			if (InterlockedExchange8((char*)session->disconnect, true) == true)
+			if (*(bool*)(pOverlapped + 1) == true) // recv
 			{
-				disconnectProc(session);
+				session = (Session*)pOverlapped;
+			}
+			else // send
+			{
+				session = (Session*)((OverlappedBuffer*)pOverlapped - 1);
+			}
+
+			WCHAR IP[16] = { 0, };
+
+			InetNtop(AF_INET, &session->ip, IP, 16);
+
+			if (InterlockedExchange8((char*)(&session->disconnect), true) == true)
+			{
+				wprintf_s(L"Disconnect [IP: %s] [Port: %u]\n", IP, ntohs(session->port));
+				DisconnectProc(session);
+				continue;
+			}
+			else
+			{
+				PostQueuedCompletionStatus(g_hcp, 0, (ULONG_PTR)session, pOverlapped);
+
 				continue;
 			}
 		}
 
-		if (*ptr == &session->recvOverlapped) // Recv
+		session = (Session*)completionKey;
+
+		if (pOverlapped == &session->recv.overlapped) // Recv
 		{
 			char buf[3000 + 2];
 
-			session->recvQueue.Dequeue(buf, transferredSize);
+			session->recv.queue.MoveRear(transferredSize);
+
+			session->recv.queue.Dequeue(buf, transferredSize);
 
 			buf[transferredSize] = '\0';
 			buf[transferredSize + 1] = '\0';
 
-			session->recvQueue.MoveFront(transferredSize);
+			session->recv.queue.MoveFront(transferredSize);
 
-			session->sendQueue.Enqueue(buf, transferredSize);
+			session->send.queue.Enqueue(buf, transferredSize);
 
 			WSABUF buffers[2];
 			DWORD flags = 0;
 
-			setWSABuf(buffers, session, true);
+			SetWSABuf(buffers, session, true);
 
 			WSABUF bufferSend[2];
 
-			setWSABuf(bufferSend, session, false);
+			SetWSABuf(bufferSend, session, false);
+			
+			printf("Receive Data: %s\n", buf);
 
-			printf("%s\n", buf);
 
-			WSASend(session->socket, bufferSend, 2, nullptr, 0, &session->sendOverlapped, nullptr);
-			WSARecv(session->socket, buffers, 2, nullptr, &flags, &session->recvOverlapped, nullptr);
+			WSASend(session->socket, bufferSend, 2, nullptr, 0, &session->send.overlapped, nullptr);
+			WSARecv(session->socket, buffers, 2, nullptr, &flags, &session->recv.overlapped, nullptr);
 		}
-		else
+		else // send
 		{
-			session->sendQueue.MoveFront(transferredSize);
+			char buf[3000 + 2];
+
+			session->send.queue.Dequeue(buf, transferredSize);
+
+			buf[transferredSize] = '\0';
+			buf[transferredSize + 1] = '\0';
+
+			session->send.queue.MoveFront(transferredSize);
+
+			printf("Send Data: %s\n", buf);
 		}
 	}
 	return 0;
@@ -221,10 +272,7 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		}
 
 		// ÇÔ¼ö·Î »¬ °Í
-		Session* session = new Session;
-		session->disconnect = false;
-		session->port = clientaddr.sin_port;
-		session->ip = clientaddr.sin_addr.S_un.S_addr;
+		Session* session = new Session(client_sock, clientaddr.sin_addr.S_un.S_addr, clientaddr.sin_port);
 
 		WCHAR IP[16] = { 0, };
 		InetNtop(AF_INET, &clientaddr.sin_addr, IP, 16);
@@ -246,10 +294,10 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		DWORD flags = 0;
 		WSABUF buffers[2];
 
-		setWSABuf(buffers, session, true);
+		SetWSABuf(buffers, session, true);
 
 		int retval = WSARecv(client_sock, buffers, 2, nullptr,
-			&flags, &(session->recvOverlapped), NULL);
+			&flags, &(session->recv.overlapped), NULL);
 
 		if (retval == SOCKET_ERROR) 
 		{
@@ -265,31 +313,32 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 	return 0;
 }
 
-void disconnectProc(Session* session)
+void DisconnectProc(Session* session)
 {
+	g_sessionList.remove(session);
 	closesocket(session->socket);
 	delete session;
 }
 
-void setWSABuf(WSABUF* bufs, Session* session, bool isRecv)
+void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 {
 	if (isRecv)
 	{
-		int dSize = session->recvQueue.DirectEnqueueSize();
+		int dSize = session->recv.queue.DirectEnqueueSize();
 
-		bufs[0].buf = session->recvQueue.GetRearBufferPtr();
+		bufs[0].buf = session->recv.queue.GetRearBufferPtr();
 		bufs[0].len = dSize;
-		bufs[1].buf = session->recvQueue.GetBuffer();
-		bufs[1].len = session->recvQueue.GetFreeSize() - dSize;
+		bufs[1].buf = session->recv.queue.GetBuffer();
+		bufs[1].len = session->recv.queue.GetFreeSize() - dSize;
 	}
 	else
 	{
-		int dSize = session->sendQueue.DirectDequeueSize();
+		int dSize = session->send.queue.DirectDequeueSize();
 
-		bufs[0].buf = session->sendQueue.GetFrontBufferPtr();
+		bufs[0].buf = session->send.queue.GetFrontBufferPtr();
 		bufs[0].len = dSize;
-		bufs[1].buf = session->sendQueue.GetBuffer();
-		bufs[1].len = session->sendQueue.GetUseSize() - dSize;
+		bufs[1].buf = session->send.queue.GetBuffer();
+		bufs[1].len = session->send.queue.GetUseSize() - dSize;
 	}	
 }
 
