@@ -7,6 +7,7 @@
 #include <conio.h>
 #include <list>
 #include <WS2tcpip.h>
+#include "ObjectPool.h"
 
 using namespace std;
 
@@ -24,27 +25,41 @@ struct Session
 	OverlappedBuffer recv;
 	OverlappedBuffer send;
 	SOCKET socket;
-	bool disconnect;
+	short ioCount;
 	u_short port;
 	ULONG ip;
+	SRWLOCK lockObj;
 
-	Session(SOCKET _socket, ULONG _ip, u_short _port)
-		: socket(_socket)
-		, ip(_ip)
-		, port(_port)
-		, disconnect(false)
+	Session()
+		: ioCount(0)
 	{
 		ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
 		ZeroMemory(&send.overlapped, sizeof(send.overlapped));
 		recv.type = true;
 		send.type = false;
+		InitializeSRWLock(&lockObj);
+	}
+
+	Session(SOCKET _socket, ULONG _ip, u_short _port)
+		: socket(_socket)
+		, ip(_ip)
+		, port(_port)
+		, ioCount(0)
+	{
+		ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
+		ZeroMemory(&send.overlapped, sizeof(send.overlapped));
+		recv.type = true;
+		send.type = false;
+		InitializeSRWLock(&lockObj);
 	}
 };
 
 unsigned int WINAPI workerThread(LPVOID arg);
 unsigned int WINAPI acceptThread(LPVOID arg);
 void DisconnectProc(Session* session);
+bool DecrementProc(Session* session);
 void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
+bool Initialize();
 
 void errorLog(const WCHAR* s);
 
@@ -52,51 +67,16 @@ SOCKET g_listen_sock;
 HANDLE g_hcp;
 
 list<Session*> g_sessionList;
+SRWLOCK g_sessionListLock;
+procademy::ObjectPool<Session> g_SessionPool(100);
+SRWLOCK g_sessionPoolLock;
 
 int main()
 {
-	WSADATA wsa;
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+	if (!Initialize())
 	{
-		errorLog(L"WSAStartup");
 		return -1;
-	}
 
-	g_listen_sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (g_listen_sock == INVALID_SOCKET)
-	{
-		errorLog(L"Socket Create");
-		return -1;
-	}
-
-	SOCKADDR_IN socketAddr;
-	ZeroMemory(&socketAddr, sizeof(socketAddr));
-	socketAddr.sin_family = AF_INET;
-	socketAddr.sin_port = htons(9000);
-	socketAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-	int retval = bind(g_listen_sock, (SOCKADDR*)&socketAddr, sizeof(socketAddr));
-	if (retval == SOCKET_ERROR)
-	{
-		errorLog(L"Socket Bind");
-		closesocket(g_listen_sock);
-		return -1;
-	}
-
-	retval = listen(g_listen_sock, SOMAXCONN);
-	if (retval == SOCKET_ERROR)
-	{
-		errorLog(L"Socket Listen");
-		closesocket(g_listen_sock);
-		return -1;
-	}
-
-	g_hcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
-
-	if (g_hcp == NULL)
-	{
-		errorLog(L"CreateIoCompletionPort");
-		closesocket(g_listen_sock);
-		return -1;
 	}
 
 	HANDLE hThreads[dfTHREAD_NUM];
@@ -117,6 +97,10 @@ int main()
 		{
 			// 종료 처리
 			wprintf_s(L"Exit\n");
+
+			PostQueuedCompletionStatus(g_hcp, 0, 0, 0);
+
+			closesocket(g_listen_sock);
 
 			break;
 		}
@@ -176,6 +160,13 @@ unsigned int __stdcall workerThread(LPVOID arg)
 			errorLog(L"GetQueuedCompletionStatus");
 		}
 
+		if (transferredSize == 0 && (PULONG_PTR)completionKey == 0 && pOverlapped == nullptr)
+		{
+			PostQueuedCompletionStatus(g_hcp, 0, 0, 0);
+
+			break;
+		}
+
 		if (pOverlapped == nullptr)  // I/O Fail
 		{
 			continue;
@@ -192,22 +183,9 @@ unsigned int __stdcall workerThread(LPVOID arg)
 				session = (Session*)((OverlappedBuffer*)pOverlapped - 1);
 			}
 
-			WCHAR IP[16] = { 0, };
+			DecrementProc(session);
 
-			InetNtop(AF_INET, &session->ip, IP, 16);
-
-			if (InterlockedExchange8((char*)(&session->disconnect), true) == true)
-			{
-				wprintf_s(L"Disconnect [IP: %s] [Port: %u]\n", IP, ntohs(session->port));
-				DisconnectProc(session);
-				continue;
-			}
-			else
-			{
-				PostQueuedCompletionStatus(g_hcp, 0, (ULONG_PTR)session, pOverlapped);
-
-				continue;
-			}
+			continue;
 		}
 
 		session = (Session*)completionKey;
@@ -220,12 +198,10 @@ unsigned int __stdcall workerThread(LPVOID arg)
 
 			session->recv.queue.Dequeue(buf, transferredSize);
 
+			session->send.queue.Enqueue(buf, transferredSize);
+
 			buf[transferredSize] = '\0';
 			buf[transferredSize + 1] = '\0';
-
-			session->recv.queue.MoveFront(transferredSize);
-
-			session->send.queue.Enqueue(buf, transferredSize);
 
 			WSABUF buffers[2];
 			DWORD flags = 0;
@@ -238,12 +214,45 @@ unsigned int __stdcall workerThread(LPVOID arg)
 			
 			printf("Receive Data: %s\n", buf);
 
+			InterlockedIncrement16(&session->ioCount);
+			int sendRet = WSASend(session->socket, bufferSend, 2, nullptr, 0, &session->send.overlapped, nullptr);
 
-			WSASend(session->socket, bufferSend, 2, nullptr, 0, &session->send.overlapped, nullptr);
-			WSARecv(session->socket, buffers, 2, nullptr, &flags, &session->recv.overlapped, nullptr);
+			if (sendRet == SOCKET_ERROR)
+			{
+				int err = WSAGetLastError();
+
+				if (err == WSA_IO_PENDING)
+				{
+					continue;
+				}
+
+				wprintf_s(L"WSASend ERROR, Error Code: %d\n", err);
+
+				if (DecrementProc(session))
+					continue;
+			}
+
+			int recvRet = WSARecv(session->socket, buffers, 2, nullptr, &flags, &session->recv.overlapped, nullptr);
+
+			if (recvRet == SOCKET_ERROR)
+			{
+				int err = WSAGetLastError();
+
+				if (err == WSA_IO_PENDING)
+				{
+					continue;
+				}
+
+				wprintf_s(L"WSARecv ERROR, Error Code: %d\n", err);
+
+				DecrementProc(session);
+			}
 		}
 		else // send
 		{
+			if (DecrementProc(session))
+				continue;
+
 			char buf[3000 + 2];
 
 			session->send.queue.Dequeue(buf, transferredSize);
@@ -267,12 +276,32 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		int addrlen = sizeof(clientaddr);
 		SOCKET client_sock = accept(g_listen_sock, (SOCKADDR*)&clientaddr, &addrlen);
 		if (client_sock == INVALID_SOCKET) {
-			errorLog(L"Socket Accept");
+			int err = WSAGetLastError();
+
+			if (err == WSAENOTSOCK)
+			{
+				wprintf_s(L"Listen Socket Close\n");
+
+				break;
+			}
+
+			wprintf_s(L"Socket Accept [Error: %d]\n", err);
 			continue;
 		}
 
 		// 함수로 뺄 것
-		Session* session = new Session(client_sock, clientaddr.sin_addr.S_un.S_addr, clientaddr.sin_port);
+		//Session* session = new Session(client_sock, clientaddr.sin_addr.S_un.S_addr, clientaddr.sin_port);
+		Session* session = g_SessionPool.Alloc();
+
+		session->socket = client_sock;
+		session->ip = clientaddr.sin_addr.S_un.S_addr;
+		session->port = clientaddr.sin_port;
+
+		ZeroMemory(&session->recv.overlapped, sizeof(session->recv.overlapped));
+		ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
+		InitializeSRWLock(&session->lockObj);
+
+		// Zero Copy?
 
 		WCHAR IP[16] = { 0, };
 		InetNtop(AF_INET, &clientaddr.sin_addr, IP, 16);
@@ -296,6 +325,7 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 
 		SetWSABuf(buffers, session, true);
 
+		session->ioCount = 1;
 		int retval = WSARecv(client_sock, buffers, 2, nullptr,
 			&flags, &(session->recv.overlapped), NULL);
 
@@ -303,8 +333,9 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		{
 			if (WSAGetLastError() != ERROR_IO_PENDING) 
 			{
-				errorLog(L"WSARecv");
-				return -1;
+				errorLog(L"WSARecv at accept");
+
+				DisconnectProc(session);
 			}
 			continue;
 		}
@@ -315,9 +346,31 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 
 void DisconnectProc(Session* session)
 {
+	AcquireSRWLockExclusive(&g_sessionListLock);
 	g_sessionList.remove(session);
+	ReleaseSRWLockExclusive(&g_sessionListLock);
+
 	closesocket(session->socket);
-	delete session;
+	//delete session;
+	g_SessionPool.Free(session);
+}
+
+bool DecrementProc(Session* session)
+{
+	InterlockedDecrement16(&session->ioCount);
+
+	if (session->ioCount == 0)
+	{
+		WCHAR IP[16] = { 0, };
+
+		InetNtop(AF_INET, &session->ip, IP, 16);
+		wprintf_s(L"Disconnect [IP: %s] [Port: %u]\n", IP, ntohs(session->port));
+		DisconnectProc(session);
+
+		return true;
+	}
+
+	return false;
 }
 
 void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
@@ -340,6 +393,58 @@ void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 		bufs[1].buf = session->send.queue.GetBuffer();
 		bufs[1].len = session->send.queue.GetUseSize() - dSize;
 	}	
+}
+
+bool Initialize()
+{
+	WSADATA wsa;
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+	{
+		errorLog(L"WSAStartup");
+		return false;
+	}
+
+	g_listen_sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (g_listen_sock == INVALID_SOCKET)
+	{
+		errorLog(L"Socket Create");
+		return false;
+	}
+
+	SOCKADDR_IN socketAddr;
+	ZeroMemory(&socketAddr, sizeof(socketAddr));
+	socketAddr.sin_family = AF_INET;
+	socketAddr.sin_port = htons(9000);
+	socketAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+	int retval = bind(g_listen_sock, (SOCKADDR*)&socketAddr, sizeof(socketAddr));
+	if (retval == SOCKET_ERROR)
+	{
+		errorLog(L"Socket Bind");
+		closesocket(g_listen_sock);
+		return false;
+	}
+
+	retval = listen(g_listen_sock, SOMAXCONN);
+	if (retval == SOCKET_ERROR)
+	{
+		errorLog(L"Socket Listen");
+		closesocket(g_listen_sock);
+		return false;
+	}
+
+	g_hcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
+
+	if (g_hcp == NULL)
+	{
+		errorLog(L"CreateIoCompletionPort");
+		closesocket(g_listen_sock);
+		return false;
+	}
+
+	InitializeSRWLock(&g_sessionListLock);
+	InitializeSRWLock(&g_sessionPoolLock);
+
+	return true;
 }
 
 void errorLog(const WCHAR* s)
