@@ -8,10 +8,13 @@
 #include <list>
 #include <WS2tcpip.h>
 #include "ObjectPool.h"
+#include "CPacket.h"
 
 using namespace std;
 
 #define dfTHREAD_NUM (4)
+#define dfSERVER_PORT (6000)
+#define dfMESSAGE_SIZE (10)
 
 struct OverlappedBuffer
 {
@@ -25,13 +28,15 @@ struct Session
 	OverlappedBuffer recv;
 	OverlappedBuffer send;
 	SOCKET socket;
-	short ioCount;
+	char ioCount;
+	bool isSending;
 	u_short port;
 	ULONG ip;
 	SRWLOCK lockObj;
 
 	Session()
 		: ioCount(0)
+		, isSending(false)
 	{
 		ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
 		ZeroMemory(&send.overlapped, sizeof(send.overlapped));
@@ -45,6 +50,7 @@ struct Session
 		, ip(_ip)
 		, port(_port)
 		, ioCount(0)
+		, isSending(false)
 	{
 		ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
 		ZeroMemory(&send.overlapped, sizeof(send.overlapped));
@@ -54,12 +60,24 @@ struct Session
 	}
 };
 
+struct Monitor
+{
+	unsigned short acceptCount;
+	unsigned short disconnectCount;
+	unsigned int sendTPS;
+	unsigned int recvTPS;
+	SRWLOCK lock;
+};
+
 unsigned int WINAPI workerThread(LPVOID arg);
 unsigned int WINAPI acceptThread(LPVOID arg);
 void DisconnectProc(Session* session);
 bool DecrementProc(Session* session);
+void MonitorProc();
 void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
 bool Initialize();
+bool SendPost(Session* session);
+bool RecvPost(Session* session);
 
 void errorLog(const WCHAR* s);
 
@@ -69,7 +87,7 @@ HANDLE g_hcp;
 list<Session*> g_sessionList;
 SRWLOCK g_sessionListLock;
 procademy::ObjectPool<Session> g_SessionPool(100);
-SRWLOCK g_sessionPoolLock;
+Monitor g_monitor;
 
 int main()
 {
@@ -88,20 +106,34 @@ int main()
 		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, workerThread, nullptr, 0, nullptr);
 	}
 
+	HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
+
 	while (1)
 	{
-		WCHAR controlKey = _getwch();
-		rewind(stdin);
+		DWORD retval = WaitForSingleObject(dummyEvent, 1000);
 
-		if (controlKey == L'Q')
+		if (retval == WAIT_TIMEOUT)
 		{
-			// 종료 처리
-			wprintf_s(L"Exit\n");
+			MonitorProc();
 
+			if (GetAsyncKeyState(VK_TAB) & 0x8001)
+			{
+				// 종료 처리
+				wprintf_s(L"Exit\n");
+
+				PostQueuedCompletionStatus(g_hcp, 0, 0, 0);
+
+				closesocket(g_listen_sock);
+
+				break;
+			}
+		}
+		else
+		{
+			errorLog(L"Something Error");
 			PostQueuedCompletionStatus(g_hcp, 0, 0, 0);
 
 			closesocket(g_listen_sock);
-
 			break;
 		}
 	}
@@ -155,10 +187,10 @@ unsigned int __stdcall workerThread(LPVOID arg)
 
 		BOOL retval = GetQueuedCompletionStatus(g_hcp, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
 
-		if (retval == FALSE)
+		/*if (retval == FALSE)
 		{
 			errorLog(L"GetQueuedCompletionStatus");
-		}
+		}*/
 
 		if (transferredSize == 0 && (PULONG_PTR)completionKey == 0 && pOverlapped == nullptr)
 		{
@@ -172,97 +204,67 @@ unsigned int __stdcall workerThread(LPVOID arg)
 			continue;
 		}
 
+		session = (Session*)completionKey;
+
 		if (transferredSize == 0) // normal close
 		{
-			if (*(bool*)(pOverlapped + 1) == true) // recv
-			{
-				session = (Session*)pOverlapped;
-			}
-			else // send
-			{
-				session = (Session*)((OverlappedBuffer*)pOverlapped - 1);
-			}
-
 			DecrementProc(session);
 
 			continue;
 		}
 
-		session = (Session*)completionKey;
-
 		if (pOverlapped == &session->recv.overlapped) // Recv
 		{
-			char buf[3000 + 2];
-
+			CPacket packet;
+			// Dequeue Proc
 			session->recv.queue.MoveRear(transferredSize);
 
-			session->recv.queue.Dequeue(buf, transferredSize);
+			int messageCount = transferredSize / dfMESSAGE_SIZE;
+			int messageByte = messageCount * dfMESSAGE_SIZE;
 
-			session->send.queue.Enqueue(buf, transferredSize);
+			session->recv.queue.Dequeue(packet.GetBufferPtr(), messageByte);
 
-			buf[transferredSize] = '\0';
-			buf[transferredSize + 1] = '\0';
+			// Packet Proc
+			session->send.queue.Lock(false);
+			session->send.queue.Enqueue(packet.GetBufferPtr(), messageByte);
+			session->send.queue.Unlock(false);
 
-			WSABUF buffers[2];
-			DWORD flags = 0;
+			AcquireSRWLockExclusive(&g_monitor.lock);
+			g_monitor.recvTPS += messageCount;
+			ReleaseSRWLockExclusive(&g_monitor.lock);
 
-			SetWSABuf(buffers, session, true);
+			AcquireSRWLockExclusive(&session->lockObj);
+			// Send Post
+			SendPost(session);
 
-			WSABUF bufferSend[2];
-
-			SetWSABuf(bufferSend, session, false);
-			
-			printf("Receive Data: %s\n", buf);
-
-			InterlockedIncrement16(&session->ioCount);
-			int sendRet = WSASend(session->socket, bufferSend, 2, nullptr, 0, &session->send.overlapped, nullptr);
-
-			if (sendRet == SOCKET_ERROR)
-			{
-				int err = WSAGetLastError();
-
-				if (err == WSA_IO_PENDING)
-				{
-					continue;
-				}
-
-				wprintf_s(L"WSASend ERROR, Error Code: %d\n", err);
-
-				if (DecrementProc(session))
-					continue;
-			}
-
-			int recvRet = WSARecv(session->socket, buffers, 2, nullptr, &flags, &session->recv.overlapped, nullptr);
-
-			if (recvRet == SOCKET_ERROR)
-			{
-				int err = WSAGetLastError();
-
-				if (err == WSA_IO_PENDING)
-				{
-					continue;
-				}
-
-				wprintf_s(L"WSARecv ERROR, Error Code: %d\n", err);
-
-				DecrementProc(session);
-			}
+			// Recv Post
+			RecvPost(session);
+			ReleaseSRWLockExclusive(&session->lockObj);
 		}
 		else // send
 		{
+			int messageCount = transferredSize / dfMESSAGE_SIZE;
+			int messageByte = messageCount * dfMESSAGE_SIZE;
+
+			AcquireSRWLockExclusive(&g_monitor.lock);
+			g_monitor.sendTPS += messageCount;
+			ReleaseSRWLockExclusive(&g_monitor.lock);
+
+			AcquireSRWLockExclusive(&session->lockObj);
+
+			session->isSending = false;
+
 			if (DecrementProc(session))
 				continue;
 
-			char buf[3000 + 2];
+			session->send.queue.MoveFront(messageByte);
 
-			session->send.queue.Dequeue(buf, transferredSize);
+			if (session->send.queue.GetUseSize() > 0)
+			{
+				SendPost(session);
+			}
 
-			buf[transferredSize] = '\0';
-			buf[transferredSize + 1] = '\0';
-
-			session->send.queue.MoveFront(transferredSize);
-
-			printf("Send Data: %s\n", buf);
+			ReleaseSRWLockExclusive(&session->lockObj);
 		}
 	}
 	return 0;
@@ -289,9 +291,14 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 			continue;
 		}
 
+		AcquireSRWLockExclusive(&g_monitor.lock);
+		g_monitor.acceptCount++;
+		ReleaseSRWLockExclusive(&g_monitor.lock);
+
 		// 함수로 뺄 것
-		//Session* session = new Session(client_sock, clientaddr.sin_addr.S_un.S_addr, clientaddr.sin_port);
+		g_SessionPool.Lock(false);
 		Session* session = g_SessionPool.Alloc();
+		g_SessionPool.Unlock(false);
 
 		session->socket = client_sock;
 		session->ip = clientaddr.sin_addr.S_un.S_addr;
@@ -303,16 +310,18 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 
 		// Zero Copy?
 
-		WCHAR IP[16] = { 0, };
+		/*WCHAR IP[16] = { 0, };
 		InetNtop(AF_INET, &clientaddr.sin_addr, IP, 16);
 
-		wprintf_s(L"[TCP] Connect Session [IP: %s][Port: %d]\n", IP, ntohs(clientaddr.sin_port));
+		wprintf_s(L"[TCP] Connect Session [IP: %s][Port: %d]\n", IP, ntohs(clientaddr.sin_port));*/
 
 		// 소켓과 입출력 완료 포트 연결
 		HANDLE hResult = CreateIoCompletionPort((HANDLE)client_sock, g_hcp,
 			(ULONG_PTR)session, 0);
 
+		AcquireSRWLockExclusive(&g_sessionListLock);
 		g_sessionList.push_back(session);
+		ReleaseSRWLockExclusive(&g_sessionListLock);
 
 		if (hResult == NULL)
 		{
@@ -320,25 +329,8 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 			return -1;
 		}
 
-		DWORD flags = 0;
-		WSABUF buffers[2];
-
-		SetWSABuf(buffers, session, true);
-
 		session->ioCount = 1;
-		int retval = WSARecv(client_sock, buffers, 2, nullptr,
-			&flags, &(session->recv.overlapped), NULL);
-
-		if (retval == SOCKET_ERROR) 
-		{
-			if (WSAGetLastError() != ERROR_IO_PENDING) 
-			{
-				errorLog(L"WSARecv at accept");
-
-				DisconnectProc(session);
-			}
-			continue;
-		}
+		RecvPost(session);
 	}
 
 	return 0;
@@ -351,26 +343,51 @@ void DisconnectProc(Session* session)
 	ReleaseSRWLockExclusive(&g_sessionListLock);
 
 	closesocket(session->socket);
+
+	AcquireSRWLockExclusive(&g_monitor.lock);
+	g_monitor.disconnectCount++;
+	ReleaseSRWLockExclusive(&g_monitor.lock);
+
 	//delete session;
+	g_SessionPool.Lock(false);
 	g_SessionPool.Free(session);
+	g_SessionPool.Unlock(false);
 }
 
 bool DecrementProc(Session* session)
 {
-	InterlockedDecrement16(&session->ioCount);
+	session->ioCount--;
 
 	if (session->ioCount == 0)
 	{
-		WCHAR IP[16] = { 0, };
+		/*WCHAR IP[16] = { 0, };
 
 		InetNtop(AF_INET, &session->ip, IP, 16);
-		wprintf_s(L"Disconnect [IP: %s] [Port: %u]\n", IP, ntohs(session->port));
+		wprintf_s(L"Disconnect [IP: %s] [Port: %u]\n", IP, ntohs(session->port));*/
 		DisconnectProc(session);
 
 		return true;
 	}
 
 	return false;
+}
+
+void MonitorProc()
+{
+	AcquireSRWLockExclusive(&g_monitor.lock);
+
+	wprintf_s(L"=======================================\n");
+	wprintf_s(L"[Total Accept Count: %u]\n", g_monitor.acceptCount);
+	wprintf_s(L"[Total Diconnect Count: %u]\n", g_monitor.disconnectCount);
+	wprintf_s(L"[Live Session Count: %u]\n", g_monitor.acceptCount - g_monitor.disconnectCount);
+	wprintf_s(L"=======================================\n");
+	wprintf_s(L"[Send TPS: %u]\n", g_monitor.sendTPS);
+	wprintf_s(L"[Recv TPS: %u]\n", g_monitor.recvTPS);
+	wprintf_s(L"=======================================\n");
+	g_monitor.sendTPS = 0;
+	g_monitor.recvTPS = 0;
+
+	ReleaseSRWLockExclusive(&g_monitor.lock);
 }
 
 void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
@@ -397,6 +414,9 @@ void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 
 bool Initialize()
 {
+	ZeroMemory(&g_monitor, sizeof(g_monitor));
+	InitializeSRWLock(&g_monitor.lock);
+
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
@@ -414,7 +434,7 @@ bool Initialize()
 	SOCKADDR_IN socketAddr;
 	ZeroMemory(&socketAddr, sizeof(socketAddr));
 	socketAddr.sin_family = AF_INET;
-	socketAddr.sin_port = htons(9000);
+	socketAddr.sin_port = htons(dfSERVER_PORT);
 	socketAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
 	int retval = bind(g_listen_sock, (SOCKADDR*)&socketAddr, sizeof(socketAddr));
 	if (retval == SOCKET_ERROR)
@@ -442,7 +462,68 @@ bool Initialize()
 	}
 
 	InitializeSRWLock(&g_sessionListLock);
-	InitializeSRWLock(&g_sessionPoolLock);
+
+	return true;
+}
+
+bool SendPost(Session* session)
+{
+	WSABUF buffers[2];
+
+	if (session->isSending)
+	{
+		return true;
+	}
+
+	session->isSending = true;
+
+	SetWSABuf(buffers, session, false);
+
+	session->ioCount++;
+	int sendRet = WSASend(session->socket, buffers, 2, nullptr, 0, &session->send.overlapped, nullptr);
+
+	if (sendRet == SOCKET_ERROR)
+	{
+		int err = WSAGetLastError();
+
+		if (err == WSA_IO_PENDING)
+		{
+			return true;
+		}
+
+		//wprintf_s(L"WSASend ERROR, Error Code: %d\n", err);
+
+		if (DecrementProc(session))
+			return false;
+	}
+
+	return true;
+}
+
+bool RecvPost(Session* session)
+{
+	WSABUF buffers[2];
+	DWORD flags = 0;
+
+	SetWSABuf(buffers, session, true);
+
+	int recvRet = WSARecv(session->socket, buffers, 2, nullptr, &flags, &session->recv.overlapped, nullptr);
+
+	if (recvRet == SOCKET_ERROR)
+	{
+		int err = WSAGetLastError();
+
+		if (err == WSA_IO_PENDING)
+		{
+			return true;
+		}
+
+		//wprintf_s(L"WSARecv ERROR, Error Code: %d\n", err);
+
+		DecrementProc(session);
+
+		return false;
+	}
 
 	return true;
 }

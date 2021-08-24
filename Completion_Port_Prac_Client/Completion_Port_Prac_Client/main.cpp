@@ -9,7 +9,7 @@
 #include <time.h>
 
 #define WORKER_THREAD_SIZE (10)
-#define NETWORK_PORT (9000)
+#define NETWORK_PORT (6000)
 #define STRING_SIZE (27)
 
 HANDLE g_hcp;

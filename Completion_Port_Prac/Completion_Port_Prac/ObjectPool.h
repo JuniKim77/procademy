@@ -87,6 +87,8 @@ namespace procademy
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mCapacity; }
+		void Lock(bool readonly);
+		void Unlock(bool readonly);
 
 	private:
 		void* AllocMemory(int size);
@@ -97,6 +99,7 @@ namespace procademy
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		st_BLOCK_NODE* _pFreeNode;
+		SRWLOCK mSrwLock;
 	};
 	template<typename DATA>
 	inline ObjectPool<DATA>::ObjectPool(int iBlockNum, bool bPlacementNew)
@@ -105,6 +108,7 @@ namespace procademy
 		, mbPlacementNew(bPlacementNew)
 	{
 		_pFreeNode = (st_BLOCK_NODE*)AllocMemory(mCapacity);
+		InitializeSRWLock(&mSrwLock);
 	}
 	template<typename DATA>
 	inline ObjectPool<DATA>::~ObjectPool()
@@ -156,6 +160,30 @@ namespace procademy
 		_pFreeNode = pNode;
 		mSize--;
 		return true;
+	}
+	template<typename DATA>
+	inline void ObjectPool<DATA>::Lock(bool readonly)
+	{
+		if (readonly)
+		{
+			AcquireSRWLockShared(&mSrwLock);
+		}
+		else
+		{
+			AcquireSRWLockExclusive(&mSrwLock);
+		}
+	}
+	template<typename DATA>
+	inline void ObjectPool<DATA>::Unlock(bool readonly)
+	{
+		if (readonly)
+		{
+			ReleaseSRWLockShared(&mSrwLock);
+		}
+		else
+		{
+			ReleaseSRWLockExclusive(&mSrwLock);
+		}
 	}
 	template<typename DATA>
 	inline void* ObjectPool<DATA>::AllocMemory(int size)

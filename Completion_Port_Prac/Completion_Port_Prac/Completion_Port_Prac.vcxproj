@@ -140,10 +140,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CPacket.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CPacket.h" />
     <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="RingBuffer.h" />
   </ItemGroup>
