@@ -374,16 +374,16 @@ bool DecrementProc(Session* session)
 
 void MonitorProc()
 {
+	wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
+=======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
+		g_monitor.acceptCount,
+		g_monitor.disconnectCount,
+		g_monitor.acceptCount - g_monitor.disconnectCount,
+		g_monitor.sendTPS,
+		g_monitor.recvTPS);
+
 	AcquireSRWLockExclusive(&g_monitor.lock);
 
-	wprintf_s(L"=======================================\n");
-	wprintf_s(L"[Total Accept Count: %u]\n", g_monitor.acceptCount);
-	wprintf_s(L"[Total Diconnect Count: %u]\n", g_monitor.disconnectCount);
-	wprintf_s(L"[Live Session Count: %u]\n", g_monitor.acceptCount - g_monitor.disconnectCount);
-	wprintf_s(L"=======================================\n");
-	wprintf_s(L"[Send TPS: %u]\n", g_monitor.sendTPS);
-	wprintf_s(L"[Recv TPS: %u]\n", g_monitor.recvTPS);
-	wprintf_s(L"=======================================\n");
 	g_monitor.sendTPS = 0;
 	g_monitor.recvTPS = 0;
 
