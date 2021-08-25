@@ -358,7 +358,7 @@ unsigned int WINAPI IOThread(LPVOID lpParam)
 			//wsprintf(g_szDebug, L"# IOThread DisconnetPacket Insert [%d] \n", dwSessionID);
 			LockDisconnect();			
 			g_DisconnectPacketList.push_back(dwSessionID);
-			UnlockDisconnect();
+			//UnlockDisconnect();
 			SetEvent(g_hAcceptThreadEvent);
 			break;
 
@@ -366,7 +366,7 @@ unsigned int WINAPI IOThread(LPVOID lpParam)
 			//wsprintf(g_szDebug, L"# IOThread ActionPacket Insert [%d] \n", dwSessionID);
 			LockAction();
 			g_ActionPacketList.push_back(dwSessionID);
-			UnlockAction();
+			//UnlockAction();
 			SetEvent(g_hUpdateThreadEvent);
 			break;
 		}

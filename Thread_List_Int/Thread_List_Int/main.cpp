@@ -22,7 +22,9 @@ int main()
 	g_ExitEvent = CreateEvent(nullptr, true, false, nullptr);
 	HANDLE hArray[6];
 
-	hArray[0] = (HANDLE)_beginthreadex(nullptr, 0, PrintThreadFunc, nullptr, 0, nullptr);
+	int params[] = {1,2};
+
+	hArray[0] = (HANDLE)_beginthreadex(nullptr, 0, PrintThreadFunc, params, 0, nullptr);
 	hArray[1] = (HANDLE)_beginthreadex(nullptr, 0, DeleteThreadFunc, nullptr, 0, nullptr);
 	hArray[2] = (HANDLE)_beginthreadex(nullptr, 0, SaveThreadFunc, nullptr, 0, nullptr);
 	for (int i = 3; i < 6; ++i)
@@ -60,6 +62,9 @@ int main()
 
 unsigned int __stdcall PrintThreadFunc(void* pvParam)
 {
+	wprintf_s(L"First Param: %d\n", *(int*)pvParam);
+	wprintf_s(L"Second Param: %d\n", *((int*)pvParam + 1));
+
 	while (1)
 	{
 		DWORD retval = WaitForSingleObject(g_ExitEvent, 1000);

@@ -110,7 +110,7 @@ void Session::writeProc()
 
 void Session::ReceivePacket()
 {
-	int dSize = mRecvBuffer.DirectEnqueueSize();
+	/*int dSize = mRecvBuffer.DirectEnqueueSize();
 	int retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
 
 	mRecvBuffer.MoveRear(retval);
@@ -125,7 +125,45 @@ void Session::ReceivePacket()
 		ErrorQuit(L"Receive Error to recv buffer", __FILEW__, __LINE__);
 
 		return;
+	}*/
+
+	WSABUF wsabufs[2];
+
+	int dSize = mRecvBuffer.DirectEnqueueSize();
+
+	wsabufs[0].buf = mRecvBuffer.GetRearBufferPtr();
+	wsabufs[0].len = dSize;
+
+	wsabufs[1].buf = mRecvBuffer.GetBuffer();
+	wsabufs[1].len = mRecvBuffer.GetFreeSize() - dSize;
+
+	DWORD retval[2] = { 0, };
+
+	/*WSABUF wsabuf;
+	int dSize = mRecvBuffer.DirectEnqueueSize();
+
+	wsabuf.buf = mRecvBuffer.GetRearBufferPtr();
+	wsabuf.len = dSize;*/
+
+	//DWORD retval = 0;
+
+	DWORD flags = 0;
+
+	int result = WSARecv(mSocket, wsabufs, 2, retval, &flags, NULL, NULL);
+
+	if (result == SOCKET_ERROR)
+	{
+		int err = WSAGetLastError();
+
+		if (err == WSAEWOULDBLOCK)
+			return;
+
+		ErrorQuit(L"Receive Error to recv buffer", __FILEW__, __LINE__);
+
+		return;
 	}
+
+	mRecvBuffer.MoveRear(retval[0] + retval[1]);
 }
 
 void Session::recvProc()
