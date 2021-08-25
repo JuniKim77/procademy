@@ -88,6 +88,7 @@ list<Session*> g_sessionList;
 SRWLOCK g_sessionListLock;
 procademy::ObjectPool<Session> g_SessionPool(10);
 Monitor g_monitor;
+bool g_bZeroCopy = false;
 
 int main()
 {
@@ -117,6 +118,20 @@ int main()
 			MonitorProc();
 
 			if (GetAsyncKeyState(VK_TAB) & 0x8001)
+			{
+				if (g_bZeroCopy)
+				{
+					g_bZeroCopy = false;
+					wprintf_s(L"Unset ZeroCopy Mode\n");
+				}
+				else
+				{
+					g_bZeroCopy = true;
+					wprintf_s(L"Set ZeroCopy Mode\n");
+				}
+			}
+
+			if (GetAsyncKeyState(VK_SPACE) & 0x8001)
 			{
 				// 종료 처리
 				wprintf_s(L"Exit\n");
@@ -309,6 +324,16 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		InitializeSRWLock(&session->lockObj);
 
 		// Zero Copy?
+		if (g_bZeroCopy)
+		{
+			int optNum = 0;
+			if (setsockopt(client_sock, SOL_SOCKET, SO_SNDBUF, (char*)&optNum, sizeof(optNum)) == SOCKET_ERROR)
+			{
+				closesocket(client_sock);
+				wprintf_s(L"setsockopt\n");
+				continue;
+			}
+		}
 
 		/*WCHAR IP[16] = { 0, };
 		InetNtop(AF_INET, &clientaddr.sin_addr, IP, 16);
