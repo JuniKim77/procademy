@@ -190,13 +190,12 @@ void ProfileDataOutText(const WCHAR* szFileName)
 
 void ProfilePrint()
 {
-	for (int i = 1; i < PROFILE_MAX; ++i)
+	for (int i = 0; i < PROFILE_MAX; ++i)
 	{
 		if (gProfiles[i].bFlag == false)
 			break;
 
 		LARGE_INTEGER f;
-		WCHAR line[200];
 
 		QueryPerformanceFrequency(&f);
 		__int64 time = gProfiles[i].iTotalTime;

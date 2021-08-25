@@ -12,6 +12,8 @@ using namespace std;
 
 extern unordered_map<DWORD, User*> g_users;
 extern CLogger g_Logger;
+extern DWORD g_sendTPS;
+extern DWORD g_recvTPS;
 
 Session::Session(SOCKET socket, u_short port, u_long ip, DWORD sessionNo)
 	: mSocket(socket)
@@ -77,6 +79,7 @@ void Session::receiveProc()
 		{
 			break;
 		}
+		g_recvTPS++;
 	}
 }
 
@@ -88,6 +91,7 @@ void Session::sendPacket(char* buffer, int size)
 	{
 		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Send Ringbuffer is full\n", mSessionNo);
 	}
+	g_sendTPS++;
 }
 
 bool Session::completeRecvPacket()

@@ -16,9 +16,14 @@ extern bool g_Shutdown;
 extern unordered_map<DWORD, User*> g_users;
 extern FrameSkip gFrameSkipper;
 extern CLogger g_Logger;
-extern DWORD g_DisconnectCount;
-extern DWORD g_SessionNo;
+DWORD g_DisconnectCount = 0;
+DWORD g_ConnectCount = 0;
 bool g_bMonitoring = false;
+DWORD g_sendTPS = 0;
+DWORD g_recvTPS = 0;
+bool g_bMonitorTimer = false;
+int g_FPS = 0;
+int g_LPS = 0;
 
 void InitializeGame()
 {
@@ -41,7 +46,7 @@ void UpdateGame()
 	if (gFrameSkipper.GetTotalTick() >= 1000)
 	{
 		if (g_bMonitoring)
-			Monitor();
+			g_bMonitorTimer = true;
 
 		int frameCount = gFrameSkipper.GetFrameCount();
 
@@ -49,6 +54,9 @@ void UpdateGame()
 		{
 			gFrameSkipper.PrintStatus();
 		}
+
+		g_FPS = gFrameSkipper.GetFrameCount();
+		g_LPS = gFrameSkipper.GetLoopCounter();
 
 		gFrameSkipper.Refresh();
 	}
@@ -199,10 +207,17 @@ void ServerControl()
 
 void Monitor()
 {
-	wprintf_s(L"[User: %u] [Frame: %d]\n============================\n", g_SessionNo - g_DisconnectCount - 1, gFrameSkipper.GetFrameCount());
-	wprintf_s(L"[Loop/sec: %d]\n============================\n", gFrameSkipper.GetLoopCounter());
+	wprintf_s(L"[User: %u] [Frame: %d]\n============================\n", g_ConnectCount - g_DisconnectCount, g_FPS);
+	wprintf_s(L"[Loop/sec: %d]\n============================\n", g_LPS);
 	ProfilePrint();
+	wprintf_s(L"============================\n");
+	wprintf_s(L"[SendTPS: %u]\n[RecvTPS: %u]\n", g_sendTPS, g_recvTPS);
 	wprintf_s(L"============================\n");
 
 	ProfileReset();
+
+	g_sendTPS = 0;
+	g_recvTPS = 0;
+
+	g_bMonitorTimer = false;
 }

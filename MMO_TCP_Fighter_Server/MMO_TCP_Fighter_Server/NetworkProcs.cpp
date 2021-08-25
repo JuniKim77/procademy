@@ -25,7 +25,8 @@ unordered_map<DWORD, Session*> g_sessions;
 unordered_map<DWORD, User*> g_users;
 extern CLogger g_Logger;
 extern std::list<User*> g_Sector[dfSECTOR_MAX_Y][dfSECTOR_MAX_X];
-DWORD g_DisconnectCount = 0;
+extern DWORD g_DisconnectCount;
+extern DWORD g_ConnectCount;
 
 void CreateServer()
 {
@@ -214,6 +215,8 @@ void AcceptProc()
 
 		exit(1);
 	}
+
+	g_ConnectCount++;
 
 	WCHAR temp[16] = { 0, };
 	InetNtop(AF_INET, &clientAddr.sin_addr, temp, 16);

@@ -10,6 +10,7 @@ bool g_Shutdown = false;
 CLogger g_Logger;
 FrameSkip gFrameSkipper;
 int test = 0;
+extern bool g_bMonitorTimer;
 
 int main()
 {
@@ -21,9 +22,6 @@ int main()
 
 	while (!g_Shutdown)
 	{
-		ProfileBegin(L"Test");
-		test++;
-		ProfileEnd(L"Test");
 		gFrameSkipper.AddLoopCounter();
 		ProfileBegin(L"NetworkProc");
 		NetWorkProc();
@@ -32,7 +30,11 @@ int main()
 		UpdateGame();
 		ProfileEnd(L"Logic");
 		ServerControl();
-		// Monitor();
+		if (g_bMonitorTimer)
+		{
+			Monitor();
+		}
+		
 	}
 
 	return 0;
