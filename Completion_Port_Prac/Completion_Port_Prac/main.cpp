@@ -86,7 +86,7 @@ HANDLE g_hcp;
 
 list<Session*> g_sessionList;
 SRWLOCK g_sessionListLock;
-procademy::ObjectPool<Session> g_SessionPool(100);
+procademy::ObjectPool<Session> g_SessionPool(10);
 Monitor g_monitor;
 
 int main()
@@ -374,13 +374,20 @@ bool DecrementProc(Session* session)
 
 void MonitorProc()
 {
+	g_SessionPool.Lock(true);
+	int poolSize = g_SessionPool.GetSize();
+	int poolCapa = g_SessionPool.GetCapacity();
+	g_SessionPool.Unlock(true);
+
 	wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
-=======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
+=======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n[Pool Usage: (%d / %d)]\n=======================================\n",
 		g_monitor.acceptCount,
 		g_monitor.disconnectCount,
 		g_monitor.acceptCount - g_monitor.disconnectCount,
 		g_monitor.sendTPS,
-		g_monitor.recvTPS);
+		g_monitor.recvTPS,
+		poolSize,
+		poolCapa);
 
 	AcquireSRWLockExclusive(&g_monitor.lock);
 
