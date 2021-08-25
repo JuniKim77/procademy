@@ -4,10 +4,13 @@
 #include "NetworkProcs.h"
 #include "CLogger.h"
 #include "FrameSkip.h"
+#include "MyProfiler.h"
 
 bool g_Shutdown = false;
 CLogger g_Logger;
 FrameSkip gFrameSkipper;
+int test = 0;
+extern bool g_bMonitorTimer;
 
 int main()
 {
@@ -20,10 +23,18 @@ int main()
 	while (!g_Shutdown)
 	{
 		gFrameSkipper.AddLoopCounter();
+		ProfileBegin(L"NetworkProc");
 		NetWorkProc();
+		ProfileEnd(L"NetworkProc");
+		ProfileBegin(L"Logic");
 		UpdateGame();
+		ProfileEnd(L"Logic");
 		ServerControl();
-		Monitor();
+		if (g_bMonitorTimer)
+		{
+			Monitor();
+		}
+		
 	}
 
 	return 0;

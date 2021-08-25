@@ -12,7 +12,8 @@ using namespace std;
 
 extern unordered_map<DWORD, User*> g_users;
 extern CLogger g_Logger;
-extern char g_writeType;
+extern DWORD g_sendTPS;
+extern DWORD g_recvTPS;
 
 Session::Session(SOCKET socket, u_short port, u_long ip, DWORD sessionNo)
 	: mSocket(socket)
@@ -41,25 +42,20 @@ void Session::receiveProc()
 		return;
 	}
 
-	/*char buffer[10000];
-
-	int retval = recv(mSocket, buffer, mRecvBuffer.GetFreeSize(), 0);
-
-	mRecvBuffer.Enqueue(buffer, retval);*/
-
 	int dSize = mRecvBuffer.DirectEnqueueSize();
-	int retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
+	WSABUF wsabufs[2];
 
-	// Select 모델에서 반응이 왔고, 링버퍼의 여유도 있는데, retval이 0인거면 종료 메세지!
-	// 이후 아무것도 처리 안하고 나감.
-	if (retval == 0)
-	{
-		SetDisconnect();
+	wsabufs[0].buf = mRecvBuffer.GetRearBufferPtr();
+	wsabufs[0].len = dSize;
 
-		return;
-	}
+	wsabufs[1].buf = mRecvBuffer.GetBuffer();
+	wsabufs[1].len = mRecvBuffer.GetFreeSize() - dSize;
 
-	// 소켓 에러인데, 우드블락도 아니면 소켓 이상한 것! -> 종료!
+	DWORD recvSize = 0;
+	DWORD flags = 0;
+
+	int retval = WSARecv(mSocket, wsabufs, 2, &recvSize, &flags, NULL, NULL);
+
 	if (retval == SOCKET_ERROR)
 	{
 		int err = WSAGetLastError();
@@ -72,38 +68,18 @@ void Session::receiveProc()
 		return;
 	}
 
-	mRecvBuffer.MoveRear(retval);
-
-	//if (retval == dSize)
-	//{
-	//	//g_Logger._Log(dfLOG_LEVEL_DEBUG, L"[UserNo: %d] Receive Enqueue Boundary..\n", mSessionNo);
-
-	//	dSize = mRecvBuffer.DirectEnqueueSize();
-	//	retval = recv(mSocket, mRecvBuffer.GetRearBufferPtr(), dSize, 0);
-
-	//	if (retval == SOCKET_ERROR)
-	//	{
-	//		int err = WSAGetLastError();
-
-	//		if (err == WSAEWOULDBLOCK)
-	//			return;
-
-	//		SetDisconnect();
-
-	//		return;
-	//	}
-
-	//	mRecvBuffer.MoveRear(retval);
-	//}
+	mRecvBuffer.MoveRear(recvSize);
 
 	mLastRecvTime = GetTickCount64();
-	// 받았으면 다 처리해주는게 기본
+
+	// 받았으면 다 처리해준다.
 	while (1)
 	{
 		if (completeRecvPacket() == false)
 		{
 			break;
 		}
+		g_recvTPS++;
 	}
 }
 
@@ -115,6 +91,7 @@ void Session::sendPacket(char* buffer, int size)
 	{
 		g_Logger._Log(dfLOG_LEVEL_NOTICE, L"[UserNo: %d] Send Ringbuffer is full\n", mSessionNo);
 	}
+	g_sendTPS++;
 }
 
 bool Session::completeRecvPacket()
@@ -167,29 +144,34 @@ bool Session::completeRecvPacket()
 
 void Session::writeProc()
 {
-	while (1)
+	WSABUF wsabufs[2];
+
+	int dSize = mSendBuffer.DirectDequeueSize();
+
+	wsabufs[0].buf = mSendBuffer.GetFrontBufferPtr();
+	wsabufs[0].len = dSize;
+
+	wsabufs[1].buf = mSendBuffer.GetBuffer();
+	wsabufs[1].len = mSendBuffer.GetUseSize() - dSize;
+
+	DWORD sendSize = 0;
+	DWORD flags = 0;
+
+	int retval = WSASend(mSocket, wsabufs, 2, &sendSize, flags, NULL, NULL);
+
+	if (retval == SOCKET_ERROR)
 	{
-		if (mSendBuffer.GetUseSize() == 0)
+		int err = WSAGetLastError();
+
+		if (err == WSAEWOULDBLOCK)
 		{
-			break;
-		}
-
-		int sendSize = send(mSocket, mSendBuffer.GetFrontBufferPtr(), mSendBuffer.DirectDequeueSize(), 0);
-
-		if (sendSize == SOCKET_ERROR)
-		{
-			int err = WSAGetLastError();
-
-			if (err == WSAEWOULDBLOCK)
-			{
-				return;
-			}
-
-			SetDisconnect();
-
 			return;
 		}
 
-		mSendBuffer.MoveFront(sendSize);
+		SetDisconnect();
+
+		return;
 	}
+
+	mSendBuffer.MoveFront(sendSize);	 
 }

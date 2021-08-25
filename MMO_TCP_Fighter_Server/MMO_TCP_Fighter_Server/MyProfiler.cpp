@@ -188,6 +188,25 @@ void ProfileDataOutText(const WCHAR* szFileName)
 	delete[] tableName;
 }
 
+void ProfilePrint()
+{
+	for (int i = 0; i < PROFILE_MAX; ++i)
+	{
+		if (gProfiles[i].bFlag == false)
+			break;
+
+		LARGE_INTEGER f;
+
+		QueryPerformanceFrequency(&f);
+		__int64 time = gProfiles[i].iTotalTime;
+		double avg;
+		//double freq = f.QuadPart / 1000000.0;  // us
+		double freq = f.QuadPart / 1000.0;  // ms
+
+		wprintf_s(L"%s : %.3lfms\n", gProfiles[i].szName, time / freq);
+	}
+}
+
 void ProfileReset(void)
 {
 	memset(gProfiles, 0, sizeof(gProfiles));

@@ -111,6 +111,8 @@ public:
 
 	bool IsFrontZero() { return mFront == 0; }
 
+	char* GetBuffer() { return mBuffer; }
+
 private:
 	int mFront;
 	int mRear;

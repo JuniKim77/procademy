@@ -25,6 +25,8 @@ unordered_map<DWORD, Session*> g_sessions;
 unordered_map<DWORD, User*> g_users;
 extern CLogger g_Logger;
 extern std::list<User*> g_Sector[dfSECTOR_MAX_Y][dfSECTOR_MAX_X];
+extern DWORD g_DisconnectCount;
+extern DWORD g_ConnectCount;
 
 void CreateServer()
 {
@@ -108,7 +110,9 @@ void NetWorkProc()
 
 		if (count == FD_SETSIZE)
 		{
+			ProfileBegin(L"SelectProc");
 			SelectProc(sessionKeyTable, &rset, &wset);
+			ProfileEnd(L"SelectProc");
 
 			FD_ZERO(&rset);
 			FD_ZERO(&wset);
@@ -120,8 +124,10 @@ void NetWorkProc()
 			count = 1;
 		}
 	}
-	
+
+	ProfileBegin(L"SelectProc");
 	SelectProc(sessionKeyTable, &rset, &wset);
+	ProfileEnd(L"SelectProc");
 }
 
 void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset)
@@ -154,9 +160,7 @@ void SelectProc(DWORD* keyTable, FD_SET* rset, FD_SET* wset)
 
 		if (FD_ISSET(session->mSocket, wset))
 		{
-			ProfileBegin(L"WriteProc");
 			session->writeProc();
-			ProfileEnd(L"WriteProc");
 			--numSelected;
 		}
 
@@ -184,6 +188,7 @@ void DisconnectProc(DWORD sessionKey)
 	SendPacket_Around(user->userNo, &packet, true);
 
 	g_Logger._Log(dfLOG_LEVEL_DEBUG, L"Disconnect [UserNo: %d]\n", user->userNo);
+	g_DisconnectCount++;
 
 	Sector_RemoveUser(user, true);
 	DeleteSessionData(sessionKey);
@@ -210,6 +215,8 @@ void AcceptProc()
 
 		exit(1);
 	}
+
+	g_ConnectCount++;
 
 	WCHAR temp[16] = { 0, };
 	InetNtop(AF_INET, &clientAddr.sin_addr, temp, 16);
