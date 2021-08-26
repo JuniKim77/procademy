@@ -16,6 +16,18 @@ using namespace std;
 #define dfSERVER_PORT (6000)
 #define dfMESSAGE_SIZE (10)
 
+#define SESSION_LOCK() AcquireSRWLockExclusive(&session->lockObj)
+#define SESSION_RELEASE() ReleaseSRWLockExclusive(&session->lockObj)
+
+#define MONITOR_LOCK() AcquireSRWLockExclusive(&g_monitor.lock)
+#define MONITOR_RELEASE() ReleaseSRWLockExclusive(&g_monitor.lock)
+
+#define SESSION_LIST_LOCK() AcquireSRWLockExclusive(&g_sessionListLock)
+#define SESSION_LIST_RELEASE() ReleaseSRWLockExclusive(&g_sessionListLock)
+
+#define POOL_LOCK() g_SessionPool.Lock()
+#define POOL_RELEASE() g_SessionPool.Unlock()
+
 struct OverlappedBuffer
 {
 	WSAOVERLAPPED overlapped;
@@ -237,49 +249,50 @@ unsigned int __stdcall workerThread(LPVOID arg)
 			int messageCount = transferredSize / dfMESSAGE_SIZE;
 			int messageByte = messageCount * dfMESSAGE_SIZE;
 
-			session->recv.queue.Dequeue(packet.GetBufferPtr(), messageByte);
+			session->recv.queue.Dequeue(packet.GetBufferPtr(), transferredSize);
 
 			// Packet Proc
 			session->send.queue.Lock(false);
-			session->send.queue.Enqueue(packet.GetBufferPtr(), messageByte);
+			session->send.queue.Enqueue(packet.GetBufferPtr(), transferredSize);
 			session->send.queue.Unlock(false);
 
-			AcquireSRWLockExclusive(&g_monitor.lock);
+			MONITOR_LOCK();
 			g_monitor.recvTPS += messageCount;
-			ReleaseSRWLockExclusive(&g_monitor.lock);
+			MONITOR_RELEASE();
 
-			AcquireSRWLockExclusive(&session->lockObj);
+			SESSION_LOCK();
 			// Send Post
 			SendPost(session);
 
+			SESSION_RELEASE();
 			// Recv Post
 			RecvPost(session);
-			ReleaseSRWLockExclusive(&session->lockObj);
+			
 		}
 		else // send
 		{
 			int messageCount = transferredSize / dfMESSAGE_SIZE;
 			int messageByte = messageCount * dfMESSAGE_SIZE;
 
-			AcquireSRWLockExclusive(&g_monitor.lock);
+			MONITOR_LOCK();
 			g_monitor.sendTPS += messageCount;
-			ReleaseSRWLockExclusive(&g_monitor.lock);
+			MONITOR_RELEASE();
 
-			AcquireSRWLockExclusive(&session->lockObj);
+			SESSION_LOCK();
 
 			session->isSending = false;
 
-			if (DecrementProc(session))
-				continue;
-
-			session->send.queue.MoveFront(messageByte);
-
-			if (session->send.queue.GetUseSize() > 0)
+			if (DecrementProc(session) == false)
 			{
-				SendPost(session);
-			}
+				session->send.queue.MoveFront(messageByte);
 
-			ReleaseSRWLockExclusive(&session->lockObj);
+				if (session->send.queue.GetUseSize() > 0)
+				{
+					SendPost(session);
+				}
+			}				
+
+			SESSION_RELEASE();
 		}
 	}
 	return 0;
@@ -552,7 +565,11 @@ bool RecvPost(Session* session)
 
 		//wprintf_s(L"WSARecv ERROR, Error Code: %d\n", err);
 
+		SESSION_LOCK();
+		// Send Post
 		DecrementProc(session);
+
+		SESSION_RELEASE();
 
 		return false;
 	}
