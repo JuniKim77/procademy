@@ -101,6 +101,7 @@ SRWLOCK g_sessionListLock;
 procademy::ObjectPool<Session> g_SessionPool(10);
 Monitor g_monitor;
 bool g_bZeroCopy = false;
+bool g_bMonitoring = true;
 
 int main()
 {
@@ -129,7 +130,7 @@ int main()
 		{
 			MonitorProc();
 
-			if (GetAsyncKeyState(VK_TAB) & 0x8001)
+			if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x5A) & 0x8001) // Z
 			{
 				if (g_bZeroCopy)
 				{
@@ -143,7 +144,35 @@ int main()
 				}
 			}
 
-			if (GetAsyncKeyState(VK_SPACE) & 0x8001)
+			if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x4D) & 0x8001) // M
+			{
+				if (g_bMonitoring)
+				{
+					g_bMonitoring = false;
+					wprintf_s(L"Unset monitoring Mode\n");
+				}
+				else
+				{
+					g_bMonitoring = true;
+					wprintf_s(L"Set monitoring Mode\n");
+				}
+			}
+
+			if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x50) & 0x8001) // P
+			{
+				for (auto iter = g_sessionList.begin(); iter != g_sessionList.end(); ++iter)
+				{
+					int recvSize = (*iter)->recv.queue.GetUseSize();
+					int sendSize = (*iter)->send.queue.GetUseSize();
+
+					if (recvSize > 0 || sendSize > 0)
+					{
+						wprintf_s(L"[Socket: %d] [Recv: %d] [Send: %d]\n", (*iter)->socket, recvSize, sendSize);
+					}
+				}
+			}
+
+			if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x51) & 0x8001) // Q
 			{
 				// 종료 처리
 				wprintf_s(L"Exit\n");
@@ -244,30 +273,35 @@ unsigned int __stdcall workerThread(LPVOID arg)
 		{
 			CPacket packet;
 			// Dequeue Proc
+			SESSION_LOCK();
 			session->recv.queue.MoveRear(transferredSize);
 
 			int messageCount = transferredSize / dfMESSAGE_SIZE;
 			int messageByte = messageCount * dfMESSAGE_SIZE;
 
-			session->recv.queue.Dequeue(packet.GetBufferPtr(), transferredSize);
+			session->recv.queue.Dequeue(packet.GetBufferPtr(), messageByte);
 
+			
 			// Packet Proc
 			session->send.queue.Lock(false);
-			session->send.queue.Enqueue(packet.GetBufferPtr(), transferredSize);
+			session->send.queue.Enqueue(packet.GetBufferPtr(), messageByte);
 			session->send.queue.Unlock(false);
 
 			MONITOR_LOCK();
 			g_monitor.recvTPS += messageCount;
 			MONITOR_RELEASE();
 
-			SESSION_LOCK();
+			
 			// Send Post
-			SendPost(session);
+			if (session->send.queue.GetUseSize() > 0)
+			{
+				SendPost(session);
+			}
 
-			SESSION_RELEASE();
+			
 			// Recv Post
 			RecvPost(session);
-			
+			SESSION_RELEASE();			
 		}
 		else // send
 		{
@@ -331,6 +365,8 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		session->socket = client_sock;
 		session->ip = clientaddr.sin_addr.S_un.S_addr;
 		session->port = clientaddr.sin_port;
+		session->recv.queue.ClearBuffer();
+		session->send.queue.ClearBuffer();
 
 		ZeroMemory(&session->recv.overlapped, sizeof(session->recv.overlapped));
 		ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
@@ -412,12 +448,14 @@ bool DecrementProc(Session* session)
 
 void MonitorProc()
 {
-	g_SessionPool.Lock(true);
-	int poolSize = g_SessionPool.GetSize();
-	int poolCapa = g_SessionPool.GetCapacity();
-	g_SessionPool.Unlock(true);
+	if (g_bMonitoring)
+	{
+		g_SessionPool.Lock(true);
+		int poolSize = g_SessionPool.GetSize();
+		int poolCapa = g_SessionPool.GetCapacity();
+		g_SessionPool.Unlock(true);
 
-	wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
+		wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
 =======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n[Pool Usage: (%d / %d)]\n=======================================\n",
 		g_monitor.acceptCount,
 		g_monitor.disconnectCount,
@@ -426,6 +464,7 @@ void MonitorProc()
 		g_monitor.recvTPS,
 		poolSize,
 		poolCapa);
+	}
 
 	AcquireSRWLockExclusive(&g_monitor.lock);
 
@@ -565,11 +604,11 @@ bool RecvPost(Session* session)
 
 		//wprintf_s(L"WSARecv ERROR, Error Code: %d\n", err);
 
-		SESSION_LOCK();
+		//SESSION_LOCK();
 		// Send Post
 		DecrementProc(session);
 
-		SESSION_RELEASE();
+		//SESSION_RELEASE();
 
 		return false;
 	}
