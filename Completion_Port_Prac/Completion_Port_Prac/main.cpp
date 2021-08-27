@@ -25,9 +25,6 @@ using namespace std;
 #define SESSION_LIST_LOCK() AcquireSRWLockExclusive(&g_sessionListLock)
 #define SESSION_LIST_RELEASE() ReleaseSRWLockExclusive(&g_sessionListLock)
 
-#define POOL_LOCK() g_SessionPool.Lock()
-#define POOL_RELEASE() g_SessionPool.Unlock()
-
 struct OverlappedBuffer
 {
 	WSAOVERLAPPED overlapped;
@@ -167,7 +164,7 @@ int main()
 
 					if (recvSize > 0 || sendSize > 0)
 					{
-						wprintf_s(L"[Socket: %d] [Recv: %d] [Send: %d]\n", (*iter)->socket, recvSize, sendSize);
+						wprintf_s(L"[Socket: %d] [Recv: %d] [Send: %d] [Sending: %d]\n", (*iter)->socket, recvSize, sendSize, (*iter)->isSending);
 					}
 				}
 			}
@@ -273,40 +270,49 @@ unsigned int __stdcall workerThread(LPVOID arg)
 		{
 			CPacket packet;
 			// Dequeue Proc
-			SESSION_LOCK();
+			//SESSION_LOCK();
+
 			session->recv.queue.MoveRear(transferredSize);
 
 			int messageCount = transferredSize / dfMESSAGE_SIZE;
-			int messageByte = messageCount * dfMESSAGE_SIZE;
+			// int messageByte = messageCount * dfMESSAGE_SIZE;
+			int messageByte = transferredSize;
 
 			session->recv.queue.Dequeue(packet.GetBufferPtr(), messageByte);
+			SESSION_LOCK(); // 여기는 에러는 안나옴.
 
-			
 			// Packet Proc
 			session->send.queue.Lock(false);
 			session->send.queue.Enqueue(packet.GetBufferPtr(), messageByte);
 			session->send.queue.Unlock(false);
 
+			ZeroMemory(&session->recv.overlapped, sizeof(session->recv.overlapped));
+
+			//SESSION_LOCK();
+
 			MONITOR_LOCK();
 			g_monitor.recvTPS += messageCount;
 			MONITOR_RELEASE();
 
-			
+
 			// Send Post
 			if (session->send.queue.GetUseSize() > 0)
 			{
 				SendPost(session);
 			}
 
-			
+			//SendPost(session); 
+
+
 			// Recv Post
 			RecvPost(session);
-			SESSION_RELEASE();			
+			SESSION_RELEASE();
 		}
 		else // send
 		{
 			int messageCount = transferredSize / dfMESSAGE_SIZE;
-			int messageByte = messageCount * dfMESSAGE_SIZE;
+			// int messageByte = messageCount * dfMESSAGE_SIZE;
+			int messageByte = transferredSize;
 
 			MONITOR_LOCK();
 			g_monitor.sendTPS += messageCount;
@@ -314,8 +320,9 @@ unsigned int __stdcall workerThread(LPVOID arg)
 
 			SESSION_LOCK();
 
+			session->send.queue.Lock(false);
 			session->isSending = false;
-
+			ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
 			if (DecrementProc(session) == false)
 			{
 				session->send.queue.MoveFront(messageByte);
@@ -324,7 +331,8 @@ unsigned int __stdcall workerThread(LPVOID arg)
 				{
 					SendPost(session);
 				}
-			}				
+			}
+			session->send.queue.Unlock(false);
 
 			SESSION_RELEASE();
 		}
@@ -353,9 +361,9 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 			continue;
 		}
 
-		AcquireSRWLockExclusive(&g_monitor.lock);
+		MONITOR_LOCK();
 		g_monitor.acceptCount++;
-		ReleaseSRWLockExclusive(&g_monitor.lock);
+		MONITOR_RELEASE();
 
 		// 함수로 뺄 것
 		g_SessionPool.Lock(false);
@@ -367,6 +375,7 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		session->port = clientaddr.sin_port;
 		session->recv.queue.ClearBuffer();
 		session->send.queue.ClearBuffer();
+		session->isSending = false;
 
 		ZeroMemory(&session->recv.overlapped, sizeof(session->recv.overlapped));
 		ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
@@ -392,10 +401,9 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		// 소켓과 입출력 완료 포트 연결
 		HANDLE hResult = CreateIoCompletionPort((HANDLE)client_sock, g_hcp,
 			(ULONG_PTR)session, 0);
-
-		AcquireSRWLockExclusive(&g_sessionListLock);
+		SESSION_LIST_LOCK();
 		g_sessionList.push_back(session);
-		ReleaseSRWLockExclusive(&g_sessionListLock);
+		SESSION_LIST_RELEASE();
 
 		if (hResult == NULL)
 		{
@@ -412,15 +420,15 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 
 void DisconnectProc(Session* session)
 {
-	AcquireSRWLockExclusive(&g_sessionListLock);
+	SESSION_LIST_LOCK();
 	g_sessionList.remove(session);
-	ReleaseSRWLockExclusive(&g_sessionListLock);
+	SESSION_LIST_RELEASE();
 
 	closesocket(session->socket);
 
-	AcquireSRWLockExclusive(&g_monitor.lock);
+	MONITOR_LOCK();
 	g_monitor.disconnectCount++;
-	ReleaseSRWLockExclusive(&g_monitor.lock);
+	MONITOR_RELEASE();
 
 	//delete session;
 	g_SessionPool.Lock(false);
@@ -466,12 +474,12 @@ void MonitorProc()
 		poolCapa);
 	}
 
-	AcquireSRWLockExclusive(&g_monitor.lock);
+	MONITOR_LOCK();
 
 	g_monitor.sendTPS = 0;
 	g_monitor.recvTPS = 0;
 
-	ReleaseSRWLockExclusive(&g_monitor.lock);
+	MONITOR_RELEASE();
 }
 
 void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
@@ -556,7 +564,7 @@ bool SendPost(Session* session)
 
 	if (session->isSending)
 	{
-		return true;
+		return false;
 	}
 
 	session->isSending = true;
