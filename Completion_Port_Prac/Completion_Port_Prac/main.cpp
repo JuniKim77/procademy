@@ -306,6 +306,18 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 			continue;
 		}
 
+		// Zero Copy?
+		if (g_bZeroCopy)
+		{
+			int optNum = 0;
+			if (setsockopt(client_sock, SOL_SOCKET, SO_SNDBUF, (char*)&optNum, sizeof(optNum)) == SOCKET_ERROR)
+			{
+				closesocket(client_sock);
+				wprintf_s(L"setsockopt\n");
+				continue;
+			}
+		}
+
 		AcquireSRWLockExclusive(&g_monitor.lock);
 		g_monitor.acceptCount++;
 		ReleaseSRWLockExclusive(&g_monitor.lock);
@@ -323,26 +335,13 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
 		InitializeSRWLock(&session->lockObj);
 
-		// Zero Copy?
-		if (g_bZeroCopy)
-		{
-			int optNum = 0;
-			if (setsockopt(client_sock, SOL_SOCKET, SO_SNDBUF, (char*)&optNum, sizeof(optNum)) == SOCKET_ERROR)
-			{
-				closesocket(client_sock);
-				wprintf_s(L"setsockopt\n");
-				continue;
-			}
-		}
-
 		/*WCHAR IP[16] = { 0, };
 		InetNtop(AF_INET, &clientaddr.sin_addr, IP, 16);
 
 		wprintf_s(L"[TCP] Connect Session [IP: %s][Port: %d]\n", IP, ntohs(clientaddr.sin_port));*/
 
 		// 소켓과 입출력 완료 포트 연결
-		HANDLE hResult = CreateIoCompletionPort((HANDLE)client_sock, g_hcp,
-			(ULONG_PTR)session, 0);
+		HANDLE hResult = CreateIoCompletionPort((HANDLE)client_sock, g_hcp, (ULONG_PTR)session, 0);
 
 		AcquireSRWLockExclusive(&g_sessionListLock);
 		g_sessionList.push_back(session);
