@@ -279,12 +279,14 @@ unsigned int __stdcall workerThread(LPVOID arg)
 			int messageByte = transferredSize;
 
 			session->recv.queue.Dequeue(packet.GetBufferPtr(), messageByte);
-			SESSION_LOCK(); // 여기는 에러는 안나옴.
+			//SESSION_LOCK(); // 여기는 에러는 안나옴.
 
 			// Packet Proc
 			session->send.queue.Lock(false);
 			session->send.queue.Enqueue(packet.GetBufferPtr(), messageByte);
 			session->send.queue.Unlock(false);
+
+			SESSION_LOCK();
 
 			ZeroMemory(&session->recv.overlapped, sizeof(session->recv.overlapped));
 
