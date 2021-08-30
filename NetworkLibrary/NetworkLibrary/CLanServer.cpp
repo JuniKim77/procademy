@@ -1,5 +1,7 @@
 #include "CLanServer.h"
 #include "CLogger.h"
+#include "CPacket.h"
+#include "Protocol.h"
 
 //SOCKET CLanServer::mListenSocket = 0;
 
@@ -34,7 +36,7 @@ bool CLanServer::Start(u_short port, u_long ip, BYTE createThread, BYTE runThrea
         return false;
     }
 
-    BeginThreads();    
+    BeginThreads();
 
     mbIsRunning = true;
 
@@ -57,7 +59,7 @@ void CLanServer::Stop()
 
 int CLanServer::GetSessionCount()
 {
-    return 0;
+    return mSessionMap.size();
 }
 
 bool CLanServer::Disconnect(SESSION_ID SessionID)
@@ -188,7 +190,49 @@ unsigned int __stdcall CLanServer::WorkerThread(LPVOID arg)
 {
     CLanServer* server = (CLanServer*)arg;
 
+    while (1)
+    {
+        DWORD transferredSize = 0;
+        Session* completionKey = nullptr;
+        WSAOVERLAPPED* pOverlapped = nullptr;
+        Session* session = nullptr;
 
+        BOOL gqcsRet = GetQueuedCompletionStatus(server->mHcp, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
+    
+        if (transferredSize == 0 && (PULONG_PTR)completionKey == nullptr && pOverlapped == nullptr)
+        {
+            PostQueuedCompletionStatus(server->mHcp, 0, 0, 0);
+
+            break;
+        }
+
+        if (pOverlapped == nullptr) // I/O Fail
+        {
+            continue;
+        }
+
+        session = (Session*)completionKey;
+
+        if (transferredSize == 0) // normal close
+        {
+            server->DecrementProc(session);
+
+            continue;
+        }
+
+        if (pOverlapped == &session->recv.overlapped) // Recv
+        {
+            CPacket packet;
+
+            session->recv.queue.MoveRear(transferredSize);
+
+            
+        }
+        else // Send
+        {
+
+        }
+    }
 
     return 0;
 }
@@ -284,9 +328,9 @@ bool CLanServer::RecvPost(Session* session)
             return true;
         }
 
-        //wprintf_s(L"WSARecv ERROR, Error Code: %d\n", err);
+        // CLogger::_Log(dfLOG_LEVEL_DEBUG, L"WSARecv ERROR: ", err);
 
-        //DecrementProc(session);
+        DecrementProc(session);
 
         return false;
     }
@@ -296,7 +340,34 @@ bool CLanServer::RecvPost(Session* session)
 
 bool CLanServer::SendPost(Session* session)
 {
-    return false;
+    WSABUF buffers[2];
+
+    if (session->isSending)
+    {
+        return true;
+    }
+
+    session->isSending = true;
+
+    SetWSABuf(buffers, session, false);
+
+    session->ioCount++;
+    int sendRet = WSASend(session->socket, buffers, 2, nullptr, 0, &session->send.overlapped, nullptr);
+
+    if (sendRet == SOCKET_ERROR)
+    {
+        int err = WSAGetLastError();
+
+        if (err == WSA_IO_PENDING)
+        {
+            return true;
+        }
+
+        if (DecrementProc(session))
+            return false;
+    }
+
+    return true;
 }
 
 void CLanServer::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)

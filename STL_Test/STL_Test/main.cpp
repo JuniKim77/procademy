@@ -43,6 +43,35 @@ public:
 int main()
 {
 	{
+		unordered_map<int, TEST*> test;
+
+		TEST samples[10];
+
+		for (int i = 0; i < 10; ++i)
+		{
+			samples[i].mNum = i + 1;
+			test[i + 1] = &samples[i];
+		}
+
+		cout << "Sample Size: " << test.size() << endl;
+
+		auto iter = test.find(5);
+
+		cout << "Delete sample: " << iter->second->mNum << endl;
+
+		test.erase(iter);
+
+		cout << "Sample Size: " << test.size() << endl;
+
+		iter = test.find(5);
+
+		if (iter == test.end())
+		{
+			cout << "Not Found" << endl;
+		}
+	}
+
+	{
 		vector<TEST> test;
 		//test.reserve(60);
 
