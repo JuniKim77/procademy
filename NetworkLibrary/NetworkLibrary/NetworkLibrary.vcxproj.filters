@@ -19,6 +19,9 @@
     <Filter Include="헤더 파일\Tools">
       <UniqueIdentifier>{a3db2222-d400-4659-9896-4c68abf787a2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Network">
+      <UniqueIdentifier>{f86ef75a-9a87-44f3-9f3c-aef9dfa62d28}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -64,6 +67,9 @@
     </ClInclude>
     <ClInclude Include="CLogger.h">
       <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Protocol.h">
+      <Filter>헤더 파일\Network</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

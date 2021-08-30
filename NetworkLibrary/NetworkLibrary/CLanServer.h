@@ -85,14 +85,12 @@ public:
 
 	virtual void OnError(int errorcode, WCHAR* log) = 0;
 
-protected:
+private:
 	void LockSessionMap();
 	void UnlockSessionMap();
 	void InsertSessionData(u_int64 sessionNo, Session* session);
 	void DeleteSessionData(u_int64 sessionNo);
 	void UpdateSessionData(u_int64 sessionNo, Session* session);
-
-private:
 	bool CreateListenSocket();
 	bool BeginThreads();
 	static unsigned int WINAPI WorkerThread(LPVOID arg);
@@ -102,6 +100,8 @@ private:
 	void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
 	bool DecrementProc(Session* session);
 	void DisconnectProc(Session* session);
+	void LockSession(Session* session);
+	void UnlockSession(Session* session);
 
 private:
 	/// <summary>

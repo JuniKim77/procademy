@@ -64,12 +64,28 @@ int CLanServer::GetSessionCount()
 
 bool CLanServer::Disconnect(SESSION_ID SessionID)
 {
+    // what?
     return false;
 }
 
 bool CLanServer::SendPacket(SESSION_ID SessionID, CPacket* packet)
 {
-    return false;
+    Session* session = mSessionMap[SessionID];
+    st_NETWORK_HEADER header;
+
+    header.byCode = dfNETWORK_CODE;
+    header.wPayloadSize = packet->GetSize();
+
+    session->send.queue.Lock(false);
+    session->send.queue.Enqueue((char*)&header, sizeof(header));
+    session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
+    session->send.queue.Unlock(false);
+
+    LockSession(session);
+    bool ret = SendPost(session);
+    UnlockSession(session);
+
+    return ret;
 }
 
 void CLanServer::LockSessionMap()
@@ -417,4 +433,15 @@ void CLanServer::DisconnectProc(Session* session)
     UnlockSessionMap();
 
     closesocket(session->socket);
+}
+
+void CLanServer::LockSession(Session* session)
+{
+    AcquireSRWLockExclusive(&session->lock);
+}
+
+void CLanServer::UnlockSession(Session* session)
+{
+    ReleaseSRWLockExclusive(&session->lock);
+
 }

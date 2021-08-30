@@ -155,6 +155,7 @@
     <ClInclude Include="CSVReader.h" />
     <ClInclude Include="MyProfiler.h" />
     <ClInclude Include="ObjectPool.h" />
+    <ClInclude Include="Protocol.h" />
     <ClInclude Include="RingBuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
