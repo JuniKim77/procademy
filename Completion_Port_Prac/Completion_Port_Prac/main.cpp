@@ -16,6 +16,15 @@ using namespace std;
 #define dfSERVER_PORT (6000)
 #define dfMESSAGE_SIZE (10)
 
+#define SESSION_LOCK() AcquireSRWLockExclusive(&session->lockObj)
+#define SESSION_RELEASE() ReleaseSRWLockExclusive(&session->lockObj)
+
+#define MONITOR_LOCK() AcquireSRWLockExclusive(&g_monitor.lock)
+#define MONITOR_RELEASE() ReleaseSRWLockExclusive(&g_monitor.lock)
+
+#define SESSION_LIST_LOCK() AcquireSRWLockExclusive(&g_sessionListLock)
+#define SESSION_LIST_RELEASE() ReleaseSRWLockExclusive(&g_sessionListLock)
+
 struct OverlappedBuffer
 {
 	WSAOVERLAPPED overlapped;
@@ -89,6 +98,7 @@ SRWLOCK g_sessionListLock;
 procademy::ObjectPool<Session> g_SessionPool(10);
 Monitor g_monitor;
 bool g_bZeroCopy = false;
+bool g_bMonitoring = true;
 
 int main()
 {
@@ -117,7 +127,7 @@ int main()
 		{
 			MonitorProc();
 
-			if (GetAsyncKeyState(VK_TAB) & 0x8001)
+			if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x5A) & 0x8001) // Z
 			{
 				if (g_bZeroCopy)
 				{
@@ -131,9 +141,36 @@ int main()
 				}
 			}
 
-			if (GetAsyncKeyState(VK_SPACE) & 0x8001)
+			if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x4D) & 0x8001) // M
 			{
-				// 종료 처리
+				if (g_bMonitoring)
+				{
+					g_bMonitoring = false;
+					wprintf_s(L"Unset monitoring Mode\n");
+				}
+				else
+				{
+					g_bMonitoring = true;
+					wprintf_s(L"Set monitoring Mode\n");
+				}
+			}
+
+			if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x50) & 0x8001) // P
+			{
+				for (auto iter = g_sessionList.begin(); iter != g_sessionList.end(); ++iter)
+				{
+					int recvSize = (*iter)->recv.queue.GetUseSize();
+					int sendSize = (*iter)->send.queue.GetUseSize();
+
+					if (recvSize > 0 || sendSize > 0)
+					{
+						wprintf_s(L"[Socket: %d] [Recv: %d] [Send: %d] [Sending: %d]\n", (*iter)->socket, recvSize, sendSize, (*iter)->isSending);
+					}
+				}
+			}
+
+			if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x51) & 0x8001) // Q
+			{
 				wprintf_s(L"Exit\n");
 
 				PostQueuedCompletionStatus(g_hcp, 0, 0, 0);
@@ -170,9 +207,6 @@ int main()
 		break;
 	}
 
-	//------------------------------------------------
-	// 디버깅용 코드  스레드 정상종료 확인.
-	//------------------------------------------------
 	DWORD ExitCode;
 
 	wprintf_s(L"\n\n--- THREAD CHECK LOG -----------------------------\n\n");
@@ -232,54 +266,73 @@ unsigned int __stdcall workerThread(LPVOID arg)
 		{
 			CPacket packet;
 			// Dequeue Proc
+			//SESSION_LOCK();
+
 			session->recv.queue.MoveRear(transferredSize);
 
 			int messageCount = transferredSize / dfMESSAGE_SIZE;
-			int messageByte = messageCount * dfMESSAGE_SIZE;
+			// int messageByte = messageCount * dfMESSAGE_SIZE;
+			int messageByte = transferredSize;
 
 			session->recv.queue.Dequeue(packet.GetBufferPtr(), messageByte);
+			//SESSION_LOCK();
 
 			// Packet Proc
 			session->send.queue.Lock(false);
 			session->send.queue.Enqueue(packet.GetBufferPtr(), messageByte);
 			session->send.queue.Unlock(false);
 
-			AcquireSRWLockExclusive(&g_monitor.lock);
+			SESSION_LOCK();
+
+			ZeroMemory(&session->recv.overlapped, sizeof(session->recv.overlapped));
+
+			//SESSION_LOCK();
+
+			MONITOR_LOCK();
 			g_monitor.recvTPS += messageCount;
-			ReleaseSRWLockExclusive(&g_monitor.lock);
+			MONITOR_RELEASE();
 
-			AcquireSRWLockExclusive(&session->lockObj);
+
 			// Send Post
-			SendPost(session);
-
-			// Recv Post
-			RecvPost(session);
-			ReleaseSRWLockExclusive(&session->lockObj);
-		}
-		else // send
-		{
-			int messageCount = transferredSize / dfMESSAGE_SIZE;
-			int messageByte = messageCount * dfMESSAGE_SIZE;
-
-			AcquireSRWLockExclusive(&g_monitor.lock);
-			g_monitor.sendTPS += messageCount;
-			ReleaseSRWLockExclusive(&g_monitor.lock);
-
-			AcquireSRWLockExclusive(&session->lockObj);
-
-			session->isSending = false;
-
-			if (DecrementProc(session))
-				continue;
-
-			session->send.queue.MoveFront(messageByte);
-
 			if (session->send.queue.GetUseSize() > 0)
 			{
 				SendPost(session);
 			}
 
-			ReleaseSRWLockExclusive(&session->lockObj);
+			//SendPost(session); 
+
+
+			// Recv Post
+			RecvPost(session);
+			SESSION_RELEASE();
+		}
+		else // send
+		{
+			int messageCount = transferredSize / dfMESSAGE_SIZE;
+			// int messageByte = messageCount * dfMESSAGE_SIZE;
+			int messageByte = transferredSize;
+
+			MONITOR_LOCK();
+			g_monitor.sendTPS += messageCount;
+			MONITOR_RELEASE();
+
+			SESSION_LOCK();
+
+			session->send.queue.Lock(false);
+			session->isSending = false;
+			ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
+			if (DecrementProc(session) == false)
+			{
+				session->send.queue.MoveFront(messageByte);
+
+				if (session->send.queue.GetUseSize() > 0)
+				{
+					SendPost(session);
+				}
+			}
+			session->send.queue.Unlock(false);
+
+			SESSION_RELEASE();
 		}
 	}
 	return 0;
@@ -306,23 +359,11 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 			continue;
 		}
 
-		// Zero Copy?
-		if (g_bZeroCopy)
-		{
-			int optNum = 0;
-			if (setsockopt(client_sock, SOL_SOCKET, SO_SNDBUF, (char*)&optNum, sizeof(optNum)) == SOCKET_ERROR)
-			{
-				closesocket(client_sock);
-				wprintf_s(L"setsockopt\n");
-				continue;
-			}
-		}
-
-		AcquireSRWLockExclusive(&g_monitor.lock);
+		MONITOR_LOCK();
 		g_monitor.acceptCount++;
-		ReleaseSRWLockExclusive(&g_monitor.lock);
+		MONITOR_RELEASE();
 
-		// 함수로 뺄 것
+		// ????? ?? ??
 		g_SessionPool.Lock(false);
 		Session* session = g_SessionPool.Alloc();
 		g_SessionPool.Unlock(false);
@@ -330,6 +371,9 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		session->socket = client_sock;
 		session->ip = clientaddr.sin_addr.S_un.S_addr;
 		session->port = clientaddr.sin_port;
+		session->recv.queue.ClearBuffer();
+		session->send.queue.ClearBuffer();
+		session->isSending = false;
 
 		ZeroMemory(&session->recv.overlapped, sizeof(session->recv.overlapped));
 		ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
@@ -340,12 +384,12 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 
 		wprintf_s(L"[TCP] Connect Session [IP: %s][Port: %d]\n", IP, ntohs(clientaddr.sin_port));*/
 
-		// 소켓과 입출력 완료 포트 연결
-		HANDLE hResult = CreateIoCompletionPort((HANDLE)client_sock, g_hcp, (ULONG_PTR)session, 0);
-
-		AcquireSRWLockExclusive(&g_sessionListLock);
+		// ????? ????? ??? ??? ????
+		HANDLE hResult = CreateIoCompletionPort((HANDLE)client_sock, g_hcp,
+			(ULONG_PTR)session, 0);
+		SESSION_LIST_LOCK();
 		g_sessionList.push_back(session);
-		ReleaseSRWLockExclusive(&g_sessionListLock);
+		SESSION_LIST_RELEASE();
 
 		if (hResult == NULL)
 		{
@@ -362,15 +406,15 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 
 void DisconnectProc(Session* session)
 {
-	AcquireSRWLockExclusive(&g_sessionListLock);
+	SESSION_LIST_LOCK();
 	g_sessionList.remove(session);
-	ReleaseSRWLockExclusive(&g_sessionListLock);
+	SESSION_LIST_RELEASE();
 
 	closesocket(session->socket);
 
-	AcquireSRWLockExclusive(&g_monitor.lock);
+	MONITOR_LOCK();
 	g_monitor.disconnectCount++;
-	ReleaseSRWLockExclusive(&g_monitor.lock);
+	MONITOR_RELEASE();
 
 	//delete session;
 	g_SessionPool.Lock(false);
@@ -398,12 +442,14 @@ bool DecrementProc(Session* session)
 
 void MonitorProc()
 {
-	g_SessionPool.Lock(true);
-	int poolSize = g_SessionPool.GetSize();
-	int poolCapa = g_SessionPool.GetCapacity();
-	g_SessionPool.Unlock(true);
+	if (g_bMonitoring)
+	{
+		g_SessionPool.Lock(true);
+		int poolSize = g_SessionPool.GetSize();
+		int poolCapa = g_SessionPool.GetCapacity();
+		g_SessionPool.Unlock(true);
 
-	wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
+		wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
 =======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n[Pool Usage: (%d / %d)]\n=======================================\n",
 		g_monitor.acceptCount,
 		g_monitor.disconnectCount,
@@ -412,13 +458,14 @@ void MonitorProc()
 		g_monitor.recvTPS,
 		poolSize,
 		poolCapa);
+	}
 
-	AcquireSRWLockExclusive(&g_monitor.lock);
+	MONITOR_LOCK();
 
 	g_monitor.sendTPS = 0;
 	g_monitor.recvTPS = 0;
 
-	ReleaseSRWLockExclusive(&g_monitor.lock);
+	MONITOR_RELEASE();
 }
 
 void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
@@ -503,7 +550,7 @@ bool SendPost(Session* session)
 
 	if (session->isSending)
 	{
-		return true;
+		return false;
 	}
 
 	session->isSending = true;
@@ -551,7 +598,11 @@ bool RecvPost(Session* session)
 
 		//wprintf_s(L"WSARecv ERROR, Error Code: %d\n", err);
 
+		//SESSION_LOCK();
+		// Send Post
 		DecrementProc(session);
+
+		//SESSION_RELEASE();
 
 		return false;
 	}
