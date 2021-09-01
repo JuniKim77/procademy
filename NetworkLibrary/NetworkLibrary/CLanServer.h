@@ -71,7 +71,7 @@ public:
 	bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
 	bool SendPacket(SESSION_ID SessionID, CPacket* packet); // SESSION_ID / HOST_ID
 
-	//virtual bool OnConnectionRequest(IP, Port) = 0; //< accept 직후
+	virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept 직후
 
 	virtual void OnClientJoin(SESSION_ID SessionID) = 0; //< Accept 후 접속처리 완료 후 호출.
 	virtual void OnClientLeave(SESSION_ID SessionID) = 0; //< Release 후 호출
@@ -88,6 +88,7 @@ public:
 private:
 	void LockSessionMap();
 	void UnlockSessionMap();
+	Session* FindSession(u_int64 sessionNo);
 	void InsertSessionData(u_int64 sessionNo, Session* session);
 	void DeleteSessionData(u_int64 sessionNo);
 	void UpdateSessionData(u_int64 sessionNo, Session* session);
@@ -102,6 +103,10 @@ private:
 	void DisconnectProc(Session* session);
 	void LockSession(Session* session);
 	void UnlockSession(Session* session);
+	void PacketProc(Session* session, DWORD msgSize);
+	bool AcceptProc();
+	Session* CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
+	bool OnCompleteMessage();
 
 private:
 	/// <summary>

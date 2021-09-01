@@ -3,8 +3,6 @@
 #include "CPacket.h"
 #include "Protocol.h"
 
-//SOCKET CLanServer::mListenSocket = 0;
-
 CLanServer::~CLanServer()
 {
     closesocket(mListenSocket);
@@ -12,14 +10,14 @@ CLanServer::~CLanServer()
     {
         delete mSessionPool;
     }
-    CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Lib End");
+    CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Lib End\n");
 }
 
 bool CLanServer::Start(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient)
 {
     if (mbIsRunning == true) 
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Network is already running");
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Network is already running\n");
         return false;
     }
 
@@ -50,7 +48,12 @@ bool CLanServer::Start(u_short port, BYTE createThread, BYTE runThread, bool nag
 
 void CLanServer::Stop()
 {
-    CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Stop");
+    if (mbIsRunning == false)
+    {
+        return;
+    }
+
+    CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Stop\n");
 
     closesocket(mListenSocket);
 
@@ -64,13 +67,16 @@ int CLanServer::GetSessionCount()
 
 bool CLanServer::Disconnect(SESSION_ID SessionID)
 {
-    // what?
-    return false;
+    Session* session = FindSession(SessionID);
+
+    DisconnectProc(session);
+
+    return true;
 }
 
 bool CLanServer::SendPacket(SESSION_ID SessionID, CPacket* packet)
 {
-    Session* session = mSessionMap[SessionID];
+    Session* session = FindSession(SessionID);
     st_NETWORK_HEADER header;
 
     header.byCode = dfNETWORK_CODE;
@@ -98,6 +104,11 @@ void CLanServer::UnlockSessionMap()
     ReleaseSRWLockExclusive(&mSessionMapLock);
 }
 
+CLanServer::Session* CLanServer::FindSession(u_int64 sessionNo)
+{
+    return mSessionMap[sessionNo];
+}
+
 void CLanServer::InsertSessionData(u_int64 sessionNo, Session* session)
 {
     mSessionMap[sessionNo] = session;
@@ -109,7 +120,7 @@ void CLanServer::DeleteSessionData(u_int64 sessionNo)
 
     if (iter == mSessionMap.end())
     {
-        CLogger::_Log(dfLOG_LEVEL_DEBUG, L"WSAStartup", WSAGetLastError());
+        CLogger::_Log(dfLOG_LEVEL_DEBUG, L"WSAStartup [Error: %d]\n", WSAGetLastError());
         return;
     }
 
@@ -131,14 +142,14 @@ bool CLanServer::CreateListenSocket()
 
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"WSAStartup", WSAGetLastError());
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"WSAStartup [Error: %d]\n", WSAGetLastError());
         return false;
     }
 
     mListenSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (mListenSocket == INVALID_SOCKET)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Create socket", WSAGetLastError());
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Create socket [Error: %d]\n", WSAGetLastError());
         return false;
     }
 
@@ -151,7 +162,7 @@ bool CLanServer::CreateListenSocket()
 
     if (bindRet == SOCKET_ERROR)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Bind", WSAGetLastError());
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Bind [Error: %d]\n", WSAGetLastError());
         closesocket(mListenSocket);
         return false;
     }
@@ -161,7 +172,7 @@ bool CLanServer::CreateListenSocket()
 
     if (listenRet == SOCKET_ERROR)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Listen", WSAGetLastError());
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Listen [Error: %d]\n", WSAGetLastError());
         closesocket(mListenSocket);
         return false;
     }
@@ -179,7 +190,7 @@ bool CLanServer::CreateListenSocket()
 
     if (mHcp == NULL)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort", WSAGetLastError());
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]\n", WSAGetLastError());
         closesocket(mListenSocket);
         return false;
     }
@@ -208,45 +219,9 @@ unsigned int __stdcall CLanServer::WorkerThread(LPVOID arg)
 
     while (1)
     {
-        DWORD transferredSize = 0;
-        Session* completionKey = nullptr;
-        WSAOVERLAPPED* pOverlapped = nullptr;
-        Session* session = nullptr;
-
-        BOOL gqcsRet = GetQueuedCompletionStatus(server->mHcp, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
-    
-        if (transferredSize == 0 && (PULONG_PTR)completionKey == nullptr && pOverlapped == nullptr)
+        if (server->OnCompleteMessage() == false)
         {
-            PostQueuedCompletionStatus(server->mHcp, 0, 0, 0);
-
             break;
-        }
-
-        if (pOverlapped == nullptr) // I/O Fail
-        {
-            continue;
-        }
-
-        session = (Session*)completionKey;
-
-        if (transferredSize == 0) // normal close
-        {
-            server->DecrementProc(session);
-
-            continue;
-        }
-
-        if (pOverlapped == &session->recv.overlapped) // Recv
-        {
-            CPacket packet;
-
-            session->recv.queue.MoveRear(transferredSize);
-
-            
-        }
-        else // Send
-        {
-
         }
     }
 
@@ -259,68 +234,10 @@ unsigned int __stdcall CLanServer::AcceptThread(LPVOID arg)
 
     while (1)
     {
-        SOCKADDR_IN clientAddr;
-        int addrLen = sizeof(clientAddr);
-
-        SOCKET client = accept(server->mListenSocket, (SOCKADDR*)&clientAddr, &addrLen);
-
-        if (client == INVALID_SOCKET)
+        if (server->AcceptProc() == false)
         {
-            int err = WSAGetLastError();
-
-            if (err == WSAENOTSOCK)
-            {
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"ListenSocket Error", err);
-
-                break;
-            }
-
-            CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Accept Error", err);
-
-            continue;
+            break;
         }
-
-        if (server->mbZeroCopy)
-        {
-            int optNum = 0;
-            if (setsockopt(client, SOL_SOCKET, SO_SNDBUF, (char*)&optNum, sizeof(optNum)) == SOCKET_ERROR)
-            {
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Zero Copy Error", WSAGetLastError());
-                closesocket(client);
-                
-                continue;
-            }
-        }
-
-        server->mSessionPool->Lock(false);
-        Session* session = server->mSessionPool->Alloc();
-        server->mSessionPool->Unlock(false);
-
-        session->socket = client;
-        session->ip = clientAddr.sin_addr.S_un.S_addr;
-        session->port = clientAddr.sin_port;
-        session->isSending = false;
-
-        ZeroMemory(&session->send.overlapped, sizeof(WSAOVERLAPPED));
-        ZeroMemory(&session->recv.overlapped, sizeof(WSAOVERLAPPED));
-        InitializeSRWLock(&session->lock);
-
-        HANDLE hResult = CreateIoCompletionPort((HANDLE)client, server->mHcp, (ULONG_PTR)session, 0);
-
-        if (hResult == NULL)
-        {
-            CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort Error", WSAGetLastError());
-            closesocket(server->mListenSocket);
-
-            return -1;
-        }
-
-        server->LockSessionMap();
-        server->InsertSessionData(server->mSessionIDCounter, session);
-        server->UnlockSessionMap();
-
-        session->ioCount = 1;
-        server->RecvPost(session);
     }
 
     return 0;
@@ -420,19 +337,23 @@ bool CLanServer::DecrementProc(Session* session)
         wprintf_s(L"Disconnect [IP: %s] [Port: %u]\n", IP, ntohs(session->port));*/
         DisconnectProc(session);
 
-        return true;
+        return false;
     }
 
-    return false;
+    return true;
 }
 
 void CLanServer::DisconnectProc(Session* session)
 {
+    u_int64 id = session->sessionID;
+
     LockSessionMap();
-    DeleteSessionData(session->sessionID);
+    DeleteSessionData(id);
     UnlockSessionMap();
 
     closesocket(session->socket);
+
+    OnClientLeave(id);
 }
 
 void CLanServer::LockSession(Session* session)
@@ -444,4 +365,183 @@ void CLanServer::UnlockSession(Session* session)
 {
     ReleaseSRWLockExclusive(&session->lock);
 
+}
+
+void CLanServer::PacketProc(Session* session, DWORD msgSize)
+{
+    session->recv.queue.MoveRear(msgSize);
+
+    int count = 0;
+
+    while (count < msgSize)
+    {
+        CPacket packet;
+
+        st_NETWORK_HEADER header;
+
+        session->recv.queue.Dequeue((char*)&header, sizeof(header));
+
+        session->recv.queue.Dequeue((char*)&packet, header.wPayloadSize);
+
+        OnRecv(session->sessionID, &packet);
+        count += (sizeof(header) + header.wPayloadSize);
+    }
+}
+
+bool CLanServer::AcceptProc()
+{
+    SOCKADDR_IN clientAddr;
+    int addrLen = sizeof(clientAddr);
+
+    SOCKET client = accept(mListenSocket, (SOCKADDR*)&clientAddr, &addrLen);
+
+    if (client == INVALID_SOCKET)
+    {
+        int err = WSAGetLastError();
+
+        if (err == WSAENOTSOCK)
+        {
+            CLogger::_Log(dfLOG_LEVEL_ERROR, L"ListenSocket [Error: %d]\n", err);
+
+            return false;
+        }
+
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Accept [Error: %d]\n", err);
+
+        return true;
+    }
+
+    if (OnConnectionRequest(clientAddr.sin_addr.S_un.S_addr, clientAddr.sin_port) == false)
+    {
+        WCHAR IP[16] = { 0, };
+
+        InetNtop(AF_INET, &clientAddr.sin_addr.S_un.S_addr, IP, 16);
+
+        CLogger::_Log(dfLOG_LEVEL_NOTICE, L"Socket Accept Denied [IP: %s] [Port: %u]\n",
+            IP, ntohs(clientAddr.sin_port));
+
+        closesocket(client);
+
+        return true;
+    }
+
+    if (mbZeroCopy)
+    {
+        int optNum = 0;
+        if (setsockopt(client, SOL_SOCKET, SO_SNDBUF, (char*)&optNum, sizeof(optNum)) == SOCKET_ERROR)
+        {
+            CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Zero Copy [Error: %d]\n", WSAGetLastError());
+            closesocket(client);
+
+            return true;
+        }
+    }
+
+    Session* session = CreateSession(client, clientAddr);
+    
+    if (session == nullptr)
+    {
+        return false;
+    }
+
+    session->ioCount = 1;
+    RecvPost(session);
+    OnClientJoin(session->sessionID);
+
+    return true;
+}
+
+CLanServer::Session* CLanServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
+{
+    mSessionPool->Lock(false);
+    Session* session = mSessionPool->Alloc();
+    mSessionPool->Unlock(false);
+
+    session->socket = client;
+    session->ip = clientAddr.sin_addr.S_un.S_addr;
+    session->port = clientAddr.sin_port;
+    session->isSending = false;
+    session->sessionID = mSessionIDCounter;
+
+    ZeroMemory(&session->send.overlapped, sizeof(WSAOVERLAPPED));
+    ZeroMemory(&session->recv.overlapped, sizeof(WSAOVERLAPPED));
+    InitializeSRWLock(&session->lock);
+
+    HANDLE hResult = CreateIoCompletionPort((HANDLE)client, mHcp, (ULONG_PTR)session, 0);
+
+    if (hResult == NULL)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]\n", WSAGetLastError());
+        closesocket(mListenSocket);
+
+        return nullptr;
+    }
+
+    LockSessionMap();
+    InsertSessionData(mSessionIDCounter, session);
+    mSessionIDCounter++;
+    UnlockSessionMap();
+
+    return session;
+}
+
+bool CLanServer::OnCompleteMessage()
+{
+    DWORD transferredSize = 0;
+    Session* completionKey = nullptr;
+    WSAOVERLAPPED* pOverlapped = nullptr;
+    Session* session = nullptr;
+
+    BOOL gqcsRet = GetQueuedCompletionStatus(mHcp, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
+
+    if (transferredSize == 0 && (PULONG_PTR)completionKey == nullptr && pOverlapped == nullptr)
+    {
+        PostQueuedCompletionStatus(mHcp, 0, 0, 0);
+
+        return false;
+    }
+
+    if (pOverlapped == nullptr) // I/O Fail
+    {
+        return true;
+    }
+
+    session = (Session*)completionKey;
+
+    if (transferredSize == 0) // normal close
+    {
+        DecrementProc(session);
+
+        return true;
+    }
+
+    if (pOverlapped == &session->recv.overlapped) // Recv
+    {
+        PacketProc(session, transferredSize);
+
+        RecvPost(session);
+    }
+    else // Send
+    {
+        LockSession(session);
+
+        session->send.queue.Lock(false);
+        session->isSending = false;
+        ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
+
+        if (DecrementProc(session))
+        {
+            session->send.queue.MoveFront(transferredSize);
+
+            if (session->send.queue.GetUseSize() > 0)
+            {
+                SendPost(session);
+            }
+        }
+        session->send.queue.Unlock(false);
+
+        UnlockSession(session);
+    }
+
+    return true;
 }
