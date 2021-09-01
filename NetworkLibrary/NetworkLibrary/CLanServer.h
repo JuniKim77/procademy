@@ -107,6 +107,7 @@ private:
 	bool AcceptProc();
 	Session* CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
 	bool OnCompleteMessage();
+	void CloseSessions();
 
 private:
 	/// <summary>

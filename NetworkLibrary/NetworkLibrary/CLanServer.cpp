@@ -57,6 +57,8 @@ void CLanServer::Stop()
 
     closesocket(mListenSocket);
 
+    CloseSessions();
+
     mbIsRunning = false;
 }
 
@@ -544,4 +546,14 @@ bool CLanServer::OnCompleteMessage()
     }
 
     return true;
+}
+
+void CLanServer::CloseSessions()
+{
+    for (auto iter = mSessionMap.begin(); iter != mSessionMap.end(); ++iter)
+    {
+        DisconnectProc(iter->second);
+
+
+    }
 }
