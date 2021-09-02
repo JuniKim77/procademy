@@ -10,6 +10,10 @@ CLanServer::~CLanServer()
     {
         delete mSessionPool;
     }
+    if (mhThreads != nullptr)
+    {
+        delete[] mhThreads;
+    }
     CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Lib End\n");
 }
 
@@ -28,6 +32,8 @@ bool CLanServer::Start(u_short port, u_long ip, BYTE createThread, BYTE runThrea
     mMaxClient = maxClient;
     mbNagle = nagle;
     mSessionPool = new procademy::ObjectPool<Session>(10);
+
+    mhThreads = new HANDLE[createThread + 1];
 
     if (!CreateListenSocket())
     {
@@ -67,6 +73,51 @@ int CLanServer::GetSessionCount()
     return mSessionMap.size();
 }
 
+void CLanServer::WaitForThreadsFin()
+{
+    HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
+
+    while (1)
+    {
+        DWORD retval = WaitForSingleObject(dummyEvent, 1000);
+
+        if (retval == WAIT_TIMEOUT)
+        {
+            MonitorProc();
+
+            if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x51) & 0x8001) // Q
+            {
+                wprintf_s(L"Exit\n");
+
+                PostQueuedCompletionStatus(mHcp, 0, 0, 0);
+
+                closesocket(mListenSocket);
+
+                break;
+            }
+        }
+    }
+
+    CloseHandle(dummyEvent);
+
+    DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
+
+    switch (waitResult)
+    {
+    case WAIT_FAILED:
+        wprintf_s(L"Main Thread Handle Error\n");
+        break;
+    case WAIT_TIMEOUT:
+        wprintf_s(L"Main Thread Timeout Error\n");
+        break;
+    case WAIT_OBJECT_0:
+        wprintf_s(L"None Error\n");
+        break;
+    default:
+        break;
+    }
+}
+
 bool CLanServer::Disconnect(SESSION_ID SessionID)
 {
     Session* session = FindSession(SessionID);
@@ -78,15 +129,17 @@ bool CLanServer::Disconnect(SESSION_ID SessionID)
 
 bool CLanServer::SendPacket(SESSION_ID SessionID, CPacket* packet)
 {
+    LockSessionMap();
     Session* session = FindSession(SessionID);
-    st_NETWORK_HEADER header;
+    UnlockSessionMap();
+    /*st_NETWORK_HEADER header;
 
     header.byCode = dfNETWORK_CODE;
-    header.wPayloadSize = packet->GetSize();
+    header.wPayloadSize = packet->GetSize();*/
 
     session->send.queue.Lock(false);
-    session->send.queue.Enqueue((char*)&header, sizeof(header));
-    session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
+    //session->send.queue.Enqueue((char*)&header, sizeof(header));
+    session->send.queue.Enqueue(packet->GetFrontPtr(), packet->GetSize());
     session->send.queue.Unlock(false);
 
     LockSession(session);
@@ -263,9 +316,11 @@ bool CLanServer::RecvPost(Session* session)
             return true;
         }
 
-        // CLogger::_Log(dfLOG_LEVEL_DEBUG, L"WSARecv ERROR: ", err);
+        //CLogger::_Log(dfLOG_LEVEL_DEBUG, L"WSARecv ERROR: ", err);
 
+        LockSession(session);
         DecrementProc(session);
+        UnlockSession(session);
 
         return false;
     }
@@ -355,6 +410,10 @@ void CLanServer::DisconnectProc(Session* session)
 
     closesocket(session->socket);
 
+    MonitorLock();
+    mMonitor.disconnectCount++;
+    MonitorUnlock();
+
     OnClientLeave(id);
 }
 
@@ -374,19 +433,24 @@ void CLanServer::PacketProc(Session* session, DWORD msgSize)
     session->recv.queue.MoveRear(msgSize);
 
     int count = 0;
+    CPacket packet;
 
     while (count < msgSize)
     {
-        CPacket packet;
+        MonitorLock();
+        mMonitor.recvTPS++;
+        mMonitor.sendTPS++;
+        MonitorUnlock();
 
-        st_NETWORK_HEADER header;
+        session->recv.queue.Dequeue(packet.GetFrontPtr(), 10);
 
-        session->recv.queue.Dequeue((char*)&header, sizeof(header));
-
-        session->recv.queue.Dequeue((char*)&packet, header.wPayloadSize);
+        packet.MoveRear(10);
 
         OnRecv(session->sessionID, &packet);
-        count += (sizeof(header) + header.wPayloadSize);
+        //count += (sizeof(header) + header.wPayloadSize);
+        count += 10;
+
+        packet.Clear();
     }
 }
 
@@ -446,6 +510,9 @@ bool CLanServer::AcceptProc()
         return false;
     }
 
+    //CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Socket Accept [IP: %s] [Port: %u]\n",
+    //    IP, ntohs(clientAddr.sin_port));
+
     session->ioCount = 1;
     RecvPost(session);
     OnClientJoin(session->sessionID);
@@ -484,10 +551,15 @@ CLanServer::Session* CLanServer::CreateSession(SOCKET client, SOCKADDR_IN client
     mSessionIDCounter++;
     UnlockSessionMap();
 
+    MonitorLock();
+    mMonitor.acceptCount++;
+    MonitorUnlock();
+
     return session;
 }
 
 bool CLanServer::OnCompleteMessage()
+
 {
     DWORD transferredSize = 0;
     Session* completionKey = nullptr;
@@ -512,7 +584,9 @@ bool CLanServer::OnCompleteMessage()
 
     if (transferredSize == 0) // normal close
     {
+        LockSession(session);
         DecrementProc(session);
+        UnlockSession(session);
 
         return true;
     }
@@ -525,7 +599,7 @@ bool CLanServer::OnCompleteMessage()
     }
     else // Send
     {
-        LockSession(session);
+        //LockSession(session);
 
         session->send.queue.Lock(false);
         session->isSending = false;
@@ -537,12 +611,14 @@ bool CLanServer::OnCompleteMessage()
 
             if (session->send.queue.GetUseSize() > 0)
             {
+                LockSession(session);
                 SendPost(session);
+                UnlockSession(session);
             }
         }
         session->send.queue.Unlock(false);
 
-        UnlockSession(session);
+        //UnlockSession(session);
     }
 
     return true;
@@ -553,7 +629,40 @@ void CLanServer::CloseSessions()
     for (auto iter = mSessionMap.begin(); iter != mSessionMap.end(); ++iter)
     {
         DisconnectProc(iter->second);
-
-
     }
+}
+
+void CLanServer::MonitorProc()
+{
+    mSessionPool->Lock(true);
+    int poolSize = mSessionPool->GetSize();
+    int poolCapa = mSessionPool->GetCapacity();
+    mSessionPool->Unlock(true);
+
+    wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
+=======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n[Pool Usage: (%d / %d)]\n=======================================\n",
+    mMonitor.acceptCount,
+    mMonitor.disconnectCount,
+    mMonitor.acceptCount - mMonitor.disconnectCount,
+    mMonitor.sendTPS,
+    mMonitor.recvTPS,
+    poolSize,
+    poolCapa);
+
+    MonitorLock();
+
+    mMonitor.recvTPS = 0;
+    mMonitor.sendTPS = 0;
+
+    MonitorUnlock();
+}
+
+void CLanServer::MonitorLock()
+{
+    AcquireSRWLockExclusive(&mMonitor.lock);
+}
+
+void CLanServer::MonitorUnlock()
+{
+    ReleaseSRWLockExclusive(&mMonitor.lock);
 }

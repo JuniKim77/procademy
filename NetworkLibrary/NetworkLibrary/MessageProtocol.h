@@ -12,7 +12,7 @@
 
 struct st_MESSAGE_HEADER
 {
-	WORD	wMessageType;
+	WORD	wPayloadSize;
 };
 
 #pragma pack(pop)

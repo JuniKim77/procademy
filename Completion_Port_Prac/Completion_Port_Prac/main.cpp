@@ -275,12 +275,26 @@ unsigned int __stdcall workerThread(LPVOID arg)
 			int messageByte = transferredSize;
 
 			session->recv.queue.Dequeue(packet.GetBufferPtr(), messageByte);
+			packet.MoveRear(messageByte);
 			//SESSION_LOCK();
 
 			// Packet Proc
-			session->send.queue.Lock(false);
+			/*session->send.queue.Lock(false);
 			session->send.queue.Enqueue(packet.GetBufferPtr(), messageByte);
+			session->send.queue.Unlock(false);*/
+			session->send.queue.Lock(false);
+			while (packet.GetSize() > 0)
+			{
+				WORD msgLength;
+
+				packet >> msgLength;
+				session->send.queue.Enqueue((char*)&msgLength, sizeof(msgLength));
+
+				session->send.queue.Enqueue(packet.GetFrontPtr(), msgLength);
+				packet.MoveFront(msgLength);
+			}
 			session->send.queue.Unlock(false);
+
 
 			SESSION_LOCK();
 

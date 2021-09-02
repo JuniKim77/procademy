@@ -17,7 +17,9 @@ void CEchoServer::OnClientLeave(SESSION_ID SessionID)
 
 void CEchoServer::OnRecv(SESSION_ID SessionID, CPacket* packet)
 {
-	CompletePacket(SessionID, packet);
+	//CompletePacket(SessionID, packet);
+
+	SendPacket(SessionID, packet);
 }
 
 void CEchoServer::OnError(int errorcode, WCHAR* log)
@@ -43,15 +45,32 @@ void CEchoServer::DeleteSessionID(u_int64 sessionNo)
 
 void CEchoServer::CompletePacket(SESSION_ID SessionID, CPacket* packet)
 {
-	st_MESSAGE_HEADER* header = (st_MESSAGE_HEADER*)packet->GetBufferPtr();
+	/*st_MESSAGE_HEADER* header = (st_MESSAGE_HEADER*)packet->GetBufferPtr();
 
 	switch (header->wMessageType)
 	{
-	case dfMESSAGE_ECHO:
+	default:
 		EchoProc(SessionID, packet);
 		break;
-	default:
-		break;
+	}*/
+
+	CPacket msg;
+
+	while (packet->GetSize() > 0)
+	{
+		st_MESSAGE_HEADER header;
+
+		*packet >> header.wPayloadSize;
+
+		msg.PutData((char*)&header.wPayloadSize, sizeof(header));
+
+		msg.PutData(packet->GetFrontPtr(), header.wPayloadSize);
+
+		packet->MoveFront(header.wPayloadSize);
+
+		SendPacket(SessionID, &msg);
+
+		msg.Clear();
 	}
 }
 

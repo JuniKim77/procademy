@@ -67,6 +67,7 @@ public:
 	bool Start(u_short port, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient);
 	void Stop();
 	int GetSessionCount();
+	void WaitForThreadsFin();
 
 	bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
 	bool SendPacket(SESSION_ID SessionID, CPacket* packet); // SESSION_ID / HOST_ID
@@ -108,6 +109,9 @@ private:
 	Session* CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
 	bool OnCompleteMessage();
 	void CloseSessions();
+	void MonitorProc();
+	void MonitorLock();
+	void MonitorUnlock();
 
 private:
 	/// <summary>
@@ -145,4 +149,18 @@ private:
 	std::unordered_map<u_int64, Session*> mSessionMap;
 	SRWLOCK mSessionMapLock;
 	u_int64 mSessionIDCounter;
+
+	struct Monitor
+	{
+		unsigned short acceptCount;
+		unsigned short disconnectCount;
+		unsigned int sendTPS;
+		unsigned int recvTPS;
+		SRWLOCK lock;
+	};
+
+	/// <summary>
+	/// Monitoring members
+	/// </summary>
+	Monitor mMonitor;
 };
