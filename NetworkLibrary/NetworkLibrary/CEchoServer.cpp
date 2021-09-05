@@ -9,10 +9,12 @@ bool CEchoServer::OnConnectionRequest(u_long IP, u_short Port)
 
 void CEchoServer::OnClientJoin(SESSION_ID SessionID)
 {
+	InsertSessionID(SessionID);
 }
 
 void CEchoServer::OnClientLeave(SESSION_ID SessionID)
 {
+	DeleteSessionID(SessionID);
 }
 
 void CEchoServer::OnRecv(SESSION_ID SessionID, CPacket* packet)

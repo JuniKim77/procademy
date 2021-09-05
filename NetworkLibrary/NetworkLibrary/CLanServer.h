@@ -125,6 +125,7 @@ private:
 	/// Options
 	/// </summary>
 	bool mbNagle = true;
+	bool mbMonitoring = false;
 	BYTE mMaxRunThreadSize = 0;
 	BYTE mWorkerThreadSize = 0;
 	u_short mMaxClient = 0;

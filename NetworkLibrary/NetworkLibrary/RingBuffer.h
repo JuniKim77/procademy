@@ -116,6 +116,10 @@ public:
 	void Lock(bool readonly);
 	void Unlock(bool readonly);
 	char* GetBuffer() { return mBuffer; }
+	void InitializeLock()
+	{
+		InitializeSRWLock(&mSrwLock);
+	}
 
 private:
 	int mFront;

@@ -85,6 +85,62 @@ void CLanServer::WaitForThreadsFin()
         {
             MonitorProc();
 
+            if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x5A) & 0x8001) // Z
+            {
+                if (mbZeroCopy)
+                {
+                    mbZeroCopy = false;
+                    wprintf_s(L"Unset ZeroCopy Mode\n");
+                }
+                else
+                {
+                    mbZeroCopy = true;
+                    wprintf_s(L"Set ZeroCopy Mode\n");
+                }
+            }
+
+            if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x4D) & 0x8001) // M
+            {
+                if (mbMonitoring)
+                {
+                    mbMonitoring = false;
+                    wprintf_s(L"Unset monitoring Mode\n");
+                }
+                else
+                {
+                    mbMonitoring = true;
+                    wprintf_s(L"Set monitoring Mode\n");
+                }
+            }
+
+            if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x50) & 0x8001) // P
+            {
+                for (auto iter = mSessionMap.begin(); iter != mSessionMap.end(); ++iter)
+                {
+                    int recvSize = iter->second->recv.queue.GetUseSize();
+                    int sendSize = iter->second->send.queue.GetUseSize();
+
+                    if (recvSize > 0 || sendSize > 0)
+                    {
+                        wprintf_s(L"[Socket: %u] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d]\n",
+                            iter->second->socket, recvSize, sendSize, iter->second->isSending, iter->second->ioCount);
+                    }
+                }
+            }
+
+            if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x49) & 0x8001) // I
+            {
+                for (auto iter = mSessionMap.begin(); iter != mSessionMap.end(); ++iter)
+                {
+                    int recvSize = iter->second->recv.queue.GetUseSize();
+                    int sendSize = iter->second->send.queue.GetUseSize();
+
+					wprintf_s(L"[Socket: %u] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d]\n",
+						iter->second->socket, recvSize, sendSize, iter->second->isSending, iter->second->ioCount);
+
+                }
+            }
+
             if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x51) & 0x8001) // Q
             {
                 wprintf_s(L"Exit\n");
@@ -131,18 +187,19 @@ bool CLanServer::SendPacket(SESSION_ID SessionID, CPacket* packet)
 {
     LockSessionMap();
     Session* session = FindSession(SessionID);
+
+    LockSession(session);
     UnlockSessionMap();
     /*st_NETWORK_HEADER header;
 
     header.byCode = dfNETWORK_CODE;
     header.wPayloadSize = packet->GetSize();*/
 
-    session->send.queue.Lock(false);
+    //session->send.queue.Lock(false);
     //session->send.queue.Enqueue((char*)&header, sizeof(header));
     session->send.queue.Enqueue(packet->GetFrontPtr(), packet->GetSize());
-    session->send.queue.Unlock(false);
-
-    LockSession(session);
+    //session->send.queue.Unlock(false);
+    
     bool ret = SendPost(session);
     UnlockSession(session);
 
@@ -302,6 +359,7 @@ bool CLanServer::RecvPost(Session* session)
 {
     WSABUF buffers[2];
     DWORD flags = 0;
+
 
     SetWSABuf(buffers, session, true);
 
@@ -531,6 +589,10 @@ CLanServer::Session* CLanServer::CreateSession(SOCKET client, SOCKADDR_IN client
     session->port = clientAddr.sin_port;
     session->isSending = false;
     session->sessionID = mSessionIDCounter;
+    session->send.queue.ClearBuffer();
+    session->send.queue.InitializeLock();
+    session->recv.queue.ClearBuffer();
+    session->recv.queue.InitializeLock();
 
     ZeroMemory(&session->send.overlapped, sizeof(WSAOVERLAPPED));
     ZeroMemory(&session->recv.overlapped, sizeof(WSAOVERLAPPED));
@@ -599,9 +661,9 @@ bool CLanServer::OnCompleteMessage()
     }
     else // Send
     {
-        //LockSession(session);
+        LockSession(session);
 
-        session->send.queue.Lock(false);
+        //session->send.queue.Lock(false);
         session->isSending = false;
         ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
 
@@ -611,14 +673,12 @@ bool CLanServer::OnCompleteMessage()
 
             if (session->send.queue.GetUseSize() > 0)
             {
-                LockSession(session);
                 SendPost(session);
-                UnlockSession(session);
             }
         }
-        session->send.queue.Unlock(false);
+        //session->send.queue.Unlock(false);
 
-        //UnlockSession(session);
+        UnlockSession(session);
     }
 
     return true;
@@ -634,27 +694,30 @@ void CLanServer::CloseSessions()
 
 void CLanServer::MonitorProc()
 {
-    mSessionPool->Lock(true);
-    int poolSize = mSessionPool->GetSize();
-    int poolCapa = mSessionPool->GetCapacity();
-    mSessionPool->Unlock(true);
+    if (mbMonitoring)
+    {
+        mSessionPool->Lock(true);
+        int poolSize = mSessionPool->GetSize();
+        int poolCapa = mSessionPool->GetCapacity();
+        mSessionPool->Unlock(true);
 
-    wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
+        wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
 =======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n[Pool Usage: (%d / %d)]\n=======================================\n",
-    mMonitor.acceptCount,
-    mMonitor.disconnectCount,
-    mMonitor.acceptCount - mMonitor.disconnectCount,
-    mMonitor.sendTPS,
-    mMonitor.recvTPS,
-    poolSize,
-    poolCapa);
+        mMonitor.acceptCount,
+        mMonitor.disconnectCount,
+        mMonitor.acceptCount - mMonitor.disconnectCount,
+        mMonitor.sendTPS,
+        mMonitor.recvTPS,
+        poolSize,
+        poolCapa);
 
-    MonitorLock();
+        MonitorLock();
 
-    mMonitor.recvTPS = 0;
-    mMonitor.sendTPS = 0;
+        mMonitor.recvTPS = 0;
+        mMonitor.sendTPS = 0;
 
-    MonitorUnlock();
+        MonitorUnlock();
+    }
 }
 
 void CLanServer::MonitorLock()
