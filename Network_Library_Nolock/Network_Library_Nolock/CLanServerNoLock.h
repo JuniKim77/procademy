@@ -5,13 +5,13 @@
 #include <WS2tcpip.h>
 #include "RingBuffer.h"
 #include "ObjectPool.h"
-#include <unordered_map>
+#include <stack>
 
 typedef u_int64 SESSION_ID;
 
 class CPacket;
 
-class CLanServer
+class CLanServerNoLock
 {
 private:
 	struct OverlappedBuffer
@@ -62,7 +62,7 @@ private:
 	};
 
 public:
-	~CLanServer();
+	~CLanServerNoLock();
 	bool Start(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient); // 오픈 IP / 포트 / 워커스레드 수(생성수, 러닝수) / 나글옵션 / 최대접속자 수
 	bool Start(u_short port, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient);
 	void Stop();
@@ -88,7 +88,7 @@ public:
 
 private:
 	Session* FindSession(u_int64 sessionNo);
-	void InsertSessionData(u_int64 sessionNo, Session* session);
+	void InsertSessionData(Session* session);
 	void DeleteSessionData(u_int64 sessionNo);
 	void UpdateSessionData(u_int64 sessionNo, Session* session);
 	bool CreateListenSocket();
@@ -105,7 +105,60 @@ private:
 	Session* CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
 	bool OnCompleteMessage();
 	void CloseSessions();
+	void InitializeEmptyIndex();
+	u_int64 GenerateSessionID();
+	u_short GetIndexFromSessionNo(u_int64 sessionNo);
+	void MonitorProc();
 
 private:
+	/// <summary>
+	/// Listen Socket Info
+	/// </summary>
+	u_short mPort = 0;
+	u_long mBindIP = 0;
+	SOCKET mListenSocket;
 
+	/// <summary>
+	/// Options
+	/// </summary>
+	bool mbNagle = true;
+	bool mbMonitoring = false;
+	BYTE mMaxRunThreadSize = 0;
+	BYTE mWorkerThreadSize = 0;
+	u_short mMaxClient = 0;
+
+	/// <summary>
+	/// Network Status
+	/// </summary>
+	bool mbIsRunning = false;
+	bool mbZeroCopy = false;
+	BYTE mNumThreads = 0;
+
+	/// <summary>
+	/// Handles
+	/// </summary>
+	HANDLE mHcp;
+	HANDLE* mhThreads;
+
+	/// <summary>
+	/// Session Objects
+	/// </summary>
+	procademy::ObjectPool<Session>* mSessionPool;
+	Session** mSessionArray;
+	u_int64 mSessionIDCounter = 1;
+	std::stack<u_short> mEmptyIndexes;
+
+	struct Monitor
+	{
+		unsigned short acceptCount;
+		unsigned short disconnectCount;
+		unsigned int sendTPS;
+		unsigned int recvTPS;
+		SRWLOCK lock;
+	};
+
+	/// <summary>
+	/// Monitoring members
+	/// </summary>
+	Monitor mMonitor;
 };

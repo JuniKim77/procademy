@@ -140,7 +140,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CLanServer.cpp" />
+    <ClCompile Include="CEchoServerNoLock.cpp" />
+    <ClCompile Include="CLanServerNoLock.cpp" />
     <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="CPacket.cpp" />
     <ClCompile Include="CSVReader.cpp" />
@@ -149,7 +150,8 @@
     <ClCompile Include="RingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CLanServer.h" />
+    <ClInclude Include="CEchoServerNoLock.h" />
+    <ClInclude Include="CLanServerNoLock.h" />
     <ClInclude Include="CLogger.h" />
     <ClInclude Include="CPacket.h" />
     <ClInclude Include="CSVReader.h" />

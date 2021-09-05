@@ -42,7 +42,10 @@
     <ClCompile Include="RingBuffer.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CLanServer.cpp">
+    <ClCompile Include="CLanServerNoLock.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CEchoServerNoLock.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,7 +74,10 @@
     <ClInclude Include="Protocol.h">
       <Filter>헤더 파일\Network</Filter>
     </ClInclude>
-    <ClInclude Include="CLanServer.h">
+    <ClInclude Include="CLanServerNoLock.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CEchoServerNoLock.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

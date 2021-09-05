@@ -1,11 +1,11 @@
 #include <stdio.h>
-#include "CEchoServer.h"
+#include "CEchoServerNoLock.h"
 
 #define dfSERVER_PORT (6000)
 
 int main()
 {
-	CEchoServer server;
+	CEchoServerNoLock server;
 
 	server.Start(dfSERVER_PORT, 3, 2, false, 200);
 

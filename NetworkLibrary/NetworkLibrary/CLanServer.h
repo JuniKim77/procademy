@@ -149,7 +149,7 @@ private:
 	procademy::ObjectPool<Session>* mSessionPool;
 	std::unordered_map<u_int64, Session*> mSessionMap;
 	SRWLOCK mSessionMapLock;
-	u_int64 mSessionIDCounter;
+	u_int64 mSessionIDCounter = 1;
 
 	struct Monitor
 	{
