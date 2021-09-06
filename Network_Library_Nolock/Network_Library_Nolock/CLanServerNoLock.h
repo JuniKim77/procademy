@@ -109,6 +109,8 @@ private:
 	u_int64 GenerateSessionID();
 	u_short GetIndexFromSessionNo(u_int64 sessionNo);
 	void MonitorProc();
+	void LockStack();
+	void UnlockStack();
 
 private:
 	/// <summary>
@@ -147,6 +149,7 @@ private:
 	Session** mSessionArray;
 	u_int64 mSessionIDCounter = 1;
 	std::stack<u_short> mEmptyIndexes;
+	SRWLOCK mStackLock;
 
 	struct Monitor
 	{

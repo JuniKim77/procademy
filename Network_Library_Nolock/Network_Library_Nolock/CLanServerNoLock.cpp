@@ -20,9 +20,14 @@ void CLanServerNoLock::DeleteSessionData(u_int64 sessionNo)
 {
     u_short index = GetIndexFromSessionNo(sessionNo);
 
-    mSessionArray[index] = nullptr;
+    mSessionPool->Lock(false);
+    mSessionPool->Free(mSessionArray[index]);
+    mSessionPool->Unlock(false);
 
+    mSessionArray[index] = nullptr;
+    LockStack();
     mEmptyIndexes.push(index);
+    UnlockStack();
 }
 
 void CLanServerNoLock::UpdateSessionData(u_int64 sessionNo, Session* session)
@@ -170,17 +175,17 @@ bool CLanServerNoLock::SendPost(Session* session)
 {
     WSABUF buffers[2];
 
-    if (session->isSending)
+    if (InterlockedExchange8((char*)&session->isSending, true) == true)
     {
         return true;
     }
 
-    session->isSending = true;
-    //InterlockedExchange8((char*)&session->isSending, true);
     SetWSABuf(buffers, session, false);
 
     //session->ioCount++;
     InterlockedIncrement16((short*)&session->ioCount);
+    ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
+
     int sendRet = WSASend(session->socket, buffers, 2, nullptr, 0, &session->send.overlapped, nullptr);
 
     if (sendRet == SOCKET_ERROR)
@@ -211,23 +216,22 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
     }
     else
     {
-        //session->send.queue.Lock(true);
+        session->send.queue.Lock(true);
         int dSize = session->send.queue.DirectDequeueSize();
 
         bufs[0].buf = session->send.queue.GetFrontBufferPtr();
         bufs[0].len = dSize;
         bufs[1].buf = session->send.queue.GetBuffer();
         bufs[1].len = session->send.queue.GetUseSize() - dSize;
-        //session->send.queue.Unlock(true);
+        session->send.queue.Unlock(true);
     }
 }
 
 bool CLanServerNoLock::DecrementProc(Session* session)
 {
     //session->ioCount--;
-    InterlockedDecrement16((short*)&session->ioCount);
 
-    if (session->ioCount == 0)
+    if (InterlockedDecrement16((short*)&session->ioCount) == 0)
     {
         return false;
     }
@@ -266,13 +270,18 @@ void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
         mMonitor.sendTPS++;
         //MonitorUnlock();
 
-        session->recv.queue.Dequeue(packet.GetFrontPtr(), 10);
+        int ret = session->recv.queue.Dequeue(packet.GetFrontPtr(), 10);
 
-        packet.MoveRear(10);
+        if (ret != 10)
+        {
+            wprintf_s(L"Error\n");
+        }
+
+        packet.MoveRear(ret);
 
         OnRecv(session->sessionID, &packet);
         //count += (sizeof(header) + header.wPayloadSize);
-        count += 10;
+        count += ret;
 
         packet.Clear();
     }
@@ -439,9 +448,9 @@ bool CLanServerNoLock::OnCompleteMessage()
     {
         //LockSession(session);
 
-        session->isSending = false;
-        //InterlockedExchange8((char*)&session->isSending, false);
-        ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
+        //session->isSending = false;
+        InterlockedExchange8((char*)&session->isSending, false);
+        // ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
 
         bool ret = DecrementProc(session);
 
@@ -449,13 +458,13 @@ bool CLanServerNoLock::OnCompleteMessage()
         {
             session->send.queue.Lock(false);
             session->send.queue.MoveFront(transferredSize);
-            //session->send.queue.Unlock(false);
+            session->send.queue.Unlock(false);
 
             if (session->send.queue.GetUseSize() > 0)
             {
                 ret = SendPost(session);
             }
-            session->send.queue.Unlock(false);
+            //session->send.queue.Unlock(false);
         }
 
         //UnlockSession(session);
@@ -479,6 +488,8 @@ void CLanServerNoLock::InitializeEmptyIndex()
     {
         mEmptyIndexes.push(i - 1);
     }
+
+    InitializeSRWLock(&mStackLock);
 }
 
 u_int64 CLanServerNoLock::GenerateSessionID()
@@ -488,8 +499,10 @@ u_int64 CLanServerNoLock::GenerateSessionID()
         return 0;
     }
 
+    LockStack();    
     u_short index = mEmptyIndexes.top();
     mEmptyIndexes.pop();
+    UnlockStack();
     u_int64 id = index;
 
     id <<= (8 * 6);
@@ -523,14 +536,24 @@ void CLanServerNoLock::MonitorProc()
         mMonitor.recvTPS,
         poolSize,
         poolCapa);
-
-        //MonitorLock();
-
-        mMonitor.recvTPS = 0;
-        mMonitor.sendTPS = 0;
-
-        //MonitorUnlock();
     }
+
+    //MonitorLock();
+
+    mMonitor.recvTPS = 0;
+    mMonitor.sendTPS = 0;
+
+    //MonitorUnlock();
+}
+
+void CLanServerNoLock::LockStack()
+{
+    AcquireSRWLockExclusive(&mStackLock);
+}
+
+void CLanServerNoLock::UnlockStack()
+{
+    ReleaseSRWLockExclusive(&mStackLock);
 }
 
 CLanServerNoLock::~CLanServerNoLock()
@@ -721,11 +744,11 @@ bool CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
 
     session->send.queue.Lock(false);
     //session->send.queue.Enqueue((char*)&header, sizeof(header));
-    session->send.queue.Enqueue(packet->GetFrontPtr(), packet->GetSize());
-    //session->send.queue.Unlock(false);
+    session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
+    session->send.queue.Unlock(false);
 
     bool ret = SendPost(session);
-    session->send.queue.Unlock(false);
+    //session->send.queue.Unlock(false);
 
     if (ret == false)
     {

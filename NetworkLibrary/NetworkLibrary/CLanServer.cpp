@@ -496,13 +496,18 @@ void CLanServer::PacketProc(Session* session, DWORD msgSize)
         mMonitor.sendTPS++;
         //MonitorUnlock();
 
-        session->recv.queue.Dequeue(packet.GetFrontPtr(), 10);
+        int ret = session->recv.queue.Dequeue(packet.GetFrontPtr(), 10);
 
-        packet.MoveRear(10);
+        if (ret != 10)
+        {
+            wprintf_s(L"Error\n");
+        }
+
+        packet.MoveRear(ret);
 
         OnRecv(session->sessionID, &packet);
         //count += (sizeof(header) + header.wPayloadSize);
-        count += 10;
+        count += ret;
 
         packet.Clear();
     }
@@ -715,14 +720,14 @@ void CLanServer::MonitorProc()
         mMonitor.recvTPS,
         poolSize,
         poolCapa);
-
-        //MonitorLock();
-
-        mMonitor.recvTPS = 0;
-        mMonitor.sendTPS = 0;
-
-        //MonitorUnlock();
     }
+
+    //MonitorLock();
+
+    mMonitor.recvTPS = 0;
+    mMonitor.sendTPS = 0;
+
+    //MonitorUnlock();
 }
 
 void CLanServer::MonitorLock()
