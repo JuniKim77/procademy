@@ -277,6 +277,10 @@ void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
             wprintf_s(L"Error\n");
         }
 
+        /*int num = *(packet.GetFrontPtr() + 2);
+
+        CLogger::_Log(dfLOG_LEVEL_DEBUG, L"%d\n", num);*/
+
         packet.MoveRear(ret);
 
         OnRecv(session->sessionID, &packet);
@@ -451,6 +455,17 @@ bool CLanServerNoLock::OnCompleteMessage()
         //session->isSending = false;
         InterlockedExchange8((char*)&session->isSending, false);
         // ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
+
+        char* rPtr = session->recv.queue.GetBuffer();
+        char* sPtr = session->send.queue.GetBuffer();
+
+        for (int i = 0; i < 3000; ++i, rPtr++, sPtr++)
+        {
+            if (*rPtr != *sPtr)
+            {
+                int test = 0;
+            }
+        }
 
         bool ret = DecrementProc(session);
 
