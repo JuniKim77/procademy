@@ -176,7 +176,7 @@ bool CLanServerNoLock::SendPost(Session* session)
     }
 
     session->isSending = true;
-
+    //InterlockedExchange8((char*)&session->isSending, true);
     SetWSABuf(buffers, session, false);
 
     //session->ioCount++;
@@ -211,14 +211,14 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
     }
     else
     {
-        session->send.queue.Lock(true);
+        //session->send.queue.Lock(true);
         int dSize = session->send.queue.DirectDequeueSize();
 
         bufs[0].buf = session->send.queue.GetFrontBufferPtr();
         bufs[0].len = dSize;
         bufs[1].buf = session->send.queue.GetBuffer();
         bufs[1].len = session->send.queue.GetUseSize() - dSize;
-        session->send.queue.Unlock(true);
+        //session->send.queue.Unlock(true);
     }
 }
 
@@ -440,6 +440,7 @@ bool CLanServerNoLock::OnCompleteMessage()
         //LockSession(session);
 
         session->isSending = false;
+        //InterlockedExchange8((char*)&session->isSending, false);
         ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
 
         bool ret = DecrementProc(session);
@@ -448,12 +449,13 @@ bool CLanServerNoLock::OnCompleteMessage()
         {
             session->send.queue.Lock(false);
             session->send.queue.MoveFront(transferredSize);
-            session->send.queue.Unlock(false);
+            //session->send.queue.Unlock(false);
 
             if (session->send.queue.GetUseSize() > 0)
             {
                 ret = SendPost(session);
             }
+            session->send.queue.Unlock(false);
         }
 
         //UnlockSession(session);
@@ -487,6 +489,7 @@ u_int64 CLanServerNoLock::GenerateSessionID()
     }
 
     u_short index = mEmptyIndexes.top();
+    mEmptyIndexes.pop();
     u_int64 id = index;
 
     id <<= (8 * 6);
@@ -513,13 +516,13 @@ void CLanServerNoLock::MonitorProc()
 
         wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
 =======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n[Pool Usage: (%d / %d)]\n=======================================\n",
-mMonitor.acceptCount,
-mMonitor.disconnectCount,
-mMonitor.acceptCount - mMonitor.disconnectCount,
-mMonitor.sendTPS,
-mMonitor.recvTPS,
-poolSize,
-poolCapa);
+        mMonitor.acceptCount,
+        mMonitor.disconnectCount,
+        mMonitor.acceptCount - mMonitor.disconnectCount,
+        mMonitor.sendTPS,
+        mMonitor.recvTPS,
+        poolSize,
+        poolCapa);
 
         //MonitorLock();
 
@@ -719,9 +722,10 @@ bool CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
     session->send.queue.Lock(false);
     //session->send.queue.Enqueue((char*)&header, sizeof(header));
     session->send.queue.Enqueue(packet->GetFrontPtr(), packet->GetSize());
-    session->send.queue.Unlock(false);
+    //session->send.queue.Unlock(false);
 
     bool ret = SendPost(session);
+    session->send.queue.Unlock(false);
 
     if (ret == false)
     {

@@ -491,10 +491,10 @@ void CLanServer::PacketProc(Session* session, DWORD msgSize)
 
     while (count < msgSize)
     {
-        MonitorLock();
+        //MonitorLock();
         mMonitor.recvTPS++;
         mMonitor.sendTPS++;
-        MonitorUnlock();
+        //MonitorUnlock();
 
         session->recv.queue.Dequeue(packet.GetFrontPtr(), 10);
 
@@ -716,12 +716,12 @@ void CLanServer::MonitorProc()
         poolSize,
         poolCapa);
 
-        MonitorLock();
+        //MonitorLock();
 
         mMonitor.recvTPS = 0;
         mMonitor.sendTPS = 0;
 
-        MonitorUnlock();
+        //MonitorUnlock();
     }
 }
 
