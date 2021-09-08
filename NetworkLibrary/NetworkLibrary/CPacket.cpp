@@ -372,7 +372,7 @@ int CPacket::PutData(const wchar_t* chpSrc, int iLength)
 
 CPacket& CPacket::operator<<(const char* s)
 {
-	int len = strlen(s);
+	int len = (int)strlen(s);
 
 	PutData(s, len);
 
@@ -381,7 +381,7 @@ CPacket& CPacket::operator<<(const char* s)
 
 CPacket& CPacket::operator<<(const wchar_t* s)
 {
-	int len = wcslen(s);
+	int len = (int)wcslen(s);
 
 	PutData(s, len);
 
@@ -394,8 +394,8 @@ void CPacket::resize()
 
 	memcpy(pBuffer, mBuffer, mSize);
 
-	int frontIndex = mFront - mBuffer;
-	int rearIndex = mRear - mBuffer;
+	int frontIndex = (int)(mFront - mBuffer);
+	int rearIndex = (int)(mRear - mBuffer);
 
 	Release();
 

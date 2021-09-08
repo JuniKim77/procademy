@@ -171,7 +171,6 @@ int main()
 
 			if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x51) & 0x8001) // Q
 			{
-				// 종료 처리
 				wprintf_s(L"Exit\n");
 
 				PostQueuedCompletionStatus(g_hcp, 0, 0, 0);
@@ -208,9 +207,6 @@ int main()
 		break;
 	}
 
-	//------------------------------------------------
-	// 디버깅용 코드  스레드 정상종료 확인.
-	//------------------------------------------------
 	DWORD ExitCode;
 
 	wprintf_s(L"\n\n--- THREAD CHECK LOG -----------------------------\n\n");
@@ -279,12 +275,26 @@ unsigned int __stdcall workerThread(LPVOID arg)
 			int messageByte = transferredSize;
 
 			session->recv.queue.Dequeue(packet.GetBufferPtr(), messageByte);
-			//SESSION_LOCK(); // 여기는 에러는 안나옴.
+			packet.MoveRear(messageByte);
+			//SESSION_LOCK();
 
 			// Packet Proc
-			session->send.queue.Lock(false);
+			/*session->send.queue.Lock(false);
 			session->send.queue.Enqueue(packet.GetBufferPtr(), messageByte);
+			session->send.queue.Unlock(false);*/
+			session->send.queue.Lock(false);
+			while (packet.GetSize() > 0)
+			{
+				WORD msgLength;
+
+				packet >> msgLength;
+				session->send.queue.Enqueue((char*)&msgLength, sizeof(msgLength));
+
+				session->send.queue.Enqueue(packet.GetFrontPtr(), msgLength);
+				packet.MoveFront(msgLength);
+			}
 			session->send.queue.Unlock(false);
+
 
 			SESSION_LOCK();
 
@@ -367,7 +377,7 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		g_monitor.acceptCount++;
 		MONITOR_RELEASE();
 
-		// 함수로 뺄 것
+		// ????? ?? ??
 		g_SessionPool.Lock(false);
 		Session* session = g_SessionPool.Alloc();
 		g_SessionPool.Unlock(false);
@@ -383,24 +393,12 @@ unsigned int __stdcall acceptThread(LPVOID arg)
 		ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
 		InitializeSRWLock(&session->lockObj);
 
-		// Zero Copy?
-		if (g_bZeroCopy)
-		{
-			int optNum = 0;
-			if (setsockopt(client_sock, SOL_SOCKET, SO_SNDBUF, (char*)&optNum, sizeof(optNum)) == SOCKET_ERROR)
-			{
-				closesocket(client_sock);
-				wprintf_s(L"setsockopt\n");
-				continue;
-			}
-		}
-
 		/*WCHAR IP[16] = { 0, };
 		InetNtop(AF_INET, &clientaddr.sin_addr, IP, 16);
 
 		wprintf_s(L"[TCP] Connect Session [IP: %s][Port: %d]\n", IP, ntohs(clientaddr.sin_port));*/
 
-		// 소켓과 입출력 완료 포트 연결
+		// ????? ????? ??? ??? ????
 		HANDLE hResult = CreateIoCompletionPort((HANDLE)client_sock, g_hcp,
 			(ULONG_PTR)session, 0);
 		SESSION_LIST_LOCK();
