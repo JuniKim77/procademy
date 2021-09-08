@@ -384,6 +384,7 @@ CLanServerNoLock::Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKAD
     session->send.queue.InitializeLock();
     session->recv.queue.ClearBuffer();
     session->recv.queue.InitializeLock();
+    session->isCompletingSend = false;
 
     ZeroMemory(&session->send.overlapped, sizeof(WSAOVERLAPPED));
     ZeroMemory(&session->recv.overlapped, sizeof(WSAOVERLAPPED));
@@ -455,10 +456,13 @@ bool CLanServerNoLock::OnCompleteMessage()
     }
     else // Send
     {
-        //LockSession(session);
-
-        //session->isSending = false;
-        
+        while (1)
+        {
+            if (InterlockedExchange8((char*)&session->isCompletingSend, true) == false)
+            {
+                break;
+            }
+        }
 
         bool ret = DecrementProc(session);
 
@@ -478,6 +482,8 @@ bool CLanServerNoLock::OnCompleteMessage()
         {
             DisconnectProc(session);
         }
+
+        InterlockedExchange8((char*)&session->isCompletingSend, false);
     }
 
     return true;
