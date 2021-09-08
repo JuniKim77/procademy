@@ -175,6 +175,11 @@ bool CLanServerNoLock::SendPost(Session* session)
 {
     WSABUF buffers[2];
 
+    if (session->send.queue.GetUseSize() == 0)
+    {
+        return true;
+    }
+
     if (InterlockedExchange8((char*)&session->isSending, true) == true)
     {
         return true;
@@ -453,19 +458,7 @@ bool CLanServerNoLock::OnCompleteMessage()
         //LockSession(session);
 
         //session->isSending = false;
-        InterlockedExchange8((char*)&session->isSending, false);
-        // ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
-
-        char* rPtr = session->recv.queue.GetBuffer();
-        char* sPtr = session->send.queue.GetBuffer();
-
-        for (int i = 0; i < 3000; ++i, rPtr++, sPtr++)
-        {
-            if (*rPtr != *sPtr)
-            {
-                int test = 0;
-            }
-        }
+        
 
         bool ret = DecrementProc(session);
 
@@ -475,11 +468,8 @@ bool CLanServerNoLock::OnCompleteMessage()
             session->send.queue.MoveFront(transferredSize);
             session->send.queue.Unlock(false);
 
-            if (session->send.queue.GetUseSize() > 0)
-            {
-                ret = SendPost(session);
-            }
-            //session->send.queue.Unlock(false);
+            InterlockedExchange8((char*)&session->isSending, false);
+            ret = SendPost(session);
         }
 
         //UnlockSession(session);
