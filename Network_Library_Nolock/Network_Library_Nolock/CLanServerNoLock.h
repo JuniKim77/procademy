@@ -73,7 +73,7 @@ public:
 	void WaitForThreadsFin();
 
 	bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
-	bool SendPacket(SESSION_ID SessionID, CPacket* packet); // SESSION_ID / HOST_ID
+	int SendPacket(SESSION_ID SessionID, CPacket* packet); // SESSION_ID / HOST_ID
 
 	virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept Á÷ÈÄ
 
@@ -99,7 +99,17 @@ private:
 	static unsigned int WINAPI WorkerThread(LPVOID arg);
 	static unsigned int WINAPI AcceptThread(LPVOID arg);
 	bool RecvPost(Session* session);
-	bool SendPost(Session* session);
+	/// <summary>
+	/// Send Message Proc from sendQ
+	/// </summary>
+	/// <param name="session"></param>
+	/// <returns>
+	/// 1		:Packet sent
+	/// 0		:Packet Not Sent
+	/// -1		:Send Error
+	/// -2		:ioCount zero
+	/// </returns>
+	int SendPost(Session* session);
 	void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
 	bool DecrementProc(Session* session);
 	void DisconnectProc(Session* session);
@@ -128,6 +138,7 @@ private:
 	/// </summary>
 	bool mbNagle = true;
 	bool mbMonitoring = true;
+	bool mbSpinLock = false;
 	BYTE mMaxRunThreadSize = 0;
 	BYTE mWorkerThreadSize = 0;
 	u_short mMaxClient = 0;

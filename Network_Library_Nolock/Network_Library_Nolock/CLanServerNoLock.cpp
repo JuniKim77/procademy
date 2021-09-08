@@ -1,3 +1,5 @@
+//#define SPIN_LOCK
+
 #include "CLanServerNoLock.h"
 #include "CLogger.h"
 #include "CPacket.h"
@@ -171,18 +173,18 @@ bool CLanServerNoLock::RecvPost(Session* session)
     return true;
 }
 
-bool CLanServerNoLock::SendPost(Session* session)
+int CLanServerNoLock::SendPost(Session* session)
 {
     WSABUF buffers[2];
 
     if (session->send.queue.GetUseSize() == 0)
     {
-        return true;
+        return 0;
     }
 
     if (InterlockedExchange8((char*)&session->isSending, true) == true)
     {
-        return true;
+        return 0;
     }
 
     SetWSABuf(buffers, session, false);
@@ -199,13 +201,20 @@ bool CLanServerNoLock::SendPost(Session* session)
 
         if (err == WSA_IO_PENDING)
         {
-            return true;
+            return 1;
         }
 
-        return DecrementProc(session);
+        if (DecrementProc(session))
+        {
+            return -1;
+        }
+        else
+        {
+            return -2;
+        }
     }
 
-    return true;
+    return 1;
 }
 
 void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
@@ -449,42 +458,71 @@ bool CLanServerNoLock::OnCompleteMessage()
     }
 
     if (pOverlapped == &session->recv.overlapped) // Recv
-    {
-        PacketProc(session, transferredSize);
+	{
+		PacketProc(session, transferredSize);
 
-        RecvPost(session);
-    }
-    else // Send
-    {
-        while (1)
-        {
-            if (InterlockedExchange8((char*)&session->isCompletingSend, true) == false)
-            {
-                break;
-            }
-        }
+		RecvPost(session);
+	}
+	else // Send
+	{
+		if (mbSpinLock)
+		{
+			while (1)
+			{
+				if (InterlockedExchange8((char*)&session->isCompletingSend, true) == false)
+				{
+					break;
+				}
+			}
 
-        bool ret = DecrementProc(session);
+			bool ret = DecrementProc(session);
+			int sendRet = 0;
 
-        if (ret)
-        {
-            session->send.queue.Lock(false);
-            session->send.queue.MoveFront(transferredSize);
-            session->send.queue.Unlock(false);
+			if (ret)
+			{
+				session->send.queue.Lock(false);
+				session->send.queue.MoveFront(transferredSize);
+				session->send.queue.Unlock(false);
 
-            InterlockedExchange8((char*)&session->isSending, false);
-            ret = SendPost(session);
-        }
+				InterlockedExchange8((char*)&session->isSending, false);
+				sendRet = SendPost(session);
+			}
 
-        //UnlockSession(session);
+			if (sendRet == -2)
+			{
+				DisconnectProc(session);
+			}
 
-        if (ret == false)
-        {
-            DisconnectProc(session);
-        }
+			InterlockedExchange8((char*)&session->isCompletingSend, false);
+		}
+		else
+		{
+			InterlockedExchange8((char*)&session->isCompletingSend, true);
 
-        InterlockedExchange8((char*)&session->isCompletingSend, false);
-    }
+			bool ret = DecrementProc(session);
+			int sendRet = 0;
+
+			if (ret)
+			{
+				session->send.queue.Lock(false);
+				session->send.queue.MoveFront(transferredSize);
+				session->send.queue.Unlock(false);
+
+				InterlockedExchange8((char*)&session->isSending, false);
+				sendRet = SendPost(session);
+			}
+
+			if (sendRet == -1)
+			{
+				DisconnectProc(session);
+			}
+
+			if (sendRet != 1)
+			{
+				InterlockedExchange8((char*)&session->isCompletingSend, false);
+			}
+		}
+	}
 
     return true;
 }
@@ -538,15 +576,17 @@ void CLanServerNoLock::MonitorProc()
         int poolCapa = mSessionPool->GetCapacity();
         mSessionPool->Unlock(true);
 
-        wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n\
-=======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n[Pool Usage: (%d / %d)]\n=======================================\n",
-        mMonitor.acceptCount,
-        mMonitor.disconnectCount,
-        mMonitor.acceptCount - mMonitor.disconnectCount,
-        mMonitor.sendTPS,
-        mMonitor.recvTPS,
-        poolSize,
-        poolCapa);
+        wprintf_s(L"\nMonitoring[M]: (%d) | ZeroCopy[Z]: (%d) | Quit[Q]\n", mbMonitoring, mbZeroCopy);
+        wprintf_s(L"SpinLock[S]: (%d) | Nagle[N]: (%d)\n", mbSpinLock, mbNagle);
+        wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n",
+            mMonitor.acceptCount,
+            mMonitor.disconnectCount,
+            mMonitor.acceptCount - mMonitor.disconnectCount);
+        wprintf_s(L"=======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n[Pool Usage: (%d / %d)]\n=======================================\n",
+            mMonitor.sendTPS,
+            mMonitor.recvTPS,
+            poolSize,
+            poolCapa);
     }
 
     //MonitorLock();
@@ -673,6 +713,20 @@ void CLanServerNoLock::WaitForThreadsFin()
                 }
             }
 
+            if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x53) & 0x8001) // S
+            {
+                if (mbSpinLock)
+                {
+                    mbSpinLock = false;
+                    wprintf_s(L"Unset SpinLock Mode\n");
+                }
+                else
+                {
+                    mbSpinLock = true;
+                    wprintf_s(L"Set SpinLock Mode\n");
+                }
+            }
+
             if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x50) & 0x8001) // P
             {
                 for (u_short i = 0; i < mMaxClient; ++i)
@@ -684,24 +738,9 @@ void CLanServerNoLock::WaitForThreadsFin()
 
                         if (recvSize > 0 || sendSize > 0)
                         {
-                            wprintf_s(L"[Socket: %u] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d]\n",
+                            wprintf_s(L"[Socket: %llu] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d]\n",
                                 mSessionArray[i]->socket, recvSize, sendSize, mSessionArray[i]->isSending, mSessionArray[i]->ioCount);
                         }
-                    }
-                }
-            }
-
-            if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x49) & 0x8001) // I
-            {
-                for (u_short i = 0; i < mMaxClient; ++i)
-                {
-                    if (mSessionArray[i] != nullptr)
-                    {
-                        int recvSize = mSessionArray[i]->recv.queue.GetUseSize();
-                        int sendSize = mSessionArray[i]->send.queue.GetUseSize();
-
-                        wprintf_s(L"[Socket: %u] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d]\n",
-                            mSessionArray[i]->socket, recvSize, sendSize, mSessionArray[i]->isSending, mSessionArray[i]->ioCount);
                     }
                 }
             }
@@ -744,9 +783,10 @@ bool CLanServerNoLock::Disconnect(SESSION_ID SessionID)
     return false;
 }
 
-bool CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
+int CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
 {
     Session* session = FindSession(SessionID);
+    int ret = 0;
 
     /*st_NETWORK_HEADER header;
 
@@ -758,10 +798,19 @@ bool CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
     session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
     session->send.queue.Unlock(false);
 
-    bool ret = SendPost(session);
-    //session->send.queue.Unlock(false);
+    if (mbSpinLock)
+    {
+        ret = SendPost(session);
+    }
+    else
+    {
+        if (session->isCompletingSend == false)
+        {
+            ret = SendPost(session);
+        }
+    }
 
-    if (ret == false)
+    if (ret == -2)
     {
         DisconnectProc(session);
     }
