@@ -365,8 +365,8 @@ bool CLanServerNoLock::AcceptProc()
     //    IP, ntohs(clientAddr.sin_port));
 
     session->ioCount = 1;
-    RecvPost(session);
     OnClientJoin(session->sessionID);
+    RecvPost(session);
 
     return true;
 }
