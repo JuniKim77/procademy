@@ -189,8 +189,10 @@ int CLanServerNoLock::SendPost(Session* session)
 
     SetWSABuf(buffers, session, false);
 
-    //session->ioCount++;
-    InterlockedIncrement16((short*)&session->ioCount);
+    if (InterlockedIncrement16((short*)&session->ioCount) > 2)
+    {
+        int test = 0;
+    }
     ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
 
     int sendRet = WSASend(session->socket, buffers, 2, nullptr, 0, &session->send.overlapped, nullptr);
@@ -512,7 +514,7 @@ bool CLanServerNoLock::OnCompleteMessage()
 				sendRet = SendPost(session);
 			}
 
-			if (sendRet == -1)
+			if (sendRet == -2)
 			{
 				DisconnectProc(session);
 			}
