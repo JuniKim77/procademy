@@ -184,15 +184,15 @@ int CLanServerNoLock::SendPost(Session* session)
 
     if (InterlockedExchange8((char*)&session->isSending, true) == true)
     {
-        return 0;
+        return -3;
     }
 
     SetWSABuf(buffers, session, false);
 
-    if (InterlockedIncrement16((short*)&session->ioCount) > 2)
-    {
-        int test = 0;
-    }
+    //if (InterlockedIncrement16((short*)&session->ioCount) > 2)
+    //{
+    //    int test = 0;
+    //}
     ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
 
     int sendRet = WSASend(session->socket, buffers, 2, nullptr, 0, &session->send.overlapped, nullptr);
@@ -511,7 +511,11 @@ bool CLanServerNoLock::OnCompleteMessage()
 				session->send.queue.Unlock(false);
 
 				InterlockedExchange8((char*)&session->isSending, false);
-				sendRet = SendPost(session);
+
+				do
+				{
+					sendRet = SendPost(session);
+				} while (sendRet == -3);
 			}
 
 			if (sendRet == -2)
