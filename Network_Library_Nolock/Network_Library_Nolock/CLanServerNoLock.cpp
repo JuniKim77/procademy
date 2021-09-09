@@ -246,13 +246,23 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 bool CLanServerNoLock::DecrementProc(Session* session)
 {
     //session->ioCount--;
+    int ret = InterlockedDecrement16((short*)&session->ioCount) & 0xff;
 
-    if (InterlockedDecrement16((short*)&session->ioCount) == 0)
+    if (ret < 0)
     {
-        return false;
+        WCHAR temp[1024] = { 0, };
+        swprintf_s(temp, 1024, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [isCompletingSend: %d] [recv: %d] [Send: %d]\n\n",
+            session->sessionID & 0xffffffffff,
+            session->ioCount,
+            session->isSending,
+            session->isCompletingSend,
+            session->recv.queue.GetUseSize(),
+            session->send.queue.GetUseSize());
+
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"%s", temp);
     }
 
-    return true;
+    return ret != 0;
 }
 
 void CLanServerNoLock::DisconnectProc(Session* session)
@@ -523,6 +533,7 @@ bool CLanServerNoLock::OnCompleteMessage()
 			{
 				InterlockedExchange8((char*)&session->isCompletingSend, false);
 			}
+            //InterlockedExchange8((char*)&session->isCompletingSend, false);
 		}
 	}
 
