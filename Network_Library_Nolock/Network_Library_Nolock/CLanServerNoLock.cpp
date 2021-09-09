@@ -523,6 +523,11 @@ bool CLanServerNoLock::OnCompleteMessage()
 				InterlockedExchange8((char*)&session->isSending, false);
 				sendRet = SendPost(session);
 			}
+            else
+            {
+                DisconnectProc(session);
+                return true;
+            }
 
 			if (sendRet == -2)
 			{
