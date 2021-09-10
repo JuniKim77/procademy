@@ -2,9 +2,11 @@
 
 int main()
 {
+	procademy::CCrashDump::CCrashDump();
+
 	printf_s("Hello World");
 
-	procademy::CCrashDump::Crash();
+	CRASH();
 
 	return 0;
 }
