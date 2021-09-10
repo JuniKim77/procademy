@@ -3,6 +3,7 @@
 #include "CLanServerNoLock.h"
 #include "CLogger.h"
 #include "CPacket.h"
+#include "CCrashDump.h"
 
 CLanServerNoLock::Session* CLanServerNoLock::FindSession(u_int64 sessionNo)
 {
@@ -194,9 +195,9 @@ int CLanServerNoLock::SendPost(Session* session)
 
     SetWSABuf(buffers, session, false);
 
-    if (InterlockedIncrement16((short*)&session->ioCount) > 2)
+    if ((InterlockedIncrement16((short*)&session->ioCount) & 0xff) > 2)
     {
-        int test = 0;
+        CRASH();
     }
     ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
 
@@ -265,6 +266,8 @@ bool CLanServerNoLock::DecrementProc(Session* session)
             session->send.queue.GetUseSize());
 
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"%s", temp);
+
+        CRASH();
     }
 
     return ret != 0;
@@ -655,6 +658,8 @@ bool CLanServerNoLock::Start(u_short port, u_long ip, BYTE createThread, BYTE ru
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"Network is already running\n");
         return false;
     }
+
+    procademy::CCrashDump::CCrashDump();
 
     mPort = port;
     mBindIP = ip;

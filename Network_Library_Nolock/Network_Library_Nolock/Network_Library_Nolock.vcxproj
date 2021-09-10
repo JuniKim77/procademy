@@ -150,6 +150,7 @@
     <ClCompile Include="RingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CCrashDump.h" />
     <ClInclude Include="CEchoServerNoLock.h" />
     <ClInclude Include="CLanServerNoLock.h" />
     <ClInclude Include="CLogger.h" />
