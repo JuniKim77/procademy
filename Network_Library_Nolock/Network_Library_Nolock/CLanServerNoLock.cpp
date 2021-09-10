@@ -164,7 +164,12 @@ bool CLanServerNoLock::RecvPost(Session* session)
         //CLogger::_Log(dfLOG_LEVEL_DEBUG, L"WSARecv ERROR: ", err);
 
         //LockSession(session);
-        DecrementProc(session);
+        bool ret = DecrementProc(session);
+
+        if (ret == false)
+        {
+            DisconnectProc(session);
+        }
         //UnlockSession(session);
 
         return false;
@@ -179,12 +184,12 @@ int CLanServerNoLock::SendPost(Session* session)
 
     if (session->send.queue.GetUseSize() == 0)
     {
-        return 0;
+        return SEND_POST_RING_QUEUE_EMPTY;
     }
 
     if (InterlockedExchange8((char*)&session->isSending, true) == true)
     {
-        return 0;
+        return SEND_POST_SEND_FLAG_ON;
     }
 
     SetWSABuf(buffers, session, false);
@@ -203,20 +208,20 @@ int CLanServerNoLock::SendPost(Session* session)
 
         if (err == WSA_IO_PENDING)
         {
-            return 1;
+            return SEND_POST_PACKET_SENT;
         }
 
         if (DecrementProc(session))
         {
-            return -1;
+            return SEND_POST_SEND_ERROR;
         }
         else
         {
-            return -2;
+            return SEND_POST_IO_COUNT_ZERO;
         }
     }
 
-    return 1;
+    return SEND_POST_PACKET_SENT;
 }
 
 void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
@@ -529,12 +534,12 @@ bool CLanServerNoLock::OnCompleteMessage()
                 return true;
             }
 
-			if (sendRet == -2)
+			if (sendRet == SEND_POST_IO_COUNT_ZERO)
 			{
 				DisconnectProc(session);
 			}
 
-			if (sendRet != 1)
+			if (sendRet != SEND_POST_PACKET_SENT)
 			{
 				InterlockedExchange8((char*)&session->isCompletingSend, false);
 			}
@@ -708,12 +713,12 @@ void CLanServerNoLock::WaitForThreadsFin()
                 if (mbZeroCopy)
                 {
                     mbZeroCopy = false;
-                    wprintf_s(L"Unset ZeroCopy Mode\n");
+                    wprintf_s(L"\nUnset ZeroCopy Mode\n\n");
                 }
                 else
                 {
                     mbZeroCopy = true;
-                    wprintf_s(L"Set ZeroCopy Mode\n");
+                    wprintf_s(L"\nSet ZeroCopy Mode\n\n");
                 }
             }
 
@@ -722,12 +727,12 @@ void CLanServerNoLock::WaitForThreadsFin()
                 if (mbMonitoring)
                 {
                     mbMonitoring = false;
-                    wprintf_s(L"Unset monitoring Mode\n");
+                    wprintf_s(L"\nUnset monitoring Mode\n\n");
                 }
                 else
                 {
                     mbMonitoring = true;
-                    wprintf_s(L"Set monitoring Mode\n");
+                    wprintf_s(L"\nSet monitoring Mode\n\n");
                 }
             }
 
@@ -736,17 +741,18 @@ void CLanServerNoLock::WaitForThreadsFin()
                 if (mbSpinLock)
                 {
                     mbSpinLock = false;
-                    wprintf_s(L"Unset SpinLock Mode\n");
+                    wprintf_s(L"\nUnset SpinLock Mode\n\n");
                 }
                 else
                 {
                     mbSpinLock = true;
-                    wprintf_s(L"Set SpinLock Mode\n");
+                    wprintf_s(L"\nSet SpinLock Mode\n\n");
                 }
             }
 
             if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x50) & 0x8001) // P
             {
+                wprintf_s(L"========================\n");
                 for (u_short i = 0; i < mMaxClient; ++i)
                 {
                     if (mSessionArray[i] != nullptr)

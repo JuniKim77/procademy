@@ -90,6 +90,14 @@ public:
 	virtual void OnError(int errorcode, WCHAR* log) = 0;
 
 private:
+	enum SEND_POST_RESULT {
+		SEND_POST_PACKET_SENT,
+		SEND_POST_SEND_FLAG_ON,
+		SEND_POST_RING_QUEUE_EMPTY,
+		SEND_POST_SEND_ERROR,
+		SEND_POST_IO_COUNT_ZERO,
+	};
+
 	Session* FindSession(u_int64 sessionNo);
 	void InsertSessionData(Session* session);
 	void DeleteSessionData(u_int64 sessionNo);
@@ -104,10 +112,6 @@ private:
 	/// </summary>
 	/// <param name="session"></param>
 	/// <returns>
-	/// 1		:Packet sent
-	/// 0		:Packet Not Sent
-	/// -1		:Send Error
-	/// -2		:ioCount zero
 	/// </returns>
 	int SendPost(Session* session);
 	void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
