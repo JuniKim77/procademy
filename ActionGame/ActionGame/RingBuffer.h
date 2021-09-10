@@ -1,11 +1,11 @@
 #pragma once
 
-#define BUFFER_SIZE (150)
+#define BUFFER_SIZE (1500)
 
-class RingBuffer 
+class RingBuffer
 {
 	enum {
-		DEFAULT_SIZE = 10000
+		DEFAULT_SIZE = 1000
 	};
 
 public:
@@ -43,8 +43,8 @@ public:
 	// Parameters: 없음.
 	// Return: (int)사용가능 용량.
 	////////////////////////////////////////////////////////////////////////
-	int DirectEnqueueSize(void);
-	int DirectDequeueSize(void);
+	int DirectEnqueueSize(void); // 체크 완료
+	int DirectDequeueSize(void); // 체크 완료
 
 
 	/////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ public:
 	// Parameters: (char *)데이타 포인터. (int)크기.
 	// Return: (int)넣은 크기.
 	/////////////////////////////////////////////////////////////////////////
-	int Enqueue(char* chpData, int iSize);
+	int Enqueue(char* chpData, int iSize); // 완료
 
 	/////////////////////////////////////////////////////////////////////////
 	// ReadPos 에서 데이타 가져옴. ReadPos 이동.
@@ -61,7 +61,7 @@ public:
 	// Parameters: (char *)데이타 포인터. (int)크기.
 	// Return: (int)가져온 크기.
 	/////////////////////////////////////////////////////////////////////////
-	int Dequeue(char* chpDest, int iSize);
+	int Dequeue(char* chpDest, int iSize); // 완료
 
 	/////////////////////////////////////////////////////////////////////////
 	// ReadPos 에서 데이타 읽어옴. ReadPos 고정.
@@ -78,8 +78,8 @@ public:
 	// Parameters: 없음.
 	// Return: 없음.
 	/////////////////////////////////////////////////////////////////////////
-	bool MoveRear(int iSize);
-	bool MoveFront(int iSize);
+	bool MoveRear(int iSize); // 체크 완료
+	bool MoveFront(int iSize); // 체크 완료
 
 	/////////////////////////////////////////////////////////////////////////
 	// 버퍼의 모든 데이타 삭제.
@@ -108,6 +108,10 @@ public:
 	char* GetRearBufferPtr(void);
 
 	void printInfo();
+
+	bool IsFrontZero() { return mFront == 0; }
+
+	char* GetBuffer() { return mBuffer; }
 
 private:
 	int mFront;

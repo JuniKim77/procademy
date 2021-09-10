@@ -1,4 +1,6 @@
 #pragma once
+#include <process.h>
+#include <Windows.h>
 
 #define BUFFER_SIZE (150)
 
@@ -19,7 +21,7 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////
 	// 현재 사용중인 용량 얻기.
-	//
+	// 체크 완료
 	// Parameters: 없음.
 	// Return: (int)사용중인 용량.
 	/////////////////////////////////////////////////////////////////////////
@@ -27,7 +29,7 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////
 	// 현재 버퍼에 남은 용량 얻기.
-	//
+	// 체크 완료
 	// Parameters: 없음.
 	// Return: (int)남은용량.
 	/////////////////////////////////////////////////////////////////////////
@@ -43,8 +45,8 @@ public:
 	// Parameters: 없음.
 	// Return: (int)사용가능 용량.
 	////////////////////////////////////////////////////////////////////////
-	int DirectEnqueueSize(void);
-	int DirectDequeueSize(void);
+	int DirectEnqueueSize(void); // 체크 완료
+	int DirectDequeueSize(void); // 체크 완료
 
 
 	/////////////////////////////////////////////////////////////////////////
@@ -53,7 +55,7 @@ public:
 	// Parameters: (char *)데이타 포인터. (int)크기.
 	// Return: (int)넣은 크기.
 	/////////////////////////////////////////////////////////////////////////
-	int Enqueue(char* chpData, int iSize);
+	int Enqueue(char* chpData, int iSize); // 완료
 
 	/////////////////////////////////////////////////////////////////////////
 	// ReadPos 에서 데이타 가져옴. ReadPos 이동.
@@ -61,7 +63,7 @@ public:
 	// Parameters: (char *)데이타 포인터. (int)크기.
 	// Return: (int)가져온 크기.
 	/////////////////////////////////////////////////////////////////////////
-	int Dequeue(char* chpDest, int iSize);
+	int Dequeue(char* chpDest, int iSize); // 완료
 
 	/////////////////////////////////////////////////////////////////////////
 	// ReadPos 에서 데이타 읽어옴. ReadPos 고정.
@@ -69,7 +71,7 @@ public:
 	// Parameters: (char *)데이타 포인터. (int)크기.
 	// Return: (int)가져온 크기.
 	/////////////////////////////////////////////////////////////////////////
-	int Peek(char* chpDest, int iSize);
+	int Peek(char* chpDest, int iSize); // 완료
 
 
 	/////////////////////////////////////////////////////////////////////////
@@ -109,9 +111,15 @@ public:
 
 	void printInfo();
 
+	bool IsFrontZero() { return mFront == 0; }
+
+	void Lock(bool readonly);
+	void Unlock(bool readonly);
+
 private:
 	int mFront;
 	int mRear;
 	char* mBuffer;
 	int mCapacity;
+	SRWLOCK mSrwLock;
 };

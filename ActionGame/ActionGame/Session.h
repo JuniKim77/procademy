@@ -1,5 +1,7 @@
 #pragma once
-#define SERVER_PORT (5000)
+//#define SERVER_PORT (5000)
+#define SERVER_PORT (10150)
+//#define SERVER_PORT (20000)
 #define WM_SOCKET (WM_USER+1)
 
 //#include <WinSock2.h>
@@ -20,9 +22,7 @@ public:
 	void Disconnect();
 	void SendPacket(char* packet, int size);
 	void writeProc();
-	void sendTCP(int size);
 	void ReceivePacket();
-	void receiveTCP(int size);
 	void recvProc();
 	void readMessage(stHeader* header);
 	void ErrorQuit(const WCHAR* msg, const WCHAR* fileName, unsigned int lineNum);
@@ -39,6 +39,7 @@ public:
 	void AttackProc2(CPacket* packet);
 	void AttackProc3(CPacket* packet);
 	void DamageProc(CPacket* packet);
+	void SyncProc(CPacket* packet);
 
 protected:
 	BaseObject* SearchObject(int id);

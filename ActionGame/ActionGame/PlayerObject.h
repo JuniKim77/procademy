@@ -7,7 +7,7 @@ class PlayerObject : public BaseObject
 public:
 	PlayerObject();
 	virtual ~PlayerObject();
-	virtual void Render(BYTE* pDest, int destWidth, int destHeight, int destPitch);
+	virtual void Render(BYTE* pDest, int destWidth, int destHeight, int destPitch, COORD* camera);
 	virtual void Run();
 	void Action();
 	void ActionProc();
@@ -18,6 +18,7 @@ public:
 	void SetActionAttack2(bool sendMsg = true);
 	void SetActionAttack3(bool sendMsg = true);
 	void CreateEffect();
+	void CreateEffectMySelf();
 	void SetActionMove(bool sendMsg = true);
 	void SetActionStand(bool sendMsg = true);
 	void SetHP(char hp) { mHP = hp; }

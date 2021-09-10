@@ -20,6 +20,7 @@
 #include "FrameSkip.h"
 #include "Session.h"
 #include <WinSock2.h>
+#include "CLogger.h"
 
 #pragma comment(lib, "winmm.lib")
 
@@ -31,6 +32,7 @@ bool gbActiveApp;
 HIMC gOldImc;
 FrameSkip gFrameSkipper;
 Session g_session;
+CLogger g_Logger;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -55,6 +57,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// TODO: 여기에 코드를 입력합니다.
 	InitializeGame();
+	g_Logger.setLogLevel(dfLOG_LEVEL_ERROR);
 
 	if (CreateMainWindow(hInstance, L"MainWindow", L"ActionGame") == false)
 		return 1;
@@ -167,18 +170,18 @@ void SocketMessageProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if (WSAGETSELECTERROR(lParam))
 	{
-		g_session.ErrorQuit(L"Select 에러", __FILEW__, __LINE__);
+		g_session.ErrorQuit(L"Select Error", __FILEW__, __LINE__);
 	}
 
 	switch (WSAGETSELECTEVENT(lParam))
 	{
 	case FD_CONNECT:
 		g_session.mbConnected = true;
-		wprintf_s(L"접속 성공\n");
+		wprintf_s(L"Connect Success\n");
 		break;
 	case FD_CLOSE:
 		g_session.Disconnect();
-		g_session.ErrorQuit(L"접속 종료", __FILEW__, __LINE__);
+		g_session.ErrorQuit(L"Disconnect", __FILEW__, __LINE__);
 		break;
 	case FD_READ:
 		g_session.ReceivePacket();

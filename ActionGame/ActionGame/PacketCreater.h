@@ -1,5 +1,5 @@
 #pragma once
-#include "PacketDefine.h"
+#include <wtypes.h>
 
 class CPacket;
 

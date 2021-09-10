@@ -37,7 +37,7 @@ public:
 	/// µ•¿Ã≈Õ ª¿‘
 	/// </summary>
 	/// <param name="data"></param>
-	void InsertNode(int data);
+	bool InsertNode(int data);
 	/// <summary>
 	/// µ•¿Ã≈Õ ªË¡¶
 	/// </summary>
@@ -49,8 +49,14 @@ public:
 	/// </summary>
 	/// <param name="hWnd"></param>
 	void printTreeWin(HWND hWnd);
+	void clear();
+	void printAround(Node* root);
+	void printNode(Node* root);
+	void deleteNodePrint(Node* del);
+	bool CheckBalance();
 
 private:
+	void checkBalanceHelper(Node* root, int blackount);
 	/// <summary>
 	/// WinAPI ∫‰æÓ «Ô∆€
 	/// </summary>
@@ -171,4 +177,6 @@ private:
 	RedBlackTree::Node* mRoot;
 	HBRUSH mRedBrush;
 	HBRUSH mBlackBrush;
+	int mNumBlack;
+	bool mBalanced;
 };

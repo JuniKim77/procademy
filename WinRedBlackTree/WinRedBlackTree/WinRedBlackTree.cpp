@@ -6,17 +6,22 @@
 #include <windowsx.h>
 #include <locale>
 #include "RedBlackTree.h"
+#include <unordered_set>
 
 // 전역 변수:
 HWND gMainWindow;
 HINSTANCE gInstance;
+HBRUSH gRedBrush;
+HBRUSH gGreenBrush;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName);
 void OpenConsole();
 void InitData();
+void RandomDelete();
 RedBlackTree g_RedBlackTree;
+std::unordered_set<int> g_set;
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -32,7 +37,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // 전역 문자열을 초기화합니다.
 
     // 애플리케이션 초기화를 수행합니다:
-    //OpenConsole();
+    OpenConsole();
+    //srand(time(NULL));
+    srand(1000);
     InitData();
 
     if (CreateMainWindow(hInstance, L"MainWindow", L"Binary Tree") == false)
@@ -47,7 +54,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         DispatchMessage(&msg);
     }
 
-    //FreeConsole();
+    FreeConsole();
 
     return (int)msg.wParam;
 }
@@ -74,11 +81,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         int x = GetSystemMetrics(SM_CXSCREEN) * 0.1;
         int y = GetSystemMetrics(SM_CYSCREEN) * 0.8;
+        gRedBrush = CreateSolidBrush(RGB(180, 0, 0));
+        gGreenBrush = CreateSolidBrush(RGB(0, 180, 0));
 
         editor = CreateWindowW(L"edit", nullptr, WS_CHILD | WS_VISIBLE | ES_NUMBER, x, y + 25, 100, 20, hWnd, (HMENU)0, gInstance, NULL);
         SendMessageW(editor, EM_LIMITTEXT, (WPARAM)10, 0);
         CreateWindowW(L"button", L"입력", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 25, 80, 20, hWnd, (HMENU)1, gInstance, NULL);
         CreateWindowW(L"button", L"삭제", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 25, 80, 20, hWnd, (HMENU)2, gInstance, NULL);
+        CreateWindowW(L"button", L"랜덤 생성", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 120, y + 50, 80, 20, hWnd, (HMENU)3, gInstance, NULL);
+        CreateWindowW(L"button", L"랜덤 삭제", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, x + 240, y + 50, 80, 20, hWnd, (HMENU)4, gInstance, NULL);
         break;
     }
     case WM_KEYDOWN:
@@ -119,6 +130,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             InvalidateRect(hWnd, nullptr, TRUE);
             break;
         }
+        case 3:
+        {
+            SetWindowText(editor, L"");
+            SetFocus(gMainWindow);
+
+            InitData();
+
+            InvalidateRect(hWnd, nullptr, TRUE);
+            break;
+        }
+        case 4:
+        {
+            SetWindowText(editor, L"");
+            SetFocus(gMainWindow);
+
+            RandomDelete();
+
+            InvalidateRect(hWnd, nullptr, TRUE);
+            break;
+        }
         case IDM_EXIT:
             DestroyWindow(hWnd);
             break;
@@ -133,6 +164,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         HDC hdc = BeginPaint(hWnd, &ps);
         // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
         g_RedBlackTree.printTreeWin(hWnd);
+
+        int x = GetSystemMetrics(SM_CXSCREEN) - 200;
+        int y = 0;
+
+        if (g_RedBlackTree.CheckBalance())
+        {
+            SelectObject(hdc, gGreenBrush);
+            Ellipse(hdc, x, y, x + 50, y + 50);
+        }
+        else
+        {
+            SelectObject(hdc, gRedBrush);
+            Ellipse(hdc, x, y, x + 50, y + 50);
+        }
+        
         EndPaint(hWnd, &ps);
     }
     break;
@@ -201,12 +247,30 @@ void OpenConsole()
 
 void InitData()
 {
-    srand(time(NULL));
+    g_RedBlackTree.clear();
+    g_set.clear();
 
-    for (int i = 0; i < 60; ++i)
+    for (int i = 0; i < 40; ++i)
     {
-        int num = rand() % 1000;
+        int num = rand() % 2000;
 
-        g_RedBlackTree.InsertNode(num);
+        g_set.insert(num);
+
+        bool ret = g_RedBlackTree.InsertNode(num);
     }
+}
+
+void RandomDelete()
+{
+    if (g_set.empty())
+        return;
+
+    int num = rand() % g_set.size();
+
+    auto iter = g_set.begin();
+
+    for (int i = 0; i < num; ++i, ++iter);
+
+    g_RedBlackTree.DeleteNode(*iter);
+    g_set.erase(iter);
 }

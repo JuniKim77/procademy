@@ -36,7 +36,7 @@ void CPacket::Release(void)
 void CPacket::Clear(void)
 {
 	mSize = 0;
-	mFront = 0;
+	mFront = mBuffer;
 	mRear = mFront;
 }
 
