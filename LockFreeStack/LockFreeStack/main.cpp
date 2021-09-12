@@ -11,15 +11,15 @@ bool g_exit = false;
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
 
+CLFStack g_st;
+
 int main()
 {
-	CLFStack<int> st;
-
 	HANDLE hThreads[THREAD_SIZE];
 
 	for (int i = 0; i < THREAD_SIZE; ++i)
 	{
-		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, &st, 0, nullptr);
+		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
 	}
 
 	WORD ControlKey;
@@ -59,18 +59,17 @@ int main()
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
-	CLFStack<int>* st = (CLFStack<int>*)lpParam;
-
 	while (!g_exit)
 	{
+		int t = 0;
 		for (int i = 0; i < 100; ++i)
 		{
-			st->Push(i);
+			g_st.Push(i);
 		}
 
 		for (int i = 0; i < 100; ++i)
 		{
-			st->Pop();
+			g_st.Pop();
 		}
 	}
 
