@@ -2,94 +2,18 @@
 
 #include <wtypes.h>
 
-//template <typename T>
-//class CLFStack
-//{
-//public:
-//	bool IsEmpty() { return mSize == 0; }
-//	void Push(T data);
-//	T Pop();
-//	DWORD GetSize() { return mSize; }
-//
-//public:
-//	static T sDummy;
-//
-//private:
-//
-//private:
-//	struct tNode;
-//	struct Node
-//	{
-//		T data;
-//		tNode* next;
-//	};
-//	struct tNode
-//	{
-//		UINT64 counter;
-//		Node* node;
-//	};
-//	tNode* mTop = nullptr;
-//
-//	DWORD mSize = 0;
-//};
-//
-//template<typename T>
-//T CLFStack<T>::sDummy = T();
-//
-//template<typename T>
-//inline void CLFStack<T>::Push(T data)
-//{
-//	// prerequisite
-//	Node* node = new Node;
-//	node->data = data;
-//	tNode* tnode = new tNode;
-//	tnode->node = node;
-//
-//	tNode* t;
-//	do
-//	{
-//		t = mTop;
-//		node->next = t;
-//		tnode->counter = t->counter + 1;
-//	} while (InterlockedCompareExchange128(mTop, &tnode->counter, tnode->node, t) == 0);
-//
-//	InterlockedIncrement(&mSize);
-//}
-//
-//template<typename T>
-//inline T CLFStack<T>::Pop()
-//{
-//	tNode* tnode;
-//	tNode* next;
-//	T ret;
-//
-//	if (IsEmpty())
-//	{
-//		return sDummy;
-//	}
-//
-//	do
-//	{
-//		tnode = mTop;
-//		ret = tnode->node->data;
-//		next = tnode->node->next;
-//	} while (InterlockedCompareExchange128(mTop, &next->counter, next->node, tnode) == 0);
-//	
-//	InterlockedDecrement(&mSize);
-//
-//	delete tnode;
-//
-//	return ret;
-//}
-
+template <typename T>
 class CLFStack
 {
 public:
 	~CLFStack();
 	bool IsEmpty() { return mSize == 0; }
-	void Push(int data);
-	int Pop();
+	void Push(T data);
+	T Pop();
 	DWORD GetSize() { return mSize; }
+
+public:
+	static T sDummy;
 
 private:
 
@@ -99,16 +23,20 @@ private:
 		int data;
 		Node* next;
 	};
-	
+
 	LONG64 mTop[2] = { 0, };
 
 	DWORD mSize = 0;
 };
 
-inline CLFStack::~CLFStack()
+template<typename T>
+T CLFStack<T>::sDummy = T();
+
+template<typename T>
+inline CLFStack<T>::~CLFStack()
 {
 	Node* node = (Node*)mTop[0];
-	wprintf_s(L"[Size: %d] [Counter: %d]\n", mSize, mTop[1]);
+	wprintf_s(L"[Size: %u] [Counter: %lld]\n", mSize, mTop[1]);
 	while (node != nullptr)
 	{
 		Node* cur = node;
@@ -119,13 +47,13 @@ inline CLFStack::~CLFStack()
 	}
 }
 
-void CLFStack::Push(int data)
+template<typename T>
+inline void CLFStack<T>::Push(T data)
 {
 	// prerequisite
 	Node* node = new Node;
 	node->data = data;
 	LONG64 top[2];
-	LONG64 nCount;
 
 	do
 	{
@@ -137,7 +65,8 @@ void CLFStack::Push(int data)
 	InterlockedIncrement(&mSize);
 }
 
-int CLFStack::Pop()
+template<typename T>
+inline T CLFStack<T>::Pop()
 {
 	LONG64 top[2];
 	Node* next;
