@@ -508,13 +508,21 @@ bool CLanServerNoLock::OnCompleteMessage()
 		if (sendRet == SEND_POST_IO_COUNT_ZERO)
 		{
 			DisconnectProc(session);
+			return true;
 		}
 
 		if (sendRet != SEND_POST_PACKET_SENT)
 		{
 			InterlockedExchange8((char*)&session->isCompletingSend, false);
 		}
-		//InterlockedExchange8((char*)&session->isCompletingSend, false);
+
+		if (sendRet == SEND_POST_RING_QUEUE_EMPTY)
+		{
+			if (session->send.queue.GetUseSize() > 0 && session->isCompletingSend == false)
+			{
+				SendPost(session);
+			}
+		}
 	}
 
 	return true;
@@ -720,8 +728,9 @@ void CLanServerNoLock::WaitForThreadsFin()
 
 						if (recvSize > 0 || sendSize > 0)
 						{
-							wprintf_s(L"[Socket: %llu] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d]\n",
-								mSessionArray[i]->socket, recvSize, sendSize, mSessionArray[i]->isSending, mSessionArray[i]->ioCount);
+							wprintf_s(L"[Socket: %llu] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d] [ioCompleting: %d]\n",
+								mSessionArray[i]->socket, recvSize, sendSize, mSessionArray[i]->isSending, mSessionArray[i]->ioCount,
+								mSessionArray[i]->isCompletingSend);
 						}
 					}
 				}
