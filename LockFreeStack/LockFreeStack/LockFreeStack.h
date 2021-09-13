@@ -37,6 +37,7 @@ inline CLFStack<T>::~CLFStack()
 {
 	Node* node = (Node*)mTop[0];
 	wprintf_s(L"[Size: %u] [Counter: %lld]\n", mSize, mTop[1]);
+	int count = 0;
 	while (node != nullptr)
 	{
 		Node* cur = node;
@@ -44,7 +45,9 @@ inline CLFStack<T>::~CLFStack()
 		node = node->next;
 
 		delete cur;
+		++count;
 	}
+	wprintf_s(L"=======\n[Size: %u] [Counter: %lld]\n", count, mTop[1]);
 }
 
 template<typename T>
@@ -87,7 +90,10 @@ inline T CLFStack<T>::Pop()
 
 	InterlockedDecrement(&mSize);
 
-	delete (Node*)top[0];
+	delete (Node*)top[0]; 
+	// 메모리에다가 하나하나 기록할 것.
+	// 확인할 수 있는 모든 걸 다 기록할 것
+	// new delete로는 해결이 안됨. 힙을 대상으로 동기화가 들어감...
 
 	return ret;
 }

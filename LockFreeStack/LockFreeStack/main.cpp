@@ -17,6 +17,11 @@ int main()
 {
 	HANDLE hThreads[THREAD_SIZE];
 
+	g_st.Push(100);
+	g_st.Push(100);
+	g_st.Push(100);
+	g_st.Push(100);
+
 	for (int i = 0; i < THREAD_SIZE; ++i)
 	{
 		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
@@ -62,12 +67,12 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 	while (!g_exit)
 	{
 		int t = 0;
-		for (int i = 0; i < 100; ++i)
+		for (int i = 0; i < 100000; ++i)
 		{
 			g_st.Push(i);
 		}
 
-		for (int i = 0; i < 100; ++i)
+		for (int i = 0; i < 100000; ++i)
 		{
 			g_st.Pop();
 		}
