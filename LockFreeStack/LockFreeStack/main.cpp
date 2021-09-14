@@ -2,8 +2,9 @@
 #include "LockFreeStack.h"
 #include <process.h>
 #include <wchar.h>
+#include "CLogger.h"
 
-#define THREAD_SIZE (5)
+#define THREAD_SIZE (20)
 
 using namespace std;
 
@@ -15,6 +16,11 @@ CLFStack g_st;
 
 int main()
 {
+	g_st.Push(100);
+	g_st.Push(100);
+	g_st.Push(100);
+	g_st.Push(100);
+
 	HANDLE hThreads[THREAD_SIZE];
 
 	for (int i = 0; i < THREAD_SIZE; ++i)
@@ -62,14 +68,15 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 	while (!g_exit)
 	{
 		int t = 0;
-		for (int i = 0; i < 100; ++i)
+		for (int i = 0; i < 100000; ++i)
 		{
 			g_st.Push(i);
 		}
 
-		for (int i = 0; i < 100; ++i)
+		for (int i = 0; i < 100000; ++i)
 		{
-			g_st.Pop();
+			int num;
+			g_st.Pop(&num);
 		}
 	}
 

@@ -85,10 +85,11 @@
 class CLFStack
 {
 public:
+	CLFStack();
 	~CLFStack();
 	bool IsEmpty() { return mSize == 0; }
 	void Push(int data);
-	int Pop();
+	bool Pop(int* result);
 	DWORD GetSize() { return mSize; }
 
 private:
@@ -99,16 +100,31 @@ private:
 		int data;
 		Node* next;
 	};
+
+	struct t_Top
+	{
+		Node* ptr_node;
+		LONG64 counter;
+	};
 	
-	LONG64 mTop[2] = { 0, };
+	t_Top* mTop;
 
 	DWORD mSize = 0;
 };
 
+inline CLFStack::CLFStack()
+{
+	mTop = new t_Top;
+
+	mTop->ptr_node = nullptr;
+	mTop->counter = 0;
+}
+
 inline CLFStack::~CLFStack()
 {
-	Node* node = (Node*)mTop[0];
-	wprintf_s(L"[Size: %d] [Counter: %d]\n", mSize, mTop[1]);
+	Node* node = mTop->ptr_node;
+	wprintf_s(L"[Size: %u] [Counter: %lld]\n", mSize, mTop->counter);
+	int count = 0;
 	while (node != nullptr)
 	{
 		Node* cur = node;
@@ -116,6 +132,15 @@ inline CLFStack::~CLFStack()
 		node = node->next;
 
 		delete cur;
+
+		count++;
+	}
+
+	wprintf_s(L"[Size: %u] [Counter: %d]\n", mSize, count);
+
+	if (mTop != nullptr)
+	{
+		delete mTop;
 	}
 }
 
@@ -124,41 +149,38 @@ void CLFStack::Push(int data)
 	// prerequisite
 	Node* node = new Node;
 	node->data = data;
-	LONG64 top[2];
-	LONG64 nCount;
+	t_Top top;
 
 	do
 	{
-		top[0] = mTop[0];		// Node Address -> Low Part
-		top[1] = mTop[1];		// Counter -> High Part
-		node->next = (Node*)top[0];
-	} while (InterlockedCompareExchange128(mTop, top[1] + 1, (LONG64)node, top) == 0);
+		top.ptr_node = mTop->ptr_node;		// Node Address -> Low Part
+		top.counter = mTop->counter;		// Counter -> High Part
+		node->next = top.ptr_node;
+	} while (InterlockedCompareExchange128((LONG64*)(mTop), top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);
 
 	InterlockedIncrement(&mSize);
 }
 
-int CLFStack::Pop()
+bool CLFStack::Pop(int* result)
 {
-	LONG64 top[2];
+	t_Top top;
 	Node* next;
-	int ret;
 
-	if (IsEmpty())
+	if (InterlockedDecrement(&mSize) < 0)
 	{
-		return 0;
+		InterlockedIncrement(&mSize);
+		return false;
 	}
 
 	do
 	{
-		top[0] = mTop[0];
-		top[1] = mTop[1];
-		ret = ((Node*)top[0])->data;
-		next = ((Node*)top[0])->next;
-	} while (InterlockedCompareExchange128(mTop, top[1] + 1, (LONG64)next, top) == 0);
+		top.ptr_node = mTop->ptr_node;		// Node Address -> Low Part
+		top.counter = mTop->counter;		// Counter -> High Part
+		*result = ((Node*)top.ptr_node)->data;
+		next = ((Node*)top.ptr_node)->next;
+	} while (InterlockedCompareExchange128((LONG64*)mTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
 
-	InterlockedDecrement(&mSize);
+	delete (Node*)top.ptr_node;
 
-	delete (Node*)top[0];
-
-	return ret;
+	return true;
 }
