@@ -1,7 +1,6 @@
-#include "LockFreeStack.h"
+#include "CLogger.h"
 #include <process.h>
 #include <wchar.h>
-#include "CLogger.h"
 
 #define THREAD_SIZE (20)
 
@@ -11,20 +10,22 @@ bool g_exit = false;
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
 
-CLFStack g_st;
-
 int main()
 {
-	g_st.Push(100);
-	g_st.Push(100);
-	g_st.Push(100);
-	g_st.Push(100);
+	CLogger::Initialize();
+	CLogger::SetDirectory(L"../Logs");
 
 	HANDLE hThreads[THREAD_SIZE];
+	UINT32 seeds[THREAD_SIZE];
+
+	for (int i = 1; i <= THREAD_SIZE; ++i)
+	{
+		seeds[i] = i * 1000;
+	}
 
 	for (int i = 0; i < THREAD_SIZE; ++i)
 	{
-		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
+		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, &seeds[i], 0, nullptr);
 	}
 
 	WORD ControlKey;
@@ -59,24 +60,30 @@ int main()
 		break;
 	}
 
+	for (int i = 0; i < THREAD_SIZE; ++i)
+	{
+		CloseHandle(hThreads[i]);
+	}
+
 	return 0;
 }
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
+	UINT32* seed = (UINT32*)lpParam;
+	srand(*seed);
+
 	while (!g_exit)
 	{
-		int t = 0;
-		for (int i = 0; i < 100000; ++i)
-		{
-			g_st.Push(i);
-		}
+		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Test Log [%d] [%d]", rand(), rand());
 
-		for (int i = 0; i < 100000; ++i)
-		{
-			int num;
-			g_st.Pop(&num);
-		}
+		Sleep(0);
+
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Test Log [%d] [%d]", rand(), rand());
+
+		Sleep(0);
+
+		CLogger::_Log(dfLOG_LEVEL_NOTICE, L"Test Log [%d] [%d]", rand(), rand());
 	}
 
 	return 0;

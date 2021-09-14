@@ -4,7 +4,6 @@
 #include <time.h>
 #include <strsafe.h>
 #include <locale.h>
-#include <windows.h>
 #include <direct.h>
 
 #define dfLOG_SIZE (1024)
@@ -70,7 +69,7 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
 
 	if (logLevel >= mLogLevel)
 	{
-        wprintf_s(log);
+        wprintf_s(L"%s\n\n", log);
 	}
 
     if (logLevel == dfLOG_LEVEL_DEBUG)
