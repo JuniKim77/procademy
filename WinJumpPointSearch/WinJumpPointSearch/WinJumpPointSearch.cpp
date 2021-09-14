@@ -91,6 +91,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static bool s_BeginButton = false;
     static bool s_EndButton = false;
     static bool s_EraseWall = false;
+    static bool s_RayCast = false;
     static int s_x = 0;
     static int s_y = 0;
     static int old_x = 0;
@@ -135,6 +136,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             break;
         }
+        case 0x5A:
+        {
+            s_RayCast = !s_RayCast;
+
+            break;
+        }
         case VK_ESCAPE:
             SetFocus(gMainWindow);
             break;
@@ -151,7 +158,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         }
 
-        if (g_space)
+        if (s_RayCast)
         {
             if (x == 0 && y == 1)
             {
