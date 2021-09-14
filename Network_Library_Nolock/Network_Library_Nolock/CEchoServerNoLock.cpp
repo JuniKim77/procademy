@@ -1,6 +1,12 @@
 #include "CEchoServerNoLock.h"
-#include "MessageProtocol.h"
+#include "CCrashDump.h"
 #include "CPacket.h"
+#include "MessageProtocol.h"
+
+CEchoServerNoLock::CEchoServerNoLock()
+{
+	InitializeSRWLock(&mSetLock);
+}
 
 bool CEchoServerNoLock::OnConnectionRequest(u_long IP, u_short Port)
 {
@@ -38,19 +44,19 @@ void CEchoServerNoLock::OnError(int errorcode, WCHAR* log)
 
 void CEchoServerNoLock::InsertSessionID(u_int64 sessionNo)
 {
+	LockSet();
 	mSessionSet.insert(sessionNo);
+	UnlockSet();
 }
 
 void CEchoServerNoLock::DeleteSessionID(u_int64 sessionNo)
 {
-	auto iter = mSessionSet.find(sessionNo);
-
-	if (iter == mSessionSet.end())
+	LockSet();
+	if (mSessionSet.erase(sessionNo) != 1)
 	{
-		return;
+		CRASH();
 	}
-
-	mSessionSet.erase(iter);
+	UnlockSet();
 }
 
 void CEchoServerNoLock::CompletePacket(SESSION_ID SessionID, CPacket* packet)
@@ -87,4 +93,12 @@ void CEchoServerNoLock::CompletePacket(SESSION_ID SessionID, CPacket* packet)
 void CEchoServerNoLock::EchoProc(SESSION_ID sessionID, CPacket* packet)
 {
 	SendPacket(sessionID, packet);
+}
+
+void CEchoServerNoLock::LockSet()
+{
+}
+
+void CEchoServerNoLock::UnlockSet()
+{
 }

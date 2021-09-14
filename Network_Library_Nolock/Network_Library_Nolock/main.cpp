@@ -7,7 +7,7 @@ int main()
 {
 	CEchoServerNoLock server;
 
-	server.Start(dfSERVER_PORT, 3, 2, false, 200);
+	server.Start(dfSERVER_PORT, 4, 4, false, 200);
 
 	server.WaitForThreadsFin();
 

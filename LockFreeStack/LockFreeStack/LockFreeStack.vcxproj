@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{598bd558-cdd6-466f-b73e-986a71305d7b}</ProjectGuid>
-    <RootNamespace>NetworkLibraryNolock</RootNamespace>
+    <ProjectGuid>{534b1e31-6c41-47ef-bd85-6d080d65158d}</ProjectGuid>
+    <RootNamespace>LockFreeStack</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -140,28 +140,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CCrashDump.cpp" />
-    <ClCompile Include="CEchoServerNoLock.cpp" />
-    <ClCompile Include="CLanServerNoLock.cpp" />
     <ClCompile Include="CLogger.cpp" />
-    <ClCompile Include="CPacket.cpp" />
-    <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MyProfiler.cpp" />
-    <ClCompile Include="RingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CCrashDump.h" />
-    <ClInclude Include="CEchoServerNoLock.h" />
-    <ClInclude Include="CLanServerNoLock.h" />
     <ClInclude Include="CLogger.h" />
-    <ClInclude Include="CPacket.h" />
-    <ClInclude Include="CSVReader.h" />
-    <ClInclude Include="MessageProtocol.h" />
-    <ClInclude Include="MyProfiler.h" />
+    <ClInclude Include="LockFreeStack.h" />
     <ClInclude Include="ObjectPool.h" />
-    <ClInclude Include="Protocol.h" />
-    <ClInclude Include="RingBuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
