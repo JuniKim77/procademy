@@ -2,114 +2,124 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
+#include <strsafe.h>
+#include <locale.h>
+#include <windows.h>
+#include <direct.h>
 
 #define dfLOG_SIZE (1024)
 
 int CLogger::mLogLevel = dfLOG_LEVEL_DEBUG;
+DWORD CLogger::mLogCount = 0;
+SRWLOCK CLogger::mSrwLock;
+WCHAR CLogger::mFolderPath[MAX_PATH];
 
 void CLogger::_Log(int logLevel, const WCHAR* format, ...)
 {
+    if (mLogLevel == dfLOG_LEVEL_OFF)
+        return;
     if (logLevel == dfLOG_LEVEL_DEBUG && mLogLevel > logLevel)
         return;
 
+    DWORD dwLogCount = InterlockedIncrement(&mLogCount);
+
     tm t;
     time_t curTime;
+    int lenval = 0;
+    int count = 0;
 
     time(&curTime);
     localtime_s(&t, &curTime);
 
-    WCHAR log[dfLOG_SIZE] = { 0, };
+    WCHAR log[dfLOG_SIZE];
     WCHAR* pLog = log;
 
     va_list ap;
 
-    int lenval = swprintf_s(pLog, dfLOG_SIZE, L"[%02d:%02d:%02d] ",
+    switch (logLevel)
+    {
+    case dfLOG_LEVEL_DEBUG:
+        lenval = swprintf_s(pLog, dfLOG_SIZE, L"[DEBUG] [%d] ", dwLogCount);
+        break;
+    case dfLOG_LEVEL_ERROR:
+        lenval = swprintf_s(pLog, dfLOG_SIZE, L"[ERROR] [%d] ", dwLogCount);
+        break;
+    case dfLOG_LEVEL_NOTICE:
+        lenval = swprintf_s(pLog, dfLOG_SIZE, L"[SYSTEM] [%d] ", dwLogCount);
+        break;
+    default:
+        break;
+    }
+
+    pLog += lenval;
+    count += lenval;
+
+    lenval = swprintf_s(pLog, dfLOG_SIZE, L"[%02d/%02d/%02d %02d:%02d:%02d] ",
+        t.tm_mon + 1, t.tm_mday, (t.tm_year + 1900) % 100,
         t.tm_hour, t.tm_min, t.tm_sec);
 
-    int count = lenval;
     pLog += lenval;
+    count += lenval;
 
     va_start(ap, format);
     {
-        while (*format != '\0') {
-            int val;
-            const WCHAR* str;
-            double val_f;
-
-            if (*format == L'%')
-            {
-                int len;
-                ++format;
-                switch (*format) {
-                case 's':
-                    str = va_arg(ap, const WCHAR*);
-                    len = swprintf_s(pLog, dfLOG_SIZE - count, L"%s", str);
-                    break;
-                case 'c':
-                    val = va_arg(ap, unsigned int);
-                    *pLog = val;
-                    len = 1;
-                    break;
-                case 'd':
-                    val = va_arg(ap, int);
-                    len = swprintf_s(pLog, dfLOG_SIZE - count, L"%d", val);
-                    break;
-                case 'f':
-                    val_f = va_arg(ap, double);
-                    len = swprintf_s(pLog, dfLOG_SIZE - count, L"%.3f", val_f);
-                    break;
-                case 'u':
-                    val = va_arg(ap, int);
-                    len = swprintf_s(pLog, dfLOG_SIZE - count, L"%u", (unsigned int)val);
-                    break;
-                default:
-                    // 에러?
-                    break;
-                }
-
-                count += len;
-                pLog += len;
-            }
-            else
-            {
-                *pLog = *format;
-                ++pLog;
-                ++count;
-            }
-            ++format;
-        }
+        DWORD len = dfLOG_SIZE > count ? dfLOG_SIZE - count : 0;
+        StringCchVPrintf(pLog, len, format, ap);
     }
     va_end(ap);
 
-	if (logLevel >= mLogLevel)
-	{
-        wprintf_s(log);
-	}
-
-    WCHAR fileName[80];
-
-    swprintf_s(fileName, _countof(fileName), L"%04d%02d_Log.txt",
-        t.tm_year + 1900, t.tm_mon + 1);
-
-    FILE* fout;
-
-    _wfopen_s(&fout, fileName, L"a");
-
-	// 에러 로그는 여기에...
-    if (logLevel == dfLOG_LEVEL_ERROR)
-	{
-		fwprintf_s(fout, L"[%02d/%02d/%02d %02d:%02d:%02d] #### %s\n\n",
-			t.tm_mon + 1, t.tm_mday, (t.tm_year + 1900) % 100,
-			t.tm_hour, t.tm_min, t.tm_sec, log);
-	}
-
-    // 시스템 로그는 여기에...
-    if (logLevel == dfLOG_LEVEL_NOTICE)
+    if (logLevel >= mLogLevel)
     {
-        fwprintf_s(fout, L"[%02d/%02d/%02d %02d:%02d:%02d] %s",
-            t.tm_mon + 1, t.tm_mday, (t.tm_year + 1900) % 100,
-            t.tm_hour, t.tm_min, t.tm_sec, log);
+        wprintf_s(log);
     }
 
-    fclose(fout);
+    if (logLevel == dfLOG_LEVEL_DEBUG)
+    {
+        return;
+    }
+
+    WCHAR fileName[MAX_PATH];
+
+    swprintf_s(fileName, _countof(fileName), L"%s/%04d%02d_Log.txt",
+        mFolderPath, t.tm_year + 1900, t.tm_mon + 1);
+
+    LockFile();
+    {
+        FILE* fout;
+
+        do
+        {
+            _wfopen_s(&fout, fileName, L"a+");
+        } while (fout == nullptr);
+
+        fwprintf_s(fout, L"%s\n\n", log);
+
+        fclose(fout);
+    }
+    UnlockFile();
+}
+
+void CLogger::Initialize()
+{
+    ZeroMemory(mFolderPath, MAX_PATH);
+    setlocale(LC_ALL, "");
+    InitializeSRWLock(&mSrwLock);
+}
+
+void CLogger::SetDirectory(const WCHAR* path)
+{
+    int iReulst = _wmkdir(path);
+
+    ZeroMemory(mFolderPath, MAX_PATH);
+    StringCchPrintf(mFolderPath, MAX_PATH, path);
+}
+
+void CLogger::LockFile()
+{
+    AcquireSRWLockExclusive(&mSrwLock);
+}
+
+void CLogger::UnlockFile()
+{
+    ReleaseSRWLockExclusive(&mSrwLock);
 }

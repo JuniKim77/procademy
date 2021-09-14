@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CCrashDump.cpp" />
     <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
