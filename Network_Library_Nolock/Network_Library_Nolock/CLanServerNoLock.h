@@ -142,7 +142,6 @@ private:
 	/// </summary>
 	bool mbNagle = true;
 	bool mbMonitoring = true;
-	bool mbSpinLock = false;
 	BYTE mMaxRunThreadSize = 0;
 	BYTE mWorkerThreadSize = 0;
 	u_short mMaxClient = 0;

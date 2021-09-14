@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CCrashDump.cpp" />
     <ClCompile Include="CEchoServerNoLock.cpp" />
     <ClCompile Include="CLanServerNoLock.cpp" />
     <ClCompile Include="CLogger.cpp" />
