@@ -280,6 +280,8 @@ void CLanServerNoLock::DisconnectProc(Session* session)
 {
 	u_int64 id = session->sessionID;
 
+	OnClientLeave(id);
+
 	closesocket(session->socket);
 
 	//LockSessionMap();
@@ -289,8 +291,6 @@ void CLanServerNoLock::DisconnectProc(Session* session)
 	//MonitorLock();
 	mMonitor.disconnectCount++;
 	//MonitorUnlock();
-
-	OnClientLeave(id);
 }
 
 void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
