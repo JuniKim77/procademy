@@ -183,17 +183,22 @@ int CLanServerNoLock::SendPost(Session* session)
 {
 	WSABUF buffers[2];
 
-	if (session->send.queue.GetUseSize() == 0)
-	{
-		return SEND_POST_RING_QUEUE_EMPTY;
-	}
-
 	if (InterlockedExchange8((char*)&session->isSending, true) == true)
 	{
 		return SEND_POST_SEND_FLAG_ON;
 	}
 
+	session->send.queue.Lock(false);
+	if (session->send.queue.GetUseSize() == 0)
+	{
+		InterlockedExchange8((char*)&session->isSending, false);
+		session->send.queue.Unlock(false);
+
+		return SEND_POST_RING_QUEUE_EMPTY;
+	}
+
 	SetWSABuf(buffers, session, false);
+	session->send.queue.Unlock(false);
 
 	if ((InterlockedIncrement16((short*)&session->ioCount) & 0xff) > 2)
 	{
@@ -238,14 +243,12 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 	}
 	else
 	{
-		session->send.queue.Lock(true);
 		int dSize = session->send.queue.DirectDequeueSize();
 
 		bufs[0].buf = session->send.queue.GetFrontBufferPtr();
 		bufs[0].len = dSize;
 		bufs[1].buf = session->send.queue.GetBuffer();
 		bufs[1].len = session->send.queue.GetUseSize() - dSize;
-		session->send.queue.Unlock(true);
 	}
 }
 
@@ -485,7 +488,31 @@ bool CLanServerNoLock::OnCompleteMessage()
 	}
 	else // Send
 	{
-		InterlockedExchange8((char*)&session->isCompletingSend, true);
+		bool ret = DecrementProc(session);
+		int sendRet = 0;
+
+		if (ret)
+		{
+			session->send.queue.Lock(false);
+			session->send.queue.MoveFront(transferredSize);
+			session->send.queue.Unlock(false);
+
+			InterlockedExchange8((char*)&session->isSending, false);
+			sendRet = SendPost(session);
+
+			if (sendRet == SEND_POST_IO_COUNT_ZERO)
+			{
+				DisconnectProc(session);
+				return true;
+			}
+		}
+		else
+		{
+			DisconnectProc(session);
+			return true;
+		}
+
+		/*InterlockedExchange8((char*)&session->isCompletingSend, true);
 
 		bool ret = DecrementProc(session);
 		int sendRet = 0;
@@ -522,7 +549,7 @@ bool CLanServerNoLock::OnCompleteMessage()
 			{
 				SendPost(session);
 			}
-		}
+		}*/
 	}
 
 	return true;
@@ -789,12 +816,9 @@ int CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
 	session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
 	session->send.queue.Unlock(false);
 
-	if (session->isCompletingSend == false)
-	{
-		ret = SendPost(session);
-	}
+	ret = SendPost(session);
 
-	if (ret == -2)
+	if (ret == SEND_POST_IO_COUNT_ZERO)
 	{
 		DisconnectProc(session);
 	}
