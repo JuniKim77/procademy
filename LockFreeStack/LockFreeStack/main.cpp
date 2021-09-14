@@ -3,7 +3,7 @@
 #include <process.h>
 #include <wchar.h>
 
-#define THREAD_SIZE (3)
+#define THREAD_SIZE (5)
 
 using namespace std;
 
@@ -11,7 +11,7 @@ bool g_exit = false;
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
 
-CLFStack<int> g_st;
+CLFStack g_st;
 
 int main()
 {
