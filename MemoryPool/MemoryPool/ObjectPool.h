@@ -46,6 +46,7 @@ namespace procademy
 		};
 
 	public:
+		ObjectPool();
 		//////////////////////////////////////////////////////////////////////////
 		// 생성자, 파괴자.
 		//
@@ -78,7 +79,7 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int) 메모리 풀 내부 전체 개수
 		//////////////////////////////////////////////////////////////////////////
-		int		GetCapacity(void) { return mSize; }
+		int		GetCapacity(void) { return mCapacity; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 현재 사용중인 블럭 개수를 얻는다.
@@ -86,10 +87,10 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
-		int		GetSize(void) { return mCapacity; }
+		int		GetSize(void) { return mSize; }
 
 	private:
-		void* AllocMemory(int size);
+		void AllocMemory(int size);
 
 	private:
 		int mSize;
@@ -99,12 +100,17 @@ namespace procademy
 		st_BLOCK_NODE* _pFreeNode;
 	};
 	template<typename DATA>
+	inline ObjectPool<DATA>::ObjectPool()
+		: ObjectPool(0, false)
+	{
+	}
+	template<typename DATA>
 	inline ObjectPool<DATA>::ObjectPool(int iBlockNum, bool bPlacementNew)
 		: mSize(0)
 		, mCapacity(iBlockNum)
 		, mbPlacementNew(bPlacementNew)
 	{
-		_pFreeNode = (st_BLOCK_NODE*)AllocMemory(mCapacity);
+		AllocMemory(mCapacity);
 	}
 	template<typename DATA>
 	inline ObjectPool<DATA>::~ObjectPool()
@@ -121,8 +127,8 @@ namespace procademy
 	{
 		if (_pFreeNode == nullptr)
 		{
-			_pFreeNode = (st_BLOCK_NODE*)AllocMemory(mCapacity);
-			mCapacity *= 2;
+			AllocMemory(1);
+			mCapacity++;
 		}
 
 		st_BLOCK_NODE* node = _pFreeNode;
@@ -158,40 +164,24 @@ namespace procademy
 		return true;
 	}
 	template<typename DATA>
-	inline void* ObjectPool<DATA>::AllocMemory(int size)
+	inline void ObjectPool<DATA>::AllocMemory(int size)
 	{
 		st_BLOCK_NODE* node = nullptr;
-		st_BLOCK_NODE* nodePost = nullptr;
 
-		if (mbPlacementNew)
+		for (int i = 0; i < size; ++i)
 		{
-			for (int i = 0; i < size; ++i)
+			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
+			node->checkSum_under = CHECKSUM_UNDER;
+			node->code = this;
+			if (mbPlacementNew)
 			{
-				node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
-				node->checkSum_under = CHECKSUM_UNDER;
-				node->code = this;
-				node->stpNextBlock = nodePost;
-				node->checkSum_over = CHECKSUM_OVER;
-
-				nodePost = node;
-			}
-		}
-		else
-		{
-			for (int i = 0; i < size; ++i)
-			{
-				node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
-				node->checkSum_under = CHECKSUM_UNDER;
-				node->code = this;
 				new (&node->data) (DATA);
-				node->stpNextBlock = nodePost;
-				node->checkSum_over = CHECKSUM_OVER;
-
-				nodePost = node;
 			}
-		}
+			node->stpNextBlock = _pFreeNode;
+			node->checkSum_over = CHECKSUM_OVER;
 
-		return node;
+			_pFreeNode = node;
+		}
 	}
 }
 #endif

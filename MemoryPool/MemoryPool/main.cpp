@@ -54,7 +54,8 @@ struct stTest2
 
 int main()
 {
-	procademy::ObjectPool<Test2> pool2(10, true);
+	//procademy::ObjectPool<Test2> pool2(0, true);
+	procademy::ObjectPool<Test2> pool2;
 
 	Test2* t1[13];
 
