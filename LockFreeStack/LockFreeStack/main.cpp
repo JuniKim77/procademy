@@ -2,6 +2,7 @@
 #include <process.h>
 #include <wchar.h>
 #include "CLogger.h"
+#include "CCrashDump.h"
 
 #define THREAD_SIZE (20)
 
@@ -16,9 +17,9 @@ CLFStack g_st;
 int main()
 {
 	g_st.Push(100);
-	g_st.Push(100);
-	g_st.Push(100);
-	g_st.Push(100);
+	g_st.Push(200);
+	g_st.Push(300);
+	g_st.Push(400);
 
 	HANDLE hThreads[THREAD_SIZE];
 
@@ -75,7 +76,10 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 		for (int i = 0; i < 100000; ++i)
 		{
 			int num;
-			g_st.Pop(&num);
+			if (g_st.Pop(&num) == false)
+			{
+				CRASH();
+			}
 		}
 	}
 
