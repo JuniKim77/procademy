@@ -2,7 +2,7 @@
 #include "CCrashDump.h"
 
 procademy::CLFObjectPool::CLFObjectPool(int iBlockNum, bool bPlacementNew)
-	: mSize(iBlockNum)
+	: mSize(0)
 	, mCapacity(iBlockNum)
 	, mbPlacementNew(bPlacementNew)
 {
@@ -28,9 +28,8 @@ ULONG64* procademy::CLFObjectPool::Alloc(void)
 	st_BLOCK_NODE* ret;
 	st_BLOCK_NODE* next;
 
-	if ((int)InterlockedDecrement(&mSize) < 0)
+	if ((int)InterlockedIncrement(&mSize) > mCapacity)
 	{
-		InterlockedIncrement(&mSize);
 		AllocMemory(1);
 		InterlockedIncrement(&mCapacity);
 	}
@@ -76,7 +75,7 @@ bool procademy::CLFObjectPool::Free(ULONG64* pData)
 		pData->~ULONG64();
 	}
 
-	InterlockedIncrement(&mSize);
+	InterlockedDecrement(&mSize);
 	return true;
 }
 

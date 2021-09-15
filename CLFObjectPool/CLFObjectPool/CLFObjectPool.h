@@ -58,7 +58,7 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int) 메모리 풀 내부 전체 개수
 		//////////////////////////////////////////////////////////////////////////
-		int		GetCapacity(void) { return mSize; }
+		int		GetCapacity(void) { return mCapacity; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 현재 사용중인 블럭 개수를 얻는다.
@@ -66,7 +66,7 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
-		int		GetSize(void) { return mCapacity; }
+		int		GetSize(void) { return mSize; }
 
 	private:
 		void AllocMemory(int size);

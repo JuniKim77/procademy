@@ -60,6 +60,11 @@ int main()
 		break;
 	}
 
+	for (int i = 0; i < THREAD_SIZE; ++i)
+	{
+		CloseHandle(hThreads[i]);
+	}
+
 	return 0;
 }
 
