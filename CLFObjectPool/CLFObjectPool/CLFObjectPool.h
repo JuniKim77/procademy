@@ -26,6 +26,7 @@ namespace procademy
 			unsigned int checkSum_over = CHECKSUM_OVER;
 		};
 	public:
+		CLFObjectPool();
 		//////////////////////////////////////////////////////////////////////////
 		// 생성자, 파괴자.
 		//
@@ -78,8 +79,8 @@ namespace procademy
 			LONG64 counter = 0;
 		};
 
-		alignas(4) DWORD mSize;
-		alignas(4) DWORD mCapacity;
+		DWORD mSize;
+		DWORD mCapacity;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		alignas(16) t_Top _pFreeTop;

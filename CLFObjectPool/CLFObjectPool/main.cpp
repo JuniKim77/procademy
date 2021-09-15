@@ -1,4 +1,4 @@
-#include "CLFObjectPool.h"
+#include "TC_LFObjectPool.h"
 #include <iostream>
 #include <process.h>
 #include "CCrashDump.h"
@@ -14,7 +14,7 @@ bool g_exit = false;
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
 void Initialize();
 
-procademy::CLFObjectPool g_pool(10, true);
+procademy::TC_LFObjectPool< ULONG64> g_pool;
 
 long lInTPS = 0;
 long lOutTPS = 0;

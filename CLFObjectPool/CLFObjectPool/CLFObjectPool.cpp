@@ -1,6 +1,11 @@
 #include "CLFObjectPool.h"
 #include "CCrashDump.h"
 
+procademy::CLFObjectPool::CLFObjectPool()
+	: CLFObjectPool(0, false)
+{
+}
+
 procademy::CLFObjectPool::CLFObjectPool(int iBlockNum, bool bPlacementNew)
 	: mSize(0)
 	, mCapacity(iBlockNum)
@@ -53,7 +58,7 @@ ULONG64* procademy::CLFObjectPool::Alloc(void)
 bool procademy::CLFObjectPool::Free(ULONG64* pData)
 {
 	// prerequisite
-	alignas(8) void* top;
+	void* top;
 	st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
 
 	if (pNode->code != this ||
@@ -81,7 +86,7 @@ bool procademy::CLFObjectPool::Free(ULONG64* pData)
 
 void procademy::CLFObjectPool::AllocMemory(int size)
 {
-	alignas(8) void* top;
+	void* top;
 	st_BLOCK_NODE* node = nullptr;
 
 	for (int i = 0; i < size; ++i)
