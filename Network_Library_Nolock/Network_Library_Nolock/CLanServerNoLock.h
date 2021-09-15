@@ -28,7 +28,8 @@ private:
 		SOCKET socket;
 		char ioCount;
 		bool isSending;
-		bool isCompletingSend;
+		bool bIsAlive;
+		bool isDisconnecting;
 		u_short port;
 		ULONG ip;
 		u_int64 sessionID;
@@ -38,7 +39,8 @@ private:
 			: ioCount(0)
 			, isSending(false)
 			, sessionID(0)
-			, isCompletingSend(false)
+			, bIsAlive(false)
+			, isDisconnecting(false)
 		{
 			ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
 			ZeroMemory(&send.overlapped, sizeof(send.overlapped));
@@ -54,7 +56,8 @@ private:
 			, ioCount(0)
 			, isSending(false)
 			, sessionID(0)
-			, isCompletingSend(false)
+			, bIsAlive(false)
+			, isDisconnecting(false)
 		{
 			ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
 			ZeroMemory(&send.overlapped, sizeof(send.overlapped));

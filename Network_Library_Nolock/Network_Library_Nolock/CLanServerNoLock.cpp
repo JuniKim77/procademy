@@ -260,11 +260,11 @@ bool CLanServerNoLock::DecrementProc(Session* session)
 	if (ret < 0)
 	{
 		WCHAR temp[1024] = { 0, };
-		swprintf_s(temp, 1024, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [isCompletingSend: %d] [recv: %d] [Send: %d]\n\n",
+		swprintf_s(temp, 1024, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [isAlive: %d] [recv: %d] [Send: %d]\n\n",
 			session->sessionID & 0xffffffffff,
 			session->ioCount,
 			session->isSending,
-			session->isCompletingSend,
+			session->bIsAlive,
 			session->recv.queue.GetUseSize(),
 			session->send.queue.GetUseSize());
 
@@ -278,6 +278,15 @@ bool CLanServerNoLock::DecrementProc(Session* session)
 
 void CLanServerNoLock::DisconnectProc(Session* session)
 {
+	if (InterlockedExchange8((char*)&session->isDisconnecting, true) == true)
+	{
+		return;
+	}
+	if (session->bIsAlive == false)
+	{
+		CRASH();
+	}
+
 	u_int64 id = session->sessionID;
 
 	OnClientLeave(id);
@@ -291,6 +300,8 @@ void CLanServerNoLock::DisconnectProc(Session* session)
 	//MonitorLock();
 	mMonitor.disconnectCount++;
 	//MonitorUnlock();
+	session->bIsAlive = false;
+	session->isDisconnecting = false;
 }
 
 void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
@@ -416,7 +427,8 @@ CLanServerNoLock::Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKAD
 	session->send.queue.InitializeLock();
 	session->recv.queue.ClearBuffer();
 	session->recv.queue.InitializeLock();
-	session->isCompletingSend = false;
+	session->bIsAlive = true;
+	session->isDisconnecting = false;
 
 	ZeroMemory(&session->send.overlapped, sizeof(WSAOVERLAPPED));
 	ZeroMemory(&session->recv.overlapped, sizeof(WSAOVERLAPPED));
@@ -755,9 +767,9 @@ void CLanServerNoLock::WaitForThreadsFin()
 
 						if (recvSize > 0 || sendSize > 0)
 						{
-							wprintf_s(L"[Socket: %llu] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d] [ioCompleting: %d]\n",
+							wprintf_s(L"[Socket: %llu] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d] [Alive: %d]\n",
 								mSessionArray[i]->socket, recvSize, sendSize, mSessionArray[i]->isSending, mSessionArray[i]->ioCount,
-								mSessionArray[i]->isCompletingSend);
+								mSessionArray[i]->bIsAlive);
 						}
 					}
 				}
