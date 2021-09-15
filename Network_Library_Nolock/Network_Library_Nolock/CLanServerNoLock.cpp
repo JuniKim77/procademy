@@ -25,9 +25,9 @@ void CLanServerNoLock::DeleteSessionData(u_int64 sessionNo)
 
 	mSessionPool->Lock(false);
 	mSessionPool->Free(mSessionArray[index]);
-	mSessionPool->Unlock(false);
-
 	mSessionArray[index] = nullptr;
+	mSessionPool->Unlock(false);
+	
 	LockStack();
 	mEmptyIndexes.push(index);
 	UnlockStack();
@@ -278,17 +278,20 @@ bool CLanServerNoLock::DecrementProc(Session* session)
 
 void CLanServerNoLock::DisconnectProc(Session* session)
 {
-	session->isDisconnecting = false;
-	/*if (InterlockedExchange8((char*)&session->isDisconnecting, true) == true)
+	//session->isDisconnecting = false;
+	if (InterlockedExchange8((char*)&session->isDisconnecting, true) == true)
 	{
 		return;
-	}*/
+	}
 	if (session->bIsAlive == false)
 	{
-		CRASH();
+		// CRASH();
+		return;
 	}
 
 	u_int64 id = session->sessionID;
+	mMonitor.disconnectCount++;
+	session->bIsAlive = false;
 
 	OnClientLeave(id);
 
@@ -299,9 +302,9 @@ void CLanServerNoLock::DisconnectProc(Session* session)
 	//UnlockSessionMap();
 
 	//MonitorLock();
-	mMonitor.disconnectCount++;
+	
 	//MonitorUnlock();
-	session->bIsAlive = false;
+	
 	session->isDisconnecting = false;
 }
 
