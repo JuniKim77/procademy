@@ -26,7 +26,7 @@ private:
 		OverlappedBuffer recv;
 		OverlappedBuffer send;
 		SOCKET socket;
-		char ioCount;
+		short ioCount;
 		bool isSending;
 		bool bIsAlive;
 		bool isDisconnecting;

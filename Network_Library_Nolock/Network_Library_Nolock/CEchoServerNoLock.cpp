@@ -56,11 +56,15 @@ void CEchoServerNoLock::InsertSessionID(u_int64 sessionNo)
 void CEchoServerNoLock::DeleteSessionID(u_int64 sessionNo)
 {
 	LockMap();
+	mSessionJoinMap[sessionNo]--;
 	if (mSessionJoinMap[sessionNo] == 0)
+	{
+		mSessionJoinMap.erase(sessionNo);
+	}
+	else
 	{
 		CRASH();
 	}
-	mSessionLeaveMap[sessionNo]++;
 	UnlockMap();
 }
 

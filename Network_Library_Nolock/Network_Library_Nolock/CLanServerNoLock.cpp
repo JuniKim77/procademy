@@ -255,7 +255,7 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 bool CLanServerNoLock::DecrementProc(Session* session)
 {
 	//session->ioCount--;
-	int ret = InterlockedDecrement16((short*)&session->ioCount) & 0xff;
+	int ret = InterlockedDecrement16(&session->ioCount);
 
 	if (ret < 0)
 	{
@@ -278,10 +278,11 @@ bool CLanServerNoLock::DecrementProc(Session* session)
 
 void CLanServerNoLock::DisconnectProc(Session* session)
 {
-	if (InterlockedExchange8((char*)&session->isDisconnecting, true) == true)
+	session->isDisconnecting = false;
+	/*if (InterlockedExchange8((char*)&session->isDisconnecting, true) == true)
 	{
 		return;
-	}
+	}*/
 	if (session->bIsAlive == false)
 	{
 		CRASH();
