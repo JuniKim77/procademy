@@ -68,10 +68,10 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
     }
     va_end(ap);
 
-    if (logLevel >= mLogLevel)
-    {
+	if (logLevel >= mLogLevel)
+	{
         wprintf_s(log);
-    }
+	}
 
     if (logLevel == dfLOG_LEVEL_DEBUG)
     {
@@ -80,8 +80,8 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
 
     WCHAR fileName[MAX_PATH];
 
-    swprintf_s(fileName, _countof(fileName), L"%s/%04d%02d_Log.txt",
-        mFolderPath, t.tm_year + 1900, t.tm_mon + 1);
+	swprintf_s(fileName, _countof(fileName), L"%s/%04d%02d_Log.txt",
+		mFolderPath, t.tm_year + 1900, t.tm_mon + 1);
 
     LockFile();
     {
@@ -109,7 +109,7 @@ void CLogger::Initialize()
 void CLogger::SetDirectory(const WCHAR* path)
 {
     int iReulst = _wmkdir(path);
-
+  
     ZeroMemory(mFolderPath, MAX_PATH);
     StringCchPrintf(mFolderPath, MAX_PATH, path);
 }

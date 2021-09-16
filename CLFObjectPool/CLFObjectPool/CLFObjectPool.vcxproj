@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{534b1e31-6c41-47ef-bd85-6d080d65158d}</ProjectGuid>
-    <RootNamespace>LockFreeStack</RootNamespace>
+    <ProjectGuid>{14528816-8ba2-492f-9419-3f3aef778549}</ProjectGuid>
+    <RootNamespace>CLFObjectPool</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -141,13 +141,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CCrashDump.cpp" />
+    <ClCompile Include="CLFObjectPool.cpp" />
     <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CCrashDump.h" />
+    <ClInclude Include="CLFObjectPool.h" />
     <ClInclude Include="CLogger.h" />
-    <ClInclude Include="LockFreeStack.h" />
     <ClInclude Include="TC_LFObjectPool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

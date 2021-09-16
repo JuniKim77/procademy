@@ -44,19 +44,28 @@ void CEchoServerNoLock::OnError(int errorcode, WCHAR* log)
 
 void CEchoServerNoLock::InsertSessionID(u_int64 sessionNo)
 {
-	LockSet();
-	mSessionSet.insert(sessionNo);
-	UnlockSet();
+	LockMap();
+	mSessionJoinMap[sessionNo]++;
+	if (mSessionJoinMap[sessionNo] > 1)
+	{
+		CRASH();
+	}
+	UnlockMap();
 }
 
 void CEchoServerNoLock::DeleteSessionID(u_int64 sessionNo)
 {
-	LockSet();
-	if (mSessionSet.erase(sessionNo) != 1)
+	LockMap();
+	mSessionJoinMap[sessionNo]--;
+	if (mSessionJoinMap[sessionNo] == 0)
+	{
+		mSessionJoinMap.erase(sessionNo);
+	}
+	else
 	{
 		CRASH();
 	}
-	UnlockSet();
+	UnlockMap();
 }
 
 void CEchoServerNoLock::CompletePacket(SESSION_ID SessionID, CPacket* packet)
@@ -95,10 +104,10 @@ void CEchoServerNoLock::EchoProc(SESSION_ID sessionID, CPacket* packet)
 	SendPacket(sessionID, packet);
 }
 
-void CEchoServerNoLock::LockSet()
+void CEchoServerNoLock::LockMap()
 {
 }
 
-void CEchoServerNoLock::UnlockSet()
+void CEchoServerNoLock::UnlockMap()
 {
 }

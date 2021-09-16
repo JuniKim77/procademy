@@ -1,5 +1,6 @@
 #include "CLanServerNoLock.h"
 #include <unordered_set>
+#include <unordered_map>
 
 class CEchoServerNoLock : public CLanServerNoLock
 {
@@ -16,10 +17,11 @@ private:
 	void DeleteSessionID(u_int64 sessionNo);
 	void CompletePacket(SESSION_ID SessionID, CPacket* packet);
 	void EchoProc(SESSION_ID sessionID, CPacket* packet);
-	void LockSet();
-	void UnlockSet();
+	void LockMap();
+	void UnlockMap();
 
 private:
-	std::unordered_set<u_int64> mSessionSet;
+	std::unordered_map<u_int64, int> mSessionJoinMap;
+	std::unordered_map<u_int64, int> mSessionLeaveMap;
 	SRWLOCK mSetLock;
 };

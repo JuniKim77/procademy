@@ -21,5 +21,8 @@
     <ClCompile Include="CCrashDump.h">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="CCrashDump.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

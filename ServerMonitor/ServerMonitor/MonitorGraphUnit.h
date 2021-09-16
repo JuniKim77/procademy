@@ -1,6 +1,8 @@
 #define dfMAXCHILD (100)
 #include <Windows.h>
 
+class MyQueue;
+
 class MonitorGraphUnit
 {
 public:
@@ -9,8 +11,7 @@ public:
 		LINE_SINGLE,
 		LINE_MULTI,
 		NUMBER,
-		ONOFF,
-		PIE
+		ONOFF
 	};
 	struct ST_HWNDtoTHIS
 	{
@@ -25,12 +26,13 @@ public:
 	/////////////////////////////////////////////////////////
 	// 윈도우 프로시저
 	/////////////////////////////////////////////////////////
-	static LRESULT CALLBACK WndProc(HWND hWnd, UINT meesage, WPARAM wParam,
+	static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam,
 		LPARAM lParam);
 	/////////////////////////////////////////////////////////
 	// 데이터 넣기.
 	/////////////////////////////////////////////////////////
 	BOOL InsertData(int iData);
+	static void RegisterChildClass(HINSTANCE hInstance);
 
 protected:
 	//------------------------------------------------------
@@ -47,17 +49,25 @@ private:
 	// 윈도우 위치,크기,색상, 그래프 타입 등.. 자료
 	//------------------------------------------------------
 	TYPE _enGraphType;
+	HINSTANCE mhInstance;
+	HWND mChildWnd;
+	TYPE menType;
+	int miPosX;
+	int miPosY;
+	int miWidth;
+	int miHeight;
 
 	//------------------------------------------------------
 	// 더블 버퍼링용 메모리 DC, 메모리 비트맵
 	//------------------------------------------------------
-	HDC		_hMemDC;
-	HBITMAP		_hBitmap;
+	HDC mChildWindowHDC;
+	HDC		mDoubleHDC;
 
 	//------------------------------------------------------
 	// 데이터
 	//------------------------------------------------------
 	//데이터 큐 / 리스트
+	MyQueue* mQueue;
 
 	// static 맴버 함수의 프로시저에서 This 포인터를 찾기 위한
 	// HWND + Class Ptr 의 테이블

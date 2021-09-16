@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "MonitorGraphUnit.h"
+#include <locale>
 
 // 전역 변수:
 HWND gMainWindow;
@@ -19,9 +20,9 @@ HINSTANCE g_hInst;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName);
+void OpenConsole();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -38,6 +39,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 
 	MSG msg;
+
+	//OpenConsole();
 
 	// 기본 메시지 루프입니다:
 	while (GetMessage(&msg, nullptr, 0, 0))
@@ -84,8 +87,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// 메뉴 선택을 구문 분석합니다:
 		switch (wmId)
 		{
-		case IDM_ABOUT:
-			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
 			break;
@@ -111,26 +112,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-// 정보 대화 상자의 메시지 처리기입니다.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
-
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		}
-		break;
-	}
-	return (INT_PTR)FALSE;
-}
-
 bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName)
 {
 	WNDCLASSEXW wcex;
@@ -144,12 +125,14 @@ bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDC_SERVERMONITOR));
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.hbrBackground = CreateSolidBrush(RGB(100, 100, 250));
 	wcex.lpszMenuName = MAKEINTRESOURCE(IDC_SERVERMONITOR);
 	wcex.lpszClassName = className;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
 	RegisterClassExW(&wcex);
+
+	MonitorGraphUnit::RegisterChildClass(hInstance);
 
 	// 애플리케이션 초기화를 수행합니다:
 	HWND hWnd = CreateWindowExW(0, className, windowName, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
@@ -179,4 +162,22 @@ bool CreateMainWindow(HINSTANCE hInstance, LPCWSTR className, LPCWSTR windowName
 	MoveWindow(hWnd, x, y, WindowRect.right - WindowRect.left, WindowRect.bottom - WindowRect.top, TRUE);
 
 	return true;
+}
+
+void OpenConsole()
+{
+	setlocale(LC_ALL, "");
+
+	FILE* fin;
+	FILE* fout;
+	FILE* ferr;
+
+	if (AllocConsole())
+	{
+		freopen_s(&fin, "CONIN$", "r", stdin);
+		freopen_s(&ferr, "CONOUT$", "w", stderr);
+		freopen_s(&fout, "CONOUT$", "w", stdout);
+	}
+
+	system("mode con: cols=80 lines=20");
 }
