@@ -11,7 +11,7 @@ public:
 
 	CDebugger() = delete;
 	static void _Log(const WCHAR* format, ...);
-	static void Initialize(DWORD size);
+	static void Initialize();
 	static void Destroy();
 	static void SetDirectory(const WCHAR* path);
 	static void PrintLogOut(const WCHAR* szFileName);
@@ -19,5 +19,6 @@ public:
 private:
 	static WORD sIndex;
 	static WCHAR sFolderPath[MAX_PATH];
-	static WCHAR* sLogData[USHRT_MAX];
+	static WCHAR* sLogData[USHRT_MAX + 1];
+	static bool sIsOver;
 };
