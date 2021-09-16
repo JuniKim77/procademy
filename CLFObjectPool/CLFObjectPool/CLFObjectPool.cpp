@@ -11,6 +11,8 @@ procademy::CLFObjectPool::CLFObjectPool(int iBlockNum, bool bPlacementNew)
 	, mCapacity(iBlockNum)
 	, mbPlacementNew(bPlacementNew)
 {
+	_pFreeTop.counter = 0;
+	_pFreeTop.ptr_node = nullptr;
 	AllocMemory(mCapacity);
 }
 
@@ -26,12 +28,11 @@ procademy::CLFObjectPool::~CLFObjectPool()
 	}
 }
 
-ULONG64* procademy::CLFObjectPool::Alloc(void)
+ULONG64* procademy::CLFObjectPool::Alloc(void)		// pop
 {
 	alignas(16) t_Top top;
-	st_BLOCK_NODE* node;
-	st_BLOCK_NODE* ret;
-	st_BLOCK_NODE* next;
+	st_BLOCK_NODE* ret = nullptr;
+	st_BLOCK_NODE* next = nullptr;
 
 	if ((int)InterlockedIncrement(&mSize) > mCapacity)
 	{
@@ -41,8 +42,12 @@ ULONG64* procademy::CLFObjectPool::Alloc(void)
 
 	do
 	{
-		top.ptr_node = _pFreeTop.ptr_node;
-		top.counter = _pFreeTop.counter;
+		do
+		{
+			top.ptr_node = _pFreeTop.ptr_node;
+			top.counter = _pFreeTop.counter;
+		} while (top.ptr_node == nullptr);
+
 		ret = top.ptr_node;
 		next = top.ptr_node->stpNextBlock;
 	} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
@@ -55,7 +60,7 @@ ULONG64* procademy::CLFObjectPool::Alloc(void)
 	return &ret->data;
 }
 
-bool procademy::CLFObjectPool::Free(ULONG64* pData)
+bool procademy::CLFObjectPool::Free(ULONG64* pData)		// Push
 {
 	// prerequisite
 	void* top;
@@ -86,7 +91,7 @@ bool procademy::CLFObjectPool::Free(ULONG64* pData)
 
 void procademy::CLFObjectPool::AllocMemory(int size)
 {
-	void* top;
+	alignas(16) t_Top top;
 	st_BLOCK_NODE* node = nullptr;
 
 	for (int i = 0; i < size; ++i)
@@ -100,11 +105,13 @@ void procademy::CLFObjectPool::AllocMemory(int size)
 			new (&node->data) (ULONG64);
 		}
 		node->checkSum_over = CHECKSUM_OVER;
+		node->data = 0x0000000055555555;
 
 		do
 		{
-			top = _pFreeTop.ptr_node;
-			node->stpNextBlock = (st_BLOCK_NODE*)top;
-		} while (InterlockedCompareExchange64((LONG64*)&_pFreeTop, (LONG64)node, (LONG64)top) != (LONG64)top);
+			top.ptr_node = _pFreeTop.ptr_node;
+			top.counter = _pFreeTop.counter;
+			node->stpNextBlock = (st_BLOCK_NODE*)top.ptr_node;
+		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);
 	}
 }

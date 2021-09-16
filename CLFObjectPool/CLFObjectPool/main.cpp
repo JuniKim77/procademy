@@ -1,4 +1,4 @@
-#include "TC_LFObjectPool.h"
+#include "CLFObjectPool.h"
 #include <iostream>
 #include <process.h>
 #include "CCrashDump.h"
@@ -12,9 +12,9 @@ using namespace std;
 bool g_exit = false;
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
-void Initialize();
+unsigned int WINAPI	MonitorThread(LPVOID lpParam);
 
-procademy::TC_LFObjectPool< ULONG64> g_pool;
+procademy::CLFObjectPool g_pool;
 
 long lInTPS = 0;
 long lOutTPS = 0;
@@ -24,43 +24,32 @@ long lOutCounter = 0;
 
 int main()
 {
-	Initialize();
+	HANDLE hThreads[THREAD_SIZE + 1];
 
-	HANDLE hThreads[THREAD_SIZE];
+	hThreads[0] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
 
-	for (int i = 0; i < THREAD_SIZE; ++i)
+	for (int i = 1; i <= THREAD_SIZE; ++i)
 	{
 		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
+		Sleep(1000);
 	}
 
 	WORD ControlKey;
 
 	while (1)
 	{
-		lInTPS = lInCounter;
-		lOutTPS = lOutCounter;
-
-		lInCounter = 0;
-		lOutCounter = 0;
-
-		wprintf(L"=====================================================================\n");
-		wprintf(L"                        MemoryPool Testing...                        \n");
-		wprintf(L"=====================================================================\n\n");
-
-		wprintf(L"---------------------------------------------------------------------\n\n");
-		wprintf(L"Alloc TPS		: %ld\n", lOutTPS);
-		wprintf(L"Free  TPS		: %ld\n", lInTPS);
-		wprintf(L"Alloc TPS		: %ld\n", g_pool.GetSize());
-		wprintf(L"---------------------------------------------------------------------\n\n\n");
-		if (g_pool.GetSize() > MAX_ALLOC)
+		ControlKey = _getwch();
+		if (ControlKey == L'q' || ControlKey == L'Q')
 		{
-			CRASH();
+			//------------------------------------------------
+			// 종료처리
+			//------------------------------------------------
+			g_exit = true;
+			break;
 		}
-
-		Sleep(999);
 	}
 
-	DWORD retval = WaitForMultipleObjects(THREAD_SIZE, hThreads, TRUE, INFINITE);
+	DWORD retval = WaitForMultipleObjects(THREAD_SIZE + 1, hThreads, TRUE, INFINITE);
 
 	switch (retval)
 	{
@@ -77,7 +66,7 @@ int main()
 		break;
 	}
 
-	for (int i = 0; i < THREAD_SIZE; ++i)
+	for (int i = 0; i <= THREAD_SIZE; ++i)
 	{
 		CloseHandle(hThreads[i]);
 	}
@@ -146,25 +135,33 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 	return 0;
 }
 
-void Initialize()
+unsigned int __stdcall MonitorThread(LPVOID lpParam)
 {
-	ULONG64** pDataArray = new ULONG64*[MAX_ALLOC];
-
-	for (int i = 0; i < MAX_ALLOC; i++)
+	while (1)
 	{
-		pDataArray[i] = g_pool.Alloc();
-	}
-		
+		lInTPS = lInCounter;
+		lOutTPS = lOutCounter;
 
-	for (int i = 0; i < MAX_ALLOC; i++)
-	{
-		*pDataArray[i] = 0x0000000055555555;
+		lInCounter = 0;
+		lOutCounter = 0;
+
+		wprintf(L"=====================================================================\n");
+		wprintf(L"                        MemoryPool Testing...                        \n");
+		wprintf(L"=====================================================================\n\n");
+
+		wprintf(L"---------------------------------------------------------------------\n\n");
+		wprintf(L"Alloc TPS		: %ld\n", lOutTPS);
+		wprintf(L"Free  TPS		: %ld\n", lInTPS);
+		wprintf(L"Alloc TPS		: %ld\n", g_pool.GetSize());
+		wprintf(L"Pool Capa		: %ld\n", g_pool.GetCapacity());
+		wprintf(L"---------------------------------------------------------------------\n\n\n");
+		if (g_pool.GetSize() > MAX_ALLOC)
+		{
+			CRASH();
+		}
+
+		Sleep(999);
 	}
 
-	for (int i = 0; i < MAX_ALLOC; i++)
-	{
-		g_pool.Free(pDataArray[i]);
-	}
-
-	delete[] pDataArray;
+	return 0;
 }
