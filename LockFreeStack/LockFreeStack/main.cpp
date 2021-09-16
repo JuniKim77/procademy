@@ -4,26 +4,29 @@
 #include "CLogger.h"
 #include "CCrashDump.h"
 
-#define THREAD_SIZE (20)
+#define THREAD_SIZE (10)
+#define MAX_ALLOC (100000)
+#define THREAD_ALLOC (10000)
 
 using namespace std;
 
 bool g_exit = false;
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
+unsigned int WINAPI MonitorThread(LPVOID lpParam);
 
 CLFStack g_st;
 
+long PushTPS = 0;
+long PopTPS = 0;
+
 int main()
 {
-	g_st.Push(100);
-	g_st.Push(200);
-	g_st.Push(300);
-	g_st.Push(400);
+	HANDLE hThreads[THREAD_SIZE + 1];
 
-	HANDLE hThreads[THREAD_SIZE];
+	hThreads[0] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
 
-	for (int i = 0; i < THREAD_SIZE; ++i)
+	for (int i = 1; i <= THREAD_SIZE; ++i)
 	{
 		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
 	}
@@ -43,7 +46,7 @@ int main()
 		}
 	}
 
-	DWORD retval = WaitForMultipleObjects(THREAD_SIZE, hThreads, TRUE, INFINITE);
+	DWORD retval = WaitForMultipleObjects(THREAD_SIZE + 1, hThreads, TRUE, INFINITE);
 
 	switch (retval)
 	{
@@ -60,7 +63,7 @@ int main()
 		break;
 	}
 
-	for (int i = 0; i < THREAD_SIZE; ++i)
+	for (int i = 0; i <= THREAD_SIZE; ++i)
 	{
 		CloseHandle(hThreads[i]);
 	}
@@ -72,20 +75,53 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
 	while (!g_exit)
 	{
-		int t = 0;
-		for (int i = 0; i < 100000; ++i)
+		for (int i = 0; i < THREAD_ALLOC; ++i)
 		{
 			g_st.Push(i);
+			InterlockedIncrement((long*)&PushTPS);
 		}
 
-		for (int i = 0; i < 100000; ++i)
+		Sleep(0);
+
+		for (int i = 0; i < 10000; ++i)
 		{
-			int num;
+			ULONG64 num;
 			if (g_st.Pop(&num) == false)
 			{
 				CRASH();
 			}
+			InterlockedIncrement((long*)&PopTPS);
 		}
+	}
+
+	return 0;
+}
+
+unsigned int __stdcall MonitorThread(LPVOID lpParam)
+{
+	while (1)
+	{
+		long push = PushTPS;
+		long pop = PopTPS;
+
+		PushTPS = 0;
+		PopTPS = 0;
+
+		wprintf(L"=====================================================================\n");
+		wprintf(L"                        LockFreeStack Testing...                        \n");
+		wprintf(L"=====================================================================\n\n");
+
+		wprintf(L"---------------------------------------------------------------------\n\n");
+		wprintf(L"Pop TPS			: %ld\n", pop);
+		wprintf(L"Push  TPS		: %ld\n", push);
+		wprintf(L"Stack Size		: %ld\n", g_st.GetSize());
+		wprintf(L"---------------------------------------------------------------------\n\n\n");
+		if (g_st.GetSize() > MAX_ALLOC)
+		{
+			CRASH();
+		}
+
+		Sleep(999);
 	}
 
 	return 0;

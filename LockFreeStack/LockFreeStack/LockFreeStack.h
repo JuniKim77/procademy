@@ -1,7 +1,7 @@
 #pragma once
 #include <stdio.h>
 #include <wtypes.h>
-
+#include "TC_LFObjectPool.h"
 //template <typename T>
 //class CLFStack
 //{
@@ -87,8 +87,8 @@ class CLFStack
 public:
 	~CLFStack();
 	bool IsEmpty() { return mSize == 0; }
-	void Push(int data);
-	bool Pop(int* result);
+	void Push(ULONG64 data);
+	bool Pop(ULONG64* result);
 	DWORD GetSize() { return mSize; }
 
 private:
@@ -96,7 +96,7 @@ private:
 private:
 	struct Node
 	{
-		int data;
+		ULONG64 data;
 		Node* next;
 	};
 
@@ -107,6 +107,7 @@ private:
 	};
 	
 	alignas(16) t_Top mTop;
+	procademy::TC_LFObjectPool<Node> mMemoryPool;
 
 	int mSize = 0;
 };
@@ -122,7 +123,7 @@ inline CLFStack::~CLFStack()
 
 		node = node->next;
 
-		delete cur;
+		mMemoryPool.Free(cur);
 
 		count++;
 	}
@@ -130,11 +131,11 @@ inline CLFStack::~CLFStack()
 	wprintf_s(L"[Size: %u] [Counter: %d]\n", mSize, count);
 }
 
-void CLFStack::Push(int data)
+void CLFStack::Push(ULONG64 data)
 {
 	// prerequisite
-	alignas(8) void* top;
-	Node* node = new Node;
+	void* top;
+	Node* node = mMemoryPool.Alloc();
 	node->data = data;	
 
 	do
@@ -146,7 +147,7 @@ void CLFStack::Push(int data)
 	InterlockedIncrement((DWORD*)&mSize);
 }
 
-bool CLFStack::Pop(int* result)
+bool CLFStack::Pop(ULONG64* result)
 {
 	alignas(16) t_Top top;
 	Node* next;
@@ -167,7 +168,7 @@ bool CLFStack::Pop(int* result)
 
 	} while (InterlockedCompareExchange128((LONG64*)&mTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
 
-	delete (Node*)top.ptr_node;
+	mMemoryPool.Free(top.ptr_node);
 
 	return true;
 }

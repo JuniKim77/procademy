@@ -148,7 +148,7 @@
     <ClInclude Include="CCrashDump.h" />
     <ClInclude Include="CLogger.h" />
     <ClInclude Include="LockFreeStack.h" />
-    <ClInclude Include="ObjectPool.h" />
+    <ClInclude Include="TC_LFObjectPool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

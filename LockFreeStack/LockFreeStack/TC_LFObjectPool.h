@@ -98,6 +98,8 @@ namespace procademy
 		, mCapacity(iBlockNum)
 		, mbPlacementNew(bPlacementNew)
 	{
+		_pFreeTop.counter = 0;
+		_pFreeTop.ptr_node = nullptr;
 		AllocMemory(mCapacity);
 	}
 	template<typename DATA>
@@ -116,7 +118,6 @@ namespace procademy
 	inline DATA* TC_LFObjectPool<DATA>::Alloc(void)
 	{
 		alignas(16) t_Top top;
-		st_BLOCK_NODE* node;
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
 
@@ -128,8 +129,12 @@ namespace procademy
 
 		do
 		{
-			top.ptr_node = _pFreeTop.ptr_node;
-			top.counter = _pFreeTop.counter;
+			do
+			{
+				top.ptr_node = _pFreeTop.ptr_node;
+				top.counter = _pFreeTop.counter;
+			} while (top.ptr_node == nullptr);
+
 			ret = top.ptr_node;
 			next = top.ptr_node->stpNextBlock;
 		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
@@ -173,7 +178,7 @@ namespace procademy
 	template<typename DATA>
 	inline void TC_LFObjectPool<DATA>::AllocMemory(int size)
 	{
-		void* top;
+		alignas(16) t_Top top;
 		st_BLOCK_NODE* node = nullptr;
 
 		for (int i = 0; i < size; ++i)
@@ -190,9 +195,10 @@ namespace procademy
 
 			do
 			{
-				top = _pFreeTop.ptr_node;
-				node->stpNextBlock = (st_BLOCK_NODE*)top;
-			} while (InterlockedCompareExchange64((LONG64*)&_pFreeTop, (LONG64)node, (LONG64)top) != (LONG64)top);
+				top.ptr_node = _pFreeTop.ptr_node;
+				top.counter = _pFreeTop.counter;
+				node->stpNextBlock = (st_BLOCK_NODE*)top.ptr_node;
+			} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);
 		}
 	}
 }
