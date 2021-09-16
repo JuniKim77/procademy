@@ -27,7 +27,7 @@ void CLanServerNoLock::DeleteSessionData(u_int64 sessionNo)
 	mSessionPool->Free(mSessionArray[index]);
 	mSessionArray[index] = nullptr;
 	mSessionPool->Unlock(false);
-	
+
 	LockStack();
 	mEmptyIndexes.push(index);
 	UnlockStack();
@@ -183,51 +183,63 @@ int CLanServerNoLock::SendPost(Session* session)
 {
 	WSABUF buffers[2];
 
-	if (InterlockedExchange8((char*)&session->isSending, true) == true)
+	do
 	{
-		return SEND_POST_SEND_FLAG_ON;
-	}
+		if (InterlockedExchange8((char*)&session->isSending, true) == true)
+		{
+			return SEND_POST_SEND_FLAG_ON;
+		}
 
-	session->send.queue.Lock(false);
-	if (session->send.queue.GetUseSize() == 0)
-	{
-		InterlockedExchange8((char*)&session->isSending, false);
+		//session->send.queue.Lock(false);
+		if (session->send.queue.IsEmpty() == true)
+		{
+			if (InterlockedExchange8((char*)&session->isSending, false) == false)
+			{
+				CRASH();
+			}
+			//session->send.queue.Unlock(false);
+
+			if (session->send.queue.IsEmpty() == false)
+			{
+				continue;
+			}
+
+			return SEND_POST_RING_QUEUE_EMPTY;
+		}
+
+		session->send.queue.Lock(false);
+		SetWSABuf(buffers, session, false);
 		session->send.queue.Unlock(false);
 
-		return SEND_POST_RING_QUEUE_EMPTY;
-	}
-
-	SetWSABuf(buffers, session, false);
-	session->send.queue.Unlock(false);
-
-	if ((InterlockedIncrement16((short*)&session->ioCount) & 0xff) > 2)
-	{
-		CRASH();
-	}
-	ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
-
-	int sendRet = WSASend(session->socket, buffers, 2, nullptr, 0, &session->send.overlapped, nullptr);
-
-	if (sendRet == SOCKET_ERROR)
-	{
-		int err = WSAGetLastError();
-
-		if (err == WSA_IO_PENDING)
+		if ((InterlockedIncrement16((short*)&session->ioCount) & 0xff) > 2)
 		{
-			return SEND_POST_PACKET_SENT;
+			CRASH();
+		}
+		ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
+
+		int sendRet = WSASend(session->socket, buffers, 2, nullptr, 0, &session->send.overlapped, nullptr);
+
+		if (sendRet == SOCKET_ERROR)
+		{
+			int err = WSAGetLastError();
+
+			if (err == WSA_IO_PENDING)
+			{
+				return SEND_POST_PACKET_SENT;
+			}
+
+			if (DecrementProc(session))
+			{
+				return SEND_POST_SEND_ERROR;
+			}
+			else
+			{
+				return SEND_POST_IO_COUNT_ZERO;
+			}
 		}
 
-		if (DecrementProc(session))
-		{
-			return SEND_POST_SEND_ERROR;
-		}
-		else
-		{
-			return SEND_POST_IO_COUNT_ZERO;
-		}
-	}
-
-	return SEND_POST_PACKET_SENT;
+		return SEND_POST_PACKET_SENT;
+	} while (1);
 }
 
 void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
@@ -302,9 +314,9 @@ void CLanServerNoLock::DisconnectProc(Session* session)
 	//UnlockSessionMap();
 
 	//MonitorLock();
-	
+
 	//MonitorUnlock();
-	
+
 	session->isDisconnecting = false;
 }
 
