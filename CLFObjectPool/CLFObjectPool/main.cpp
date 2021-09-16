@@ -2,9 +2,10 @@
 #include <iostream>
 #include <process.h>
 #include "CCrashDump.h"
+#include "CDebugger.h"
 
-#define THREAD_SIZE (10)
-#define MAX_ALLOC (100000)
+#define THREAD_SIZE (3)
+#define MAX_ALLOC (30000)
 #define THREAD_ALLOC (10000)
 
 using namespace std;
@@ -24,6 +25,9 @@ long lOutCounter = 0;
 
 int main()
 {
+	CDebugger::Initialize();
+	CDebugger::SetDirectory(L"../Debugs");
+
 	HANDLE hThreads[THREAD_SIZE + 1];
 
 	hThreads[0] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
@@ -70,6 +74,8 @@ int main()
 	{
 		CloseHandle(hThreads[i]);
 	}
+
+	CDebugger::Destroy();
 
 	return 0;
 }
@@ -137,7 +143,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 
 unsigned int __stdcall MonitorThread(LPVOID lpParam)
 {
-	while (1)
+	while (!g_exit)
 	{
 		lInTPS = lInCounter;
 		lOutTPS = lOutCounter;
@@ -145,15 +151,11 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 		lInCounter = 0;
 		lOutCounter = 0;
 
-		wprintf(L"=====================================================================\n");
-		wprintf(L"                        MemoryPool Testing...                        \n");
-		wprintf(L"=====================================================================\n\n");
-
 		wprintf(L"---------------------------------------------------------------------\n\n");
-		wprintf(L"Alloc TPS		: %ld\n", lOutTPS);
-		wprintf(L"Free  TPS		: %ld\n", lInTPS);
-		wprintf(L"Alloc TPS		: %ld\n", g_pool.GetSize());
-		wprintf(L"Pool Capa		: %ld\n", g_pool.GetCapacity());
+		wprintf(L"[Alloc TPS	%ld]\n", lOutTPS);
+		wprintf(L"[Free  TPS	%ld]\n", lInTPS);
+		wprintf(L"[Alloc TPS	%ld]\n", g_pool.GetSize());
+		wprintf(L"[Pool Capa	%ld]\n", g_pool.GetCapacity());
 		wprintf(L"---------------------------------------------------------------------\n\n\n");
 		if (g_pool.GetSize() > MAX_ALLOC)
 		{

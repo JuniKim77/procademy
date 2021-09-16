@@ -1,5 +1,8 @@
 #include "CLFObjectPool.h"
 #include "CCrashDump.h"
+#include "CDebugger.h"
+
+LONG64 g_null_counter = 0;
 
 procademy::CLFObjectPool::CLFObjectPool()
 	: CLFObjectPool(0, false)
@@ -20,12 +23,17 @@ procademy::CLFObjectPool::~CLFObjectPool()
 {
 	st_BLOCK_NODE* node = _pFreeTop.ptr_node;
 
+	int count = 0;
+
 	while (node != nullptr)
 	{
 		st_BLOCK_NODE* pNext = node->stpNextBlock;
 		free(node);
 		node = pNext;
+		count++;
 	}
+
+	CDebugger::_Log(L"========== Destroy[%d] ==========", count);
 }
 
 ULONG64* procademy::CLFObjectPool::Alloc(void)		// pop
@@ -36,21 +44,36 @@ ULONG64* procademy::CLFObjectPool::Alloc(void)		// pop
 
 	if ((int)InterlockedIncrement(&mSize) > mCapacity)
 	{
-		AllocMemory(1);
+		//AllocMemory(1);
 		InterlockedIncrement(&mCapacity);
+		AllocMemory(1);
+		if (_pFreeTop.ptr_node == nullptr)
+		{
+			g_null_counter = _pFreeTop.counter;
+			CDebugger::_Log(L"After AllocMemory(2), but NULL [%08d]", _pFreeTop.counter);
+		}
 	}
 
 	do
 	{
+		bool wasNull = false;
 		do
 		{
+			wasNull = true;
 			top.ptr_node = _pFreeTop.ptr_node;
 			top.counter = _pFreeTop.counter;
 		} while (top.ptr_node == nullptr);
-
+		if (wasNull && (g_null_counter + 3 > _pFreeTop.counter))
+		{
+			CDebugger::_Log(L"After wasNull [%p]-[%08d]", top, _pFreeTop.counter);
+		}
 		ret = top.ptr_node;
 		next = top.ptr_node->stpNextBlock;
 	} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
+	if (_pFreeTop.counter < (g_null_counter + 3))
+	{
+		CDebugger::_Log(L"After After AllocMemory(2), but NULL [%08d]", _pFreeTop.counter);
+	}
 
 	if (mbPlacementNew)
 	{
@@ -113,5 +136,13 @@ void procademy::CLFObjectPool::AllocMemory(int size)
 			top.counter = _pFreeTop.counter;
 			node->stpNextBlock = (st_BLOCK_NODE*)top.ptr_node;
 		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);
+		if (_pFreeTop.ptr_node == nullptr)
+		{
+			CDebugger::_Log(L"After AllocMemory(1), but NULL [%08d]", _pFreeTop.counter);
+		}
+		if (_pFreeTop.counter < (g_null_counter + 3))
+		{
+			CDebugger::_Log(L"After After AllocMemory(1), but NULL [%08d]", _pFreeTop.counter);
+		}
 	}
 }
