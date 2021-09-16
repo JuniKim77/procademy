@@ -1,7 +1,6 @@
-#include "LockFreeStack.h"
+#include "CLFObjectPool.h"
+#include <iostream>
 #include <process.h>
-#include <wchar.h>
-#include "CLogger.h"
 #include "CCrashDump.h"
 
 #define THREAD_SIZE (10)
@@ -13,12 +12,15 @@ using namespace std;
 bool g_exit = false;
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
-unsigned int WINAPI MonitorThread(LPVOID lpParam);
+unsigned int WINAPI	MonitorThread(LPVOID lpParam);
 
-CLFStack g_st;
+procademy::CLFObjectPool g_pool;
 
-long PushTPS = 0;
-long PopTPS = 0;
+long lInTPS = 0;
+long lOutTPS = 0;
+	 
+long lInCounter = 0;
+long lOutCounter = 0;
 
 int main()
 {
@@ -29,6 +31,7 @@ int main()
 	for (int i = 1; i <= THREAD_SIZE; ++i)
 	{
 		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
+		Sleep(1000);
 	}
 
 	WORD ControlKey;
@@ -73,24 +76,59 @@ int main()
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
+	ULONG64* pDataArray[THREAD_ALLOC];
+
 	while (!g_exit)
 	{
-		for (int i = 0; i < THREAD_ALLOC; ++i)
+		// Alloc
+		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
-			g_st.Push(i);
-			InterlockedIncrement((long*)&PushTPS);
+			pDataArray[i] = g_pool.Alloc();
+			InterlockedIncrement((long*)&lOutCounter);
 		}
-
-		Sleep(0);
-
-		for (int i = 0; i < 10000; ++i)
+		// Check Init Data Value
+		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
-			ULONG64 num;
-			if (g_st.Pop(&num) == false)
+			if (*pDataArray[i] != 0x0000000055555555)
 			{
 				CRASH();
 			}
-			InterlockedIncrement((long*)&PopTPS);
+		}
+		// Increment
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			InterlockedIncrement64((LONG64*)pDataArray[i]);
+		}
+		// Context Switching
+		Sleep(0);
+
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (*pDataArray[i] != 0x0000000055555556)
+			{
+				CRASH();
+			}
+		}
+		// Decrement
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			InterlockedDecrement64((LONG64*)pDataArray[i]);
+		}
+		// Context Switching
+		Sleep(0);
+		// Check Init Data Value
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (*pDataArray[i] != 0x0000000055555555)
+			{
+				CRASH();
+			}
+		}
+
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			g_pool.Free(pDataArray[i]);
+			InterlockedIncrement((long*)&lInCounter);
 		}
 	}
 
@@ -101,22 +139,23 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 {
 	while (1)
 	{
-		long push = PushTPS;
-		long pop = PopTPS;
+		lInTPS = lInCounter;
+		lOutTPS = lOutCounter;
 
-		PushTPS = 0;
-		PopTPS = 0;
+		lInCounter = 0;
+		lOutCounter = 0;
 
 		wprintf(L"=====================================================================\n");
-		wprintf(L"                        LockFreeStack Testing...                        \n");
+		wprintf(L"                        MemoryPool Testing...                        \n");
 		wprintf(L"=====================================================================\n\n");
 
 		wprintf(L"---------------------------------------------------------------------\n\n");
-		wprintf(L"Pop TPS			: %ld\n", pop);
-		wprintf(L"Push  TPS		: %ld\n", push);
-		wprintf(L"Stack Size		: %ld\n", g_st.GetSize());
+		wprintf(L"Alloc TPS		: %ld\n", lOutTPS);
+		wprintf(L"Free  TPS		: %ld\n", lInTPS);
+		wprintf(L"Alloc TPS		: %ld\n", g_pool.GetSize());
+		wprintf(L"Pool Capa		: %ld\n", g_pool.GetCapacity());
 		wprintf(L"---------------------------------------------------------------------\n\n\n");
-		if (g_st.GetSize() > MAX_ALLOC)
+		if (g_pool.GetSize() > MAX_ALLOC)
 		{
 			CRASH();
 		}

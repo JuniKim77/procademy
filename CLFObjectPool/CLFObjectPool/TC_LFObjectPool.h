@@ -1,23 +1,9 @@
-/*---------------------------------------------------------------
-	procademy MemoryPool.
-
-	메모리 풀 클래스 (오브젝트 풀 / 프리리스트)
-	특정 데이타(구조체,클래스,변수)를 일정량 할당 후 나눠쓴다.
-
-	- 사용법.
-
-	procademy::CMemoryPool<DATA> MemPool(300, FALSE);
-	DATA *pData = MemPool.Alloc();
-
-	pData 사용
-
-	MemPool.Free(pData);
-----------------------------------------------------------------*/
-#ifndef  __PROCADEMY_OBJECT_POOL__
-#define  __PROCADEMY_OBJECT_POOL__
+#pragma once
 #include <new.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wtypes.h>
+#include "CCrashDump.h"
 
 #define CHECKSUM_UNDER (0xAAAAAAAA)
 #define CHECKSUM_OVER (0xBBBBBBBB)
@@ -25,12 +11,9 @@
 namespace procademy
 {
 	template <typename DATA>
-	class ObjectPool
+	class TC_LFObjectPool
 	{
 	private:
-		/* **************************************************************** */
-		// 각 블럭 앞에 사용될 노드 구조체.
-		/* **************************************************************** */
 		struct st_BLOCK_NODE
 		{
 			st_BLOCK_NODE()
@@ -44,8 +27,8 @@ namespace procademy
 			st_BLOCK_NODE* stpNextBlock;
 			unsigned int checkSum_over = CHECKSUM_OVER;
 		};
-
 	public:
+		TC_LFObjectPool();
 		//////////////////////////////////////////////////////////////////////////
 		// 생성자, 파괴자.
 		//
@@ -53,8 +36,8 @@ namespace procademy
 		//				(bool) Alloc 시 생성자 / Free 시 파괴자 호출 여부
 		// Return:
 		//////////////////////////////////////////////////////////////////////////
-		ObjectPool(int iBlockNum, bool bPlacementNew = false);
-		virtual	~ObjectPool();
+		TC_LFObjectPool(int iBlockNum, bool bPlacementNew = false);
+		virtual	~TC_LFObjectPool();
 
 		//////////////////////////////////////////////////////////////////////////
 		// 블럭 하나를 할당받는다.  
@@ -78,7 +61,7 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int) 메모리 풀 내부 전체 개수
 		//////////////////////////////////////////////////////////////////////////
-		int		GetCapacity(void) { return mSize; }
+		int		GetCapacity(void) { return mCapacity; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 현재 사용중인 블럭 개수를 얻는다.
@@ -86,112 +69,136 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
-		int		GetSize(void) { return mCapacity; }
+		int		GetSize(void) { return mSize; }
 
 	private:
-		void* AllocMemory(int size);
+		void AllocMemory(int size);
 
 	private:
-		int mSize;
-		int mCapacity;
+		struct t_Top
+		{
+			st_BLOCK_NODE* ptr_node = nullptr;
+			LONG64 counter = 0;
+		};
+
+		DWORD mSize;
+		DWORD mCapacity;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
-		st_BLOCK_NODE* _pFreeNode;
+		alignas(16) t_Top _pFreeTop;
 	};
 	template<typename DATA>
-	inline ObjectPool<DATA>::ObjectPool(int iBlockNum, bool bPlacementNew)
+	inline TC_LFObjectPool<DATA>::TC_LFObjectPool()
+		: TC_LFObjectPool(0, false)
+	{
+	}
+	template<typename DATA>
+	inline TC_LFObjectPool<DATA>::TC_LFObjectPool(int iBlockNum, bool bPlacementNew)
 		: mSize(0)
 		, mCapacity(iBlockNum)
 		, mbPlacementNew(bPlacementNew)
 	{
-		_pFreeNode = (st_BLOCK_NODE*)AllocMemory(mCapacity);
+		_pFreeTop.counter = 0;
+		_pFreeTop.ptr_node = nullptr;
+		AllocMemory(mCapacity);
 	}
 	template<typename DATA>
-	inline ObjectPool<DATA>::~ObjectPool()
+	inline TC_LFObjectPool<DATA>::~TC_LFObjectPool()
 	{
-		while (_pFreeNode != nullptr)
+		st_BLOCK_NODE* node = _pFreeTop.ptr_node;
+
+		while (node != nullptr)
 		{
-			st_BLOCK_NODE* pNext = _pFreeNode->stpNextBlock;
-			free(_pFreeNode);
-			_pFreeNode = pNext;
+			st_BLOCK_NODE* pNext = node->stpNextBlock;
+			free(node);
+			node = pNext;
 		}
 	}
 	template<typename DATA>
-	inline DATA* ObjectPool<DATA>::Alloc(void)
+	inline DATA* TC_LFObjectPool<DATA>::Alloc(void)
 	{
-		if (_pFreeNode == nullptr)
+		alignas(16) t_Top top;
+		st_BLOCK_NODE* ret;
+		st_BLOCK_NODE* next;
+
+		if ((int)InterlockedIncrement(&mSize) > mCapacity)
 		{
-			_pFreeNode = (st_BLOCK_NODE*)AllocMemory(mCapacity);
-			mCapacity *= 2;
+			AllocMemory(1);
+			InterlockedIncrement(&mCapacity);
 		}
 
-		st_BLOCK_NODE* node = _pFreeNode;
-		_pFreeNode = _pFreeNode->stpNextBlock;
-		mSize++;
+		do
+		{
+			do
+			{
+				top.ptr_node = _pFreeTop.ptr_node;
+				top.counter = _pFreeTop.counter;
+			} while (top.ptr_node == nullptr);
+
+			ret = top.ptr_node;
+			next = top.ptr_node->stpNextBlock;
+		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
 
 		if (mbPlacementNew)
 		{
-			new (&node->data) (DATA);
+			new (&ret->data) (DATA);
 		}
 
-		return &node->data;
+		return &ret->data;
 	}
 	template<typename DATA>
-	inline bool ObjectPool<DATA>::Free(DATA* pData)
+	inline bool TC_LFObjectPool<DATA>::Free(DATA* pData)
 	{
+		// prerequisite
+		void* top;
 		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
 
 		if (pNode->code != this ||
 			pNode->checkSum_under != CHECKSUM_UNDER ||
 			pNode->checkSum_over != CHECKSUM_OVER)
 		{
+			CRASH();
 			return false;
 		}
+
+		do
+		{
+			top = _pFreeTop.ptr_node;
+			pNode->stpNextBlock = (st_BLOCK_NODE*)top;
+		} while (InterlockedCompareExchange64((LONG64*)&_pFreeTop, (LONG64)pNode, (LONG64)top) != (LONG64)top);
+
 		if (mbPlacementNew)
 		{
 			pData->~DATA();
 		}
 
-		pNode->stpNextBlock = _pFreeNode;
-		_pFreeNode = pNode;
-		mSize--;
+		InterlockedDecrement(&mSize);
 		return true;
 	}
 	template<typename DATA>
-	inline void* ObjectPool<DATA>::AllocMemory(int size)
+	inline void TC_LFObjectPool<DATA>::AllocMemory(int size)
 	{
+		alignas(16) t_Top top;
 		st_BLOCK_NODE* node = nullptr;
-		st_BLOCK_NODE* nodePost = nullptr;
 
-		if (mbPlacementNew)
+		for (int i = 0; i < size; ++i)
 		{
-			for (int i = 0; i < size; ++i)
+			// prerequisite
+			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
+			node->checkSum_under = CHECKSUM_UNDER;
+			node->code = this;
+			if (mbPlacementNew)
 			{
-				node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
-				node->checkSum_under = CHECKSUM_UNDER;
-				node->code = this;
-				node->stpNextBlock = nodePost;
-				node->checkSum_over = CHECKSUM_OVER;
-
-				nodePost = node;
-			}
-		}
-		else
-		{
-			for (int i = 0; i < size; ++i)
-			{
-				node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
-				node->checkSum_under = CHECKSUM_UNDER;
-				node->code = this;
 				new (&node->data) (DATA);
-				node->stpNextBlock = nodePost;
-				node->checkSum_over = CHECKSUM_OVER;
-
-				nodePost = node;
 			}
-		}
+			node->checkSum_over = CHECKSUM_OVER;
 
-		return node;
+			do
+			{
+				top.ptr_node = _pFreeTop.ptr_node;
+				top.counter = _pFreeTop.counter;
+				node->stpNextBlock = (st_BLOCK_NODE*)top.ptr_node;
+			} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);
+		}
 	}
 }
-#endif
