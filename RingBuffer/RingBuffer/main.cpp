@@ -52,6 +52,7 @@ int main()
 	for (int i = 0; i < 2; ++i)
 	{
 		CloseHandle(hArray[i]);
+	}
 
 	return 0;
 }
@@ -87,7 +88,7 @@ int dequeueProcess()
 	//ringBuffer.Unlock(false);
 
 	buffer[size] = '\0';
-	//printf(buffer);
+	printf(buffer);
 
 	return size;
 }

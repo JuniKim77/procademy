@@ -21,7 +21,7 @@ RingBuffer::RingBuffer(int iBufferSize)
 	, mBuffer(nullptr)
 {
 	mBuffer = new char[iBufferSize + 1];
-	// memset(mBuffer, 0, iBufferSize + 1);
+	memset(mBuffer, 0, iBufferSize + 1);
 }
 
 void RingBuffer::Resize(int size)
@@ -114,7 +114,7 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 		return Enqueue(chpData, GetFreeSize());
 	}
 
-	if (mRear >= mFront)
+	/*if (mRear >= mFront)
 	{
 		int possibleToEnd = DirectEnqueueSize();
 
@@ -138,7 +138,34 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 
 	memcpy(mBuffer + mRear, chpData, iSize);
 
-	mRear += iSize;
+	mRear += iSize;*/
+
+	if (mRear + iSize >= mCapacity + 1)
+	{
+		int possibleToEnd = 0;
+
+		if (mFront == 0)
+		{
+			possibleToEnd = mCapacity - mRear;
+		}
+		else
+		{
+			possibleToEnd = mCapacity - mRear + 1;
+		}
+
+		memcpy(mBuffer + mRear, chpData, possibleToEnd);
+		memcpy(mBuffer, chpData + possibleToEnd, iSize - possibleToEnd);
+
+		mRear = (mRear + iSize) - (mCapacity + 1);
+	}
+	else
+	{
+		memcpy(mBuffer + mRear, chpData, iSize);
+
+		mRear += iSize;
+	}
+
+	//mRear = (mRear + iSize) % (mCapacity + 1);
 
 	return iSize;
 }
@@ -224,36 +251,8 @@ bool RingBuffer::MoveRear(int iSize)
 	{
 		return false;
 	}
-	// 순방향의 경우...
-	if (mRear >= mFront)
-	{
-		// 바로 넣을 수 있는 크기..
-		int possibleToEnd = DirectEnqueueSize();
 
-		// 그 것보다 넣은 자료양이 적다면.. 그냥 넣자!
-		if (iSize <= possibleToEnd)
-		{
-			// 인덱스가 범위를 초과하는 경우를 방지함...
-			if (IsFrontZero())
-			{
-				mRear += iSize;
-			}
-			else
-			{
-				mRear = (mRear + iSize) % (mCapacity + 1);
-			}
-
-			return true;
-		}
-
-		int remain = iSize - possibleToEnd;
-
-		mRear = remain;
-
-		return true;
-	}
-	// 역방향은 그냥 넣으면 끝...
-	mRear += iSize;
+	mRear = (mRear + iSize) % (mCapacity + 1);
 
 	return true;
 }
@@ -264,26 +263,8 @@ bool RingBuffer::MoveFront(int iSize)
 	{
 		return false;
 	}
-	// 역방향의 경우,,,
-	if (mFront > mRear)
-	{
-		int possibleToEnd = DirectDequeueSize();
 
-		if (iSize <= possibleToEnd)
-		{
-			mFront = (mFront + iSize) % (mCapacity + 1);
-
-			return true;
-		}
-
-		int remain = iSize - possibleToEnd;
-
-		mFront = remain;
-
-		return true;
-	}
-	// 순방향이면 그냥 넣으면 끝...
-	mFront += iSize;
+	mFront = (mFront + iSize) % (mCapacity + 1);
 
 	return true;
 }
