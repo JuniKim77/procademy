@@ -121,6 +121,7 @@ void procademy::CLFObjectPool::AllocMemory(int size)
 	{
 		// prerequisite
 		node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
+		InterlockedIncrement((long*)&mMallocCount);
 		node->checkSum_under = CHECKSUM_UNDER;
 		node->code = this;
 		if (mbPlacementNew)

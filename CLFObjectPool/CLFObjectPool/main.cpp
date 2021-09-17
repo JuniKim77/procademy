@@ -4,8 +4,8 @@
 #include "CCrashDump.h"
 #include "CDebugger.h"
 
-#define THREAD_SIZE (3)
-#define MAX_ALLOC (30000)
+#define THREAD_SIZE (10)
+#define MAX_ALLOC (100000)
 #define THREAD_ALLOC (10000)
 
 using namespace std;
@@ -155,6 +155,7 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 		wprintf(L"[Alloc TPS	%ld]\n", lOutTPS);
 		wprintf(L"[Free  TPS	%ld]\n", lInTPS);
 		wprintf(L"[Alloc TPS	%ld]\n", g_pool.GetSize());
+		wprintf(L"[Malloc Count	%ld]\n", g_pool.GetMallocCount());
 		wprintf(L"[Pool Capa	%ld]\n", g_pool.GetCapacity());
 		wprintf(L"---------------------------------------------------------------------\n\n\n");
 		if (g_pool.GetSize() > MAX_ALLOC)
