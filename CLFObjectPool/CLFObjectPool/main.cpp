@@ -35,7 +35,6 @@ int main()
 	for (int i = 1; i <= THREAD_SIZE; ++i)
 	{
 		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
-		Sleep(1000);
 	}
 
 	WORD ControlKey;
@@ -106,7 +105,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			InterlockedIncrement64((LONG64*)pDataArray[i]);
 		}
 		// Context Switching
-		Sleep(0);
+		Sleep(1);
 
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
@@ -121,7 +120,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			InterlockedDecrement64((LONG64*)pDataArray[i]);
 		}
 		// Context Switching
-		Sleep(0);
+		Sleep(1);
 		// Check Init Data Value
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{

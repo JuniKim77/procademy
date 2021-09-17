@@ -114,43 +114,13 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 		return Enqueue(chpData, GetFreeSize());
 	}
 
-	/*if (mRear >= mFront)
-	{
-		int possibleToEnd = DirectEnqueueSize();
-
-		if (iSize < possibleToEnd)
-		{
-			memcpy(mBuffer + mRear, chpData, iSize);
-			mRear += iSize;
-
-			return iSize;
-		}
-
-		int remain = iSize - possibleToEnd;
-
-		memcpy(mBuffer + mRear, chpData, possibleToEnd);
-		memcpy(mBuffer, chpData + possibleToEnd, remain);
-
-		mRear = remain;
-
-		return iSize;
-	}
-
-	memcpy(mBuffer + mRear, chpData, iSize);
-
-	mRear += iSize;*/
-
 	if (mRear + iSize >= mCapacity + 1)
 	{
-		int possibleToEnd = 0;
+		int possibleToEnd = mCapacity + 1 - mRear;
 
 		if (mFront == 0)
 		{
-			possibleToEnd = mCapacity - mRear;
-		}
-		else
-		{
-			possibleToEnd = mCapacity - mRear + 1;
+			int test = 0;
 		}
 
 		memcpy(mBuffer + mRear, chpData, possibleToEnd);
@@ -164,8 +134,6 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 
 		mRear += iSize;
 	}
-
-	//mRear = (mRear + iSize) % (mCapacity + 1);
 
 	return iSize;
 }
@@ -181,7 +149,7 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 		return Dequeue(chpDest, GetUseSize());
 	}
 
-	if (mFront > mRear)
+	/*if (mFront > mRear)
 	{
 		int possibleToEnd = DirectDequeueSize();
 
@@ -205,7 +173,25 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 
 	memcpy(chpDest, mBuffer + mFront, iSize);
 
-	mFront += iSize;
+	mFront += iSize;*/
+
+	if (mFront + iSize >= mCapacity + 1)
+	{
+		int possibleToEnd = mCapacity + 1 - mFront;
+
+		memcpy(chpDest, mBuffer + mFront, possibleToEnd);
+		memcpy(chpDest + possibleToEnd, mBuffer, iSize - possibleToEnd);
+
+		mFront = (mFront + iSize) - (mCapacity + 1);
+	}
+	else
+	{
+		memcpy(chpDest, mBuffer + mFront, iSize);
+
+		mFront += iSize;
+	}
+
+	// mFront = (mFront + iSize) % (mCapacity + 1);
 
 	return iSize;
 }

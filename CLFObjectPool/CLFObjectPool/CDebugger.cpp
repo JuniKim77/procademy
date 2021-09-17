@@ -29,9 +29,6 @@ void CDebugger::_Log(const WCHAR* format, ...)
         , GetCurrentThreadId(), t.tm_mon + 1, t.tm_mday, (t.tm_year + 1900) % 100,
         t.tm_hour, t.tm_min, t.tm_sec);
 
-    lenval = wsprintf(pLog, L"%05d ## "
-        , GetCurrentThreadId());
-
     pLog += lenval;
     count += lenval;
 

@@ -80,7 +80,7 @@ int dequeueProcess()
 	//ringBuffer.Lock(false);
 	if (ringBuffer.GetUseSize() == 0)
 	{
-		ringBuffer.Unlock(false);
+		//ringBuffer.Unlock(false);
 		return 0;
 	}
 
