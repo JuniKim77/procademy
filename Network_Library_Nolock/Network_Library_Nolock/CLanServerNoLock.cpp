@@ -1,4 +1,5 @@
 //#define SPIN_LOCK
+#define SENDQ_LOCK
 
 #include "CLanServerNoLock.h"
 #include "CLogger.h"
@@ -207,10 +208,13 @@ int CLanServerNoLock::SendPost(Session* session)
 			return SEND_POST_RING_QUEUE_EMPTY;
 		}
 
+#ifdef SENDQ_LOCK
 		session->send.queue.Lock(false);
 		SetWSABuf(buffers, session, false);
 		session->send.queue.Unlock(false);
-
+#else
+		SetWSABuf(buffers, session, false);
+#endif
 		if ((InterlockedIncrement16((short*)&session->ioCount) & 0xff) > 2)
 		{
 			CRASH();
@@ -255,14 +259,54 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 	}
 	else
 	{
-		int dSize = session->send.queue.DirectDequeueSize();
+		/*int dSize = session->send.queue.DirectDequeueSize();
 
 		bufs[0].buf = session->send.queue.GetFrontBufferPtr();
 		bufs[0].len = dSize;
 		bufs[1].buf = session->send.queue.GetBuffer();
-		bufs[1].len = session->send.queue.GetUseSize() - dSize;
+		bufs[1].len = session->send.queue.GetUseSize() - dSize;*/
+
+		char* pRear = session->send.queue.GetRearBufferPtr();
+		char* pFront = session->send.queue.GetFrontBufferPtr();
+		char* pBuf = session->send.queue.GetBuffer();
+
+		if (pRear >= pFront)
+		{
+			bufs[0].buf = pFront;
+			bufs[0].len = pRear - pFront;
+			bufs[1].buf = pRear;
+			bufs[1].len = 0;
+		}
+		else
+		{
+			bufs[0].buf = pFront;
+			bufs[0].len = session->send.queue.DirectDequeueSize();
+			bufs[1].buf = pBuf;
+			bufs[1].len = pRear - pBuf;
+		}
 	}
 }
+
+//int RingBuffer::GetUseSize(void)
+//{
+//	if (mRear >= mFront)
+//		return mRear - mFront;
+//	else // f 바로 뒤는 넣을 수 없다.
+//		return mCapacity - (mFront - mRear - 1);
+//}
+
+//int RingBuffer::DirectDequeueSize(void)
+//{
+//	// Front가 움직여 나간다...
+//	// 순방향 경우 인덱스 차 반환
+//	if (mRear >= mFront)
+//	{
+//		return mRear - mFront;
+//	}
+//
+//	// 끝까지 다 쓸 있어서 +1
+//	return mCapacity - mFront + 1;
+//}
 
 bool CLanServerNoLock::DecrementProc(Session* session)
 {
@@ -521,9 +565,14 @@ bool CLanServerNoLock::OnCompleteMessage()
 
 		if (ret)
 		{
+#ifdef SENDQ_LOCK
 			session->send.queue.Lock(false);
 			session->send.queue.MoveFront(transferredSize);
 			session->send.queue.Unlock(false);
+#else
+			session->send.queue.MoveFront(transferredSize);
+#endif
+			
 
 			InterlockedExchange8((char*)&session->isSending, false);
 			sendRet = SendPost(session);
@@ -838,11 +887,14 @@ int CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
 
 	header.byCode = dfNETWORK_CODE;
 	header.wPayloadSize = packet->GetSize();*/
-
+#ifdef SENDQ_LOCK
 	session->send.queue.Lock(false);
 	//session->send.queue.Enqueue((char*)&header, sizeof(header));
 	session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
 	session->send.queue.Unlock(false);
+#else
+	session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
+#endif
 
 	ret = SendPost(session);
 
