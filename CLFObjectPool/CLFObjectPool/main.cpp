@@ -4,8 +4,8 @@
 #include "CCrashDump.h"
 #include "CDebugger.h"
 
-#define THREAD_SIZE (10)
-#define MAX_ALLOC (100000)
+#define THREAD_SIZE (3)
+#define MAX_ALLOC (30000)
 #define THREAD_ALLOC (10000)
 
 using namespace std;
@@ -25,6 +25,7 @@ long lOutCounter = 0;
 
 int main()
 {
+	procademy::CCrashDump::CCrashDump();
 	CDebugger::Initialize();
 	CDebugger::SetDirectory(L"../Debugs");
 
@@ -105,7 +106,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			InterlockedIncrement64((LONG64*)pDataArray[i]);
 		}
 		// Context Switching
-		Sleep(1);
+		Sleep(0);
 
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
@@ -120,7 +121,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			InterlockedDecrement64((LONG64*)pDataArray[i]);
 		}
 		// Context Switching
-		Sleep(1);
+		//Sleep(0);
 		// Check Init Data Value
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
@@ -135,6 +136,8 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			g_pool.Free(pDataArray[i]);
 			InterlockedIncrement((long*)&lInCounter);
 		}
+		// Context Switching
+		Sleep(0);
 	}
 
 	return 0;
@@ -153,7 +156,7 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 		wprintf(L"---------------------------------------------------------------------\n\n");
 		wprintf(L"[Alloc TPS	%ld]\n", lOutTPS);
 		wprintf(L"[Free  TPS	%ld]\n", lInTPS);
-		wprintf(L"[Alloc TPS	%ld]\n", g_pool.GetSize());
+		wprintf(L"[Alloc Count	%ld]\n", g_pool.GetSize());
 		wprintf(L"[Malloc Count	%ld]\n", g_pool.GetMallocCount());
 		wprintf(L"[Pool Capa	%ld]\n", g_pool.GetCapacity());
 		wprintf(L"---------------------------------------------------------------------\n\n\n");

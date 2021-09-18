@@ -38,20 +38,13 @@ procademy::CLFObjectPool::~CLFObjectPool()
 
 ULONG64* procademy::CLFObjectPool::Alloc(void)		// pop
 {
-	alignas(16) t_Top top;
-	st_BLOCK_NODE* ret = nullptr;
-	st_BLOCK_NODE* next = nullptr;
+	//DWORD incresedSize = InterlockedIncrement(&mSize);
+	InterlockedIncrement(&mSize);
 
-	if ((int)InterlockedIncrement(&mSize) > mCapacity)
+	if (mSize > mCapacity)
 	{
-		//if (_pFreeTop.ptr_node == nullptr)
-		//{
-		//	g_null_counter = _pFreeTop.counter;
-		//	CDebugger::_Log(L"Before AllocMemory(2), but NULL [%08d]", _pFreeTop.counter);
-		//}
-		AllocMemory(1);
 		InterlockedIncrement(&mCapacity);
-		//AllocMemory(1);
+		AllocMemory(1);
 		if (_pFreeTop.ptr_node == nullptr)
 		{
 			g_null_counter = _pFreeTop.counter;
@@ -59,13 +52,14 @@ ULONG64* procademy::CLFObjectPool::Alloc(void)		// pop
 		}
 	}
 
+	alignas(16) t_Top top;
+	st_BLOCK_NODE* ret = nullptr;
+	st_BLOCK_NODE* next = nullptr;
+
 	do
 	{
-		do
-		{
-			top.ptr_node = _pFreeTop.ptr_node;
-			top.counter = _pFreeTop.counter;
-		} while (top.ptr_node == nullptr);
+		top.ptr_node = _pFreeTop.ptr_node;
+		top.counter = _pFreeTop.counter;
 		ret = top.ptr_node;
 		next = top.ptr_node->stpNextBlock;
 	} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
@@ -121,7 +115,7 @@ void procademy::CLFObjectPool::AllocMemory(int size) // push
 	{
 		// prerequisite
 		node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
-		InterlockedIncrement((long*)&mMallocCount);
+		InterlockedIncrement(&mMallocCount);
 		node->checkSum_under = CHECKSUM_UNDER;
 		node->code = this;
 		if (mbPlacementNew)

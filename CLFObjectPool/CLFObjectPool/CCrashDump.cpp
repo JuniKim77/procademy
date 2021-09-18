@@ -1,10 +1,12 @@
 #pragma once
 #include "CCrashDump.h"
+#include "CDebugger.h"
 
 long procademy::CCrashDump::_DumpCount = 0;
 
 procademy::CCrashDump::CCrashDump()
 {
+    CDebugger::PrintLogOut(L"debug");
     _DumpCount = 0;
 
     _invalid_parameter_handler oldHandler, newHandler;
