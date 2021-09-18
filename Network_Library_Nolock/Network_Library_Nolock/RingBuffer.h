@@ -123,6 +123,8 @@ public:
 		InitializeSRWLock(&mSrwLock);
 	}
 
+	int GetCapacity() { return mCapacity; }
+
 private:
 	int mFront;
 	int mRear;

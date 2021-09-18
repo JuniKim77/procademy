@@ -34,6 +34,7 @@ private:
 		ULONG ip;
 		u_int64 sessionID;
 		SRWLOCK lock;
+		uint8_t lastNum = 0;
 
 		Session()
 			: ioCount(0)

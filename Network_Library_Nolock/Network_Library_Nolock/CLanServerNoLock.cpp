@@ -1,10 +1,11 @@
 //#define SPIN_LOCK
-#define SENDQ_LOCK
+//#define SENDQ_LOCK
 
 #include "CLanServerNoLock.h"
 #include "CLogger.h"
 #include "CPacket.h"
 #include "CCrashDump.h"
+#include "CDebugger.h"
 
 CLanServerNoLock::Session* CLanServerNoLock::FindSession(u_int64 sessionNo)
 {
@@ -163,16 +164,12 @@ bool CLanServerNoLock::RecvPost(Session* session)
 			return true;
 		}
 
-		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"WSARecv ERROR: ", err);
-
-		//LockSession(session);
 		bool ret = DecrementProc(session);
 
 		if (ret == false)
 		{
 			DisconnectProc(session);
 		}
-		//UnlockSession(session);
 
 		return false;
 	}
@@ -191,14 +188,12 @@ int CLanServerNoLock::SendPost(Session* session)
 			return SEND_POST_SEND_FLAG_ON;
 		}
 
-		//session->send.queue.Lock(false);
 		if (session->send.queue.IsEmpty() == true)
 		{
 			if (InterlockedExchange8((char*)&session->isSending, false) == false)
 			{
 				CRASH();
 			}
-			//session->send.queue.Unlock(false);
 
 			if (session->send.queue.IsEmpty() == false)
 			{
@@ -250,25 +245,32 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 {
 	if (isRecv)
 	{
-		int dSize = session->recv.queue.DirectEnqueueSize();
+		char* pRear = session->recv.queue.GetRearBufferPtr();
+		char* pFront = session->recv.queue.GetFrontBufferPtr();
+		char* pBuf = session->recv.queue.GetBuffer();
+		int capa = session->recv.queue.GetCapacity();
 
-		bufs[0].buf = session->recv.queue.GetRearBufferPtr();
-		bufs[0].len = dSize;
-		bufs[1].buf = session->recv.queue.GetBuffer();
-		bufs[1].len = session->recv.queue.GetFreeSize() - dSize;
+		if (pRear < pFront)
+		{
+			bufs[0].buf = pRear;
+			bufs[0].len = pRear - pFront;
+			bufs[1].buf = pRear;
+			bufs[1].len = 0;
+		}
+		else
+		{
+			bufs[0].buf = pRear;
+			bufs[0].len = capa + 1 - (pRear - pBuf);
+			bufs[1].buf = pBuf;
+			bufs[1].len = pFront - pBuf;
+		}
 	}
 	else
 	{
-		/*int dSize = session->send.queue.DirectDequeueSize();
-
-		bufs[0].buf = session->send.queue.GetFrontBufferPtr();
-		bufs[0].len = dSize;
-		bufs[1].buf = session->send.queue.GetBuffer();
-		bufs[1].len = session->send.queue.GetUseSize() - dSize;*/
-
 		char* pRear = session->send.queue.GetRearBufferPtr();
 		char* pFront = session->send.queue.GetFrontBufferPtr();
 		char* pBuf = session->send.queue.GetBuffer();
+		int capa = session->send.queue.GetCapacity();
 
 		if (pRear >= pFront)
 		{
@@ -280,37 +282,15 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 		else
 		{
 			bufs[0].buf = pFront;
-			bufs[0].len = session->send.queue.DirectDequeueSize();
+			bufs[0].len = capa + 1 - (pFront - pBuf);
 			bufs[1].buf = pBuf;
 			bufs[1].len = pRear - pBuf;
 		}
 	}
 }
 
-//int RingBuffer::GetUseSize(void)
-//{
-//	if (mRear >= mFront)
-//		return mRear - mFront;
-//	else // f 바로 뒤는 넣을 수 없다.
-//		return mCapacity - (mFront - mRear - 1);
-//}
-
-//int RingBuffer::DirectDequeueSize(void)
-//{
-//	// Front가 움직여 나간다...
-//	// 순방향 경우 인덱스 차 반환
-//	if (mRear >= mFront)
-//	{
-//		return mRear - mFront;
-//	}
-//
-//	// 끝까지 다 쓸 있어서 +1
-//	return mCapacity - mFront + 1;
-//}
-
 bool CLanServerNoLock::DecrementProc(Session* session)
 {
-	//session->ioCount--;
 	int ret = InterlockedDecrement16(&session->ioCount);
 
 	if (ret < 0)
@@ -334,14 +314,8 @@ bool CLanServerNoLock::DecrementProc(Session* session)
 
 void CLanServerNoLock::DisconnectProc(Session* session)
 {
-	//session->isDisconnecting = false;
 	if (InterlockedExchange8((char*)&session->isDisconnecting, true) == true)
 	{
-		return;
-	}
-	if (session->bIsAlive == false)
-	{
-		// CRASH();
 		return;
 	}
 
@@ -392,11 +366,21 @@ void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
 		packet.MoveRear(ret);
 
 		OnRecv(session->sessionID, &packet);
+
+		if (count == 0)
+		{
+			CDebugger::_Log(L"PacketProc Begin [S %5d] [L %4d]", session->sessionID, session->lastNum);
+		}
 		//count += (sizeof(header) + header.wPayloadSize);
 		count += ret;
 
 		packet.Clear();
 	}
+	if (count > 10)
+	{
+		CDebugger::_Log(L"PacketProc End   [S %5d] [L %4d]", session->sessionID, session->lastNum);
+	}
+	
 }
 
 bool CLanServerNoLock::AcceptProc()
@@ -540,9 +524,7 @@ bool CLanServerNoLock::OnCompleteMessage()
 
 	if (transferredSize == 0) // normal close
 	{
-		//LockSession(session);
 		bool ret = DecrementProc(session);
-		//UnlockSession(session);
 
 		if (ret == false)
 		{
@@ -572,8 +554,6 @@ bool CLanServerNoLock::OnCompleteMessage()
 #else
 			session->send.queue.MoveFront(transferredSize);
 #endif
-			
-
 			InterlockedExchange8((char*)&session->isSending, false);
 			sendRet = SendPost(session);
 
@@ -890,11 +870,26 @@ int CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
 #ifdef SENDQ_LOCK
 	session->send.queue.Lock(false);
 	//session->send.queue.Enqueue((char*)&header, sizeof(header));
-	session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
+	int len = session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
 	session->send.queue.Unlock(false);
 #else
-	session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
+	int len = session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
 #endif
+
+	if (len != 10)
+	{
+		CDebugger::_Log(L"SendPacket Not 10 [R %4d] [F %4d]",
+			session->send.queue.GetRearBufferPtr() - session->send.queue.GetBuffer(),
+			session->send.queue.GetFrontBufferPtr() - session->send.queue.GetBuffer());
+	}
+	char* pPacket = packet->GetBufferPtr();
+	uint8_t num = (uint8_t)*(pPacket + 2);
+	//if (num == session->lastNum)
+	//{
+	//	//CDebugger::_Log(L"SendError [S %5d] [C %4d] [L %4d]", session->sessionID, num, session->lastNum);
+	//	CRASH();
+	//}
+	session->lastNum = num;
 
 	ret = SendPost(session);
 

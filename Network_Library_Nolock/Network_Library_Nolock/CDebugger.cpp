@@ -25,8 +25,8 @@ void CDebugger::_Log(const WCHAR* format, ...)
     localtime_s(&t, &curTime);
     WCHAR* pLog = sLogData[index];
 
-    lenval = wsprintf(pLog, L"%05d ## %02d/%02d/%02d %02d:%02d:%02d ## "
-        , GetCurrentThreadId(), t.tm_mon + 1, t.tm_mday, (t.tm_year + 1900) % 100,
+    lenval = wsprintf(pLog, L"%05u ## %05u ## %02d/%02d/%02d %02d:%02d:%02d ## "
+        , GetCurrentThreadId(), index, t.tm_mon + 1, t.tm_mday, (t.tm_year + 1900) % 100,
         t.tm_hour, t.tm_min, t.tm_sec);
 
     pLog += lenval;
@@ -96,7 +96,7 @@ void CDebugger::PrintLogOut(const WCHAR* szFileName)
         fwprintf_s(fout, L"%s\n\n", sLogData[i]);
     }
 
-    fwprintf_s(fout, L"\n===========================================\n\n");
+    fwprintf_s(fout, L"\n======================================= %4u\n\n", sIndex);
 
     fclose(fout);
 }
