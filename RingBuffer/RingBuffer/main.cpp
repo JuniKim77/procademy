@@ -3,6 +3,8 @@
 #include <cstring>
 #include <random>
 #include <conio.h>
+#include "CDebugger.h"
+#include "CCrashDump.h"
 
 #define STR_SIZE (120)
 #define TIME_PERIOD (50)
@@ -13,13 +15,17 @@ int enqueueProcess();
 
 RingBuffer ringBuffer(BUFFER_SIZE);
 HANDLE g_event;
-SRWLOCK g_srwlock;
 
 char szTest[] = "1234567890 abcdefghijklmnopqrstuvwxyz 1234567890 abcdefghijklmnopqrstuvwxyz 1234567890 abcdefghijklmnopqrstuvwxyz 123456";
 int cur = 0;
+int post = 0;
 
 int main()
 {
+	procademy::CCrashDump::CCrashDump();
+	CDebugger::SetDirectory(L"./");
+	CDebugger::Initialize();
+
 	system(" mode  con lines=30   cols=120 ");
 	int seed = 10;
 	int ringSize = BUFFER_SIZE;
@@ -30,7 +36,6 @@ int main()
 	HANDLE hArray[2];
 	hArray[0] = (HANDLE)_beginthreadex(nullptr, 0, enqueueProc, nullptr, 0, nullptr);
 	hArray[1] = (HANDLE)_beginthreadex(nullptr, 0, dequeueProc, nullptr, 0, nullptr);
-	InitializeSRWLock(&g_srwlock);
 
 	g_event = CreateEvent(nullptr, false, false, nullptr);
 
@@ -54,41 +59,37 @@ int main()
 		CloseHandle(hArray[i]);
 	}
 
+	CDebugger::PrintLogOut(L"Debug.txt");
+
 	return 0;
 }
 
 int dequeueProcess()
 {
 	char buffer[STR_SIZE + 1];
+	WCHAR wbuffer[STR_SIZE + 1];
 
 	int ran = rand() % (STR_SIZE + 1);
 
-	/*int dDequeSize = ringBuffer->DirectDequeueSize();
-
-	if (ran <= dDequeSize)
-	{
-		memcpy(buffer, ringBuffer->GetFrontBufferPtr(), dDequeSize);
-		buffer[dDequeSize] = '\0';
-		ringBuffer->MoveFront(dDequeSize);
-
-		return dDequeSize;
-	}
-	else
-	{
-
-	}*/
-	//ringBuffer.Lock(false);
 	if (ringBuffer.GetUseSize() == 0)
 	{
-		//ringBuffer.Unlock(false);
 		return 0;
 	}
 
 	int size = ringBuffer.Dequeue(buffer, ran);
-	//ringBuffer.Unlock(false);
 
 	buffer[size] = '\0';
+
 	printf(buffer);
+
+	//if (size != 0 && szTest[post] != buffer[0])
+	//{
+	//	//CDebugger::PrintLogOut(L"DEBUG");
+	//	CRASH();
+	//}
+
+	//post = (post + size) % STR_SIZE;
+	//CDebugger::_Log(L"[Post: %d]", post);
 
 	return size;
 }
@@ -96,58 +97,12 @@ int dequeueProcess()
 int enqueueProcess()
 {
 	char buffer[STR_SIZE + 1];
+	WCHAR wbuffer[STR_SIZE + 1];
 
-	// 랜덤 숫자 맞큼 넣을 것
 	int ran = rand() % (STR_SIZE + 1);
-
-	// 램덤 숫자와 현재 위치의 합이 문자열 크기보다 크면...
-	//if (cur + ran > STR_SIZE)
-	//{
-	//	// 가능한 만큼 미리 복사하고... 나머지 따로 복사
-	//	int poss = STR_SIZE - cur;
-	//	memcpy(buffer, szTest + cur, poss);
-	//	memcpy(buffer + poss, szTest, ran - poss);
-	//}
-	//else
-	//{
-	//	memcpy(buffer, szTest + cur, ran);
-	//}
-
-	//buffer[ran] = '\0';
-
-	//int dEneueSize = ringBuffer.DirectEnqueueSize();
-
-	//if (ran < dEneueSize)
-	//{
-	//	memcpy(ringBuffer.GetRearBufferPtr(), buffer, ran);
-
-	//	ringBuffer.MoveRear(ran);
-
-	//	cur = (cur + ran) % STR_SIZE;
-
-	//	return ran;
-	//}
-	//else
-	//{
-	//	memcpy(ringBuffer.GetRearBufferPtr(), buffer, dEneueSize);
-
-	//	ringBuffer.MoveRear(dEneueSize);
-
-	//	if (ringBuffer.IsFrontZero())
-	//	{
-	//		cur = (cur + dEneueSize) % (STR_SIZE + 1);
-	//	}
-	//	else
-	//	{
-	//		cur = (cur + dEneueSize) % STR_SIZE;
-	//	}
-
-	//	return dEneueSize;
-	//}
 
 	if (cur + ran > STR_SIZE)
 	{
-		// 가능한 만큼 미리 복사하고... 나머지 따로 복사
 		int poss = STR_SIZE - cur;
 		memcpy(buffer, szTest + cur, poss);
 		memcpy(buffer + poss, szTest, ran - poss);
@@ -159,9 +114,7 @@ int enqueueProcess()
 
 	buffer[ran] = '\0';
 
-	//ringBuffer.Lock(false);
 	int size = ringBuffer.Enqueue(buffer, ran);
-	//ringBuffer.Unlock(false);
 
 	cur = (cur + size) % STR_SIZE;
 
