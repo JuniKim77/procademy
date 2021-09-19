@@ -141,6 +141,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CCrashDump.cpp" />
+    <ClCompile Include="CDebugger.cpp" />
     <ClCompile Include="CEchoServerNoLock.cpp" />
     <ClCompile Include="CLanServerNoLock.cpp" />
     <ClCompile Include="CLogger.cpp" />
@@ -152,6 +153,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CCrashDump.h" />
+    <ClInclude Include="CDebugger.h" />
     <ClInclude Include="CEchoServerNoLock.h" />
     <ClInclude Include="CLanServerNoLock.h" />
     <ClInclude Include="CLogger.h" />

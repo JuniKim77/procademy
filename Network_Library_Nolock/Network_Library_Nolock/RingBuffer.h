@@ -27,6 +27,8 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 	int GetUseSize(void);
 
+	bool IsEmpty() { return mFront == mRear; }
+
 	/////////////////////////////////////////////////////////////////////////
 	// 현재 버퍼에 남은 용량 얻기.
 	// 체크 완료
@@ -120,6 +122,8 @@ public:
 	{
 		InitializeSRWLock(&mSrwLock);
 	}
+
+	int GetCapacity() { return mCapacity; }
 
 private:
 	int mFront;
