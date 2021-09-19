@@ -116,6 +116,9 @@ public:
 	void Lock(bool readonly);
 	void Unlock(bool readonly);
 
+	int GetRear() { return mRear; }
+	int GetFront() { return mFront; }
+
 private:
 	int mFront;
 	int mRear;

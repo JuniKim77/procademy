@@ -141,11 +141,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CCrashDump.cpp" />
+    <ClCompile Include="CDebugger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
+    <ClCompile Include="StreamQueue.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CCrashDump.h" />
+    <ClInclude Include="CDebugger.h" />
     <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="StreamQueue.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

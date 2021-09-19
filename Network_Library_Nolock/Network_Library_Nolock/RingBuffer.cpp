@@ -1,6 +1,7 @@
 #include "RingBuffer.h"
 #include <cstring>
 #include <stdio.h>
+#include "CLogger.h"
 
 RingBuffer::RingBuffer()
 	: RingBuffer(DEFAULT_SIZE)
@@ -109,36 +110,39 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 		return 0;
 	}
 
-	if (iSize > GetFreeSize())
+	int curFront = mFront;
+	int freeSize = 0;
+
+	if (mRear >= curFront)
 	{
-		return Enqueue(chpData, GetFreeSize());
+		freeSize = mCapacity - (mRear - curFront);
+	}
+	else
+	{
+		freeSize = (curFront - mRear - 1);
 	}
 
-	if (mRear >= mFront)
+	// iSize = iSize > freeSize ? freeSize : iSize;
+
+	if (iSize > freeSize)
 	{
-		int possibleToEnd = DirectEnqueueSize();
+		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Enqueue size over");
+		iSize = freeSize;
+	}
 
-		if (iSize < possibleToEnd)
-		{
-			memcpy(mBuffer + mRear, chpData, iSize);
-			mRear += iSize;
-
-			return iSize;
-		}
-
-		int remain = iSize - possibleToEnd;
+	if (mRear + iSize > mCapacity + 1)
+	{
+		int possibleToEnd = mCapacity - mRear + 1;
 
 		memcpy(mBuffer + mRear, chpData, possibleToEnd);
-		memcpy(mBuffer, chpData + possibleToEnd, remain);
-
-		mRear = remain;
-
-		return iSize;
+		memcpy(mBuffer, chpData + possibleToEnd, iSize - possibleToEnd);
+	}
+	else
+	{
+		memcpy(mBuffer + mRear, chpData, iSize);
 	}
 
-	memcpy(mBuffer + mRear, chpData, iSize);
-
-	mRear += iSize;
+	mRear = (mRear + iSize) % (mCapacity + 1);
 
 	return iSize;
 }
@@ -149,36 +153,39 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 		return 0;
 	}
 
-	if (iSize > GetUseSize())
+	int useSize;
+	int curRear = mRear;
+
+	if (curRear >= mFront)
 	{
-		return Dequeue(chpDest, GetUseSize());
+		useSize = curRear - mFront;
+	}
+	else
+	{
+		useSize = mCapacity - (mFront - curRear - 1);
 	}
 
-	if (mFront > mRear)
+	//iSize = iSize > useSize ? useSize : iSize;
+
+	if (iSize > useSize)
 	{
-		int possibleToEnd = DirectDequeueSize();
+		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Dequeue size over");
+		iSize = useSize;
+	}
 
-		if (iSize < possibleToEnd)
-		{
-			memcpy(chpDest, mBuffer + mFront, iSize);
-			mFront += iSize;
-
-			return iSize;
-		}
-
-		int remain = iSize - possibleToEnd;
+	if (mFront + iSize >= mCapacity + 1)
+	{
+		int possibleToEnd = mCapacity + 1 - mFront;
 
 		memcpy(chpDest, mBuffer + mFront, possibleToEnd);
-		memcpy(chpDest + possibleToEnd, mBuffer, remain);
-
-		mFront = remain;
-
-		return iSize;
+		memcpy(chpDest + possibleToEnd, mBuffer, iSize - possibleToEnd);
+	}
+	else
+	{
+		memcpy(chpDest, mBuffer + mFront, iSize);
 	}
 
-	memcpy(chpDest, mBuffer + mFront, iSize);
-
-	mFront += iSize;
+	mFront = (mFront + iSize) % (mCapacity + 1);
 
 	return iSize;
 }
@@ -189,31 +196,31 @@ int RingBuffer::Peek(char* chpDest, int iSize)
 		return 0;
 	}
 
-	if (iSize > GetUseSize())
+	int useSize;
+	int curRear = mRear;
+
+	if (curRear >= mFront)
 	{
-		return Peek(chpDest, GetUseSize());
+		useSize = curRear - mFront;
+	}
+	else
+	{
+		useSize = mCapacity - (mFront - curRear - 1);
 	}
 
-	if (mFront > mRear)
+	iSize = iSize > useSize ? useSize : iSize;
+
+	if (mFront + iSize >= mCapacity + 1)
 	{
-		int possibleToEnd = DirectDequeueSize();
-
-		if (iSize < possibleToEnd)
-		{
-			memcpy(chpDest, mBuffer + mFront, iSize);
-
-			return iSize;
-		}
-
-		int remain = iSize - possibleToEnd;
+		int possibleToEnd = mCapacity + 1 - mFront;
 
 		memcpy(chpDest, mBuffer + mFront, possibleToEnd);
-		memcpy(chpDest + possibleToEnd, mBuffer, remain);
-
-		return iSize;
+		memcpy(chpDest + possibleToEnd, mBuffer, iSize - possibleToEnd);
 	}
-
-	memcpy(chpDest, mBuffer + mFront, iSize);
+	else
+	{
+		memcpy(chpDest, mBuffer + mFront, iSize);
+	}
 
 	return iSize;
 }
@@ -224,36 +231,8 @@ bool RingBuffer::MoveRear(int iSize)
 	{
 		return false;
 	}
-	// 순방향의 경우...
-	if (mRear >= mFront)
-	{
-		// 바로 넣을 수 있는 크기..
-		int possibleToEnd = DirectEnqueueSize();
 
-		// 그 것보다 넣은 자료양이 적다면.. 그냥 넣자!
-		if (iSize <= possibleToEnd)
-		{
-			// 인덱스가 범위를 초과하는 경우를 방지함...
-			if (IsFrontZero())
-			{
-				mRear += iSize;
-			}
-			else
-			{
-				mRear = (mRear + iSize) % (mCapacity + 1);
-			}
-
-			return true;
-		}
-
-		int remain = iSize - possibleToEnd;
-
-		mRear = remain;
-
-		return true;
-	}
-	// 역방향은 그냥 넣으면 끝...
-	mRear += iSize;
+	mRear = (mRear + iSize) % (mCapacity + 1);
 
 	return true;
 }
@@ -264,26 +243,8 @@ bool RingBuffer::MoveFront(int iSize)
 	{
 		return false;
 	}
-	// 역방향의 경우,,,
-	if (mFront > mRear)
-	{
-		int possibleToEnd = DirectDequeueSize();
 
-		if (iSize <= possibleToEnd)
-		{
-			mFront = (mFront + iSize) % (mCapacity + 1);
-
-			return true;
-		}
-
-		int remain = iSize - possibleToEnd;
-
-		mFront = remain;
-
-		return true;
-	}
-	// 순방향이면 그냥 넣으면 끝...
-	mFront += iSize;
+	mFront = (mFront + iSize) % (mCapacity + 1);
 
 	return true;
 }

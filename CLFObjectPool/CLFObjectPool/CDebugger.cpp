@@ -15,12 +15,12 @@ bool CDebugger::sIsOver = false;
 void CDebugger::_Log(const WCHAR* format, ...)
 {
     USHORT index = InterlockedIncrement16((short*)&sIndex);
-    tm t;
-    time_t curTime;
     int lenval = 0;
     int count = 0;
     va_list ap;
 
+    tm t;
+    time_t curTime;
     time(&curTime);
     localtime_s(&t, &curTime);
     WCHAR* pLog = sLogData[index];
@@ -53,11 +53,14 @@ void CDebugger::Initialize()
     for (int i = 0; i <= USHRT_MAX; ++i)
     {
         sLogData[i] = new WCHAR[DEBUG_CONST_MAX_LEN];
+        ZeroMemory(sLogData[i], 2);
     }
 }
 
 void CDebugger::Destroy()
 {
+    CDebugger::PrintLogOut(L"_LFStack_Debug.txt");
+
     for (int i = 0; i < USHRT_MAX; ++i)
     {
         delete[] sLogData[i];
