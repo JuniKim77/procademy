@@ -264,6 +264,12 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 			bufs[1].buf = pBuf;
 			bufs[1].len = pFront - pBuf;
 		}
+		/*int dSize = session->recv.queue.DirectEnqueueSize();
+
+		bufs[0].buf = session->recv.queue.GetRearBufferPtr();
+		bufs[0].len = dSize;
+		bufs[1].buf = session->recv.queue.GetBuffer();
+		bufs[1].len = session->recv.queue.GetFreeSize() - dSize;*/
 	}
 	else
 	{
@@ -351,7 +357,7 @@ void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
 		mMonitor.recvTPS++;
 		mMonitor.sendTPS++;
 		//MonitorUnlock();
-
+		//session->recv.queue.MoveRear(10);
 		int ret = session->recv.queue.Dequeue(packet.GetFrontPtr(), 10);
 
 		if (ret != 10)
@@ -367,19 +373,19 @@ void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
 
 		OnRecv(session->sessionID, &packet);
 
-		if (count == 0)
+		/*if (count == 0)
 		{
 			CDebugger::_Log(L"PacketProc Begin [S %5d] [L %4d]", session->sessionID, session->lastNum);
-		}
+		}*/
 		//count += (sizeof(header) + header.wPayloadSize);
 		count += ret;
 
 		packet.Clear();
 	}
-	if (count > 10)
+	/*if (count > 10)
 	{
 		CDebugger::_Log(L"PacketProc End   [S %5d] [L %4d]", session->sessionID, session->lastNum);
-	}
+	}*/
 	
 }
 
