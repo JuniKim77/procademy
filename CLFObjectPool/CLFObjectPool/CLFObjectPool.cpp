@@ -41,22 +41,9 @@ ULONG64* procademy::CLFObjectPool::Alloc(void)		// pop
 	//DWORD incresedSize = InterlockedIncrement(&mSize);
 	//InterlockedIncrement(&mSize);
 
-	/*if (InterlockedIncrement(&mSize) > mCapacity)
-	{
-		InterlockedIncrement(&mCapacity);
-		AllocMemory(1);
-	}
-	else
-	{
-		while (mSize > mCapacity)
-		{
-			InterlockedIncrement(&mCapacity);
-			AllocMemory(1);
-		}
-	}*/
 	InterlockedIncrement(&mSize);
 
-	while (mSize > mCapacity)
+	if (mSize > mCapacity)
 	{
 		InterlockedIncrement(&mCapacity);
 		AllocMemory(1);

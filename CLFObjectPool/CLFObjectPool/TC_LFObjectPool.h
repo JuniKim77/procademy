@@ -126,7 +126,7 @@ namespace procademy
 
 		InterlockedIncrement(&mSize);
 
-		while (mSize > mCapacity)
+		if (mSize > mCapacity)
 		{
 			InterlockedIncrement(&mCapacity);
 			AllocMemory(1);
