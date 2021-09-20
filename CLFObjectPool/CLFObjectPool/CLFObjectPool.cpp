@@ -39,17 +39,27 @@ procademy::CLFObjectPool::~CLFObjectPool()
 ULONG64* procademy::CLFObjectPool::Alloc(void)		// pop
 {
 	//DWORD incresedSize = InterlockedIncrement(&mSize);
-	InterlockedIncrement(&mSize);
+	//InterlockedIncrement(&mSize);
 
-	if (mSize > mCapacity)
+	/*if (InterlockedIncrement(&mSize) > mCapacity)
 	{
 		InterlockedIncrement(&mCapacity);
 		AllocMemory(1);
-		if (_pFreeTop.ptr_node == nullptr)
+	}
+	else
+	{
+		while (mSize > mCapacity)
 		{
-			g_null_counter = _pFreeTop.counter;
-			CDebugger::_Log(L"After AllocMemory(2), but NULL [%08d]", _pFreeTop.counter);
+			InterlockedIncrement(&mCapacity);
+			AllocMemory(1);
 		}
+	}*/
+	InterlockedIncrement(&mSize);
+
+	while (mSize > mCapacity)
+	{
+		InterlockedIncrement(&mCapacity);
+		AllocMemory(1);
 	}
 
 	alignas(16) t_Top top;

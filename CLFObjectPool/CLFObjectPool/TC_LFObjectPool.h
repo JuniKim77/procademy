@@ -71,6 +71,7 @@ namespace procademy
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mSize; }
+		DWORD GetMallocCount() { return mMallocCount; }
 
 	private:
 		void AllocMemory(int size);
@@ -84,6 +85,7 @@ namespace procademy
 
 		DWORD mSize;
 		DWORD mCapacity;
+		DWORD mMallocCount = 0;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		alignas(16) t_Top _pFreeTop;
@@ -124,14 +126,10 @@ namespace procademy
 
 		InterlockedIncrement(&mSize);
 
-		if (mSize > mCapacity)
+		while (mSize > mCapacity)
 		{
 			InterlockedIncrement(&mCapacity);
 			AllocMemory(1);
-			if (_pFreeTop.ptr_node == nullptr)
-			{
-				CDebugger::_Log(L"After AllocMemory(2), but NULL [%08d]", _pFreeTop.counter);
-			}
 		}
 
 		do
@@ -189,6 +187,7 @@ namespace procademy
 		{
 			// prerequisite
 			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
+			InterlockedIncrement(&mMallocCount);
 			node->checkSum_under = CHECKSUM_UNDER;
 			node->code = this;
 			if (mbPlacementNew)
