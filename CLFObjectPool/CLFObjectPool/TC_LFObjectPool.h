@@ -4,6 +4,7 @@
 #include <string.h>
 #include <wtypes.h>
 #include "CCrashDump.h"
+#include "CDebugger.h"
 
 #define CHECKSUM_UNDER (0xAAAAAAAA)
 #define CHECKSUM_OVER (0xBBBBBBBB)
@@ -121,20 +122,22 @@ namespace procademy
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
 
-		if ((int)InterlockedIncrement(&mSize) > mCapacity)
+		InterlockedIncrement(&mSize);
+
+		if (mSize > mCapacity)
 		{
-			AllocMemory(1);
 			InterlockedIncrement(&mCapacity);
+			AllocMemory(1);
+			if (_pFreeTop.ptr_node == nullptr)
+			{
+				CDebugger::_Log(L"After AllocMemory(2), but NULL [%08d]", _pFreeTop.counter);
+			}
 		}
 
 		do
 		{
-			do
-			{
-				top.ptr_node = _pFreeTop.ptr_node;
-				top.counter = _pFreeTop.counter;
-			} while (top.ptr_node == nullptr);
-
+			top.ptr_node = _pFreeTop.ptr_node;
+			top.counter = _pFreeTop.counter;
 			ret = top.ptr_node;
 			next = top.ptr_node->stpNextBlock;
 		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
@@ -178,7 +181,8 @@ namespace procademy
 	template<typename DATA>
 	inline void TC_LFObjectPool<DATA>::AllocMemory(int size)
 	{
-		alignas(16) t_Top top;
+		//alignas(16) t_Top top;
+		void* top;
 		st_BLOCK_NODE* node = nullptr;
 
 		for (int i = 0; i < size; ++i)
@@ -193,12 +197,17 @@ namespace procademy
 			}
 			node->checkSum_over = CHECKSUM_OVER;
 
-			do
+			/*do
 			{
 				top.ptr_node = _pFreeTop.ptr_node;
 				top.counter = _pFreeTop.counter;
 				node->stpNextBlock = (st_BLOCK_NODE*)top.ptr_node;
-			} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);
+			} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);*/
+			do
+			{
+				top = _pFreeTop.ptr_node;
+				node->stpNextBlock = (st_BLOCK_NODE*)top;
+			} while (InterlockedCompareExchange64((LONG64*)&_pFreeTop, (LONG64)node, (LONG64)top) != (LONG64)top);
 		}
 	}
 }

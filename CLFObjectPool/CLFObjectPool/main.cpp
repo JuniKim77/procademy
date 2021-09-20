@@ -4,8 +4,8 @@
 #include "CCrashDump.h"
 #include "CDebugger.h"
 
-#define THREAD_SIZE (3)
-#define MAX_ALLOC (30000)
+#define THREAD_SIZE (4)
+#define MAX_ALLOC (40000)
 #define THREAD_ALLOC (10000)
 
 using namespace std;
@@ -106,7 +106,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			InterlockedIncrement64((LONG64*)pDataArray[i]);
 		}
 		// Context Switching
-		Sleep(0);
+		//Sleep(0);
 
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
@@ -121,7 +121,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			InterlockedDecrement64((LONG64*)pDataArray[i]);
 		}
 		// Context Switching
-		//Sleep(0);
+		Sleep(0);
 		// Check Init Data Value
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
