@@ -1,4 +1,6 @@
-//#include "CLFObjectPool.h"
+//#define TEMPLE
+
+#include "CLFObjectPool.h"
 #include <iostream>
 #include <process.h>
 #include "CCrashDump.h"
@@ -16,11 +18,16 @@ bool g_exit = false;
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
 unsigned int WINAPI	MonitorThread(LPVOID lpParam);
 
+#ifdef TEMPLE
 procademy::TC_LFObjectPool<ULONG64> g_pool;
+#else
+procademy::CLFObjectPool g_pool;
+#endif
+
 
 long lInTPS = 0;
 long lOutTPS = 0;
-	 
+
 long lInCounter = 0;
 long lOutCounter = 0;
 
@@ -28,7 +35,7 @@ int main()
 {
 	procademy::CCrashDump::SetHandlerDump();
 	CDebugger::Initialize();
-	CDebugger::SetDirectory(L"../Debugs");
+	CDebugger::SetDirectory(L"./Debugs");
 
 	HANDLE hThreads[THREAD_SIZE + 1];
 
@@ -85,63 +92,63 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
 	ULONG64* pDataArray[THREAD_ALLOC];
 
-	//while (!g_exit)
-	//{
-	//	// Alloc
-	//	for (int i = 0; i < THREAD_ALLOC; i++)
-	//	{
-	//		pDataArray[i] = g_pool.Alloc();
-	//		InterlockedIncrement((long*)&lOutCounter);
-	//	}
-	//	// Check Init Data Value
-	//	for (int i = 0; i < THREAD_ALLOC; i++)
-	//	{
-	//		if (*pDataArray[i] != 0x0000000055555555)
-	//		{
-	//			CRASH();
-	//		}
-	//	}
-	//	// Increment
-	//	for (int i = 0; i < THREAD_ALLOC; i++)
-	//	{
-	//		InterlockedIncrement64((LONG64*)pDataArray[i]);
-	//	}
-	//	// Context Switching
-	//	//Sleep(0);
-
-	//	for (int i = 0; i < THREAD_ALLOC; i++)
-	//	{
-	//		if (*pDataArray[i] != 0x0000000055555556)
-	//		{
-	//			CRASH();
-	//		}
-	//	}
-	//	// Decrement
-	//	for (int i = 0; i < THREAD_ALLOC; i++)
-	//	{
-	//		InterlockedDecrement64((LONG64*)pDataArray[i]);
-	//	}
-	//	// Context Switching
-	//	Sleep(0);
-	//	// Check Init Data Value
-	//	for (int i = 0; i < THREAD_ALLOC; i++)
-	//	{
-	//		if (*pDataArray[i] != 0x0000000055555555)
-	//		{
-	//			CRASH();
-	//		}
-	//	}
-
-	//	for (int i = 0; i < THREAD_ALLOC; i++)
-	//	{
-	//		g_pool.Free(pDataArray[i]);
-	//		InterlockedIncrement((long*)&lInCounter);
-	//	}
-	//	// Context Switching
-	//	Sleep(0);
-	//}
-
 	while (!g_exit)
+	{
+		// Alloc
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			pDataArray[i] = g_pool.Alloc();
+			InterlockedIncrement((long*)&lOutCounter);
+		}
+		// Check Init Data Value
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (*pDataArray[i] != 0x0000000055555555)
+			{
+				CRASH();
+			}
+		}
+		// Increment
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			InterlockedIncrement64((LONG64*)pDataArray[i]);
+		}
+		// Context Switching
+		//Sleep(0);
+
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (*pDataArray[i] != 0x0000000055555556)
+			{
+				CRASH();
+			}
+		}
+		// Decrement
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			InterlockedDecrement64((LONG64*)pDataArray[i]);
+		}
+		// Context Switching
+		Sleep(0);
+		// Check Init Data Value
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (*pDataArray[i] != 0x0000000055555555)
+			{
+				CRASH();
+			}
+		}
+
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			g_pool.Free(pDataArray[i]);
+			InterlockedIncrement((long*)&lInCounter);
+		}
+		// Context Switching
+		Sleep(0);
+	}
+
+	/*while (!g_exit)
 	{
 		for (int i = 0; i < THREAD_ALLOC; ++i)
 		{
@@ -160,8 +167,8 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			InterlockedIncrement((long*)&lInCounter);
 		}
 
-		//Sleep(0);
-	}
+		Sleep(0);
+	}*/
 
 	return 0;
 }
