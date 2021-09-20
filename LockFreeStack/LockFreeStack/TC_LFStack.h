@@ -3,15 +3,15 @@
 #include <wtypes.h>
 #include "TC_LFObjectPool.h"
 
-class CLFStack
+template <typename T>
+class TC_LFStack
 {
 public:
-	~CLFStack();
+	~TC_LFStack();
 	bool IsEmpty() { return mSize == 0; }
-	void Push(ULONG64 data);
-	bool Pop(ULONG64& result);
+	void Push(T data);
+	bool Pop(T& result);
 	DWORD GetSize() { return mSize; }
-	DWORD GetMallocSize() { return mMemoryPool.GetMallocSize(); }
 	int GetPoolSize() { return mMemoryPool.GetSize(); }
 	int GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
 
@@ -20,7 +20,7 @@ private:
 private:
 	struct Node
 	{
-		ULONG64 data;
+		T data;
 		Node* next;
 	};
 
@@ -29,14 +29,15 @@ private:
 		Node* ptr_node = nullptr;
 		LONG64 counter = 0;
 	};
-	
+
 	alignas(16) t_Top mTop;
 	procademy::TC_LFObjectPool<Node> mMemoryPool;
 
 	int mSize = 0;
 };
 
-inline CLFStack::~CLFStack()
+template <typename T>
+inline TC_LFStack<T>::~TC_LFStack()
 {
 	Node* node = mTop.ptr_node;
 	wprintf_s(L"[Size: %u] [Counter: %lld]\n", mSize, mTop.counter);
@@ -55,12 +56,13 @@ inline CLFStack::~CLFStack()
 	wprintf_s(L"[Size: %u] [Counter: %d]\n", mSize, count);
 }
 
-void CLFStack::Push(ULONG64 data)
+template <typename T>
+void TC_LFStack<T>::Push(T data)
 {
 	// prerequisite
 	Node* top;
 	Node* node = mMemoryPool.Alloc();
-	node->data = data;	
+	node->data = data;
 
 	do
 	{
@@ -68,19 +70,20 @@ void CLFStack::Push(ULONG64 data)
 		node->next = top;
 	} while (InterlockedCompareExchangePointer((PVOID*)&mTop, node, top) != top);
 
-	InterlockedIncrement((DWORD*)&mSize);
+	InterlockedIncrement((long*)&mSize);
 }
 
-bool CLFStack::Pop(ULONG64& result)
+template <typename T>
+bool TC_LFStack<T>::Pop(T& result)
 {
 	alignas(16) t_Top top;
-	Node* next;
+	Node* next = nullptr;
 
-	InterlockedDecrement((DWORD*)&mSize);
+	InterlockedDecrement((long*)&mSize);
 
 	if (mSize < 0)
 	{
-		InterlockedIncrement((DWORD*)&mSize);
+		InterlockedIncrement((long*)&mSize);
 		return false;
 	}
 
@@ -88,7 +91,6 @@ bool CLFStack::Pop(ULONG64& result)
 	{
 		top.ptr_node = mTop.ptr_node;		// Node Address -> Low Part
 		top.counter = mTop.counter;				// Counter -> High Part
-
 		result = top.ptr_node->data;
 		next = top.ptr_node->next;
 

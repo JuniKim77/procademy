@@ -141,14 +141,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CCrashDump.cpp" />
+    <ClCompile Include="CDebugger.cpp" />
     <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CCrashDump.h" />
+    <ClInclude Include="CDebugger.h" />
     <ClInclude Include="CLogger.h" />
     <ClInclude Include="LockFreeStack.h" />
     <ClInclude Include="TC_LFObjectPool.h" />
+    <ClInclude Include="TC_LFStack.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <wtypes.h>
 #include "CCrashDump.h"
+#include "CDebugger.h"
 
 #define CHECKSUM_UNDER (0xAAAAAAAA)
 #define CHECKSUM_OVER (0xBBBBBBBB)
@@ -70,6 +71,7 @@ namespace procademy
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mSize; }
+		int		GetMallocSize(void) { return mMallocCount; }
 
 	private:
 		void AllocMemory(int size);
@@ -80,11 +82,17 @@ namespace procademy
 			st_BLOCK_NODE* ptr_node = nullptr;
 			LONG64 counter = 0;
 		};
+		struct st_Debug
+		{
+			DWORD size;
+			DWORD capa;
+		};
 
 		DWORD mSize;
 		DWORD mCapacity;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
+		DWORD mMallocCount = 0;
 		alignas(16) t_Top _pFreeTop;
 	};
 	template<typename DATA>
@@ -120,21 +128,31 @@ namespace procademy
 		alignas(16) t_Top top;
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
+		st_Debug values[3];
 
-		if ((int)InterlockedIncrement(&mSize) > mCapacity)
+		//values[0].size = mSize;
+		//values[0].capa = mCapacity;
+		int retVal = InterlockedIncrement(&mSize);
+		//values[1].size = retVal;
+		//values[1].capa = mCapacity;
+		//values[2].size = mSize;
+		//values[2].capa = mCapacity;
+		if (mSize > mCapacity)
 		{
 			AllocMemory(1);
 			InterlockedIncrement(&mCapacity);
+
+			if (_pFreeTop.ptr_node == nullptr)
+			{
+				CRASH();
+				CDebugger::_Log(L"After AllocMemory(2), but NULL [%08d]", _pFreeTop.counter);
+			}
 		}
 
 		do
 		{
-			do
-			{
-				top.ptr_node = _pFreeTop.ptr_node;
-				top.counter = _pFreeTop.counter;
-			} while (top.ptr_node == nullptr);
-
+			top.ptr_node = _pFreeTop.ptr_node;
+			top.counter = _pFreeTop.counter;
 			ret = top.ptr_node;
 			next = top.ptr_node->stpNextBlock;
 		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
@@ -144,12 +162,18 @@ namespace procademy
 			new (&ret->data) (DATA);
 		}
 
+		/*CDebugger::_Log(L"Inc [%5u][%5u]->[%5d][%5u]->[%5d][%5d]",
+			values[0].size, values[0].capa,
+			values[1].size, values[1].capa,
+			values[2].size, values[2].capa);*/
+
 		return &ret->data;
 	}
 	template<typename DATA>
 	inline bool TC_LFObjectPool<DATA>::Free(DATA* pData)
 	{
 		// prerequisite
+		st_Debug values[3];
 		void* top;
 		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
 
@@ -172,19 +196,46 @@ namespace procademy
 			pData->~DATA();
 		}
 
+		if (mSize > mCapacity)
+		{
+			AllocMemory(1);
+			InterlockedIncrement(&mCapacity);
+
+			if (_pFreeTop.ptr_node == nullptr)
+			{
+				CRASH();
+				CDebugger::_Log(L"After AllocMemory(2), but NULL [%08d]", _pFreeTop.counter);
+			}
+		}
+
+		/*values[0].size = mSize;
+		values[0].capa = mCapacity;
+		int retVal = InterlockedDecrement(&mSize);
+		values[1].size = retVal;
+		values[1].capa = mCapacity;
+		values[2].size = mSize;
+		values[2].capa = mCapacity;
+
+		CDebugger::_Log(L"Dec [%5u][%5u]->[%5d][%5u]->[%5d][%5d]",
+			values[0].size, values[0].capa,
+			values[1].size, values[1].capa,
+			values[2].size, values[2].capa);*/
 		InterlockedDecrement(&mSize);
+
 		return true;
 	}
 	template<typename DATA>
 	inline void TC_LFObjectPool<DATA>::AllocMemory(int size)
 	{
-		alignas(16) t_Top top;
+		//alignas(16) t_Top top;
+		void* top;
 		st_BLOCK_NODE* node = nullptr;
 
 		for (int i = 0; i < size; ++i)
 		{
 			// prerequisite
 			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
+			InterlockedIncrement(&mMallocCount);
 			node->checkSum_under = CHECKSUM_UNDER;
 			node->code = this;
 			if (mbPlacementNew)
@@ -193,12 +244,17 @@ namespace procademy
 			}
 			node->checkSum_over = CHECKSUM_OVER;
 
-			do
+			/*do
 			{
 				top.ptr_node = _pFreeTop.ptr_node;
 				top.counter = _pFreeTop.counter;
 				node->stpNextBlock = (st_BLOCK_NODE*)top.ptr_node;
-			} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);
+			} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);*/
+			do
+			{
+				top = _pFreeTop.ptr_node;
+				node->stpNextBlock = (st_BLOCK_NODE*)top;
+			} while (InterlockedCompareExchange64((LONG64*)&_pFreeTop, (LONG64)node, (LONG64)top) != (LONG64)top);
 		}
 	}
 }

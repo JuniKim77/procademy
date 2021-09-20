@@ -1,5 +1,6 @@
 #pragma once
 #include "CCrashDump.h"
+#include "CDebugger.h"
 
 long procademy::CCrashDump::_DumpCount = 0;
 
@@ -32,6 +33,8 @@ void procademy::CCrashDump::Crash(void)
 
 LONG WINAPI procademy::CCrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS pExceptionPointer)
 {
+    CDebugger::PrintLogOut(L"debugs.txt");
+
     int iResult = _mkdir("../Dump");
 
     int iWorkingMemory = 0;

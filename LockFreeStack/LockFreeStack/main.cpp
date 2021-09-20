@@ -3,9 +3,10 @@
 #include <wchar.h>
 #include "CLogger.h"
 #include "CCrashDump.h"
-
-#define THREAD_SIZE (10)
-#define MAX_ALLOC (100000)
+#include "CDebugger.h"
+ 
+#define THREAD_SIZE (3)
+#define MAX_ALLOC (30000)
 #define THREAD_ALLOC (10000)
 
 using namespace std;
@@ -22,6 +23,11 @@ long PopTPS = 0;
 
 int main()
 {
+	procademy::CCrashDump::SetHandlerDump();
+
+	CDebugger::Initialize();
+	CDebugger::SetDirectory(L"./");
+
 	HANDLE hThreads[THREAD_SIZE + 1];
 
 	hThreads[0] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
@@ -86,12 +92,14 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 		for (int i = 0; i < 10000; ++i)
 		{
 			ULONG64 num;
-			if (g_st.Pop(&num) == false)
+			if (g_st.Pop(num) == false)
 			{
 				CRASH();
 			}
 			InterlockedIncrement((long*)&PopTPS);
 		}
+
+		//Sleep(0);
 	}
 
 	return 0;
@@ -99,7 +107,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 
 unsigned int __stdcall MonitorThread(LPVOID lpParam)
 {
-	while (1)
+	while (!g_exit)
 	{
 		long push = PushTPS;
 		long pop = PopTPS;
@@ -115,6 +123,7 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 		wprintf(L"Pop TPS			: %ld\n", pop);
 		wprintf(L"Push  TPS		: %ld\n", push);
 		wprintf(L"Stack Size		: %ld\n", g_st.GetSize());
+		wprintf(L"Malloc Size		: %ld\n", g_st.GetMallocSize());
 		wprintf(L"---------------------------------------------------------------------\n\n\n");
 		if (g_st.GetSize() > MAX_ALLOC)
 		{
