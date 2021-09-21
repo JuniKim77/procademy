@@ -180,6 +180,7 @@ bool CLanServerNoLock::RecvPost(Session* session)
 int CLanServerNoLock::SendPost(Session* session)
 {
 	WSABUF buffers[2];
+	bool test = false;
 
 	do
 	{
@@ -197,6 +198,7 @@ int CLanServerNoLock::SendPost(Session* session)
 
 			if (session->send.queue.IsEmpty() == false)
 			{
+				test = true;
 				continue;
 			}
 
@@ -264,12 +266,6 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 			bufs[1].buf = pBuf;
 			bufs[1].len = pFront - pBuf;
 		}
-		/*int dSize = session->recv.queue.DirectEnqueueSize();
-
-		bufs[0].buf = session->recv.queue.GetRearBufferPtr();
-		bufs[0].len = dSize;
-		bufs[1].buf = session->recv.queue.GetBuffer();
-		bufs[1].len = session->recv.queue.GetFreeSize() - dSize;*/
 	}
 	else
 	{
@@ -277,6 +273,37 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 		char* pFront = session->send.queue.GetFrontBufferPtr();
 		char* pBuf = session->send.queue.GetBuffer();
 		int capa = session->send.queue.GetCapacity();
+
+		if (pFront - pBuf < 2997)
+		{
+			USHORT num = *((USHORT*)&(*(pFront + 2)));
+
+			session->debugs[session->index].begin = num;
+		}
+		else
+		{
+			session->debugs[session->index].begin = 0;
+		}
+		if ((int)(pRear - pBuf) - 8 >= 0)
+		{
+			USHORT num2 = *((USHORT*)&(*(pRear - 8)));
+
+			session->debugs[session->index].end = num2;
+		}
+		else
+		{
+			session->debugs[session->index].end = 0;
+		}
+
+		if (session->debugs[session->index].begin != 0 && 
+			session->debugs[(unsigned char)(session->index - 1)].end != 0 &&
+			session->debugs[(unsigned char)(session->index - 1)].end >= session->debugs[session->index].begin &&
+			session->index > 1)
+		{
+			int test = 0;
+		}
+
+		session->index++;
 
 		if (pRear >= pFront)
 		{
@@ -881,21 +908,6 @@ int CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
 #else
 	int len = session->send.queue.Enqueue(packet->GetBufferPtr(), packet->GetSize());
 #endif
-
-	if (len != 10)
-	{
-		CDebugger::_Log(L"SendPacket Not 10 [R %4d] [F %4d]",
-			session->send.queue.GetRearBufferPtr() - session->send.queue.GetBuffer(),
-			session->send.queue.GetFrontBufferPtr() - session->send.queue.GetBuffer());
-	}
-	char* pPacket = packet->GetBufferPtr();
-	uint8_t num = (uint8_t)*(pPacket + 2);
-	//if (num == session->lastNum)
-	//{
-	//	//CDebugger::_Log(L"SendError [S %5d] [C %4d] [L %4d]", session->sessionID, num, session->lastNum);
-	//	CRASH();
-	//}
-	session->lastNum = num;
 
 	ret = SendPost(session);
 
