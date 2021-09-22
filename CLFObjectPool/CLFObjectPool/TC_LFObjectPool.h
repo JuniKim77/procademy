@@ -134,11 +134,14 @@ namespace procademy
 
 		do
 		{
-			top.ptr_node = _pFreeTop.ptr_node;
-			top.counter = _pFreeTop.counter;
+			do
+			{
+				top.ptr_node = _pFreeTop.ptr_node;
+				top.counter = _pFreeTop.counter;
+			} while (top.ptr_node != _pFreeTop.ptr_node);
 			ret = top.ptr_node;
 			next = top.ptr_node->stpNextBlock;
-		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
+		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, _pFreeTop.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
 
 		if (mbPlacementNew)
 		{
@@ -167,6 +170,28 @@ namespace procademy
 			top = _pFreeTop.ptr_node;
 			pNode->stpNextBlock = top;
 		} while (InterlockedCompareExchangePointer((PVOID*)&_pFreeTop, pNode, top) != top);
+
+		// prerequisite
+		/*alignas(16) t_Top top;
+		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
+
+		if (pNode->code != this ||
+			pNode->checkSum_under != CHECKSUM_UNDER ||
+			pNode->checkSum_over != CHECKSUM_OVER)
+		{
+			CRASH();
+			return false;
+		}
+
+		do
+		{
+			do
+			{
+				top.ptr_node = _pFreeTop.ptr_node;
+				top.counter = _pFreeTop.counter;
+			} while (top.ptr_node != _pFreeTop.ptr_node);
+			pNode->stpNextBlock = top.ptr_node;
+		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)pNode, (LONG64*)&top) == 0);*/
 
 		if (mbPlacementNew)
 		{

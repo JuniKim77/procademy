@@ -33,7 +33,7 @@ void procademy::CCrashDump::Crash(void)
 
 LONG WINAPI procademy::CCrashDump::MyExceptionFilter(__in PEXCEPTION_POINTERS pExceptionPointer)
 {
-    CDebugger::PrintLogOut(L"debugs.txt");
+    // CDebugger::PrintLogOut(L"debugs.txt");
 
     int iResult = _mkdir("../Dump");
 

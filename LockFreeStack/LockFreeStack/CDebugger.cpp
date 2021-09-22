@@ -9,7 +9,7 @@
 #include <direct.h>
 
 
-WORD CDebugger::sIndex = USHRT_MAX;
+WORD CDebugger::sIndex = 0;
 WCHAR CDebugger::sFolderPath[MAX_PATH];
 WCHAR* CDebugger::sLogData[USHRT_MAX + 1];
 bool CDebugger::sIsOver = false;

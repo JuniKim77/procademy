@@ -1,5 +1,5 @@
 #define TEMPLE
-//#define VERSION_A
+#define VERSION_A
 //#define VERSION_B
 
 #include "CLFObjectPool.h"
