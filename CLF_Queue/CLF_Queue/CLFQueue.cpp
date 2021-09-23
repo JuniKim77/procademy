@@ -2,7 +2,7 @@
 
 CLFQueue::CLFQueue()
 {
-	Node* dummy = new Node;
+	Node* dummy = mMemoryPool.Alloc();
 
 	dummy->next = nullptr;
 	mHead = dummy;
@@ -44,7 +44,7 @@ void CLFQueue::Enqueue(ULONG64 data)
 		
 		if (InterlockedCompareExchangePointer((PVOID*)&tail->next, node, next) == next)
 		{
-			InterlockedCompareExchangePointer((PVOID*)&tail, node, tail);
+			InterlockedCompareExchangePointer((PVOID*)&mTail, node, tail);
 			break;
 		}
 	}
