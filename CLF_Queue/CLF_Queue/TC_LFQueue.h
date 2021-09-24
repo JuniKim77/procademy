@@ -86,15 +86,16 @@ inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 
 		debug[*index].address1 = tail;
 
-		if (InterlockedCompareExchangePointer((PVOID*)&tail->next, node, nullptr) == nullptr)
+		if (InterlockedCompareExchangePointer((PVOID*)&tail->next, node, next) == next)
 		{
 			debug[*index].address2 = mTail;
-			if (InterlockedCompareExchangePointer((PVOID*)&mTail, node, tail) != tail)
+			if (InterlockedCompareExchangePointer((PVOID*)&mTail, node, tail) == tail)
 			{
-				debug[*index].type = 'F';
-				(*index)++;
-				debug[*index].size1 = mSize;
-				continue;
+				
+			}
+			else
+			{
+				CRASH();
 			}
 			debug[*index].address3 = mTail;
 			break;
@@ -132,6 +133,7 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 		top->data = next->data;
 		debug[*index].address1 = top;
 	} while (InterlockedCompareExchangePointer((PVOID*)&mHead, next, top) != top);
+	debug[*index].size2 = mSize;
 	debug[*index].address2 = mHead;
 
 	*data = top->data;

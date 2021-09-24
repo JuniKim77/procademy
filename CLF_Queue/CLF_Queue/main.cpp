@@ -8,8 +8,8 @@
 #include <wchar.h>
 
 #define THREAD_SIZE (3)
-#define MAX_ALLOC (300)
-#define THREAD_ALLOC (100)
+#define MAX_ALLOC (30)
+#define THREAD_ALLOC (10)
 
 struct st_DATA
 {
