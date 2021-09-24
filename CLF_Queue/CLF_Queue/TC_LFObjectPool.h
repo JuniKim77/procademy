@@ -19,8 +19,7 @@ struct st_DEBUG
 	int size3;
 	void* address1;
 	void* address2;
-	LONG64 counter1;
-	LONG64 counter2;
+	void* address3;
 };
 
 namespace procademy

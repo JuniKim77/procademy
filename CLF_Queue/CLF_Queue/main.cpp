@@ -1,12 +1,21 @@
+#define TEMPLE
+
+#include "TC_LFQueue.h"
 #include "CLogger.h"
 #include "CLFQueue.h"
 #include "CCrashDump.h"
 #include <process.h>
 #include <wchar.h>
 
-#define THREAD_SIZE (2)
-#define MAX_ALLOC (20000)
-#define THREAD_ALLOC (10000)
+#define THREAD_SIZE (3)
+#define MAX_ALLOC (300)
+#define THREAD_ALLOC (100)
+
+struct st_DATA
+{
+	LONG64 data;
+	LONG64 count;
+};
 
 using namespace std;
 
@@ -14,17 +23,21 @@ bool g_exit = false;
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
 unsigned int WINAPI MonitorThread(LPVOID lpParam);
+void Init();
 
-CLFQueue g_q;
+TC_LFQueue<st_DATA*> g_q;
 
 long PushTPS = 0;
-long PopTPS = 0;
+long DequeueTPS = 0;
 
 DWORD g_records;
 DWORD g_index;
 
 int main()
 {
+	procademy::CCrashDump::SetHandlerDump();
+	Init();
+
 	g_records = TlsAlloc();
 	g_index = TlsAlloc();
 
@@ -85,25 +98,72 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 	*index = 0;
 	TlsSetValue(g_index, index);
 
+	st_DATA* pDataArray[THREAD_ALLOC];
+	//st_DEBUG* pDataInfo[THREAD_ALLOC];
+
 	while (!g_exit)
 	{
-		for (int i = 0; i < THREAD_ALLOC; ++i)
+		// Alloc
+		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
-			g_q.Enqueue(i);
-			InterlockedIncrement((long*)&PushTPS);
+			bool ret = g_q.Dequeue(&pDataArray[i]);
+			if (ret == false)
+			{
+				int test = 0;
+			}
+			InterlockedIncrement((long*)&DequeueTPS);
 		}
-
-		Sleep(0);
-
-		for (int i = 0; i < THREAD_ALLOC; ++i)
+		// Check Init Data Value
+		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
-			ULONG64 num;
-			if (g_q.Dequeue(&num) == false)
+			if (pDataArray[i]->data != 0x0000000055555555 ||
+				pDataArray[i]->count != 0)
 			{
 				CRASH();
 			}
-			InterlockedIncrement((long*)&PopTPS);
 		}
+		// Increment
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			InterlockedIncrement64(&pDataArray[i]->data);
+			InterlockedIncrement64(&pDataArray[i]->count);
+		}
+		// Context Switching
+		//Sleep(0);
+
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (pDataArray[i]->data != 0x0000000055555556 ||
+				pDataArray[i]->count != 1)
+			{
+				CRASH();
+			}
+		}
+		// Decrement
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			InterlockedDecrement64(&pDataArray[i]->data);
+			InterlockedDecrement64(&pDataArray[i]->count);
+		}
+		// Context Switching
+		Sleep(0);
+		// Check Init Data Value
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (pDataArray[i]->data != 0x0000000055555555 ||
+				pDataArray[i]->count != 0)
+			{
+				CRASH();
+			}
+		}
+
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			g_q.Enqueue(pDataArray[i]);
+			InterlockedIncrement((long*)&PushTPS);
+		}
+		// Context Switching
+		Sleep(0);
 	}
 
 	return 0;
@@ -114,15 +174,16 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 	while (!g_exit)
 	{
 		long push = PushTPS;
-		long pop = PopTPS;
+		long pop = DequeueTPS;
 
 		PushTPS = 0;
-		PopTPS = 0;
+		DequeueTPS = 0;
 
 		wprintf(L"---------------------------------------------------------------------\n\n");
-		wprintf(L"Pop TPS			: %ld\n", pop);
-		wprintf(L"Push  TPS		: %ld\n", push);
-		wprintf(L"Queue Size		: %ld\n", g_q.GetSize());
+		wprintf(L"[Enqueue TPS		: %ld\n", pop);
+		wprintf(L"[Dequeue  TPS		: %ld\n", push);
+		wprintf(L"[Queue Size		: %ld\n", g_q.GetSize());
+		wprintf(L"[Pool Capa		: %ld\n", g_q.GetPoolCapacity());
 		wprintf(L"---------------------------------------------------------------------\n\n\n");
 		if (g_q.GetSize() > MAX_ALLOC)
 		{
@@ -133,4 +194,30 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 	}
 
 	return 0;
+}
+
+void Init()
+{
+	st_DEBUG* record = new st_DEBUG[USHRT_MAX];
+	TlsSetValue(g_records, record);
+	USHORT* index = new USHORT;
+	*index = 0;
+	TlsSetValue(g_index, index);
+
+	st_DATA* pDataArray[MAX_ALLOC];
+
+	for (int i = 0; i < MAX_ALLOC; i++)
+	{
+		pDataArray[i] = new st_DATA;
+		pDataArray[i]->data = 0x0000000055555555;
+		pDataArray[i]->count = 0;
+	}
+
+	// 2. 스택에 넣음
+	for (int i = 0; i < MAX_ALLOC; i++)
+	{
+		g_q.Enqueue(pDataArray[i]);
+	}
+
+	g_q.linkCheck(MAX_ALLOC);
 }

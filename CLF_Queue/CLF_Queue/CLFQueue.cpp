@@ -1,4 +1,5 @@
 #include "CLFQueue.h"
+#include "CCrashDump.h"
 
 CLFQueue::CLFQueue()
 {
@@ -25,7 +26,12 @@ CLFQueue::~CLFQueue()
 
 void CLFQueue::Enqueue(ULONG64 data)
 {
+	st_DEBUG* debug = (st_DEBUG*)TlsGetValue(g_records);
+	USHORT* index = (USHORT*)TlsGetValue(g_index);
+	debug[*index].size3 = -2;
+
 	InterlockedIncrement((DWORD*)&mSize);
+	debug[*index].size1 = mSize;
 
 	Node* node = mMemoryPool.Alloc();
 	Node* tail;
@@ -42,17 +48,32 @@ void CLFQueue::Enqueue(ULONG64 data)
 			next = tail->next;
 		} while (next != nullptr);
 		
-		if (InterlockedCompareExchangePointer((PVOID*)&tail->next, node, next) == next)
+		debug[*index].address1 = tail;
+
+		if (InterlockedCompareExchangePointer((PVOID*)&tail->next, node, nullptr) == nullptr)
 		{
-			InterlockedCompareExchangePointer((PVOID*)&mTail, node, tail);
+			debug[*index].address2 = mTail;
+			if (InterlockedCompareExchangePointer((PVOID*)&mTail, node, tail) != tail)
+			{
+				CRASH();
+			}
+			debug[*index].address3 = mTail;
 			break;
 		}
 	}
+
+	(*index)++;
 }
 
 bool CLFQueue::Dequeue(ULONG64* data)
 {
+	st_DEBUG* debug = (st_DEBUG*)TlsGetValue(g_records);
+	USHORT* index = (USHORT*)TlsGetValue(g_index);
+
+	debug[*index].size3 = -1;
+
 	InterlockedDecrement((DWORD*)&mSize);
+	debug[*index].size1 = mSize;
 
 	if (mSize < 0)
 	{
@@ -68,10 +89,14 @@ bool CLFQueue::Dequeue(ULONG64* data)
 	{
 		top = mHead;
 		next = top->next;
+		debug[*index].address1 = top;
 	} while (InterlockedCompareExchangePointer((PVOID*)&mHead, next, top) != top);
+	debug[*index].address2 = mHead;
 
-	*data = top->data;
+	*data = next->data;
 	mMemoryPool.Free(top);
+
+	(*index)++;
 
 	return true;
 }
