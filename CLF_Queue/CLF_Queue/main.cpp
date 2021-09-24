@@ -36,10 +36,11 @@ DWORD g_index;
 int main()
 {
 	procademy::CCrashDump::SetHandlerDump();
-	Init();
 
 	g_records = TlsAlloc();
 	g_index = TlsAlloc();
+
+	Init();
 
 	HANDLE hThreads[THREAD_SIZE + 1];
 

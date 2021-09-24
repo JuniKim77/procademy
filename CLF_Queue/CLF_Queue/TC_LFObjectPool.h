@@ -16,7 +16,7 @@ struct st_DEBUG
 {
 	int size1;
 	int size2;
-	int size3;
+	char type;
 	void* address1;
 	void* address2;
 	void* address3;

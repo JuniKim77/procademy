@@ -60,12 +60,14 @@ template<typename DATA>
 inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 {
 	st_DEBUG* debug = (st_DEBUG*)TlsGetValue(g_records);
-	USHORT* pIdx = (USHORT*)TlsGetValue(g_index);
-	USHORT index = *(pIdx++);
-	debug[index].size3 = -2;
+	USHORT* index = (USHORT*)TlsGetValue(g_index);
+
+	(*index)++;
+
+	debug[*index].type = 'E';
 
 	InterlockedIncrement((DWORD*)&mSize);
-	debug[index].size1 = mSize;
+	debug[*index].size1 = mSize;
 
 	Node* node = mMemoryPool.Alloc();
 	Node* tail;
@@ -82,19 +84,19 @@ inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 			next = tail->next;
 		} while (next != nullptr);
 
-		debug[index].address1 = tail;
+		debug[*index].address1 = tail;
 
 		if (InterlockedCompareExchangePointer((PVOID*)&tail->next, node, nullptr) == nullptr)
 		{
-			debug[index].address2 = mTail;
+			debug[*index].address2 = mTail;
 			if (InterlockedCompareExchangePointer((PVOID*)&mTail, node, tail) != tail)
 			{
-				debug[index].size3 = -3;
-				index = *(pIdx++);
-				debug[index].size1 = mSize;
+				debug[*index].type = 'F';
+				(*index)++;
+				debug[*index].size1 = mSize;
 				continue;
 			}
-			debug[index].address3 = mTail;
+			debug[*index].address3 = mTail;
 			break;
 		}
 	}
@@ -104,13 +106,14 @@ template<typename DATA>
 inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 {
 	st_DEBUG* debug = (st_DEBUG*)TlsGetValue(g_records);
-	USHORT* pIdx = (USHORT*)TlsGetValue(g_index);
-	USHORT index = *(pIdx++);
+	USHORT* index = (USHORT*)TlsGetValue(g_index);
 
-	debug[index].size3 = -1;
+	(*index)++;
+
+	debug[*index].type = 'D';
 
 	InterlockedDecrement((DWORD*)&mSize);
-	debug[index].size1 = mSize;
+	debug[*index].size1 = mSize;
 
 	if (mSize < 0)
 	{
@@ -127,9 +130,9 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 		top = mHead;
 		next = top->next;
 		top->data = next->data;
-		debug[index].address1 = top;
+		debug[*index].address1 = top;
 	} while (InterlockedCompareExchangePointer((PVOID*)&mHead, next, top) != top);
-	debug[index].address2 = mHead;
+	debug[*index].address2 = mHead;
 
 	*data = top->data;
 	mMemoryPool.Free(top);

@@ -28,7 +28,7 @@ void CLFQueue::Enqueue(ULONG64 data)
 {
 	st_DEBUG* debug = (st_DEBUG*)TlsGetValue(g_records);
 	USHORT* index = (USHORT*)TlsGetValue(g_index);
-	debug[*index].size3 = -2;
+	debug[*index].type = 'E';
 
 	InterlockedIncrement((DWORD*)&mSize);
 	debug[*index].size1 = mSize;
@@ -70,7 +70,7 @@ bool CLFQueue::Dequeue(ULONG64* data)
 	st_DEBUG* debug = (st_DEBUG*)TlsGetValue(g_records);
 	USHORT* index = (USHORT*)TlsGetValue(g_index);
 
-	debug[*index].size3 = -1;
+	debug[*index].type = 'D';
 
 	InterlockedDecrement((DWORD*)&mSize);
 	debug[*index].size1 = mSize;
