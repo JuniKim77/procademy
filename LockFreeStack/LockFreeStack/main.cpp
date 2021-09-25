@@ -8,9 +8,9 @@
 #include "CCrashDump.h"
 #include "CDebugger.h"
  
-#define THREAD_SIZE (4)
-#define MAX_ALLOC (40000)
-#define THREAD_ALLOC (10000)
+#define THREAD_SIZE (3)
+#define MAX_ALLOC (30)
+#define THREAD_ALLOC (10)
 
 struct st_DATA
 {
@@ -31,17 +31,10 @@ TC_LFStack<st_DATA*> g_st;
 
 long PushTPS = 0;
 long PopTPS = 0;
-DWORD g_records;
-DWORD g_index;
 
 int main()
 {
-	g_records = TlsAlloc();
-	g_index = TlsAlloc();
-
-
 	Init();
-
 
 	procademy::CCrashDump::SetHandlerDump();
 
@@ -105,14 +98,7 @@ int main()
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
-	st_DEBUG* record = new st_DEBUG[USHRT_MAX];
-	TlsSetValue(g_records, record);
-	USHORT* index = new USHORT;
-	*index = 0;
-	TlsSetValue(g_index, index);
-
 	st_DATA* pDataArray[THREAD_ALLOC];
-	st_DEBUG* pDataInfo[THREAD_ALLOC];
 
 #ifdef VERSION_A
 	while (!g_exit)
@@ -120,7 +106,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 		// Alloc
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
-			bool ret = g_st.Pop(&pDataArray[i], &pDataInfo[i]);
+			bool ret = g_st.Pop(&pDataArray[i]);
 			if (ret == false)
 			{
 				int test = 0;
@@ -236,12 +222,6 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 
 void Init()
 {
-	st_DEBUG* record = new st_DEBUG[USHRT_MAX];
-	TlsSetValue(g_records, record);
-	USHORT* index = new USHORT;
-	*index = 0;
-	TlsSetValue(g_index, index);
-
 	st_DATA* pDataArray[MAX_ALLOC];
 
 	for (int i = 0; i < MAX_ALLOC; i++)

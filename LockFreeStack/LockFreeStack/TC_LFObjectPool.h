@@ -9,20 +9,6 @@
 #define CHECKSUM_UNDER (0xAAAAAAAA)
 #define CHECKSUM_OVER (0xBBBBBBBB)
 
-extern DWORD g_records;
-extern DWORD g_index;
-
-struct st_DEBUG
-{
-	int size1;
-	int size2;
-	int size3;
-	void* address1;
-	void* address2;
-	LONG64 counter1;
-	LONG64 counter2;
-};
-
 namespace procademy
 {
 	template <typename DATA>
@@ -42,6 +28,7 @@ namespace procademy
 			st_BLOCK_NODE* stpNextBlock;
 			unsigned int checkSum_over = CHECKSUM_OVER;
 		};
+
 	public:
 		TC_LFObjectPool();
 		//////////////////////////////////////////////////////////////////////////
@@ -139,7 +126,6 @@ namespace procademy
 		st_BLOCK_NODE* next;
 
 		//InterlockedIncrement(&mSize);
-
 		if (InterlockedIncrement(&mSize) > mCapacity)
 		{
 			InterlockedIncrement(&mCapacity);
