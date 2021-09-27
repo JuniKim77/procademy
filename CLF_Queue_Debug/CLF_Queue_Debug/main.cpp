@@ -8,8 +8,8 @@
 #include <wchar.h>
 
 #define THREAD_SIZE (3)
-#define MAX_ALLOC (30)
-#define THREAD_ALLOC (10)
+#define MAX_ALLOC (6)
+#define THREAD_ALLOC (2)
 
 extern USHORT g_debug_index;
 extern st_DEBUG g_debugs[USHRT_MAX + 1];
@@ -99,7 +99,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			bool ret = g_q.Dequeue(&pDataArray[i]);
 			if (ret == false)
 			{
-				int test = 0;
+				CRASH();
 			}
 			InterlockedIncrement((long*)&DequeueTPS);
 		}
