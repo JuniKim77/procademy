@@ -128,9 +128,9 @@ void TC_LFStack<T>::Push(T data)
 	top.counter = -9999;
 	Node* ptop;
 
-	cLog(PUSH_DEBUG, top);
+	//cLog(PUSH_DEBUG, top);
 	Node* node = mMemoryPool.Alloc();
-	cLog(PUSH_DEBUG + 10, top);
+	//cLog(PUSH_DEBUG + 10, top);
 	node->data = data;
 
 	do
@@ -138,10 +138,10 @@ void TC_LFStack<T>::Push(T data)
 		ptop = mTop.ptr_node;		// Node Address -> Low Part
 		top.ptr_node = ptop;
 		node->next = ptop;
-		cLog(PUSH_DEBUG + 20, top);
+		//cLog(PUSH_DEBUG + 20, top);
 	} while (InterlockedCompareExchangePointer((PVOID*)&mTop.ptr_node, node, ptop) != ptop);
 
-	cLog(PUSH_DEBUG + 30, top);
+	//cLog(PUSH_DEBUG + 30, top);
 	InterlockedIncrement((long*)&mSize);
 	//_Log(PUSH_DEBUG + 40, GetCurrentThreadId(), mSize, mTop.counter, mTop.ptr_node, top, node);
 }
@@ -159,9 +159,9 @@ bool TC_LFStack<T>::Pop(T* result)
 		return false;
 	}
 
-	cLog(POP_DEBUG, top);
+	//cLog(POP_DEBUG, top);
 	InterlockedDecrement((long*)&mSize);
-	cLog(POP_DEBUG + 10, top);
+	//cLog(POP_DEBUG + 10, top);
 
 	if (mSize < 0)
 	{
@@ -174,12 +174,9 @@ bool TC_LFStack<T>::Pop(T* result)
 
 	do
 	{
-		do
-		{
-			top.ptr_node = mTop.ptr_node;		// Node Address -> Low Part
-			top.counter = mTop.counter;				// Counter -> High Part
-		} while (top.ptr_node != mTop.ptr_node);
-		cLog(POP_DEBUG + 30, top);
+		top.counter = mTop.counter;
+		top.ptr_node = mTop.ptr_node;
+		//cLog(POP_DEBUG + 30, top);
 		//_Log(POP_DEBUG + 20, GetCurrentThreadId(), mSize, mTop.counter, -9999, mTop.ptr_node, nullptr, nullptr);
 		//top.ptr_node = mTop.ptr_node;		// Node Address -> Low Part
 		//cLog(POP_DEBUG + 20, top);
@@ -191,11 +188,11 @@ bool TC_LFStack<T>::Pop(T* result)
 		//	CRASH();
 		//}
 		next = top.ptr_node->next;
-		cLog(POP_DEBUG + 40, top);
+		//cLog(POP_DEBUG + 40, top);
 
 	} while (InterlockedCompareExchange128((LONG64*)&mTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
 
-	cLog(POP_DEBUG + 50, top);
+	//cLog(POP_DEBUG + 50, top);
 	*result = top.ptr_node->data;
 	mMemoryPool.Free(top.ptr_node);
 
