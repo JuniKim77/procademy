@@ -109,7 +109,8 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			if (pDataArray[i]->data != 0x0000000055555555 ||
 				pDataArray[i]->count != 0)
 			{
-				//CRASH();
+				USHORT idx = finder_log();
+				CRASH();
 			}
 		}
 		// Increment
@@ -126,7 +127,8 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			if (pDataArray[i]->data != 0x0000000055555556 ||
 				pDataArray[i]->count != 1)
 			{
-				//CRASH();
+				USHORT idx = finder_log();
+				CRASH();
 			}
 		}
 		// Decrement
@@ -143,7 +145,8 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			if (pDataArray[i]->data != 0x0000000055555555 ||
 				pDataArray[i]->count != 0)
 			{
-				//CRASH();
+				USHORT idx = finder_log();
+				CRASH();
 			}
 		}
 
