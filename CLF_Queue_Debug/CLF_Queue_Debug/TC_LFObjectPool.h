@@ -134,11 +134,8 @@ namespace procademy
 
 		do
 		{
-			do
-			{
-				top.ptr_node = _pFreeTop.ptr_node;
-				top.counter = _pFreeTop.counter;
-			} while (top.ptr_node != _pFreeTop.ptr_node);
+			top.counter = _pFreeTop.counter;
+			top.ptr_node = _pFreeTop.ptr_node;
 			next = top.ptr_node->stpNextBlock;
 		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, _pFreeTop.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
 

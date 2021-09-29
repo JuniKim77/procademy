@@ -213,6 +213,7 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 	//Log(LOGIC_DEQUEUE + 10, top, nullptr);
 
 	Node* next;
+	DATA snap_data;
 
 	do
 	{
@@ -245,11 +246,16 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 
 		//Log(LOGIC_DEQUEUE + 40, top, next);
 		//Sleep(0);
-		*data = next->data;
+		snap_data = next->data;
 	} while (InterlockedCompareExchange128((LONG64*)&mHead, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
 	Log(LOGIC_DEQUEUE + 50, top, next, true);
 
-	//*data = next->data;
+	//if (next->data != snap_data)
+	//{
+	//	int test = 0;
+	//}
+	*data = snap_data;
+
 	mMemoryPool.Free(top.ptr_node);
 
 	return true;
