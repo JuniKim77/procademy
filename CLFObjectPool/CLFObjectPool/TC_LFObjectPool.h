@@ -4,6 +4,7 @@
 #include <string.h>
 #include <wtypes.h>
 #include "CCrashDump.h"
+#include "CDebugger.h"
 
 #define CHECKSUM_UNDER (0xAAAAAAAA)
 #define CHECKSUM_OVER (0xBBBBBBBB)
@@ -70,6 +71,7 @@ namespace procademy
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mSize; }
+		DWORD GetMallocCount() { return mMallocCount; }
 
 	private:
 		void AllocMemory(int size);
@@ -83,6 +85,7 @@ namespace procademy
 
 		DWORD mSize;
 		DWORD mCapacity;
+		DWORD mMallocCount = 0;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		alignas(16) t_Top _pFreeTop;
@@ -121,10 +124,12 @@ namespace procademy
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
 
-		if ((int)InterlockedIncrement(&mSize) > mCapacity)
+		InterlockedIncrement(&mSize);
+
+		if (mSize > mCapacity)
 		{
-			AllocMemory(1);
 			InterlockedIncrement(&mCapacity);
+			AllocMemory(1);
 		}
 
 		do
@@ -133,11 +138,10 @@ namespace procademy
 			{
 				top.ptr_node = _pFreeTop.ptr_node;
 				top.counter = _pFreeTop.counter;
-			} while (top.ptr_node == nullptr);
-
+			} while (top.ptr_node != _pFreeTop.ptr_node);
 			ret = top.ptr_node;
 			next = top.ptr_node->stpNextBlock;
-		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
+		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, _pFreeTop.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
 
 		if (mbPlacementNew)
 		{
@@ -150,7 +154,7 @@ namespace procademy
 	inline bool TC_LFObjectPool<DATA>::Free(DATA* pData)
 	{
 		// prerequisite
-		void* top;
+		st_BLOCK_NODE* top;
 		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
 
 		if (pNode->code != this ||
@@ -164,8 +168,30 @@ namespace procademy
 		do
 		{
 			top = _pFreeTop.ptr_node;
-			pNode->stpNextBlock = (st_BLOCK_NODE*)top;
-		} while (InterlockedCompareExchange64((LONG64*)&_pFreeTop, (LONG64)pNode, (LONG64)top) != (LONG64)top);
+			pNode->stpNextBlock = top;
+		} while (InterlockedCompareExchangePointer((PVOID*)&_pFreeTop, pNode, top) != top);
+
+		// prerequisite
+		/*alignas(16) t_Top top;
+		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
+
+		if (pNode->code != this ||
+			pNode->checkSum_under != CHECKSUM_UNDER ||
+			pNode->checkSum_over != CHECKSUM_OVER)
+		{
+			CRASH();
+			return false;
+		}
+
+		do
+		{
+			do
+			{
+				top.ptr_node = _pFreeTop.ptr_node;
+				top.counter = _pFreeTop.counter;
+			} while (top.ptr_node != _pFreeTop.ptr_node);
+			pNode->stpNextBlock = top.ptr_node;
+		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)pNode, (LONG64*)&top) == 0);*/
 
 		if (mbPlacementNew)
 		{
@@ -178,13 +204,15 @@ namespace procademy
 	template<typename DATA>
 	inline void TC_LFObjectPool<DATA>::AllocMemory(int size)
 	{
-		alignas(16) t_Top top;
+		//alignas(16) t_Top top;
+		st_BLOCK_NODE* top;
 		st_BLOCK_NODE* node = nullptr;
 
 		for (int i = 0; i < size; ++i)
 		{
 			// prerequisite
 			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
+			InterlockedIncrement(&mMallocCount);
 			node->checkSum_under = CHECKSUM_UNDER;
 			node->code = this;
 			if (mbPlacementNew)
@@ -193,12 +221,17 @@ namespace procademy
 			}
 			node->checkSum_over = CHECKSUM_OVER;
 
-			do
+			/*do
 			{
 				top.ptr_node = _pFreeTop.ptr_node;
 				top.counter = _pFreeTop.counter;
 				node->stpNextBlock = (st_BLOCK_NODE*)top.ptr_node;
-			} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);
+			} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);*/
+			do
+			{
+				top = _pFreeTop.ptr_node;
+				node->stpNextBlock = top;
+			} while (InterlockedCompareExchangePointer((PVOID*)&_pFreeTop, node, top) != top);
 		}
 	}
 }

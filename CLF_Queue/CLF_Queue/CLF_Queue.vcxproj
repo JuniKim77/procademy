@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{534b1e31-6c41-47ef-bd85-6d080d65158d}</ProjectGuid>
-    <RootNamespace>LockFreeStack</RootNamespace>
+    <ProjectGuid>{4868657f-abc5-42c1-ab11-926942f42b88}</ProjectGuid>
+    <RootNamespace>CLFQueue</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -142,16 +142,17 @@
   <ItemGroup>
     <ClCompile Include="CCrashDump.cpp" />
     <ClCompile Include="CDebugger.cpp" />
+    <ClCompile Include="CLFQueue.cpp" />
     <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CCrashDump.h" />
     <ClInclude Include="CDebugger.h" />
+    <ClInclude Include="CLFQueue.h" />
     <ClInclude Include="CLogger.h" />
-    <ClInclude Include="LockFreeStack.h" />
     <ClInclude Include="TC_LFObjectPool.h" />
-    <ClInclude Include="TC_LFStack.h" />
+    <ClInclude Include="TC_LFQueue.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

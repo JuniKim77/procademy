@@ -60,10 +60,12 @@ int RingBuffer::GetBufferSize(void)
 
 int RingBuffer::GetUseSize(void)
 {
-	if (mRear >= mFront)
-		return mRear - mFront;
+	int rear = mRear;
+
+	if (rear >= mFront)
+		return rear - mFront;
 	else // f 바로 뒤는 넣을 수 없다.
-		return mCapacity - (mFront - mRear - 1);
+		return mCapacity - (mFront - rear - 1);
 }
 
 int RingBuffer::GetFreeSize(void)

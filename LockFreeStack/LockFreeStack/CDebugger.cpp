@@ -1,3 +1,5 @@
+//#define DATE
+
 #include "CDebugger.h"
 #include <stdio.h>
 #include <stdarg.h>
@@ -25,9 +27,14 @@ void CDebugger::_Log(const WCHAR* format, ...)
     localtime_s(&t, &curTime);
     WCHAR* pLog = sLogData[index];
 
+#ifdef DATE
     lenval = wsprintf(pLog, L"%05d ## %02d/%02d/%02d %02d:%02d:%02d ## "
         , GetCurrentThreadId(), t.tm_mon + 1, t.tm_mday, (t.tm_year + 1900) % 100,
         t.tm_hour, t.tm_min, t.tm_sec);
+#else
+    lenval = wsprintf(pLog, L"%05d ## "
+        , GetCurrentThreadId());
+#endif
 
     pLog += lenval;
     count += lenval;
@@ -99,7 +106,7 @@ void CDebugger::PrintLogOut(const WCHAR* szFileName)
         fwprintf_s(fout, L"%s\n\n", sLogData[i]);
     }
 
-    fwprintf_s(fout, L"\n===========================================\n\n");
+    fwprintf_s(fout, L"\n=====================================%5d\n\n", sIndex);
 
     fclose(fout);
 }

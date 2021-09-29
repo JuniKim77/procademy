@@ -80,8 +80,8 @@ namespace procademy
 			LONG64 counter = 0;
 		};
 
-		DWORD mSize;
-		DWORD mCapacity;
+		alignas(8) DWORD mSize;
+		alignas(8)DWORD mCapacity;
 		DWORD mMallocCount = 0;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.

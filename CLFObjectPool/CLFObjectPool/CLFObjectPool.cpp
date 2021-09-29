@@ -39,17 +39,14 @@ procademy::CLFObjectPool::~CLFObjectPool()
 ULONG64* procademy::CLFObjectPool::Alloc(void)		// pop
 {
 	//DWORD incresedSize = InterlockedIncrement(&mSize);
+	//InterlockedIncrement(&mSize);
+
 	InterlockedIncrement(&mSize);
 
 	if (mSize > mCapacity)
 	{
 		InterlockedIncrement(&mCapacity);
 		AllocMemory(1);
-		if (_pFreeTop.ptr_node == nullptr)
-		{
-			g_null_counter = _pFreeTop.counter;
-			CDebugger::_Log(L"After AllocMemory(2), but NULL [%08d]", _pFreeTop.counter);
-		}
 	}
 
 	alignas(16) t_Top top;
@@ -94,7 +91,7 @@ bool procademy::CLFObjectPool::Free(ULONG64* pData)		// Push
 	{
 		top = _pFreeTop.ptr_node;
 		pNode->stpNextBlock = (st_BLOCK_NODE*)top;
-	} while (InterlockedCompareExchange64((LONG64*)&_pFreeTop, (LONG64)pNode, (LONG64)top) != (LONG64)top);
+	} while (InterlockedCompareExchangePointer((PVOID*)&_pFreeTop, pNode, top) != top);
 
 	if (mbPlacementNew)
 	{
@@ -136,6 +133,6 @@ void procademy::CLFObjectPool::AllocMemory(int size) // push
 		{
 			top = _pFreeTop.ptr_node;
 			node->stpNextBlock = (st_BLOCK_NODE*)top;
-		} while (InterlockedCompareExchange64((LONG64*)&_pFreeTop, (LONG64)node, (LONG64)top) != (LONG64)top);
+		} while (InterlockedCompareExchangePointer((PVOID*)&_pFreeTop, node, top) != top);
 	}
 }

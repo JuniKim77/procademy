@@ -28,7 +28,6 @@ namespace procademy
 			st_BLOCK_NODE* stpNextBlock;
 			unsigned int checkSum_over = CHECKSUM_OVER;
 		};
-
 	public:
 		TC_LFObjectPool();
 		//////////////////////////////////////////////////////////////////////////
@@ -126,6 +125,7 @@ namespace procademy
 		st_BLOCK_NODE* next;
 
 		//InterlockedIncrement(&mSize);
+
 		if (InterlockedIncrement(&mSize) > mCapacity)
 		{
 			InterlockedIncrement(&mCapacity);

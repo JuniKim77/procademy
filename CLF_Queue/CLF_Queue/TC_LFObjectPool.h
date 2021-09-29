@@ -9,6 +9,19 @@
 #define CHECKSUM_UNDER (0xAAAAAAAA)
 #define CHECKSUM_OVER (0xBBBBBBBB)
 
+extern DWORD g_records;
+extern DWORD g_index;
+
+struct st_DEBUG
+{
+	int size1;
+	int size2;
+	char type;
+	void* address1;
+	void* address2;
+	void* address3;
+};
+
 namespace procademy
 {
 	template <typename DATA>
@@ -28,7 +41,6 @@ namespace procademy
 			st_BLOCK_NODE* stpNextBlock;
 			unsigned int checkSum_over = CHECKSUM_OVER;
 		};
-
 	public:
 		TC_LFObjectPool();
 		//////////////////////////////////////////////////////////////////////////
@@ -126,6 +138,7 @@ namespace procademy
 		st_BLOCK_NODE* next;
 
 		//InterlockedIncrement(&mSize);
+
 		if (InterlockedIncrement(&mSize) > mCapacity)
 		{
 			InterlockedIncrement(&mCapacity);
@@ -134,8 +147,11 @@ namespace procademy
 
 		do
 		{
-			top.counter = _pFreeTop.counter;
-			top.ptr_node = _pFreeTop.ptr_node;
+			do
+			{
+				top.ptr_node = _pFreeTop.ptr_node;
+				top.counter = _pFreeTop.counter;
+			} while (top.ptr_node != _pFreeTop.ptr_node);
 			next = top.ptr_node->stpNextBlock;
 		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, _pFreeTop.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
 
