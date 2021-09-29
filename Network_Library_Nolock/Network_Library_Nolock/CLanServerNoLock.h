@@ -7,6 +7,12 @@
 #include "ObjectPool.h"
 #include <stack>
 
+struct st_DEBUG
+{
+	USHORT begin;
+	USHORT end;
+};
+
 typedef u_int64 SESSION_ID;
 
 class CPacket;
@@ -34,7 +40,8 @@ private:
 		ULONG ip;
 		u_int64 sessionID;
 		SRWLOCK lock;
-		uint8_t lastNum = 0;
+		st_DEBUG debugs[256];
+		unsigned char index = 0;
 
 		Session()
 			: ioCount(0)
