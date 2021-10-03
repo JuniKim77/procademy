@@ -222,28 +222,29 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 
 	do
 	{
+		if (mHead.ptr_node == mTail.ptr_node)
+		{
+			//top.counter = mTail.counter;
+			//top.ptr_node = mTail.ptr_node;			
+			//next = top.ptr_node->next;
+
+			//if (next != nullptr)
+			//{
+			//	//Log(LOGIC_DEQUEUE + 10, top, nullptr);
+			//	if (InterlockedCompareExchange128((LONG64*)&mTail, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0)
+			//	{
+			//		//Log(LOGIC_DEQUEUE + 20, top, nullptr);
+			//	}
+			//	else
+			//	{
+			//		Log(LOGIC_DEQUEUE + 30, top, nullptr);
+			//	}
+			//}
+			MoveTail(&top, &next);
+		}
+		
 		do
 		{
-			if (mHead.ptr_node == mTail.ptr_node)
-			{
-				//top.counter = mTail.counter;
-				//top.ptr_node = mTail.ptr_node;			
-				//next = top.ptr_node->next;
-
-				//if (next != nullptr)
-				//{
-				//	//Log(LOGIC_DEQUEUE + 10, top, nullptr);
-				//	if (InterlockedCompareExchange128((LONG64*)&mTail, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0)
-				//	{
-				//		//Log(LOGIC_DEQUEUE + 20, top, nullptr);
-				//	}
-				//	else
-				//	{
-				//		Log(LOGIC_DEQUEUE + 30, top, nullptr);
-				//	}
-				//}
-				MoveTail(&top, &next);
-			}
 			top.counter = mHead.counter;
 			top.ptr_node = mHead.ptr_node;
 			next = top.ptr_node->next;
