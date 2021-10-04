@@ -96,6 +96,10 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 		// Alloc
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
+			if (g_exit)
+			{
+				return 0;
+			}
 			bool ret = g_q.Dequeue(&pDataArray[i]);
 			if (ret == false)
 			{
@@ -152,7 +156,12 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
+			if (g_exit)
+			{
+				return 0;
+			}
 			g_q.Enqueue(pDataArray[i]);
+			pDataArray[i] = nullptr;
 			InterlockedIncrement((long*)&PushTPS);
 		}
 		// Context Switching
