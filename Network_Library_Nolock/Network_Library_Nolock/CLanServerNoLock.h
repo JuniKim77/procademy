@@ -4,8 +4,9 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include "RingBuffer.h"
-#include "ObjectPool.h"
-#include <stack>
+//#include "ObjectPool.h"
+#include "TC_LFObjectPool.h"
+#include "TC_LFStack.h"
 
 struct st_DEBUG
 {
@@ -14,67 +15,66 @@ struct st_DEBUG
 };
 
 typedef u_int64 SESSION_ID;
-
 class CPacket;
+
+struct OverlappedBuffer
+{
+	WSAOVERLAPPED overlapped;
+	bool type = false;
+	RingBuffer queue;
+
+	OverlappedBuffer()
+	{
+		ZeroMemory(&overlapped, sizeof(overlapped));
+	}
+};
+
+struct Session
+{
+	OverlappedBuffer recv;
+	OverlappedBuffer send;
+	SOCKET socket;
+	short ioCount;
+	bool isSending;
+	bool bIsAlive;
+	bool isDisconnecting;
+	u_short port;
+	ULONG ip;
+	u_int64 sessionID;
+	SRWLOCK lock;
+	st_DEBUG debugs[256] = { 0, };
+	unsigned char index = 0;
+
+	Session()
+		: ioCount(0)
+		, isSending(false)
+		, sessionID(0)
+		, bIsAlive(false)
+		, isDisconnecting(false)
+	{
+		recv.type = true;
+		send.type = false;
+		InitializeSRWLock(&lock);
+	}
+
+	Session(SOCKET _socket, ULONG _ip, u_short _port)
+		: socket(_socket)
+		, ip(_ip)
+		, port(_port)
+		, ioCount(0)
+		, isSending(false)
+		, sessionID(0)
+		, bIsAlive(false)
+		, isDisconnecting(false)
+	{
+		recv.type = true;
+		send.type = false;
+		InitializeSRWLock(&lock);
+	}
+};
 
 class CLanServerNoLock
 {
-private:
-	struct OverlappedBuffer
-	{
-		WSAOVERLAPPED overlapped;
-		bool type;
-		RingBuffer queue;
-	};
-
-	struct Session
-	{
-		OverlappedBuffer recv;
-		OverlappedBuffer send;
-		SOCKET socket;
-		short ioCount;
-		bool isSending;
-		bool bIsAlive;
-		bool isDisconnecting;
-		u_short port;
-		ULONG ip;
-		u_int64 sessionID;
-		SRWLOCK lock;
-		st_DEBUG debugs[256];
-		unsigned char index = 0;
-
-		Session()
-			: ioCount(0)
-			, isSending(false)
-			, sessionID(0)
-			, bIsAlive(false)
-			, isDisconnecting(false)
-		{
-			ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
-			ZeroMemory(&send.overlapped, sizeof(send.overlapped));
-			recv.type = true;
-			send.type = false;
-			InitializeSRWLock(&lock);
-		}
-
-		Session(SOCKET _socket, ULONG _ip, u_short _port)
-			: socket(_socket)
-			, ip(_ip)
-			, port(_port)
-			, ioCount(0)
-			, isSending(false)
-			, sessionID(0)
-			, bIsAlive(false)
-			, isDisconnecting(false)
-		{
-			ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
-			ZeroMemory(&send.overlapped, sizeof(send.overlapped));
-			recv.type = true;
-			send.type = false;
-			InitializeSRWLock(&lock);
-		}
-	};
-
 public:
 	~CLanServerNoLock();
 	bool Start(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient); // 오픈 IP / 포트 / 워커스레드 수(생성수, 러닝수) / 나글옵션 / 최대접속자 수
@@ -137,8 +137,6 @@ private:
 	u_int64 GenerateSessionID();
 	u_short GetIndexFromSessionNo(u_int64 sessionNo);
 	void MonitorProc();
-	void LockStack();
-	void UnlockStack();
 
 private:
 	/// <summary>
@@ -173,11 +171,12 @@ private:
 	/// <summary>
 	/// Session Objects
 	/// </summary>
-	procademy::ObjectPool<Session>* mSessionPool;
-	Session** mSessionArray;
+	//procademy::ObjectPool<Session>* mSessionPool;
+	Session* mSessionArray;
 	u_int64 mSessionIDCounter = 1;
-	std::stack<u_short> mEmptyIndexes;
-	SRWLOCK mStackLock;
+	TC_LFStack<u_short> mEmptyIndexes;
+	/*std::stack<u_short> mEmptyIndexes;
+	SRWLOCK mStackLock;*/
 
 	struct Monitor
 	{

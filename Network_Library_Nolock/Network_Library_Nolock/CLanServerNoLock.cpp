@@ -7,32 +7,25 @@
 #include "CCrashDump.h"
 #include "CDebugger.h"
 
-CLanServerNoLock::Session* CLanServerNoLock::FindSession(u_int64 sessionNo)
+Session* CLanServerNoLock::FindSession(u_int64 sessionNo)
 {
 	u_short index = GetIndexFromSessionNo(sessionNo);
 
-	return mSessionArray[index];
+	return mSessionArray + index;
 }
 
 void CLanServerNoLock::InsertSessionData(Session* session)
 {
 	u_short index = GetIndexFromSessionNo(session->sessionID);
 
-	mSessionArray[index] = session;
+	mSessionArray[index] = *session;
 }
 
 void CLanServerNoLock::DeleteSessionData(u_int64 sessionNo)
 {
 	u_short index = GetIndexFromSessionNo(sessionNo);
 
-	mSessionPool->Lock(false);
-	mSessionPool->Free(mSessionArray[index]);
-	mSessionArray[index] = nullptr;
-	mSessionPool->Unlock(false);
-
-	LockStack();
-	mEmptyIndexes.push(index);
-	UnlockStack();
+	mEmptyIndexes.Push(index);
 }
 
 void CLanServerNoLock::UpdateSessionData(u_int64 sessionNo, Session* session)
@@ -184,7 +177,7 @@ int CLanServerNoLock::SendPost(Session* session)
 
 	do
 	{
-		if (InterlockedExchange8((char*)&session->isSending, true) == true)
+		if (InterlockedExchange8((char*)&session->isSending, (char)true) == (char)true)
 		{
 			return SEND_POST_SEND_FLAG_ON;
 		}
@@ -255,16 +248,16 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 		if (pRear < pFront)
 		{
 			bufs[0].buf = pRear;
-			bufs[0].len = pRear - pFront;
+			bufs[0].len = (ULONG)(pRear - pFront);
 			bufs[1].buf = pRear;
 			bufs[1].len = 0;
 		}
 		else
 		{
 			bufs[0].buf = pRear;
-			bufs[0].len = capa + 1 - (pRear - pBuf);
+			bufs[0].len = (ULONG)(capa + 1 - (pRear - pBuf));
 			bufs[1].buf = pBuf;
-			bufs[1].len = pFront - pBuf;
+			bufs[1].len = (ULONG)(pFront - pBuf);
 		}
 	}
 	else
@@ -274,7 +267,7 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 		char* pBuf = session->send.queue.GetBuffer();
 		int capa = session->send.queue.GetCapacity();
 
-		if (pFront - pBuf < 2997)
+		/*if (pFront - pBuf < 2997)
 		{
 			USHORT num = *((USHORT*)&(*(pFront + 2)));
 
@@ -303,21 +296,21 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 			int test = 0;
 		}
 
-		session->index++;
+		session->index++;*/
 
 		if (pRear >= pFront)
 		{
 			bufs[0].buf = pFront;
-			bufs[0].len = pRear - pFront;
+			bufs[0].len = (ULONG)(pRear - pFront);
 			bufs[1].buf = pRear;
 			bufs[1].len = 0;
 		}
 		else
 		{
 			bufs[0].buf = pFront;
-			bufs[0].len = capa + 1 - (pFront - pBuf);
+			bufs[0].len = (ULONG)(capa + 1 - (pFront - pBuf));
 			bufs[1].buf = pBuf;
-			bufs[1].len = pRear - pBuf;
+			bufs[1].len = (ULONG)(pRear - pBuf);
 		}
 	}
 }
@@ -347,7 +340,7 @@ bool CLanServerNoLock::DecrementProc(Session* session)
 
 void CLanServerNoLock::DisconnectProc(Session* session)
 {
-	if (InterlockedExchange8((char*)&session->isDisconnecting, true) == true)
+	if (InterlockedExchange8((char*)&session->isDisconnecting, (char)true) == (char)true)
 	{
 		return;
 	}
@@ -375,7 +368,7 @@ void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
 {
 	session->recv.queue.MoveRear(msgSize);
 
-	int count = 0;
+	DWORD count = 0;
 	CPacket packet;
 
 	while (count < msgSize)
@@ -387,10 +380,10 @@ void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
 		//session->recv.queue.MoveRear(10);
 		int ret = session->recv.queue.Dequeue(packet.GetFrontPtr(), 10);
 
-		if (ret != 10)
-		{
-			wprintf_s(L"Error\n");
-		}
+		//if (ret != 10)
+		//{
+		//	wprintf_s(L"Error\n");
+		//}
 
 		/*int num = *(packet.GetFrontPtr() + 2);
 
@@ -409,11 +402,6 @@ void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
 
 		packet.Clear();
 	}
-	/*if (count > 10)
-	{
-		CDebugger::_Log(L"PacketProc End   [S %5d] [L %4d]", session->sessionID, session->lastNum);
-	}*/
-	
 }
 
 bool CLanServerNoLock::AcceptProc()
@@ -482,7 +470,7 @@ bool CLanServerNoLock::AcceptProc()
 	return true;
 }
 
-CLanServerNoLock::Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
+Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 {
 	u_int64 id = GenerateSessionID();
 
@@ -491,10 +479,8 @@ CLanServerNoLock::Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKAD
 		return nullptr;
 	}
 
-	mSessionPool->Lock(false);
-	Session* session = mSessionPool->Alloc();
-	mSessionPool->Unlock(false);
-
+	//Session* session = mSessionPool->Alloc();
+	Session* session = FindSession(id);
 	session->socket = client;
 	session->ip = clientAddr.sin_addr.S_un.S_addr;
 	session->port = clientAddr.sin_port;
@@ -522,7 +508,7 @@ CLanServerNoLock::Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKAD
 	}
 
 	//LockSessionMap();
-	InsertSessionData(session);
+	//InsertSessionData(session);
 	//UnlockSessionMap();
 
 	//MonitorLock();
@@ -653,23 +639,21 @@ void CLanServerNoLock::InitializeEmptyIndex()
 {
 	for (u_short i = mMaxClient; i > 0; --i)
 	{
-		mEmptyIndexes.push(i - 1);
+		mEmptyIndexes.Push(i - 1);
 	}
 
-	InitializeSRWLock(&mStackLock);
+	//InitializeSRWLock(&mStackLock);
 }
 
 u_int64 CLanServerNoLock::GenerateSessionID()
 {
-	if (mEmptyIndexes.empty())
+	if (mEmptyIndexes.IsEmpty())
 	{
 		return 0;
 	}
 
-	LockStack();
-	u_short index = mEmptyIndexes.top();
-	mEmptyIndexes.pop();
-	UnlockStack();
+	u_short index = 0;
+	mEmptyIndexes.Pop(&index);
 	u_int64 id = index;
 
 	id <<= (8 * 6);
@@ -689,22 +673,15 @@ void CLanServerNoLock::MonitorProc()
 {
 	if (mbMonitoring)
 	{
-		mSessionPool->Lock(true);
-		int poolSize = mSessionPool->GetSize();
-		int poolCapa = mSessionPool->GetCapacity();
-		mSessionPool->Unlock(true);
-
 		wprintf_s(L"\nMonitoring[M]: (%d) | Quit[Q]\n", mbMonitoring);
 		wprintf_s(L"ZeroCopy[Z]: (%d) | Nagle[N]: (%d)\n", mbZeroCopy, mbNagle);
 		wprintf_s(L"=======================================\n[Total Accept Count: %u]\n[Total Diconnect Count: %u]\n[Live Session Count: %u]\n",
 			mMonitor.acceptCount,
 			mMonitor.disconnectCount,
 			mMonitor.acceptCount - mMonitor.disconnectCount);
-		wprintf_s(L"=======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n[Pool Usage: (%d / %d)]\n=======================================\n",
+		wprintf_s(L"=======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
 			mMonitor.sendTPS,
-			mMonitor.recvTPS,
-			poolSize,
-			poolCapa);
+			mMonitor.recvTPS);
 	}
 
 	//MonitorLock();
@@ -715,23 +692,9 @@ void CLanServerNoLock::MonitorProc()
 	//MonitorUnlock();
 }
 
-void CLanServerNoLock::LockStack()
-{
-	AcquireSRWLockExclusive(&mStackLock);
-}
-
-void CLanServerNoLock::UnlockStack()
-{
-	ReleaseSRWLockExclusive(&mStackLock);
-}
-
 CLanServerNoLock::~CLanServerNoLock()
 {
 	closesocket(mListenSocket);
-	if (mSessionPool != nullptr)
-	{
-		delete mSessionPool;
-	}
 	if (mhThreads != nullptr)
 	{
 		delete[] mhThreads;
@@ -759,11 +722,9 @@ bool CLanServerNoLock::Start(u_short port, u_long ip, BYTE createThread, BYTE ru
 	mMaxRunThreadSize = runThread;
 	mMaxClient = maxClient;
 	mbNagle = nagle;
-	mSessionPool = new procademy::ObjectPool<Session>(10);
 
-	mhThreads = new HANDLE[createThread + 1];
-	mSessionArray = new Session * [maxClient];
-	ZeroMemory(mSessionArray, maxClient * sizeof(Session*));
+	mhThreads = new HANDLE[(long long)createThread + 1];
+	mSessionArray = new Session[maxClient];
 
 	if (!CreateListenSocket())
 	{
@@ -838,16 +799,16 @@ void CLanServerNoLock::WaitForThreadsFin()
 				wprintf_s(L"========================\n");
 				for (u_short i = 0; i < mMaxClient; ++i)
 				{
-					if (mSessionArray[i] != nullptr)
+					if (mSessionArray[i].bIsAlive != true)
 					{
-						int recvSize = mSessionArray[i]->recv.queue.GetUseSize();
-						int sendSize = mSessionArray[i]->send.queue.GetUseSize();
+						int recvSize = mSessionArray[i].recv.queue.GetUseSize();
+						int sendSize = mSessionArray[i].send.queue.GetUseSize();
 
 						if (recvSize > 0 || sendSize > 0)
 						{
 							wprintf_s(L"[Socket: %llu] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d] [Alive: %d]\n",
-								mSessionArray[i]->socket, recvSize, sendSize, mSessionArray[i]->isSending, mSessionArray[i]->ioCount,
-								mSessionArray[i]->bIsAlive);
+								mSessionArray[i].socket, recvSize, sendSize, mSessionArray[i].isSending, mSessionArray[i].ioCount,
+								mSessionArray[i].bIsAlive);
 						}
 					}
 				}
