@@ -205,10 +205,10 @@ int CLanServerNoLock::SendPost(Session* session)
 #else
 		SetWSABuf(buffers, session, false);
 #endif
-		if ((InterlockedIncrement16((short*)&session->ioCount) & 0xff) > 2)
-		{
-			CRASH();
-		}
+		//if ((InterlockedIncrement16((short*)&session->ioCount) & 0xff) > 2)
+		//{
+		//	CRASH();
+		//}
 		ZeroMemory(&session->send.overlapped, sizeof(session->send.overlapped));
 
 		int sendRet = WSASend(session->socket, buffers, 2, nullptr, 0, &session->send.overlapped, nullptr);
@@ -317,7 +317,7 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 
 bool CLanServerNoLock::DecrementProc(Session* session)
 {
-	int ret = InterlockedDecrement16(&session->ioCount);
+	int ret = InterlockedDecrement16(&session->ioCount) && 0xff;
 
 	if (ret < 0)
 	{
@@ -340,10 +340,11 @@ bool CLanServerNoLock::DecrementProc(Session* session)
 
 void CLanServerNoLock::DisconnectProc(Session* session)
 {
-	if (InterlockedExchange8((char*)&session->isDisconnecting, (char)true) == (char)true)
+	if (InterlockedExchange8((char*)&session->isReleased, (char)true) == (char)true)
 	{
 		return;
 	}
+
 
 	u_int64 id = session->sessionID;
 	mMonitor.disconnectCount++;
@@ -356,12 +357,6 @@ void CLanServerNoLock::DisconnectProc(Session* session)
 	//LockSessionMap();
 	DeleteSessionData(id);
 	//UnlockSessionMap();
-
-	//MonitorLock();
-
-	//MonitorUnlock();
-
-	session->isDisconnecting = false;
 }
 
 void CLanServerNoLock::PacketProc(Session* session, DWORD msgSize)
@@ -491,7 +486,7 @@ Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 	session->recv.queue.ClearBuffer();
 	session->recv.queue.InitializeLock();
 	session->bIsAlive = true;
-	session->isDisconnecting = false;
+	session->isReleased = false;
 
 	ZeroMemory(&session->send.overlapped, sizeof(WSAOVERLAPPED));
 	ZeroMemory(&session->recv.overlapped, sizeof(WSAOVERLAPPED));

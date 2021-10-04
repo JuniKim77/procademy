@@ -23,12 +23,12 @@ void CEchoServerNoLock::OnClientJoin(SESSION_ID SessionID)
 	packet << len << value;
 
 	SendPacket(SessionID, &packet);
-	//InsertSessionID(SessionID);
+	InsertSessionID(SessionID);
 }
 
 void CEchoServerNoLock::OnClientLeave(SESSION_ID SessionID)
 {
-	//DeleteSessionID(SessionID);
+	DeleteSessionID(SessionID);
 }
 
 void CEchoServerNoLock::OnRecv(SESSION_ID SessionID, CPacket* packet)

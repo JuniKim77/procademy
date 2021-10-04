@@ -37,7 +37,7 @@ struct Session
 	short ioCount;
 	bool isSending;
 	bool bIsAlive;
-	bool isDisconnecting;
+	bool isReleased;
 	u_short port;
 	ULONG ip;
 	u_int64 sessionID;
@@ -50,7 +50,7 @@ struct Session
 		, isSending(false)
 		, sessionID(0)
 		, bIsAlive(false)
-		, isDisconnecting(false)
+		, isReleased(false)
 	{
 		recv.type = true;
 		send.type = false;
@@ -65,7 +65,7 @@ struct Session
 		, isSending(false)
 		, sessionID(0)
 		, bIsAlive(false)
-		, isDisconnecting(false)
+		, isReleased(false)
 	{
 		recv.type = true;
 		send.type = false;
