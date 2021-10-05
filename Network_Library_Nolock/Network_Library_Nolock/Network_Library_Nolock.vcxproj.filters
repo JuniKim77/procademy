@@ -98,5 +98,8 @@
     <ClInclude Include="TC_LFStack.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
+    <ClInclude Include="TC_LFQueue.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

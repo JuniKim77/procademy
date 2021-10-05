@@ -38,7 +38,7 @@ void CEchoServerNoLock::OnRecv(SESSION_ID SessionID, CPacket* packet)
 	SendPacket(SessionID, packet);
 }
 
-void CEchoServerNoLock::OnError(int errorcode, WCHAR* log)
+void CEchoServerNoLock::OnError(int errorcode, const WCHAR* log)
 {
 }
 

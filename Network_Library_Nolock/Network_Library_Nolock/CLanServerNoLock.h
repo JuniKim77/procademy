@@ -29,15 +29,27 @@ struct OverlappedBuffer
 	}
 };
 
+struct SessionIoCount
+{
+	union
+	{
+		LONG ioCount = 0;
+		struct
+		{
+			SHORT count;
+			SHORT isReleased;
+		} releaseCount;
+	};
+};
+
 struct Session
 {
 	OverlappedBuffer recv;
 	OverlappedBuffer send;
 	SOCKET socket;
-	short ioCount;
+	SessionIoCount ioBlock;
 	bool isSending;
 	bool bIsAlive;
-	bool isReleased;
 	u_short port;
 	ULONG ip;
 	u_int64 sessionID;
@@ -46,11 +58,9 @@ struct Session
 	unsigned char index = 0;
 
 	Session()
-		: ioCount(0)
-		, isSending(false)
+		: isSending(false)
 		, sessionID(0)
 		, bIsAlive(false)
-		, isReleased(false)
 	{
 		recv.type = true;
 		send.type = false;
@@ -61,11 +71,9 @@ struct Session
 		: socket(_socket)
 		, ip(_ip)
 		, port(_port)
-		, ioCount(0)
 		, isSending(false)
 		, sessionID(0)
 		, bIsAlive(false)
-		, isReleased(false)
 	{
 		recv.type = true;
 		send.type = false;
@@ -98,17 +106,9 @@ public:
 	//	virtual void OnWorkerThreadBegin() = 0;                    < 워커스레드 GQCS 바로 하단에서 호출
 	//	virtual void OnWorkerThreadEnd() = 0;                      < 워커스레드 1루프 종료 후
 
-	virtual void OnError(int errorcode, WCHAR* log) = 0;
+	virtual void OnError(int errorcode, const WCHAR* log) = 0;
 
 private:
-	enum SEND_POST_RESULT {
-		SEND_POST_PACKET_SENT,
-		SEND_POST_SEND_FLAG_ON,
-		SEND_POST_RING_QUEUE_EMPTY,
-		SEND_POST_SEND_ERROR,
-		SEND_POST_IO_COUNT_ZERO,
-	};
-
 	Session* FindSession(u_int64 sessionNo);
 	void InsertSessionData(Session* session);
 	void DeleteSessionData(u_int64 sessionNo);
@@ -124,14 +124,16 @@ private:
 	/// <param name="session"></param>
 	/// <returns>
 	/// </returns>
-	int SendPost(Session* session);
+	void SendPost(Session* session);
 	void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
-	bool DecrementProc(Session* session);
-	void DisconnectProc(Session* session);
-	void PacketProc(Session* session, DWORD msgSize);
+	void IncrementIOProc(Session* session);
+	void DecrementIOProc(Session* session);
+	void ReleaseProc(Session* session);
 	bool AcceptProc();
 	Session* CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
 	bool OnCompleteMessage();
+	void CompleteRecv(Session* session, DWORD transferredSize);
+	void CompleteSend(Session* session, DWORD transferredSize);
 	void CloseSessions();
 	void InitializeEmptyIndex();
 	u_int64 GenerateSessionID();
