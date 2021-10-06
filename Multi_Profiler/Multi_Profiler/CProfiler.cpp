@@ -117,19 +117,21 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 
 	WCHAR* tableName = new WCHAR[mSetting.totalSize];
 	WCHAR tableSet[FILE_NAME_MAX];
-	swprintf_s(tableSet, FILE_NAME_MAX, L"%%%dls%%%dls%%%dls%%%dls%%%dls",
+	swprintf_s(tableSet, FILE_NAME_MAX, L"%%%dls%%%dls%%%dls%%%dls%%%dls%%%dls",
 		mSetting.colSize[0],
 		mSetting.colSize[1],
 		mSetting.colSize[2],
 		mSetting.colSize[3],
-		mSetting.colSize[4]);
+		mSetting.colSize[4],
+		mSetting.colSize[5]);
 
 	swprintf_s(tableName, mSetting.totalSize, tableSet,
 		mSetting.colNames[0],
 		mSetting.colNames[1],
 		mSetting.colNames[2],
 		mSetting.colNames[3],
-		mSetting.colNames[4]);
+		mSetting.colNames[4],
+		mSetting.colNames[5]);
 
 	fwprintf_s(fout, L"%ls\n", tableName);
 	fwprintf_s(fout, L"%ls", div);
@@ -162,12 +164,14 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 			avg = time / freq / (mProfiles[i].iCall);
 		}
 
+		WCHAR threadIdTxt[32];
 		WCHAR nameTxt[32];
 		WCHAR avgTxt[32];
 		WCHAR minTxt[32];
 		WCHAR maxTxt[32];
 		WCHAR callTxt[32];
 
+		swprintf_s(threadIdTxt, _countof(threadIdTxt), L"%u |", mThreadId);
 		swprintf_s(nameTxt, _countof(nameTxt), L"%s |", mProfiles[i].szName);
 		swprintf_s(avgTxt, _countof(avgTxt), L"%.4lfus |", avg);
 		swprintf_s(minTxt, _countof(minTxt), L"%.4lfus |", mProfiles[i].iMin[0] / freq);
@@ -175,6 +179,7 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 		swprintf_s(callTxt, _countof(callTxt), L"%lld |", mProfiles[i].iCall);
 
 		swprintf_s(line, _countof(line), tableSet,
+			threadIdTxt,
 			nameTxt,
 			avgTxt,
 			minTxt,
@@ -217,6 +222,11 @@ void CProfiler::ProfileReset()
 		mProfiles[i].iMin[0] = MAXINT64;
 		mProfiles[i].iMin[1] = MAXINT64;
 	}
+}
+
+void CProfiler::SetThreadId()
+{
+	mThreadId = GetCurrentThreadId();
 }
 
 void CProfiler::SetProfileFileName(WCHAR* szFileName)

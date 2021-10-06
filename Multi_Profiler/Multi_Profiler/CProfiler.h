@@ -3,7 +3,7 @@
 #define PROFILE_MAX (50)
 #define NAME_MAX (20)
 #define FILE_NAME_MAX (80)
-#define COLUMN_SIZE (5)
+#define COLUMN_SIZE (6)
 
 #include <wtypes.h>
 
@@ -42,6 +42,8 @@ public:
 	/// </summary>
 	void ProfileReset();
 
+	void SetThreadId();
+
 	static void SetProfileFileName(WCHAR* szFileName);
 
 private:
@@ -77,4 +79,5 @@ private:
 	
 	PROFILE_SAMPLE mProfiles[PROFILE_MAX];
 	Setting mSetting;
+	DWORD mThreadId = 0;
 };

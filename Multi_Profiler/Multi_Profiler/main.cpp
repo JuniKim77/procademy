@@ -84,6 +84,7 @@ int main()
 unsigned int __stdcall workerThread(LPVOID arg)
 {
 	TlsSetValue(g_MultiProfiler, arg);
+	((CProfiler*)arg)->SetThreadId();
 	
 	DWORD dwError;
 
