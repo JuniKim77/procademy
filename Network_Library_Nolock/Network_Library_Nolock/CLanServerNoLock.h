@@ -7,11 +7,11 @@
 #include "TC_LFStack.h"
 #include "TC_LFQueue.h"
 
-struct st_DEBUG
-{
-	USHORT begin;
-	USHORT end;
-};
+//struct st_DEBUG
+//{
+//	USHORT begin;
+//	USHORT end;
+//};
 
 typedef u_int64 SESSION_ID;
 class CPacket;
@@ -44,7 +44,7 @@ struct Session
 	u_short port;
 	ULONG ip;
 	u_int64 sessionID;
-	st_DEBUG debugs[256] = { 0, };
+	//st_DEBUG debugs[256] = { 0, };
 	unsigned char index = 0;
 
 	Session()
@@ -78,7 +78,7 @@ public:
 	void WaitForThreadsFin();
 
 	bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
-	int SendPacket(SESSION_ID SessionID, CPacket* packet); // SESSION_ID / HOST_ID
+	void SendPacket(SESSION_ID SessionID, CPacket* packet); // SESSION_ID / HOST_ID
 
 	virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept Á÷ÈÄ
 
@@ -103,17 +103,17 @@ private:
 	bool BeginThreads();
 	static unsigned int WINAPI WorkerThread(LPVOID arg);
 	static unsigned int WINAPI AcceptThread(LPVOID arg);
-	bool RecvPost(Session* session);
+	bool RecvPost(Session* session, bool isAccepted = false);
 	/// <summary>
 	/// Send Message Proc from sendQ
 	/// </summary>
 	/// <param name="session"></param>
 	/// <returns>
 	/// </returns>
-	void SendPost(Session* session);
+	bool SendPost(Session* session);
 	void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
-	void IncrementIOProc(Session* session);
-	void DecrementIOProc(Session* session);
+	void IncrementIOProc(Session* session, int logic);
+	void DecrementIOProc(Session* session, int logic);
 	void ReleaseProc(Session* session);
 	bool AcceptProc();
 	Session* CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
@@ -147,7 +147,7 @@ private:
 	/// Network Status
 	/// </summary>
 	bool mbIsRunning = false;
-	bool mbZeroCopy = false;
+	bool mbZeroCopy = true;
 	BYTE mNumThreads = 0;
 
 	/// <summary>
