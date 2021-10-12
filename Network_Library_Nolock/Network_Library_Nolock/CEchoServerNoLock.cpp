@@ -15,14 +15,14 @@ bool CEchoServerNoLock::OnConnectionRequest(u_long IP, u_short Port)
 
 void CEchoServerNoLock::OnClientJoin(SESSION_ID SessionID)
 {
-	CPacket packet;
+	CPacket* packet = new CPacket;
 
 	WORD len = 8;
 	int64_t value = 0x7fffffffffffffff;
 
-	packet << len << value;
+	*packet << len << value;
 
-	SendPacket(SessionID, &packet);
+	SendPacket(SessionID, packet);
 	InsertSessionID(SessionID);
 }
 

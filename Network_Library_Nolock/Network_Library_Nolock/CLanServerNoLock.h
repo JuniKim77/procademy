@@ -4,9 +4,8 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include "RingBuffer.h"
-//#include "ObjectPool.h"
-#include "TC_LFObjectPool.h"
 #include "TC_LFStack.h"
+#include "TC_LFQueue.h"
 
 struct st_DEBUG
 {
@@ -16,18 +15,6 @@ struct st_DEBUG
 
 typedef u_int64 SESSION_ID;
 class CPacket;
-
-struct OverlappedBuffer
-{
-	WSAOVERLAPPED overlapped;
-	bool type = false;
-	RingBuffer queue;
-
-	OverlappedBuffer()
-	{
-		ZeroMemory(&overlapped, sizeof(overlapped));
-	}
-};
 
 struct SessionIoCount
 {
@@ -44,16 +31,19 @@ struct SessionIoCount
 
 struct Session
 {
-	OverlappedBuffer recv;
-	OverlappedBuffer send;
-	SOCKET socket;
+	WSAOVERLAPPED recvOverlapped;
+	WSAOVERLAPPED sendOverlapped;
+	RingBuffer recvQ;
+	TC_LFQueue<CPacket*> sendQ;
+	int	numSendingPacket = 0;
 	SessionIoCount ioBlock;
 	bool isSending;
 	bool bIsAlive;
+	SRWLOCK lock;
+	SOCKET socket;
 	u_short port;
 	ULONG ip;
 	u_int64 sessionID;
-	SRWLOCK lock;
 	st_DEBUG debugs[256] = { 0, };
 	unsigned char index = 0;
 
@@ -62,8 +52,6 @@ struct Session
 		, sessionID(0)
 		, bIsAlive(false)
 	{
-		recv.type = true;
-		send.type = false;
 		InitializeSRWLock(&lock);
 	}
 
@@ -75,8 +63,6 @@ struct Session
 		, sessionID(0)
 		, bIsAlive(false)
 	{
-		recv.type = true;
-		send.type = false;
 		InitializeSRWLock(&lock);
 	}
 };

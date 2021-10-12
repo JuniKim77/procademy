@@ -35,12 +35,14 @@ public:
 	~TC_LFQueue();
 	void Enqueue(DATA data);
 	bool Dequeue(DATA* data);
+	DWORD Peek(DATA arr[]);
 	bool IsEmpty() { return mSize == 0; }
 	DWORD GetSize() { return mSize; }
 	DWORD GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
 	DWORD GetPoolSize() { return mMemoryPool.GetSize(); }
 	void linkCheck(int size);
 	void Log(int logicId, t_Top snap_top, Node* next, bool isHead = false);
+	void Clear();
 
 private:
 	void MoveTail(int logicId, t_Top* snap, Node** next);
@@ -170,6 +172,26 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 }
 
 template<typename DATA>
+inline DWORD TC_LFQueue<DATA>::Peek(DATA arr[])
+{
+	DWORD i;
+	Node* pHead = mHead.ptr_node->next;
+
+	for (i = 0; i < 100; ++i)
+	{
+		if (pHead == nullptr)
+		{
+			return i;
+		}
+
+		arr[i] = pHead->data;
+		pHead = pHead->next;
+	}
+
+	return i;
+}
+
+template<typename DATA>
 inline void TC_LFQueue<DATA>::linkCheck(int size)
 {
 	Node* node = mHead.ptr_node->next;
@@ -200,6 +222,17 @@ inline void TC_LFQueue<DATA>::Log(int logicId, t_Top snap_top, Node* next, bool 
 		_Log(logicId, GetCurrentThreadId(), mSize, mTail.counter, snap_top.counter, mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next, snap_top.ptr_node, next);
 	}
 	
+}
+
+template<typename DATA>
+inline void TC_LFQueue<DATA>::Clear()
+{
+	int size = mSize;
+	DATA temp;
+	for (int i = 0; i < size; ++i)
+	{
+		Dequeue(&temp);
+	}
 }
 
 template<typename DATA>
