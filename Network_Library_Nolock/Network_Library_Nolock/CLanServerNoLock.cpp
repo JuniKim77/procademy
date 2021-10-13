@@ -276,14 +276,20 @@ void CLanServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 	}
 	else
 	{
-		//CPacket* packetBufs[100];
+		CPacket* packetBufs[100];
 		DWORD snapSize = session->sendQ.GetSize();
+
+		if (snapSize > 100)
+			snapSize = 100;
+
+		if (session->sendQ.Peek(packetBufs, snapSize) != snapSize)
+			CRASH();
 
 		for (DWORD i = 0; i < snapSize; ++i)
 		{
-			session->sendQ.Dequeue(&session->packetBufs[i]);
-			bufs[i].buf = session->packetBufs[i]->GetBufferPtr();
-			bufs[i].len = session->packetBufs[i]->GetSize();
+			//session->sendQ.Dequeue(&session->packetBufs[i]);
+			bufs[i].buf = packetBufs[i]->GetBufferPtr();
+			bufs[i].len = packetBufs[i]->GetSize();
 		}
 
 		session->numSendingPacket = snapSize;
@@ -631,11 +637,14 @@ void CLanServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 
 void CLanServerNoLock::CompleteSend(Session* session, DWORD transferredSize)
 {
+	CPacket* packet;
+
 	for (int i = 0; i < session->numSendingPacket; ++i)
 	{
-		//session->sendQ.Dequeue(&packet);
+		session->sendQ.Dequeue(&packet);
 
-		delete session->packetBufs[i];
+		delete packet;
+		packet = nullptr;
 	}
 
 	session->numSendingPacket = 0;
