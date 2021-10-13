@@ -45,7 +45,8 @@ void CEchoServerNoLock::OnError(int errorcode, const WCHAR* log)
 void CEchoServerNoLock::InsertSessionID(u_int64 sessionNo)
 {
 	LockMap();
-	mSessionJoinMap[sessionNo]++;
+	//mSessionJoinMap[sessionNo]++;
+	InterlockedIncrement((long*)&mSessionJoinMap[sessionNo]);
 	if (mSessionJoinMap[sessionNo] > 1)
 	{
 		CRASH();
@@ -56,7 +57,8 @@ void CEchoServerNoLock::InsertSessionID(u_int64 sessionNo)
 void CEchoServerNoLock::DeleteSessionID(u_int64 sessionNo)
 {
 	LockMap();
-	mSessionJoinMap[sessionNo]--;
+	//mSessionJoinMap[sessionNo]--;
+	InterlockedDecrement((long*)&mSessionJoinMap[sessionNo]);
 	if (mSessionJoinMap[sessionNo] == 0)
 	{
 		mSessionJoinMap.erase(sessionNo);

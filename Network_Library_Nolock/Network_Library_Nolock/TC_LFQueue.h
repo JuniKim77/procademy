@@ -180,7 +180,7 @@ inline DWORD TC_LFQueue<DATA>::Peek(DATA arr[], DWORD size)
 	{
 		if (pHead == nullptr)
 		{
-			return i;
+			return i - 1;
 		}
 
 		arr[i] = pHead->data;

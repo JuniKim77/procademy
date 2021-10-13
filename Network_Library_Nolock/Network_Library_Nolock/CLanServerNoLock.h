@@ -35,6 +35,7 @@ struct Session
 	WSAOVERLAPPED sendOverlapped;
 	RingBuffer recvQ;
 	TC_LFQueue<CPacket*> sendQ;
+	CPacket* packetBufs[100];
 	int	numSendingPacket = 0;
 	SessionIoCount ioBlock;
 	bool isSending;

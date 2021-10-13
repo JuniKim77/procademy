@@ -22,6 +22,5 @@ private:
 
 private:
 	std::unordered_map<u_int64, int> mSessionJoinMap;
-	std::unordered_map<u_int64, int> mSessionLeaveMap;
 	SRWLOCK mSetLock;
 };
