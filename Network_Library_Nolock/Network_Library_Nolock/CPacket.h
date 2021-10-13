@@ -20,7 +20,7 @@ public:
 	CPacket();
 	CPacket(int iBufferSize);
 
-	~CPacket();
+	virtual ~CPacket();
 
 	//////////////////////////////////////////////////////////////////////////
 	// ÆÐÅ¶  ÆÄ±«.
