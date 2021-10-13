@@ -5,7 +5,7 @@
 
 CEchoServerNoLock::CEchoServerNoLock()
 {
-	InitializeSRWLock(&mSetLock);
+	InitializeSRWLock(&mSessionLock);
 }
 
 bool CEchoServerNoLock::OnConnectionRequest(u_long IP, u_short Port)
@@ -45,8 +45,7 @@ void CEchoServerNoLock::OnError(int errorcode, const WCHAR* log)
 void CEchoServerNoLock::InsertSessionID(u_int64 sessionNo)
 {
 	LockMap();
-	//mSessionJoinMap[sessionNo]++;
-	InterlockedIncrement((long*)&mSessionJoinMap[sessionNo]);
+	mSessionJoinMap[sessionNo]++;
 	if (mSessionJoinMap[sessionNo] > 1)
 	{
 		CRASH();
@@ -57,8 +56,7 @@ void CEchoServerNoLock::InsertSessionID(u_int64 sessionNo)
 void CEchoServerNoLock::DeleteSessionID(u_int64 sessionNo)
 {
 	LockMap();
-	//mSessionJoinMap[sessionNo]--;
-	InterlockedDecrement((long*)&mSessionJoinMap[sessionNo]);
+	mSessionJoinMap[sessionNo]--;
 	if (mSessionJoinMap[sessionNo] == 0)
 	{
 		mSessionJoinMap.erase(sessionNo);
@@ -108,8 +106,10 @@ void CEchoServerNoLock::EchoProc(SESSION_ID sessionID, CPacket* packet)
 
 void CEchoServerNoLock::LockMap()
 {
+	AcquireSRWLockExclusive(&mSessionLock);
 }
 
 void CEchoServerNoLock::UnlockMap()
 {
+	ReleaseSRWLockExclusive(&mSessionLock);
 }
