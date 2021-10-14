@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{598bd558-cdd6-466f-b73e-986a71305d7b}</ProjectGuid>
-    <RootNamespace>NetworkLibraryNolock</RootNamespace>
+    <ProjectGuid>{3341e04d-9acc-4b64-babc-6d1ecef75a8e}</ProjectGuid>
+    <RootNamespace>MultiProfiler</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -140,33 +140,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CCrashDump.cpp" />
-    <ClCompile Include="CDebugger.cpp" />
-    <ClCompile Include="CEchoServerNoLock.cpp" />
-    <ClCompile Include="CLanServerNoLock.cpp" />
-    <ClCompile Include="CLogger.cpp" />
-    <ClCompile Include="CPacket.cpp" />
+    <ClCompile Include="CProfiler.cpp" />
     <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MyProfiler.cpp" />
-    <ClCompile Include="RingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CCrashDump.h" />
-    <ClInclude Include="CDebugger.h" />
-    <ClInclude Include="CEchoServerNoLock.h" />
-    <ClInclude Include="CLanServerNoLock.h" />
-    <ClInclude Include="CLogger.h" />
-    <ClInclude Include="CPacket.h" />
+    <ClInclude Include="CProfiler.h" />
     <ClInclude Include="CSVReader.h" />
-    <ClInclude Include="MessageProtocol.h" />
-    <ClInclude Include="MyProfiler.h" />
-    <ClInclude Include="ObjectPool.h" />
-    <ClInclude Include="Protocol.h" />
-    <ClInclude Include="RingBuffer.h" />
-    <ClInclude Include="TC_LFObjectPool.h" />
-    <ClInclude Include="TC_LFQueue.h" />
-    <ClInclude Include="TC_LFStack.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

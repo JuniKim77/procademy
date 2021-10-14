@@ -4,77 +4,65 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include "RingBuffer.h"
-#include "ObjectPool.h"
-#include <stack>
-
-struct st_DEBUG
-{
-	USHORT begin;
-	USHORT end;
-};
+#include "TC_LFStack.h"
+#include "TC_LFQueue.h"
 
 typedef u_int64 SESSION_ID;
-
 class CPacket;
+
+struct SessionIoCount
+{
+	union
+	{
+		LONG ioCount = 0;
+		struct
+		{
+			SHORT count;
+			SHORT isReleased;
+		} releaseCount;
+	};
+};
+
+struct Session
+{
+	WSAOVERLAPPED recvOverlapped;
+	WSAOVERLAPPED sendOverlapped;
+	RingBuffer recvQ;
+	TC_LFQueue<CPacket*> sendQ;
+	int	numSendingPacket = 0;
+	SessionIoCount ioBlock;
+	bool isSending;
+	bool bIsAlive;
+	SRWLOCK lock;
+	SOCKET socket;
+	u_short port;
+	ULONG ip;
+	u_int64 sessionID;
+	//st_DEBUG debugs[256] = { 0, };
+	//unsigned char index = 0;
+
+	Session()
+		: isSending(false)
+		, sessionID(0)
+		, bIsAlive(false)
+	{
+		InitializeSRWLock(&lock);
+	}
+
+	Session(SOCKET _socket, ULONG _ip, u_short _port)
+		: socket(_socket)
+		, ip(_ip)
+		, port(_port)
+		, isSending(false)
+		, sessionID(0)
+		, bIsAlive(false)
+	{
+		InitializeSRWLock(&lock);
+	}
+};
 
 class CLanServerNoLock
 {
-private:
-	struct OverlappedBuffer
-	{
-		WSAOVERLAPPED overlapped;
-		bool type;
-		RingBuffer queue;
-	};
-
-	struct Session
-	{
-		OverlappedBuffer recv;
-		OverlappedBuffer send;
-		SOCKET socket;
-		short ioCount;
-		bool isSending;
-		bool bIsAlive;
-		bool isDisconnecting;
-		u_short port;
-		ULONG ip;
-		u_int64 sessionID;
-		SRWLOCK lock;
-		st_DEBUG debugs[256];
-		unsigned char index = 0;
-
-		Session()
-			: ioCount(0)
-			, isSending(false)
-			, sessionID(0)
-			, bIsAlive(false)
-			, isDisconnecting(false)
-		{
-			ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
-			ZeroMemory(&send.overlapped, sizeof(send.overlapped));
-			recv.type = true;
-			send.type = false;
-			InitializeSRWLock(&lock);
-		}
-
-		Session(SOCKET _socket, ULONG _ip, u_short _port)
-			: socket(_socket)
-			, ip(_ip)
-			, port(_port)
-			, ioCount(0)
-			, isSending(false)
-			, sessionID(0)
-			, bIsAlive(false)
-			, isDisconnecting(false)
-		{
-			ZeroMemory(&recv.overlapped, sizeof(recv.overlapped));
-			ZeroMemory(&send.overlapped, sizeof(send.overlapped));
-			recv.type = true;
-			send.type = false;
-			InitializeSRWLock(&lock);
-		}
-	};
-
 public:
 	~CLanServerNoLock();
 	bool Start(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient); // 오픈 IP / 포트 / 워커스레드 수(생성수, 러닝수) / 나글옵션 / 최대접속자 수
@@ -84,7 +72,7 @@ public:
 	void WaitForThreadsFin();
 
 	bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
-	int SendPacket(SESSION_ID SessionID, CPacket* packet); // SESSION_ID / HOST_ID
+	void SendPacket(SESSION_ID SessionID, CPacket* packet); // SESSION_ID / HOST_ID
 
 	virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept 직후
 
@@ -98,17 +86,9 @@ public:
 	//	virtual void OnWorkerThreadBegin() = 0;                    < 워커스레드 GQCS 바로 하단에서 호출
 	//	virtual void OnWorkerThreadEnd() = 0;                      < 워커스레드 1루프 종료 후
 
-	virtual void OnError(int errorcode, WCHAR* log) = 0;
+	virtual void OnError(int errorcode, const WCHAR* log) = 0;
 
 private:
-	enum SEND_POST_RESULT {
-		SEND_POST_PACKET_SENT,
-		SEND_POST_SEND_FLAG_ON,
-		SEND_POST_RING_QUEUE_EMPTY,
-		SEND_POST_SEND_ERROR,
-		SEND_POST_IO_COUNT_ZERO,
-	};
-
 	Session* FindSession(u_int64 sessionNo);
 	void InsertSessionData(Session* session);
 	void DeleteSessionData(u_int64 sessionNo);
@@ -117,28 +97,22 @@ private:
 	bool BeginThreads();
 	static unsigned int WINAPI WorkerThread(LPVOID arg);
 	static unsigned int WINAPI AcceptThread(LPVOID arg);
-	bool RecvPost(Session* session);
-	/// <summary>
-	/// Send Message Proc from sendQ
-	/// </summary>
-	/// <param name="session"></param>
-	/// <returns>
-	/// </returns>
-	int SendPost(Session* session);
+	bool RecvPost(Session* session, bool isAccepted = false);
+	bool SendPost(Session* session);
 	void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
-	bool DecrementProc(Session* session);
-	void DisconnectProc(Session* session);
-	void PacketProc(Session* session, DWORD msgSize);
+	void IncrementIOProc(Session* session, int logic);
+	void DecrementIOProc(Session* session, int logic);
+	void ReleaseProc(Session* session);
 	bool AcceptProc();
 	Session* CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
 	bool OnCompleteMessage();
+	void CompleteRecv(Session* session, DWORD transferredSize);
+	void CompleteSend(Session* session, DWORD transferredSize);
 	void CloseSessions();
 	void InitializeEmptyIndex();
 	u_int64 GenerateSessionID();
 	u_short GetIndexFromSessionNo(u_int64 sessionNo);
 	void MonitorProc();
-	void LockStack();
-	void UnlockStack();
 
 private:
 	/// <summary>
@@ -161,7 +135,7 @@ private:
 	/// Network Status
 	/// </summary>
 	bool mbIsRunning = false;
-	bool mbZeroCopy = false;
+	bool mbZeroCopy = true;
 	BYTE mNumThreads = 0;
 
 	/// <summary>
@@ -173,11 +147,12 @@ private:
 	/// <summary>
 	/// Session Objects
 	/// </summary>
-	procademy::ObjectPool<Session>* mSessionPool;
-	Session** mSessionArray;
+	//procademy::ObjectPool<Session>* mSessionPool;
+	Session* mSessionArray;
 	u_int64 mSessionIDCounter = 1;
-	std::stack<u_short> mEmptyIndexes;
-	SRWLOCK mStackLock;
+	TC_LFStack<u_short> mEmptyIndexes;
+	/*std::stack<u_short> mEmptyIndexes;
+	SRWLOCK mStackLock;*/
 
 	struct Monitor
 	{

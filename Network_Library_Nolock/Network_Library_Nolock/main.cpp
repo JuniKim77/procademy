@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include "CEchoServerNoLock.h"
-#include "CDebugger.h"
+#include "CCrashDump.h"
 
 #define dfSERVER_PORT (6000)
 
 int main()
 {
-	CDebugger::SetDirectory(L"./debugs");
-	CDebugger::Initialize();
+	procademy::CCrashDump::CCrashDump();
 
 	CEchoServerNoLock server;
 
@@ -15,7 +14,7 @@ int main()
 
 	server.WaitForThreadsFin();
 
-	CDebugger::PrintLogOut(L"Debug.txt");
+	//CDebugger::PrintLogOut(L"Debug.txt");
 
 	return 0;
 }

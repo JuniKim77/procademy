@@ -28,8 +28,8 @@ void CSVFile::readFile()
 	fseek(fin, 0, SEEK_END);
 	// 이 사이즈는 UTF-8 기준이기 때문에 실제 필요한 바이트 보다 작다.
 	int size = ftell(fin);
-	mpBuffer = new WCHAR[(long long)size + 2];
-	memset(mpBuffer, 0, ((long long)size + 2) * 2);
+	mpBuffer = new WCHAR[size + 2];
+	memset(mpBuffer, 0, (size + 2) * 2);
 	mpBuffer++;
 
 	fseek(fin, 0, SEEK_SET);
