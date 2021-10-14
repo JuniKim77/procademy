@@ -607,6 +607,7 @@ void CLanServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 			return;
 		}
 		CPacket* packet = new CPacket;
+		packet->AddRef();
 		//MonitorLock();
 		InterlockedIncrement(&mMonitor.recvTPS);
 		InterlockedIncrement(&mMonitor.sendTPS);
@@ -619,12 +620,7 @@ void CLanServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 		//	wprintf_s(L"Error\n");
 		//}
 
-		/*int num = *(packet.GetFrontPtr() + 2);
-
-		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"%d\n", num);*/
-
 		packet->MoveRear(ret);
-
 		OnRecv(session->sessionID, packet); // -> SendPacket
 
 		/*if (count == 0)
@@ -633,6 +629,7 @@ void CLanServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 		}*/
 		//count += (sizeof(header) + header.wPayloadSize);
 		count += ret;
+		packet->SubRef();
 	}
 
 	RecvPost(session);
@@ -645,8 +642,8 @@ void CLanServerNoLock::CompleteSend(Session* session, DWORD transferredSize)
 	for (int i = 0; i < session->numSendingPacket; ++i)
 	{
 		session->sendQ.Dequeue(&packet);
-
-		delete packet;
+		
+		packet->SubRef();
 		packet = nullptr;
 	}
 
@@ -899,6 +896,7 @@ void CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
 
 	header.byCode = dfNETWORK_CODE;
 	header.wPayloadSize = packet->GetSize();*/
+	packet->AddRef();
 	session->sendQ.Enqueue(packet);
 
 	if (SendPost(session))

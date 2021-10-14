@@ -131,6 +131,9 @@ public:
 	CPacket& operator << (const char* s);
 	CPacket& operator << (const wchar_t* s);
 
+	void AddRef();
+	void SubRef();
+
 protected:
 	/// <summary>
 	/// 버퍼 크기를 패킷의 기본 버퍼 사이즈 만큼 증가.
@@ -142,6 +145,7 @@ private:
 	char* mBuffer;
 	int mCapacity;
 	int mSize;
+	int mRefCount = 0;
 	char* mFront;
 	char* mRear;
 };

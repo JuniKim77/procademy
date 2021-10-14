@@ -39,7 +39,7 @@ struct Session
 	ULONG ip;
 	u_int64 sessionID;
 	//st_DEBUG debugs[256] = { 0, };
-	unsigned char index = 0;
+	//unsigned char index = 0;
 
 	Session()
 		: isSending(false)

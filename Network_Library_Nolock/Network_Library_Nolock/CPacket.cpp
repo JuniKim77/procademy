@@ -1,6 +1,7 @@
 #include "CPacket.h"
 #include <malloc.h>
 #include <string.h>
+#include <Windows.h>
 
 #define DEBUG
 
@@ -386,6 +387,21 @@ CPacket& CPacket::operator<<(const wchar_t* s)
 	PutData(s, len);
 
 	return *this;
+}
+
+void CPacket::AddRef()
+{
+	InterlockedIncrement((LONG*)&mRefCount);
+}
+
+void CPacket::SubRef()
+{
+	InterlockedDecrement((LONG*)&mRefCount);
+
+	if (mRefCount == 0)
+	{
+		delete this;
+	}
 }
 
 void CPacket::resize()
