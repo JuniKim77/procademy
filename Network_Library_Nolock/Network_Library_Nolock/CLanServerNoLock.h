@@ -7,12 +7,6 @@
 #include "TC_LFStack.h"
 #include "TC_LFQueue.h"
 
-//struct st_DEBUG
-//{
-//	USHORT begin;
-//	USHORT end;
-//};
-
 typedef u_int64 SESSION_ID;
 class CPacket;
 
@@ -35,7 +29,6 @@ struct Session
 	WSAOVERLAPPED sendOverlapped;
 	RingBuffer recvQ;
 	TC_LFQueue<CPacket*> sendQ;
-	CPacket* packetBufs[100];
 	int	numSendingPacket = 0;
 	SessionIoCount ioBlock;
 	bool isSending;
@@ -105,12 +98,6 @@ private:
 	static unsigned int WINAPI WorkerThread(LPVOID arg);
 	static unsigned int WINAPI AcceptThread(LPVOID arg);
 	bool RecvPost(Session* session, bool isAccepted = false);
-	/// <summary>
-	/// Send Message Proc from sendQ
-	/// </summary>
-	/// <param name="session"></param>
-	/// <returns>
-	/// </returns>
 	bool SendPost(Session* session);
 	void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
 	void IncrementIOProc(Session* session, int logic);

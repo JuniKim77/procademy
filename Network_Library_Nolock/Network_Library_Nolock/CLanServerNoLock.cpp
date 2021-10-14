@@ -451,7 +451,7 @@ bool CLanServerNoLock::AcceptProc()
 
 		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Accept [Error: %d]\n", err);
 
-		return true;
+		return false;
 	}
 
 	if (OnConnectionRequest(clientAddr.sin_addr.S_un.S_addr, clientAddr.sin_port) == false)
@@ -465,7 +465,7 @@ bool CLanServerNoLock::AcceptProc()
 
 		closesocket(client);
 
-		return true;
+		return false;
 	}
 
 	if (mbZeroCopy)
@@ -476,7 +476,20 @@ bool CLanServerNoLock::AcceptProc()
 			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Zero Copy [Error: %d]\n", WSAGetLastError());
 			closesocket(client);
 
-			return true;
+			return false;
+		}
+	}
+
+	if (mbNagle)
+	{
+		BOOL optval = mbNagle;
+
+		if (setsockopt(client, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof(optval)) == SOCKET_ERROR)
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Nagle [Error: %d]\n", WSAGetLastError());
+			closesocket(client);
+
+			return false;
 		}
 	}
 
@@ -517,14 +530,8 @@ Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 	session->socket = client;
 	session->ip = clientAddr.sin_addr.S_un.S_addr;
 	session->port = clientAddr.sin_port;
-	//session->isSending = false;
 	session->sessionID = id;
-	//session->sendQ.Clear();
-	//session->recvQ.ClearBuffer();
-	//session->recvQ.InitializeLock();
 
-	/*ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
-	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));*/
 	InitializeSRWLock(&session->lock);
 
 	HANDLE hResult = CreateIoCompletionPort((HANDLE)client, mHcp, (ULONG_PTR)session, 0);
@@ -536,10 +543,6 @@ Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 
 		return nullptr;
 	}
-
-	//LockSessionMap();
-	//InsertSessionData(session);
-	//UnlockSessionMap();
 
 	//MonitorLock();
 	mMonitor.acceptCount++;
