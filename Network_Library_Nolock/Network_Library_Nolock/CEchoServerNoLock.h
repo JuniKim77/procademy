@@ -10,7 +10,7 @@ public:
 	virtual void OnClientJoin(SESSION_ID SessionID) override;
 	virtual void OnClientLeave(SESSION_ID SessionID) override;
 	virtual void OnRecv(SESSION_ID SessionID, CPacket* packet) override;
-	virtual void OnError(int errorcode, WCHAR* log) override;
+	virtual void OnError(int errorcode, const WCHAR* log) override;
 
 private:
 	void InsertSessionID(u_int64 sessionNo);
@@ -22,6 +22,5 @@ private:
 
 private:
 	std::unordered_map<u_int64, int> mSessionJoinMap;
-	std::unordered_map<u_int64, int> mSessionLeaveMap;
-	SRWLOCK mSetLock;
+	SRWLOCK mSessionLock;
 };

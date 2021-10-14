@@ -5,7 +5,7 @@
 
 CEchoServerNoLock::CEchoServerNoLock()
 {
-	InitializeSRWLock(&mSetLock);
+	InitializeSRWLock(&mSessionLock);
 }
 
 bool CEchoServerNoLock::OnConnectionRequest(u_long IP, u_short Port)
@@ -15,20 +15,20 @@ bool CEchoServerNoLock::OnConnectionRequest(u_long IP, u_short Port)
 
 void CEchoServerNoLock::OnClientJoin(SESSION_ID SessionID)
 {
-	CPacket packet;
+	CPacket* packet = new CPacket;
 
 	WORD len = 8;
 	int64_t value = 0x7fffffffffffffff;
 
-	packet << len << value;
+	*packet << len << value;
 
-	SendPacket(SessionID, &packet);
-	//InsertSessionID(SessionID);
+	SendPacket(SessionID, packet);
+	InsertSessionID(SessionID);
 }
 
 void CEchoServerNoLock::OnClientLeave(SESSION_ID SessionID)
 {
-	//DeleteSessionID(SessionID);
+	DeleteSessionID(SessionID);
 }
 
 void CEchoServerNoLock::OnRecv(SESSION_ID SessionID, CPacket* packet)
@@ -38,7 +38,7 @@ void CEchoServerNoLock::OnRecv(SESSION_ID SessionID, CPacket* packet)
 	SendPacket(SessionID, packet);
 }
 
-void CEchoServerNoLock::OnError(int errorcode, WCHAR* log)
+void CEchoServerNoLock::OnError(int errorcode, const WCHAR* log)
 {
 }
 
@@ -106,8 +106,10 @@ void CEchoServerNoLock::EchoProc(SESSION_ID sessionID, CPacket* packet)
 
 void CEchoServerNoLock::LockMap()
 {
+	AcquireSRWLockExclusive(&mSessionLock);
 }
 
 void CEchoServerNoLock::UnlockMap()
 {
+	ReleaseSRWLockExclusive(&mSessionLock);
 }
