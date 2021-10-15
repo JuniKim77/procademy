@@ -525,14 +525,11 @@ Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 		return nullptr;
 	}
 
-	//Session* session = mSessionPool->Alloc();
 	Session* session = FindSession(id);
 	session->socket = client;
 	session->ip = clientAddr.sin_addr.S_un.S_addr;
 	session->port = clientAddr.sin_port;
 	session->sessionID = id;
-
-	InitializeSRWLock(&session->lock);
 
 	HANDLE hResult = CreateIoCompletionPort((HANDLE)client, mHcp, (ULONG_PTR)session, 0);
 
@@ -544,9 +541,7 @@ Session* CLanServerNoLock::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 		return nullptr;
 	}
 
-	//MonitorLock();
-	mMonitor.acceptCount++;
-	//MonitorUnlock();
+	InterlockedIncrement16((SHORT*)&mMonitor.acceptCount);
 
 	return session;
 }
@@ -608,10 +603,8 @@ void CLanServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 		}
 		CPacket* packet = new CPacket;
 		packet->AddRef();
-		//MonitorLock();
 		InterlockedIncrement(&mMonitor.recvTPS);
 		InterlockedIncrement(&mMonitor.sendTPS);
-		//MonitorUnlock();
 		//session->recv.queue.MoveRear(10);
 		int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), 10);
 
@@ -648,8 +641,6 @@ void CLanServerNoLock::CompleteSend(Session* session, DWORD transferredSize)
 	}
 
 	session->numSendingPacket = 0;
-
-	//InterlockedExchange8((char*)&session->isSending, false);
 	session->isSending = false;
 
 	SendPost(session);
@@ -708,12 +699,8 @@ void CLanServerNoLock::MonitorProc()
 			mMonitor.recvTPS);
 	}
 
-	//MonitorLock();
-
 	mMonitor.recvTPS = 0;
 	mMonitor.sendTPS = 0;
-
-	//MonitorUnlock();
 }
 
 CLanServerNoLock::~CLanServerNoLock()

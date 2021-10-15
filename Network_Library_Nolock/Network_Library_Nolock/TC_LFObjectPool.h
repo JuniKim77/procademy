@@ -214,10 +214,11 @@ namespace procademy
 			InterlockedIncrement(&mMallocCount);
 			node->checkSum_under = CHECKSUM_UNDER;
 			node->code = this;
-			if (mbPlacementNew)
+			/*if (mbPlacementNew)
 			{
 				new (&node->data) (DATA);
-			}
+			}*/
+			new (&node->data) (DATA);
 			node->checkSum_over = CHECKSUM_OVER;
 
 			/*do

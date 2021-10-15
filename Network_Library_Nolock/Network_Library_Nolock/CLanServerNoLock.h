@@ -10,7 +10,7 @@
 typedef u_int64 SESSION_ID;
 class CPacket;
 
-struct SessionIoCount
+struct alignas(64) SessionIoCount
 {
 	union
 	{
@@ -23,30 +23,26 @@ struct SessionIoCount
 	};
 };
 
-struct Session
+struct alignas(64) Session
 {
-	WSAOVERLAPPED recvOverlapped;
-	WSAOVERLAPPED sendOverlapped;
-	RingBuffer recvQ;
-	TC_LFQueue<CPacket*> sendQ;
-	int	numSendingPacket = 0;
-	SessionIoCount ioBlock;
-	bool isSending;
-	bool bIsAlive;
-	SRWLOCK lock;
-	SOCKET socket;
-	u_short port;
-	ULONG ip;
-	u_int64 sessionID;
-	//st_DEBUG debugs[256] = { 0, };
-	//unsigned char index = 0;
+	WSAOVERLAPPED			recvOverlapped;
+	WSAOVERLAPPED			sendOverlapped;
+	RingBuffer				recvQ;
+	TC_LFQueue<CPacket*>	sendQ;
+	int						numSendingPacket = 0;
+	SessionIoCount			ioBlock;
+	alignas(64) bool		isSending;
+	bool					bIsAlive;
+	SOCKET					socket;
+	u_short					port;
+	ULONG					ip;
+	u_int64					sessionID;
 
 	Session()
 		: isSending(false)
 		, sessionID(0)
 		, bIsAlive(false)
 	{
-		InitializeSRWLock(&lock);
 	}
 
 	Session(SOCKET _socket, ULONG _ip, u_short _port)
@@ -57,7 +53,6 @@ struct Session
 		, sessionID(0)
 		, bIsAlive(false)
 	{
-		InitializeSRWLock(&lock);
 	}
 };
 
@@ -118,53 +113,50 @@ private:
 	/// <summary>
 	/// Listen Socket Info
 	/// </summary>
-	u_short mPort = 0;
-	u_long mBindIP = 0;
-	SOCKET mListenSocket;
+	u_short				mPort = 0;
+	u_long				mBindIP = 0;
+	SOCKET				mListenSocket;
 
 	/// <summary>
 	/// Options
 	/// </summary>
-	bool mbNagle = true;
-	bool mbMonitoring = true;
-	BYTE mMaxRunThreadSize = 0;
-	BYTE mWorkerThreadSize = 0;
-	u_short mMaxClient = 0;
+	bool				mbNagle = true;
+	bool				mbMonitoring = true;
+	BYTE				mMaxRunThreadSize = 0;
+	BYTE				mWorkerThreadSize = 0;
+	u_short				mMaxClient = 0;
 
 	/// <summary>
 	/// Network Status
 	/// </summary>
-	bool mbIsRunning = false;
-	bool mbZeroCopy = true;
-	BYTE mNumThreads = 0;
+	bool				mbIsRunning = false;
+	bool				mbZeroCopy = true;
+	BYTE				mNumThreads = 0;
 
 	/// <summary>
 	/// Handles
 	/// </summary>
-	HANDLE mHcp;
-	HANDLE* mhThreads;
+	HANDLE				mHcp;
+	HANDLE*				mhThreads;
 
 	/// <summary>
 	/// Session Objects
 	/// </summary>
-	//procademy::ObjectPool<Session>* mSessionPool;
-	Session* mSessionArray;
-	u_int64 mSessionIDCounter = 1;
+	Session*			mSessionArray;
+	u_int64				mSessionIDCounter = 1;
 	TC_LFStack<u_short> mEmptyIndexes;
-	/*std::stack<u_short> mEmptyIndexes;
-	SRWLOCK mStackLock;*/
 
 	struct Monitor
 	{
-		unsigned short acceptCount;
-		unsigned short disconnectCount;
-		unsigned int sendTPS;
-		unsigned int recvTPS;
-		SRWLOCK lock;
+		unsigned short	acceptCount;
+		unsigned short	disconnectCount;
+		unsigned int	sendTPS;
+		unsigned int	recvTPS;
+		SRWLOCK			lock;
 	};
 
 	/// <summary>
 	/// Monitoring members
 	/// </summary>
-	Monitor mMonitor;
+	Monitor				mMonitor;
 };

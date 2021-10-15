@@ -191,7 +191,19 @@ namespace procademy
 		st_BLOCK_NODE* node = nullptr;
 		st_BLOCK_NODE* nodePost = nullptr;
 
-		if (mbPlacementNew)
+		for (int i = 0; i < size; ++i)
+		{
+			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
+			node->checkSum_under = CHECKSUM_UNDER;
+			node->code = this;
+			new (&node->data) (DATA);
+			node->stpNextBlock = nodePost;
+			node->checkSum_over = CHECKSUM_OVER;
+
+			nodePost = node;
+		}
+
+		/*if (mbPlacementNew)
 		{
 			for (int i = 0; i < size; ++i)
 			{
@@ -217,7 +229,7 @@ namespace procademy
 
 				nodePost = node;
 			}
-		}
+		}*/
 
 		return node;
 	}
