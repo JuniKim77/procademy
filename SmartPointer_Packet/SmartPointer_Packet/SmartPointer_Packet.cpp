@@ -55,8 +55,3 @@ void CSmartPointer_Packet::operator=(CPacket* packet)
     }
     (*mpRefCount)++;
 }
-
-CPacket* CSmartPointer_Packet::operator*()
-{
-    return mpMemory;
-}

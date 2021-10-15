@@ -11,9 +11,8 @@ public:
 	~CSmartPointer_Packet();
 	void operator= (const CSmartPointer_Packet& packet);
 	void operator= (CPacket* packet);
-
-//private:
-	CPacket* operator* ();
+	CPacket& operator* () { return *mpMemory; }
+	CPacket* operator->() { return mpMemory; }
 
 private:
 	CPacket* mpMemory = nullptr;
