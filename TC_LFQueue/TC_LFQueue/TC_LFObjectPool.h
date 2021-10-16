@@ -1,4 +1,6 @@
 #pragma once
+#define VER_CASH_LINE
+
 #include <new.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,8 +8,7 @@
 #include "CCrashDump.h"
 #include "CDebugger.h"
 
-#define CHECKSUM_UNDER (0xAAAAAAAA)
-#define CHECKSUM_OVER (0xBBBBBBBB)
+#define CHECKSUM_OVER (0xAAAAAAAA)
 
 namespace procademy
 {
@@ -22,9 +23,8 @@ namespace procademy
 				stpNextBlock = NULL;
 			}
 
-			unsigned int checkSum_under = CHECKSUM_UNDER;
-			void* code;
 			DATA data;
+			void* code;
 			st_BLOCK_NODE* stpNextBlock;
 			unsigned int checkSum_over = CHECKSUM_OVER;
 		};
@@ -154,10 +154,10 @@ namespace procademy
 	{
 		// prerequisite
 		st_BLOCK_NODE* top;
-		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
+		//st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
+		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)pData;
 
 		if (pNode->code != this ||
-			pNode->checkSum_under != CHECKSUM_UNDER ||
 			pNode->checkSum_over != CHECKSUM_OVER)
 		{
 			CRASH();
@@ -192,7 +192,6 @@ namespace procademy
 			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
 			//node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
 			InterlockedIncrement(&mMallocCount);
-			node->checkSum_under = CHECKSUM_UNDER;
 			node->code = this;
 			new (&node->data) (DATA);
 			node->checkSum_over = CHECKSUM_OVER;
