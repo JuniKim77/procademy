@@ -4,6 +4,7 @@
 #include "CLogger.h"
 #include "CLFQueue.h"
 #include "CCrashDump.h"
+#include "CProfiler.h"
 #include <process.h>
 #include <wchar.h>
 
@@ -26,12 +27,14 @@ bool g_exit = false;
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
 unsigned int WINAPI MonitorThread(LPVOID lpParam);
+void ReqTextOut(CProfiler** profilers);
 void Init();
 
 TC_LFQueue<st_DATA*> g_q;
 
 long PushTPS = 0;
 long DequeueTPS = 0;
+DWORD g_MultiProfiler;
 
 int main()
 {
@@ -39,13 +42,17 @@ int main()
 	Init();
 
 	HANDLE hThreads[THREAD_SIZE + 1];
+	CProfiler* profilers[THREAD_SIZE] = { 0, };
 
-	hThreads[0] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
+	g_MultiProfiler = TlsAlloc();	
 
-	for (int i = 1; i <= THREAD_SIZE; ++i)
+	for (int i = 0; i < THREAD_SIZE; ++i)
 	{
-		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
+		profilers[i] = new CProfiler(L"settings.csv");
+		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, profilers[i], 0, nullptr);
 	}
+
+	hThreads[THREAD_SIZE] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
 
 	WORD ControlKey;
 
@@ -59,6 +66,11 @@ int main()
 			//------------------------------------------------
 			g_exit = true;
 			break;
+		}
+
+		if (ControlKey == L'p' || ControlKey == L'P')
+		{
+			ReqTextOut(profilers);
 		}
 	}
 
@@ -91,6 +103,9 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
 	st_DATA* pDataArray[THREAD_ALLOC];
 
+	TlsSetValue(g_MultiProfiler, lpParam);
+	((CProfiler*)lpParam)->SetThreadId();
+
 	while (!g_exit)
 	{
 		// Alloc
@@ -100,7 +115,9 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			{
 				return 0;
 			}
+			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileBegin(L"DEQUEUE");
 			bool ret = g_q.Dequeue(&pDataArray[i]);
+			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileEnd(L"DEQUEUE");
 			if (ret == false)
 			{
 				CRASH();
@@ -160,7 +177,9 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			{
 				return 0;
 			}
+			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileBegin(L"ENQUEUE");
 			g_q.Enqueue(pDataArray[i]);
+			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileEnd(L"ENQUEUE");
 			pDataArray[i] = nullptr;
 			InterlockedIncrement((long*)&PushTPS);
 		}
@@ -196,6 +215,19 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 	}
 
 	return 0;
+}
+
+void ReqTextOut(CProfiler** profilers)
+{
+	WCHAR fileName[FILE_NAME_MAX] = L"Profile";
+
+	CProfiler::SetProfileFileName(fileName);
+
+	for (int i = 0; i < THREAD_SIZE; ++i)
+	{
+		profilers[i]->ProfileDataOutText(fileName);
+		profilers[i]->ProfileReset();
+	}
 }
 
 void Init()

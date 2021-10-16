@@ -7,34 +7,34 @@ extern bool g_exit;
 
 struct st_DEBUG
 {
-	int logicId;
-	DWORD threadId;
-	void* head;
-	void* headNext;
-	void* tail;
-	void* tailNext;
-	void* snapNode;
-	void* snapNext;
-	LONG64 counter;
-	LONG64 snap_counter;
-	int size;
+	int			logicId;
+	DWORD		threadId;
+	void*		head;
+	void*		headNext;
+	void*		tail;
+	void*		tailNext;
+	void*		snapNode;
+	void*		snapNext;
+	LONG64		counter;
+	LONG64		snap_counter;
+	int			size;
 };
 
 USHORT g_debug_index = 0;
 st_DEBUG g_debugs[USHRT_MAX + 1] = { 0, };
 
 void _Log(
-	int logicId = -9999,
-	DWORD threadId = 0,
-	int size = 9999,
-	LONG64 counter = -9999,
-	LONG64 snap_counter = -9999,
-	void* head = nullptr,
-	void* headNext = nullptr,
-	void* tail = nullptr,
-	void* tailNext = nullptr,
-	void* snapNode = nullptr,
-	void* snapNext = nullptr
+	int			logicId = -9999,
+	DWORD		threadId = 0,
+	int			size = 9999,
+	LONG64		counter = -9999,
+	LONG64		snap_counter = -9999,
+	void*		head = nullptr,
+	void*		headNext = nullptr,
+	void*		tail = nullptr,
+	void*		tailNext = nullptr,
+	void*		snapNode = nullptr,
+	void*		snapNext = nullptr
 )
 {
 	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debug_index);
@@ -70,8 +70,6 @@ template <typename DATA>
 class TC_LFQueue
 {
 private:
-	int mSize = 0;
-
 	struct Node
 	{
 		DATA data;
@@ -84,10 +82,11 @@ private:
 		LONG64 counter = -9999;
 	};
 
-	alignas(16) t_Top mHead;        // 시작노드를 포인트한다.
-	alignas(16) t_Top mTail;        // 마지막노드를 포인트한다.
+	alignas(64) t_Top mHead;        // 시작노드를 포인트한다.
+	alignas(64) t_Top mTail;        // 마지막노드를 포인트한다.
 	//Node* mTail = nullptr;        // 마지막노드를 포인트한다.
 	procademy::TC_LFObjectPool<Node> mMemoryPool;
+	int mSize = 0;
 
 public:
 	enum {
@@ -139,7 +138,7 @@ inline TC_LFQueue<DATA>::~TC_LFQueue()
 template<typename DATA>
 inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 {
-	alignas(16) t_Top top;
+	alignas(64) t_Top top;
 	Node* node = mMemoryPool.Alloc();
 	Node* next;
 
@@ -181,8 +180,8 @@ inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 template<typename DATA>
 inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 {
-	alignas(16) t_Top top;
-	alignas(16) t_Top tail;
+	alignas(64) t_Top top;
+	alignas(64) t_Top tail;
 
 	InterlockedDecrement((DWORD*)&mSize);
 

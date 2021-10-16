@@ -144,6 +144,8 @@
     <ClCompile Include="CDebugger.cpp" />
     <ClCompile Include="CLFQueue.cpp" />
     <ClCompile Include="CLogger.cpp" />
+    <ClCompile Include="CProfiler.cpp" />
+    <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -151,6 +153,8 @@
     <ClInclude Include="CDebugger.h" />
     <ClInclude Include="CLFQueue.h" />
     <ClInclude Include="CLogger.h" />
+    <ClInclude Include="CProfiler.h" />
+    <ClInclude Include="CSVReader.h" />
     <ClInclude Include="TC_LFObjectPool.h" />
     <ClInclude Include="TC_LFQueue.h" />
   </ItemGroup>

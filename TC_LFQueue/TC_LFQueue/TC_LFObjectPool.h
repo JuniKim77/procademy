@@ -114,6 +114,7 @@ namespace procademy
 		{
 			st_BLOCK_NODE* pNext = node->stpNextBlock;
 			free(node);
+			//_aligned_free(node);
 			node = pNext;
 		}
 	}
@@ -189,13 +190,11 @@ namespace procademy
 		{
 			// prerequisite
 			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
+			//node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
 			InterlockedIncrement(&mMallocCount);
 			node->checkSum_under = CHECKSUM_UNDER;
 			node->code = this;
-			if (mbPlacementNew)
-			{
-				new (&node->data) (DATA);
-			}
+			new (&node->data) (DATA);
 			node->checkSum_over = CHECKSUM_OVER;
 
 			do
