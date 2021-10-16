@@ -6,7 +6,7 @@
 
 int main()
 {
-	procademy::CCrashDump::CCrashDump();
+	procademy::CCrashDump::SetHandlerDump();
 
 	CEchoServerNoLock server;
 
