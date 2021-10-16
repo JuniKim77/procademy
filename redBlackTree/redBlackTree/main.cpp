@@ -1,3 +1,5 @@
+#define TEST_SIZE (10000000)
+
 #include "RedBlackTree.h"
 #include <time.h>
 #include "MyProfiler.h"
@@ -46,7 +48,7 @@ int main()
 
 	for (int t = 1; t <= count; ++t)
 	{
-		TestBiasedDistributionNumber(8);
+		TestBiasedDistributionNumber(32);
 	}
 
 	return 0;
@@ -60,7 +62,7 @@ void getRandNum(unsigned int* number)
 
 	num |= rand();
 
-	num &= 0x7ffff;
+	num &= 0xffffff;
 
 	*number = num;
 }
@@ -73,9 +75,9 @@ void getRandBiasedNum(unsigned int* output, int msb)
 
 	num |= rand();
 
-	num &= 0xffff;
+	num &= 0x3fffff;
 
-	num |= (msb << 16);
+	num |= (msb << 16 + 3);
 
 	*output = num;
 }
@@ -292,12 +294,12 @@ void TestNormalDistributionNumber()
 
 	std::unordered_set<unsigned int> setNums;
 
-	for (int i = 0; i < 100000; i++)
+	for (int i = 0; i < TEST_SIZE; i++)
 	{
 		insertNum(bTree, rbTree, myHash, setNums, false);
 	}
 
-	for (int i = 0; i < 200000; ++i)
+	for (int i = 0; i < TEST_SIZE * 2; ++i)
 	{
 		unsigned int num;
 		getRandNum(&num);
@@ -320,7 +322,7 @@ void TestNormalDistributionNumber()
 		}*/
 	}
 
-	for (int i = 0; i < 100000; ++i)
+	for (int i = 0; i < TEST_SIZE; ++i)
 	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
@@ -337,7 +339,7 @@ void TestBiasedDistributionNumber(int groupNum)
 	MyHashMap myHash;
 	BinaryTree bTree;
 
-	int size = 100000;
+	int size = TEST_SIZE;
 	int eachSize = size / groupNum;
 
 	std::unordered_set<unsigned int> setNums;
@@ -351,7 +353,7 @@ void TestBiasedDistributionNumber(int groupNum)
 	}
 	
 
-	for (int i = 0; i < 200000; ++i)
+	for (int i = 0; i < TEST_SIZE * 2; ++i)
 	{
 		unsigned int num;
 		getRandNum(&num);
@@ -374,7 +376,7 @@ void TestBiasedDistributionNumber(int groupNum)
 		}*/
 	}
 
-	for (int i = 0; i < 100000; ++i)
+	for (int i = 0; i < TEST_SIZE; ++i)
 	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
