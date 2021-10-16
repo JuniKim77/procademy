@@ -418,8 +418,7 @@ void CLanServerNoLock::ReleaseProc(Session* session)
 			break;
 		}
 
-		delete dummy;
-		dummy = nullptr;
+		dummy->SubRef();
 	}
 	session->recvQ.ClearBuffer();
 
@@ -601,7 +600,7 @@ void CLanServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 		{
 			return;
 		}
-		CPacket* packet = new CPacket;
+		CPacket* packet = CPacket::Alloc();
 		packet->AddRef();
 		InterlockedIncrement(&mMonitor.recvTPS);
 		InterlockedIncrement(&mMonitor.sendTPS);

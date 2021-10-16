@@ -1,6 +1,8 @@
 #ifndef  __PACKET__
 #define  __PACKET__
 
+#include "TC_LFObjectPool.h"
+
 class CPacket
 {
 public:
@@ -116,8 +118,8 @@ public:
 	// Parameters: (char *)Dest 포인터. (int)Size.
 	// Return: (int)복사한 사이즈.
 	//////////////////////////////////////////////////////////////////////////
-	int		GetData(char* chpDest, int iLength);
-	int		GetData(wchar_t* chpDest, int iLength);
+	int			GetData(char* chpDest, int iLength);
+	int			GetData(wchar_t* chpDest, int iLength);
 
 	//////////////////////////////////////////////////////////////////////////
 	// 데이타 삽입.
@@ -125,28 +127,31 @@ public:
 	// Parameters: (char *)Src 포인터. (int)SrcSize.
 	// Return: (int)복사한 사이즈.
 	//////////////////////////////////////////////////////////////////////////
-	int		PutData(const char* chpSrc, int iLength);
-	int		PutData(const wchar_t* chpSrc, int iLength);
+	int			PutData(const char* chpSrc, int iLength);
+	int			PutData(const wchar_t* chpSrc, int iLength);
 
-	CPacket& operator << (const char* s);
-	CPacket& operator << (const wchar_t* s);
+	CPacket&	operator << (const char* s);
+	CPacket&	operator << (const wchar_t* s);
 
-	void AddRef();
-	void SubRef();
+	static CPacket*	Alloc();
+	void			AddRef();
+	void			SubRef();
 
 protected:
 	/// <summary>
 	/// 버퍼 크기를 패킷의 기본 버퍼 사이즈 만큼 증가.
 	/// </summary>
-	void resize();
-	void writeBuffer(const char* src, int size);
+	void		resize();
+	void		writeBuffer(const char* src, int size);
 
 private:
-	char* mBuffer;
-	int mCapacity;
-	int mSize;
-	int mRefCount = 0;
-	char* mFront;
-	char* mRear;
+	char*		mBuffer;
+	int			mCapacity;
+	int			mSize;
+	int			mRefCount = 0;
+	char*		mFront;
+	char*		mRear;
+
+	static procademy::TC_LFObjectPool<CPacket>* sPacketPool;
 };
 #endif

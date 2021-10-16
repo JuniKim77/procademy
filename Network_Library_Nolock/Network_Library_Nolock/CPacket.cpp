@@ -5,6 +5,8 @@
 
 #define DEBUG
 
+procademy::TC_LFObjectPool<CPacket>* CPacket::sPacketPool = new procademy::TC_LFObjectPool<CPacket>;
+
 CPacket::CPacket()
 	: CPacket(eBUFFER_DEFAULT)
 {
@@ -389,6 +391,11 @@ CPacket& CPacket::operator<<(const wchar_t* s)
 	return *this;
 }
 
+CPacket* CPacket::Alloc()
+{
+	return sPacketPool->Alloc();
+}
+
 void CPacket::AddRef()
 {
 	InterlockedIncrement((LONG*)&mRefCount);
@@ -400,7 +407,8 @@ void CPacket::SubRef()
 
 	if (mRefCount == 0)
 	{
-		delete this;
+		Clear();
+		sPacketPool->Free(this);
 	}
 }
 
