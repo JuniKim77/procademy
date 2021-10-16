@@ -5,30 +5,30 @@
 
 struct st_DEBUG
 {
-	int logicId;
-	DWORD threadId;
-	void* mTop;
-	void* mTopNext;
-	void* snap_top;
-	void* snap_top_next;
-	DWORD size;
-	LONG64 counter;
-	LONG64 snap_counter;
+	int			logicId;
+	DWORD		threadId;
+	void*		mTop;
+	void*		mTopNext;
+	void*		snap_top;
+	void*		snap_top_next;
+	DWORD		size;
+	LONG64		counter;
+	LONG64		snap_counter;
 };
 
 USHORT g_debug_index = 0;
 st_DEBUG g_debugs[USHRT_MAX + 1] = { 0, };
 
 void _Log(
-	int logicId = -9999,
-	DWORD threadId = 0,
-	DWORD size = 9999,
-	LONG64 counter = -9999,
-	LONG64 snap_counter = -9999,
-	void* top_ptr = nullptr,
-	void* mTopNext = nullptr,
-	void* snap_top = nullptr,
-	void* snap_top_next = nullptr
+	int			logicId = -9999,
+	DWORD		threadId = 0,
+	DWORD		size = 9999,
+	LONG64		counter = -9999,
+	LONG64		snap_counter = -9999,
+	void*		top_ptr = nullptr,
+	void*		mTopNext = nullptr,
+	void*		snap_top = nullptr,
+	void*		snap_top_next = nullptr
 )
 {
 	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debug_index);
@@ -93,19 +93,24 @@ public:
 	void cLog(int loginId, t_Top snap_top);
 
 private:
-
-	alignas(16) t_Top mTop;
+#ifdef VER_CASH_LINE
+	alignas(64) t_Top	mTop;
+	alignas(64) int		mSize = 0;
+#else
+	t_Top	mTop;
+	int		mSize = 0;
+#endif // VER_CASH_LINE	
 	procademy::TC_LFObjectPool<Node> mMemoryPool;
 
-	int mSize = 0;
+	
 };
 
 template <typename T>
 inline TC_LFStack<T>::~TC_LFStack()
 {
 	Node* node = mTop.ptr_node;
-	wprintf_s(L"[Size: %u] [Counter: %lld]\n", mSize, mTop.counter);
 	int count = 0;
+
 	while (node != nullptr)
 	{
 		Node* cur = node;

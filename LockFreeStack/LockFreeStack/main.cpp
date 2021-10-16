@@ -6,7 +6,7 @@
 #include <wchar.h>
 #include "CLogger.h"
 #include "CCrashDump.h"
-#include "CDebugger.h"
+#include "CProfiler.h"
  
 #define THREAD_SIZE (3)
 #define MAX_ALLOC (30)
@@ -24,37 +24,33 @@ bool g_exit = false;
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
 unsigned int WINAPI MonitorThread(LPVOID lpParam);
-
+void ReqTextOut(CProfiler** profilers);
 void Init();
 
-TC_LFStack<st_DATA*> g_st;
+alignas(64) TC_LFStack<st_DATA*> g_st;
+DWORD g_MultiProfiler;
 
 long PushTPS = 0;
 long PopTPS = 0;
 
 int main()
 {
+	g_MultiProfiler = TlsAlloc();
+	CProfiler* profilers[THREAD_SIZE] = { 0, };
+
 	Init();
 
 	procademy::CCrashDump::SetHandlerDump();
 
-	//CDebugger::Initialize();
-	//CDebugger::SetDirectory(L"./");
-
 	HANDLE hThreads[THREAD_SIZE + 1];
-	int args[THREAD_SIZE];
 
 	for (int i = 0; i < THREAD_SIZE; ++i)
 	{
-		args[i] = i * 1000;
+		profilers[i] = new CProfiler(L"settings.csv");
+		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, profilers[i], 0, nullptr);
 	}
 
-	hThreads[0] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
-
-	for (int i = 1; i <= THREAD_SIZE; ++i)
-	{
-		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, &args[i - 1], 0, nullptr);
-	}
+	hThreads[THREAD_SIZE] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
 
 	WORD ControlKey;
 
@@ -68,6 +64,11 @@ int main()
 			//------------------------------------------------
 			g_exit = true;
 			break;
+		}
+
+		if (ControlKey == L'p' || ControlKey == L'P')
+		{
+			ReqTextOut(profilers);
 		}
 	}
 
@@ -100,13 +101,18 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
 	st_DATA* pDataArray[THREAD_ALLOC];
 
+	TlsSetValue(g_MultiProfiler, lpParam);
+	((CProfiler*)lpParam)->SetThreadId();
+
 #ifdef VERSION_A
 	while (!g_exit)
 	{
 		// Alloc
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
+			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileBegin(L"POP");
 			bool ret = g_st.Pop(&pDataArray[i]);
+			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileEnd(L"POP");
 			if (ret == false)
 			{
 				int test = 0;
@@ -159,7 +165,9 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
+			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileBegin(L"PUSH");
 			g_st.Push(pDataArray[i]);
+			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileEnd(L"PUSH");
 			InterlockedIncrement((long*)&PushTPS);
 		}
 		// Context Switching
@@ -218,6 +226,19 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 	}
 
 	return 0;
+}
+
+void ReqTextOut(CProfiler** profilers)
+{
+	WCHAR fileName[FILE_NAME_MAX] = L"Profile";
+
+	CProfiler::SetProfileFileName(fileName);
+
+	for (int i = 0; i < THREAD_SIZE; ++i)
+	{
+		profilers[i]->ProfileDataOutText(fileName);
+		profilers[i]->ProfileReset();
+	}
 }
 
 void Init()
