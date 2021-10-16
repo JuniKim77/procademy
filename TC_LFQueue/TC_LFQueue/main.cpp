@@ -30,7 +30,7 @@ unsigned int WINAPI MonitorThread(LPVOID lpParam);
 void ReqTextOut(CProfiler** profilers);
 void Init();
 
-TC_LFQueue<st_DATA*> g_q;
+alignas(64) TC_LFQueue<st_DATA*> g_q;
 
 long PushTPS = 0;
 long DequeueTPS = 0;

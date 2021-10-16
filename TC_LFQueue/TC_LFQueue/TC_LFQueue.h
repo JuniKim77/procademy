@@ -81,12 +81,16 @@ private:
 		Node* ptr_node = nullptr;
 		LONG64 counter = -9999;
 	};
-
-	alignas(64) t_Top mHead;        // 시작노드를 포인트한다.
-	alignas(64) t_Top mTail;        // 마지막노드를 포인트한다.
-	//Node* mTail = nullptr;        // 마지막노드를 포인트한다.
-	procademy::TC_LFObjectPool<Node> mMemoryPool;
-	int mSize = 0;
+#ifdef VER_CASH_LINE
+	alignas(64) t_Top	mHead;        // 시작노드를 포인트한다.
+	alignas(64) t_Top	mTail;        // 마지막노드를 포인트한다.
+	alignas(64) int		mSize = 0;
+#else
+	t_Top		mHead;        // 시작노드를 포인트한다.
+	t_Top		mTail;        // 마지막노드를 포인트한다.
+	int			mSize = 0;
+#endif // VER_CASH_LINE	
+	procademy::TC_LFObjectPool<Node> mMemoryPool;	
 
 public:
 	enum {
@@ -95,17 +99,18 @@ public:
 	};
 	TC_LFQueue();
 	~TC_LFQueue();
-	void Enqueue(DATA data);
-	bool Dequeue(DATA* data);
-	bool IsEmpty() { return mSize == 0; }
-	DWORD GetSize() { return mSize; }
-	DWORD GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
-	DWORD GetPoolSize() { return mMemoryPool.GetSize(); }
-	void linkCheck(int size);
-	void Log(int logicId, t_Top snap_top, Node* next, bool isHead = false);
+	void		Enqueue(DATA data);
+	bool		Dequeue(DATA* data);
+	DWORD Peek(DATA arr[], DWORD size);
+	bool		IsEmpty() { return mSize == 0; }
+	DWORD		GetSize() { return mSize; }
+	DWORD		GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
+	DWORD		GetPoolSize() { return mMemoryPool.GetSize(); }
+	void		linkCheck(int size);
+	void		Log(int logicId, t_Top snap_top, Node* next, bool isHead = false);
 
 private:
-	void MoveTail(int logicId, t_Top* snap, Node** next);
+	void		MoveTail(int logicId, t_Top* snap, Node** next);
 };
 
 template<typename DATA>
@@ -138,7 +143,7 @@ inline TC_LFQueue<DATA>::~TC_LFQueue()
 template<typename DATA>
 inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 {
-	alignas(64) t_Top top;
+	alignas(16) t_Top top;
 	Node* node = mMemoryPool.Alloc();
 	Node* next;
 
@@ -180,8 +185,8 @@ inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 template<typename DATA>
 inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 {
-	alignas(64) t_Top top;
-	alignas(64) t_Top tail;
+	alignas(16) t_Top top;
+	alignas(16) t_Top tail;
 
 	InterlockedDecrement((DWORD*)&mSize);
 
@@ -232,6 +237,26 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 }
 
 template<typename DATA>
+inline DWORD TC_LFQueue<DATA>::Peek(DATA arr[], DWORD size)
+{
+	DWORD i;
+	Node* pHead = mHead.ptr_node->next;
+
+	for (i = 0; i < size; ++i)
+	{
+		if (pHead == nullptr)
+		{
+			return i;
+		}
+
+		arr[i] = pHead->data;
+		pHead = pHead->next;
+	}
+
+	return i;
+}
+
+template<typename DATA>
 inline void TC_LFQueue<DATA>::linkCheck(int size)
 {
 	Node* node = mHead.ptr_node->next;
@@ -273,7 +298,7 @@ inline void TC_LFQueue<DATA>::MoveTail(int logicId, t_Top* snap, Node** next)
 
 	if (*next != nullptr)
 	{
-		Log(logicId - 10, *snap, *next);
+		//Log(logicId - 10, *snap, *next);
 		if (InterlockedCompareExchange128((LONG64*)&mTail, snap->counter + 1, (LONG64)*next, (LONG64*)snap) == 0)
 		{
 			//Log(logicId, snap, nullptr);

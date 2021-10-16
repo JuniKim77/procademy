@@ -6,7 +6,6 @@
 #include <string.h>
 #include <wtypes.h>
 #include "CCrashDump.h"
-#include "CDebugger.h"
 
 #define CHECKSUM_OVER (0xAAAAAAAA)
 
@@ -77,6 +76,15 @@ namespace procademy
 		void AllocMemory(int size);
 
 	private:
+#ifdef VER_CASH_LINE
+		struct alignas(64) t_Top
+		{
+			st_BLOCK_NODE* ptr_node = nullptr;
+			LONG64 counter = 0;
+		};
+
+		alignas(64) DWORD mSize;
+#else
 		struct t_Top
 		{
 			st_BLOCK_NODE* ptr_node = nullptr;
@@ -84,11 +92,14 @@ namespace procademy
 		};
 
 		DWORD mSize;
+#endif // VER_CASH_LINE
+
+		
 		DWORD mCapacity;
 		DWORD mMallocCount = 0;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
-		alignas(16) t_Top _pFreeTop;
+		t_Top _pFreeTop;
 	};
 	template<typename DATA>
 	inline TC_LFObjectPool<DATA>::TC_LFObjectPool()
@@ -113,8 +124,14 @@ namespace procademy
 		while (node != nullptr)
 		{
 			st_BLOCK_NODE* pNext = node->stpNextBlock;
+			
+#ifdef VER_CASH_LINE
+			_aligned_free(node);
+#else
 			free(node);
-			//_aligned_free(node);
+#endif // VER_CASH_LINE
+
+			
 			node = pNext;
 		}
 	}
@@ -189,8 +206,11 @@ namespace procademy
 		for (int i = 0; i < size; ++i)
 		{
 			// prerequisite
+#ifdef VER_CASH_LINE
+			node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
+#else
 			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
-			//node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
+#endif // VER_CASH_LINE
 			InterlockedIncrement(&mMallocCount);
 			node->code = this;
 			new (&node->data) (DATA);
