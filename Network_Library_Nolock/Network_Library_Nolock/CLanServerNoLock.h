@@ -23,7 +23,7 @@ struct alignas(64) SessionIoCount
 	};
 };
 
-struct alignas(64) Session
+struct Session
 {
 	WSAOVERLAPPED			recvOverlapped;
 	WSAOVERLAPPED			sendOverlapped;
@@ -33,7 +33,7 @@ struct alignas(64) Session
 	SessionIoCount			ioBlock;
 	alignas(64) bool		isSending;
 	bool					bIsAlive;
-	SOCKET					socket;
+	SOCKET					socket = INVALID_SOCKET;
 	u_short					port;
 	ULONG					ip;
 	u_int64					sessionID;
@@ -43,6 +43,8 @@ struct alignas(64) Session
 		, sessionID(0)
 		, bIsAlive(false)
 	{
+		ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
+		ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
 	}
 
 	Session(SOCKET _socket, ULONG _ip, u_short _port)
@@ -53,6 +55,8 @@ struct alignas(64) Session
 		, sessionID(0)
 		, bIsAlive(false)
 	{
+		ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
+		ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
 	}
 };
 

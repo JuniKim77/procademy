@@ -3,7 +3,7 @@
 #include <string.h>
 #include <Windows.h>
 
-#define DEBUG
+//#define DEBUG
 
 procademy::TC_LFObjectPool<CPacket>* CPacket::sPacketPool = new procademy::TC_LFObjectPool<CPacket>;
 
@@ -21,7 +21,8 @@ CPacket::CPacket(int iBufferSize)
 	mRear = mBuffer;
 
 #ifdef DEBUG
-	memset(mBuffer, 0, mCapacity);
+	if (mBuffer != 0)
+		memset(mBuffer, 0, mCapacity);
 #endif
 }
 
@@ -414,9 +415,10 @@ void CPacket::SubRef()
 
 void CPacket::resize()
 {
-	char* pBuffer = (char*)malloc(mCapacity + eBUFFER_DEFAULT);
+	char* pBuffer = (char*)malloc((long long)mCapacity + eBUFFER_DEFAULT);
 
-	memcpy(pBuffer, mBuffer, mSize);
+	if (pBuffer != 0)
+		memcpy(pBuffer, mBuffer, mSize);
 
 	int frontIndex = (int)(mFront - mBuffer);
 	int rearIndex = (int)(mRear - mBuffer);

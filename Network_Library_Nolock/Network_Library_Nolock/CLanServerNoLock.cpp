@@ -711,7 +711,8 @@ CLanServerNoLock::~CLanServerNoLock()
 	}
 	if (mSessionArray != nullptr)
 	{
-		delete[] mSessionArray;
+		//delete[] mSessionArray;
+		_aligned_free(mSessionArray);
 	}
 	CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Lib End\n");
 }
@@ -732,7 +733,12 @@ bool CLanServerNoLock::Start(u_short port, u_long ip, BYTE createThread, BYTE ru
 	mbNagle = nagle;
 
 	mhThreads = new HANDLE[(long long)createThread + 1];
-	mSessionArray = new Session[maxClient];
+	mSessionArray = (Session*)_aligned_malloc(sizeof(Session) * maxClient, 64);
+	for (int i = 0; i < maxClient; ++i)
+	{
+		new (&mSessionArray[i]) (Session);
+	}
+	//mSessionArray = new Session[maxClient];
 
 	if (!CreateListenSocket())
 	{
