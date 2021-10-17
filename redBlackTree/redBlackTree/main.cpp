@@ -1,4 +1,4 @@
-#define TEST_SIZE (10000000)
+#define TEST_SIZE (4000000)
 
 #include "RedBlackTree.h"
 #include <time.h>
@@ -62,7 +62,7 @@ void getRandNum(unsigned int* number)
 
 	num |= rand();
 
-	num &= 0xffffff;
+	num &= 0x3fffff;
 
 	*number = num;
 }
@@ -75,9 +75,9 @@ void getRandBiasedNum(unsigned int* output, int msb)
 
 	num |= rand();
 
-	num &= 0x3fffff;
+	num &= 0x1ffff;
 
-	num |= (msb << 16 + 3);
+	num |= (msb << 17);
 
 	*output = num;
 }
