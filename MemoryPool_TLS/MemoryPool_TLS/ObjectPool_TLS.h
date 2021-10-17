@@ -1,12 +1,14 @@
 #include "TC_LFObjectPool.h"
 #include <wtypes.h>
 
+#define CHUNK_CHECKSUM (0xBBBBBBBB)
+
 namespace procademy
 {
 	template <typename DATA>
 	class ObjectPool_TLS
 	{
-	public:
+	private:
 		struct st_Chunk_Block;
 
 		class CChunk
@@ -28,7 +30,9 @@ namespace procademy
 		struct st_Chunk_Block
 		{
 			DATA	data;
+			void*	code;
 			CChunk* pOrigin;
+			unsigned int checkSum_over = CHUNK_CHECKSUM;
 		};
 
 	public:
@@ -102,18 +106,27 @@ namespace procademy
 
 		st_Chunk_Block* pBlock = (st_Chunk_Block*)&mArray[mAllocCount++];
 		pBlock->pOrigin = this;
+		pBlock->code = this;
+		pBlock->checkSum_over = CHUNK_CHECKSUM;
 
 		return (DATA*)pBlock;
 	}
 	template<typename DATA>
 	inline bool ObjectPool_TLS<DATA>::CChunk::Free(DATA* pData)
 	{
+		st_Chunk_Block* block = (st_Chunk_Block*)pData;
+
+		if (block->code != this ||
+			block->checkSum_over != CHUNK_CHECKSUM)
+		{
+			CRASH();
+			return false;
+		}
+
 		InterlockedIncrement((LONG*)&mFreeCount);
 
 		if (mFreeCount == CChunk::MAX_SIZE)
 		{
-			st_Chunk_Block* block = (st_Chunk_Block*)pData;
-
 			pObjPool->mMemoryPool->Free(block->pOrigin);
 		}
 

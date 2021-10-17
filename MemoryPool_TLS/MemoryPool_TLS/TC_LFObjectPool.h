@@ -1,12 +1,13 @@
 #pragma once
+#define VER_CASH_LINE
+
 #include <new.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wtypes.h>
 #include "CCrashDump.h"
 
-#define CHECKSUM_UNDER (0xAAAAAAAA)
-#define CHECKSUM_OVER (0xBBBBBBBB)
+#define CHECKSUM_OVER (0xAAAAAAAA)
 
 namespace procademy
 {
@@ -21,9 +22,8 @@ namespace procademy
 				stpNextBlock = NULL;
 			}
 
-			unsigned int checkSum_under = CHECKSUM_UNDER;
-			void* code;
 			DATA data;
+			void* code;
 			st_BLOCK_NODE* stpNextBlock;
 			unsigned int checkSum_over = CHECKSUM_OVER;
 		};
@@ -76,6 +76,15 @@ namespace procademy
 		void AllocMemory(int size);
 
 	private:
+#ifdef VER_CASH_LINE
+		struct alignas(64) t_Top
+		{
+			st_BLOCK_NODE* ptr_node = nullptr;
+			LONG64 counter = 0;
+		};
+
+		alignas(64) DWORD mSize;
+#else
 		struct t_Top
 		{
 			st_BLOCK_NODE* ptr_node = nullptr;
@@ -83,11 +92,13 @@ namespace procademy
 		};
 
 		DWORD mSize;
+#endif // VER_CASH_LINE
+
 		DWORD mCapacity;
 		DWORD mMallocCount = 0;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
-		alignas(16) t_Top _pFreeTop;
+		t_Top _pFreeTop;
 	};
 	template<typename DATA>
 	inline TC_LFObjectPool<DATA>::TC_LFObjectPool()
@@ -112,7 +123,14 @@ namespace procademy
 		while (node != nullptr)
 		{
 			st_BLOCK_NODE* pNext = node->stpNextBlock;
+
+#ifdef VER_CASH_LINE
+			_aligned_free(node);
+#else
 			free(node);
+#endif // VER_CASH_LINE
+
+
 			node = pNext;
 		}
 	}
@@ -152,10 +170,10 @@ namespace procademy
 	{
 		// prerequisite
 		st_BLOCK_NODE* top;
-		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
+		//st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
+		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)pData;
 
 		if (pNode->code != this ||
-			pNode->checkSum_under != CHECKSUM_UNDER ||
 			pNode->checkSum_over != CHECKSUM_OVER)
 		{
 			CRASH();
@@ -187,14 +205,14 @@ namespace procademy
 		for (int i = 0; i < size; ++i)
 		{
 			// prerequisite
+#ifdef VER_CASH_LINE
+			node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
+#else
 			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
+#endif // VER_CASH_LINE
 			InterlockedIncrement(&mMallocCount);
-			node->checkSum_under = CHECKSUM_UNDER;
 			node->code = this;
-			if (mbPlacementNew)
-			{
-				new (&node->data) (DATA);
-			}
+			new (&node->data) (DATA);
 			node->checkSum_over = CHECKSUM_OVER;
 
 			do

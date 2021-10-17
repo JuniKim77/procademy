@@ -21,7 +21,7 @@ public:
 
 int main()
 {
-	procademy::ObjectPool_TLS<TEST> tt(true, false);
+	procademy::ObjectPool_TLS<TEST> tt;
 
 	for (int i = 0; i < 199; ++i)
 	{
