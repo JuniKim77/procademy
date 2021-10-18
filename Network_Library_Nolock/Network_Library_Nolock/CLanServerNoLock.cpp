@@ -3,24 +3,22 @@
 #include "CPacket.h"
 #include "CCrashDump.h"
 
-struct ioCountDebug
+struct packetDebug
 {
-	SHORT ioCount;
-	SHORT isReleased;
+	DWORD packetNum;
 	u_int64 sessionID;
 	int logicId;
 	DWORD threadId;
 };
 
 USHORT g_debug_index = 0;
-ioCountDebug g_debugs[USHRT_MAX + 1] = { 0, };
+packetDebug g_debugs[USHRT_MAX + 1] = { 0, };
 
-void ioDebug(
+void packDebug(
 	int logicId,
 	DWORD threadId,
 	u_int64 sessionID,
-	SHORT ioCount,
-	SHORT isReleased
+	DWORD packetNum
 )
 {
 	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debug_index);
@@ -28,8 +26,7 @@ void ioDebug(
 	g_debugs[index].logicId = logicId;
 	g_debugs[index].threadId = threadId;
 	g_debugs[index].sessionID = sessionID;
-	g_debugs[index].ioCount = ioCount;
-	g_debugs[index].isReleased = isReleased;
+	g_debugs[index].packetNum = packetNum;
 }
 
 Session* CLanServerNoLock::FindSession(u_int64 sessionNo)
@@ -361,8 +358,8 @@ void CLanServerNoLock::DecrementIOProc(Session* session, int logic)
 	ret.ioCount = InterlockedDecrement(&session->ioBlock.ioCount);
 	if (ret.releaseCount.count <= 0)
 	{
-		ioDebug(logic, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);
+		/*packDebug(logic, GetCurrentThreadId(), session->sessionID & 0xffffffff,
+			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
 	}
 
 	if (ret.releaseCount.count < 0)
@@ -601,7 +598,7 @@ void CLanServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 			return;
 		}
 		CPacket* packet = CPacket::Alloc();
-		packet->AddRef();
+		packet->AddRef(true);
 		InterlockedIncrement(&mMonitor.recvTPS);
 		InterlockedIncrement(&mMonitor.sendTPS);
 		//session->recv.queue.MoveRear(10);
@@ -634,6 +631,11 @@ void CLanServerNoLock::CompleteSend(Session* session, DWORD transferredSize)
 	for (int i = 0; i < session->numSendingPacket; ++i)
 	{
 		session->sendQ.Dequeue(&packet);
+
+		char* buf = packet->GetBufferPtr();
+
+		packDebug(10000, GetCurrentThreadId(), session->sessionID & 0xffffffff,
+			*((DWORD*)(buf + 2)));
 		
 		packet->SubRef();
 		packet = nullptr;
@@ -693,7 +695,9 @@ void CLanServerNoLock::MonitorProc()
 			mMonitor.acceptCount,
 			mMonitor.disconnectCount,
 			mMonitor.acceptCount - mMonitor.disconnectCount);
-		wprintf_s(L"=======================================\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
+		wprintf_s(L"[Packet Pool Capa: %d]\n[Packet Pool Use: %d]\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
+			CPacket::sPacketPool->GetCapacity(),
+			CPacket::sPacketPool->GetSize(),
 			mMonitor.sendTPS,
 			mMonitor.recvTPS);
 	}
@@ -711,7 +715,6 @@ CLanServerNoLock::~CLanServerNoLock()
 	}
 	if (mSessionArray != nullptr)
 	{
-		//delete[] mSessionArray;
 		_aligned_free(mSessionArray);
 	}
 	CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Lib End\n");
@@ -791,6 +794,20 @@ void CLanServerNoLock::WaitForThreadsFin()
 				{
 					mbZeroCopy = true;
 					wprintf_s(L"\nSet ZeroCopy Mode\n\n");
+				}
+			}
+
+			if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x47) & 0x8001) // G
+			{
+				if (mbNagle)
+				{
+					mbNagle = false;
+					wprintf_s(L"\nUnset Nagle Mode\n\n");
+				}
+				else
+				{
+					mbNagle = true;
+					wprintf_s(L"\nSet Nagle Mode\n\n");
 				}
 			}
 
@@ -889,6 +906,9 @@ void CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
 	header.byCode = dfNETWORK_CODE;
 	header.wPayloadSize = packet->GetSize();*/
 	packet->AddRef();
+	char* buf = packet->GetBufferPtr();
+	packDebug(10000, GetCurrentThreadId(), session->sessionID & 0xffffffff,
+		*((DWORD*)(buf + 2)));
 	session->sendQ.Enqueue(packet);
 
 	if (SendPost(session))

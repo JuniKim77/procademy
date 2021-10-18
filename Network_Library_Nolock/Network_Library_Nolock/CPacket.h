@@ -1,10 +1,16 @@
 #ifndef  __PACKET__
 #define  __PACKET__
 
+#define NEW_DELETE_VER
+//#define MEMORY_POOL_VER
+//#define TLS_MEMORY_POOL_VER
+
 #include "TC_LFObjectPool.h"
+#include "ObjectPool_TLS.h"
 
 class CPacket
 {
+	friend class CLanServerNoLock;
 public:
 	/*---------------------------------------------------------------
 	Packet Enum.
@@ -134,7 +140,7 @@ public:
 	CPacket&	operator << (const wchar_t* s);
 
 	static CPacket*	Alloc();
-	void			AddRef();
+	void			AddRef(bool bFirst = false);
 	void			SubRef();
 
 protected:
@@ -145,13 +151,29 @@ protected:
 	void		writeBuffer(const char* src, int size);
 
 private:
+	struct st_RefCount
+	{
+		union
+		{
+			LONG counter = 0;
+			struct
+			{
+				SHORT count;
+				SHORT isFreed;
+			} refStaus;
+		};
+	};
+
+	st_RefCount	mRefCount;
 	char*		mBuffer;
 	int			mCapacity;
 	int			mSize;
-	int			mRefCount = 0;
 	char*		mFront;
 	char*		mRear;
-
+#ifdef MEMORY_POOL_VER
 	static procademy::TC_LFObjectPool<CPacket>* sPacketPool;
+#else
+	static procademy::ObjectPool_TLS<CPacket>* sPacketPool;
+#endif // MEMORY_POOL_VER
 };
 #endif

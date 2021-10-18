@@ -142,7 +142,7 @@ namespace procademy
 			return false;
 		}
 
-		InterlockedIncrement((LONG*)&mFreeCount.counter);
+		InterlockedIncrement((LONG*)&mFreeCount);
 
 		freeCounter.counter = CChunk::MAX_SIZE;
 		freeCounter.freeStaus.isFreed = 1;

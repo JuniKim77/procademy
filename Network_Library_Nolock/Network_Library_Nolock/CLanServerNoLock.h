@@ -10,7 +10,7 @@
 typedef u_int64 SESSION_ID;
 class CPacket;
 
-struct alignas(64) SessionIoCount
+struct SessionIoCount
 {
 	union
 	{
@@ -25,18 +25,18 @@ struct alignas(64) SessionIoCount
 
 struct Session
 {
-	WSAOVERLAPPED			recvOverlapped;
-	WSAOVERLAPPED			sendOverlapped;
-	RingBuffer				recvQ;
-	TC_LFQueue<CPacket*>	sendQ;
-	int						numSendingPacket = 0;
-	SessionIoCount			ioBlock;
-	alignas(64) bool		isSending;
-	bool					bIsAlive;
-	SOCKET					socket = INVALID_SOCKET;
-	u_short					port;
-	ULONG					ip;
-	u_int64					sessionID;
+	WSAOVERLAPPED				recvOverlapped;
+	WSAOVERLAPPED				sendOverlapped;
+	RingBuffer					recvQ;
+	TC_LFQueue<CPacket*>		sendQ;
+	int							numSendingPacket = 0;
+	alignas(64) SessionIoCount	ioBlock;
+	alignas(64) bool			isSending;
+	bool						bIsAlive;
+	SOCKET						socket = INVALID_SOCKET;
+	u_short						port;
+	ULONG						ip;
+	u_int64						sessionID;
 
 	Session()
 		: isSending(false)
@@ -86,6 +86,7 @@ public:
 	//	virtual void OnWorkerThreadEnd() = 0;                      < 워커스레드 1루프 종료 후
 
 	virtual void OnError(int errorcode, const WCHAR* log) = 0;
+	void MonitorProc();
 
 private:
 	Session* FindSession(u_int64 sessionNo);
@@ -111,7 +112,6 @@ private:
 	void InitializeEmptyIndex();
 	u_int64 GenerateSessionID();
 	u_short GetIndexFromSessionNo(u_int64 sessionNo);
-	void MonitorProc();
 
 private:
 	/// <summary>

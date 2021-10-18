@@ -4,8 +4,11 @@
 #include <Windows.h>
 
 //#define DEBUG
-
+#ifdef MEMORY_POOL_VER
 procademy::TC_LFObjectPool<CPacket>* CPacket::sPacketPool = new procademy::TC_LFObjectPool<CPacket>;
+#else
+procademy::ObjectPool_TLS<CPacket>* CPacket::sPacketPool = new procademy::ObjectPool_TLS<CPacket>;
+#endif // MEMORY_POOL_VER
 
 CPacket::CPacket()
 	: CPacket(eBUFFER_DEFAULT)
@@ -19,6 +22,8 @@ CPacket::CPacket(int iBufferSize)
 	mBuffer = (char*)malloc(mCapacity);
 	mFront = mBuffer;
 	mRear = mBuffer;
+	mRefCount.refStaus.count = 1;
+	mRefCount.refStaus.isFreed = 0;
 
 #ifdef DEBUG
 	if (mBuffer != 0)
@@ -394,22 +399,40 @@ CPacket& CPacket::operator<<(const wchar_t* s)
 
 CPacket* CPacket::Alloc()
 {
+#ifdef NEW_DELETE_VER
+	return new CPacket;
+#elif defined(MEMORY_POOL_VER)
 	return sPacketPool->Alloc();
+#elif defined(TLS_MEMORY_POOL_VER)
+	return sPacketPool->Alloc();
+#endif // NEW_DELETE_VER
 }
 
-void CPacket::AddRef()
+void CPacket::AddRef(bool bFirst)
 {
-	InterlockedIncrement((LONG*)&mRefCount);
+	if (!bFirst)
+		InterlockedIncrement((LONG*)&mRefCount.counter);
 }
 
 void CPacket::SubRef()
 {
-	InterlockedDecrement((LONG*)&mRefCount);
+	st_RefCount stdRef;
 
-	if (mRefCount == 0)
+	InterlockedDecrement((LONG*)&mRefCount.counter);
+
+	stdRef.counter = 0;
+	stdRef.refStaus.isFreed = 1;
+
+	if (InterlockedCompareExchange(&mRefCount.counter, stdRef.counter, 0) == 0)
 	{
 		Clear();
+#ifdef NEW_DELETE_VER
+		delete this;
+#elif defined(MEMORY_POOL_VER)
 		sPacketPool->Free(this);
+#elif defined(TLS_MEMORY_POOL_VER)
+		sPacketPool->Free(this);
+#endif // NEW_DELETE_VER
 	}
 }
 

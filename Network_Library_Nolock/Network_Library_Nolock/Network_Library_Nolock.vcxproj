@@ -146,9 +146,9 @@
     <ClCompile Include="CLanServerNoLock.cpp" />
     <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="CPacket.cpp" />
+    <ClCompile Include="CProfiler.cpp" />
     <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MyProfiler.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -158,10 +158,11 @@
     <ClInclude Include="CLanServerNoLock.h" />
     <ClInclude Include="CLogger.h" />
     <ClInclude Include="CPacket.h" />
+    <ClInclude Include="CProfiler.h" />
     <ClInclude Include="CSVReader.h" />
     <ClInclude Include="MessageProtocol.h" />
-    <ClInclude Include="MyProfiler.h" />
     <ClInclude Include="ObjectPool.h" />
+    <ClInclude Include="ObjectPool_TLS.h" />
     <ClInclude Include="Protocol.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="TC_LFObjectPool.h" />
