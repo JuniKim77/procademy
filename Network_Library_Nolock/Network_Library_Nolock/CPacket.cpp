@@ -22,8 +22,6 @@ CPacket::CPacket(int iBufferSize)
 	mBuffer = (char*)malloc(mCapacity);
 	mFront = mBuffer;
 	mRear = mBuffer;
-	mRefCount.refStaus.count = 1;
-	mRefCount.refStaus.isFreed = 0;
 
 #ifdef DEBUG
 	if (mBuffer != 0)
@@ -399,13 +397,17 @@ CPacket& CPacket::operator<<(const wchar_t* s)
 
 CPacket* CPacket::Alloc()
 {
+	CPacket* ret;
 #ifdef NEW_DELETE_VER
-	return new CPacket;
+	ret = new CPacket;
 #elif defined(MEMORY_POOL_VER)
-	return sPacketPool->Alloc();
+	ret = sPacketPool->Alloc();
 #elif defined(TLS_MEMORY_POOL_VER)
-	return sPacketPool->Alloc();
+	ret = sPacketPool->Alloc();
 #endif // NEW_DELETE_VER
+
+	ret->ResetCount();
+	return ret;
 }
 
 void CPacket::AddRef(bool bFirst)
@@ -434,6 +436,12 @@ void CPacket::SubRef()
 		sPacketPool->Free(this);
 #endif // NEW_DELETE_VER
 	}
+}
+
+void CPacket::ResetCount()
+{
+	mRefCount.refStaus.count = 1;
+	mRefCount.refStaus.isFreed = 0;
 }
 
 void CPacket::resize()

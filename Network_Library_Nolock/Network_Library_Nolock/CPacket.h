@@ -1,9 +1,9 @@
 #ifndef  __PACKET__
 #define  __PACKET__
 
-#define NEW_DELETE_VER
+//#define NEW_DELETE_VER
 //#define MEMORY_POOL_VER
-//#define TLS_MEMORY_POOL_VER
+#define TLS_MEMORY_POOL_VER
 
 #include "TC_LFObjectPool.h"
 #include "ObjectPool_TLS.h"
@@ -142,6 +142,7 @@ public:
 	static CPacket*	Alloc();
 	void			AddRef(bool bFirst = false);
 	void			SubRef();
+	void			ResetCount();
 
 protected:
 	/// <summary>
