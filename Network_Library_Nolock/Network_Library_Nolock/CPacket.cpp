@@ -8,7 +8,7 @@ namespace procademy
 	//#define DEBUG
 #ifdef MEMORY_POOL_VER
 	alignas(64) TC_LFObjectPool<CPacket> CPacket::sPacketPool;
-#else
+#elif defined(TLS_MEMORY_POOL_VER)
 	alignas(64) ObjectPool_TLS<CPacket> CPacket::sPacketPool;
 #endif // MEMORY_POOL_VER
 

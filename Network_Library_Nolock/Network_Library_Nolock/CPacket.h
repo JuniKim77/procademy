@@ -7,9 +7,10 @@
 
 #ifdef MEMORY_POOL_VER
 #include "TC_LFObjectPool.h"
-#else
+#elif defined(TLS_MEMORY_POOL_VER)
 #include "ObjectPool_TLS.h"
 #endif // MEMORY_POOL_VER
+#include <wtypes.h>
 
 namespace procademy
 {
@@ -178,7 +179,7 @@ namespace procademy
 		char* mRear;
 #ifdef MEMORY_POOL_VER
 		alignas(64) static TC_LFObjectPool<CPacket> sPacketPool;
-#else
+#elif defined(TLS_MEMORY_POOL_VER)
 		alignas(64) static ObjectPool_TLS<CPacket> sPacketPool;
 #endif // MEMORY_POOL_VER
 	};
