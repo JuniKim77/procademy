@@ -8,7 +8,7 @@ int main()
 {
 	procademy::CCrashDump::SetHandlerDump();
 
-	CEchoServerNoLock server;
+	procademy::CEchoServerNoLock server;
 
 	server.Start(dfSERVER_PORT, 3, 3, false, 200);
 

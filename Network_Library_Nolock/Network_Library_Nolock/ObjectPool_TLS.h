@@ -1,5 +1,19 @@
+#pragma once
 #include "TC_LFObjectPool.h"
 #include <wtypes.h>
+
+struct packetDebug;
+
+extern USHORT g_debugIdx;
+extern packetDebug g_packetDebugs[USHRT_MAX + 1];
+extern void packetLog(
+	int			logicId,
+	DWORD		threadId,
+	void*		pChunk,
+	void*		pPacket,
+	int			allocCount,
+	LONG		freeCount
+);
 
 #define CHUNK_CHECKSUM (0xBBBBBBBB)
 
@@ -8,7 +22,7 @@ namespace procademy
 	template <typename DATA>
 	class ObjectPool_TLS
 	{
-	private:
+		private:
 		struct st_Chunk_Block;
 		struct st_FreeCount;
 
@@ -26,6 +40,7 @@ namespace procademy
 			ObjectPool_TLS*				pObjPool = nullptr;
 			int							mAllocCount = 0;
 			alignas(64) st_FreeCount	mFreeCount;
+			DWORD						threadID;
 		};
 
 		struct st_FreeCount
@@ -37,16 +52,16 @@ namespace procademy
 				{
 					SHORT freeCount;
 					SHORT isFreed;
-				} freeStaus;
+				} freeStatus;
 			};
 		};
 
 		struct st_Chunk_Block
 		{
-			DATA	data;
-			void*	code;
-			CChunk* pOrigin;
-			unsigned int checkSum_over = CHUNK_CHECKSUM;
+			DATA			data;
+			void*			code;
+			CChunk*			pOrigin;
+			unsigned int	checkSum_over = CHUNK_CHECKSUM;
 		};
 
 	public:
@@ -87,16 +102,16 @@ namespace procademy
 	inline DATA* ObjectPool_TLS<DATA>::Alloc(void)
 	{
 		CChunk* chunk = (CChunk*)TlsGetValue(mIndex);
-
-		if (chunk == nullptr || chunk->mAllocCount == CChunk::MAX_SIZE)
+		
+		if (chunk == nullptr || chunk->threadID != GetCurrentThreadId() || chunk->mAllocCount == CChunk::MAX_SIZE)
 		{
 			chunk = mMemoryPool->Alloc();
-
+			//packetLog(30040, GetCurrentThreadId(), chunk, nullptr, chunk->mAllocCount, chunk->mFreeCount.freeStatus.freeCount);
+			chunk->threadID = GetCurrentThreadId();
 			chunk->pObjPool = this;
 			chunk->mAllocCount = 0;
-			chunk->mFreeCount.freeStaus.freeCount = 0;
-			chunk->mFreeCount.freeStaus.isFreed = 0;
-
+			chunk->mFreeCount.freeStatus.freeCount = 0;
+			chunk->mFreeCount.freeStatus.isFreed = 0;
 			TlsSetValue(mIndex, chunk);
 		}
 
@@ -123,6 +138,8 @@ namespace procademy
 			return nullptr;
 
 		st_Chunk_Block* pBlock = (st_Chunk_Block*)&mArray[mAllocCount++];
+
+		//packetLog(20000, GetCurrentThreadId(), this, pBlock, mAllocCount, mFreeCount.freeStatus.freeCount);
 		pBlock->pOrigin = this;
 		pBlock->code = this;
 		pBlock->checkSum_over = CHUNK_CHECKSUM;
@@ -145,11 +162,14 @@ namespace procademy
 		InterlockedIncrement((LONG*)&mFreeCount);
 
 		freeCounter.counter = CChunk::MAX_SIZE;
-		freeCounter.freeStaus.isFreed = 1;
-
+		freeCounter.freeStatus.isFreed = 1;
+		//packetLog(10000, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
 		if (InterlockedCompareExchange(&mFreeCount.counter, freeCounter.counter, CChunk::MAX_SIZE) == CChunk::MAX_SIZE)
 		{
+			//packetLog(10020, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
+			block->pOrigin->threadID = 0;
 			pObjPool->mMemoryPool->Free(block->pOrigin);
+			//packetLog(10030, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
 		}
 
 		return true;
