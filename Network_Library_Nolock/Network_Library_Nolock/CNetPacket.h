@@ -1,9 +1,9 @@
 #ifndef  __PACKET__
 #define  __PACKET__
 
-//#define NEW_DELETE_VER
+#define NEW_DELETE_VER
 //#define MEMORY_POOL_VER
-#define TLS_MEMORY_POOL_VER
+//#define TLS_MEMORY_POOL_VER
 
 #ifdef MEMORY_POOL_VER
 #include "TC_LFObjectPool.h"

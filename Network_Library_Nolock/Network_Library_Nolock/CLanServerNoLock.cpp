@@ -260,9 +260,7 @@ namespace procademy
 
 			IncrementIOProc(session, 30000);
 
-			CProfiler::Begin(L"SEND");
 			int sendRet = WSASend(session->socket, buffers, session->numSendingPacket, nullptr, 0, &session->sendOverlapped, nullptr);
-			CProfiler::End(L"SEND");
 
 			if (sendRet == SOCKET_ERROR)
 			{
@@ -557,15 +555,15 @@ namespace procademy
 		{
 			if (pOverlapped == &session->recvOverlapped) // Recv
 			{
-				CProfiler::Begin(L"CompleteRecv");
+				//CProfiler::Begin(L"CompleteRecv");
 				CompleteRecv(session, transferredSize);
-				CProfiler::End(L"CompleteRecv");
+				//CProfiler::End(L"CompleteRecv");
 			}
 			else // Send
 			{
-				CProfiler::Begin(L"CompleteSend");
+				//CProfiler::Begin(L"CompleteSend");
 				CompleteSend(session, transferredSize);
-				CProfiler::End(L"CompleteSend");
+				//CProfiler::End(L"CompleteSend");
 			}
 		}
 
@@ -681,11 +679,21 @@ namespace procademy
 				mMonitor.acceptCount,
 				mMonitor.disconnectCount,
 				mMonitor.acceptCount - mMonitor.disconnectCount);
+#ifdef NEW_DELETE_VER
+			wprintf_s(L"[Packet Pool Capa: %d]\n[Packet Pool Use: %d]\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
+				0,
+				0,
+				mMonitor.sendTPS,
+				mMonitor.recvTPS);
+#else
 			wprintf_s(L"[Packet Pool Capa: %d]\n[Packet Pool Use: %d]\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
 				CNetPacket::sPacketPool.GetCapacity(),
 				CNetPacket::sPacketPool.GetSize(),
 				mMonitor.sendTPS,
 				mMonitor.recvTPS);
+#endif // NEW_DELETE_VER
+
+			
 		}
 
 		mMonitor.recvTPS = 0;
@@ -813,7 +821,7 @@ namespace procademy
 
 				if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x50) & 0x8001) // P
 				{
-					wprintf_s(L"========================\n");
+					/*wprintf_s(L"========================\n");
 					for (u_short i = 0; i < mMaxClient; ++i)
 					{
 						if (mSessionArray[i].bIsAlive != true)
@@ -828,7 +836,8 @@ namespace procademy
 									mSessionArray[i].bIsAlive);
 							}
 						}
-					}
+					}*/
+					CProfiler::Print();
 				}
 
 				if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x44) & 0x8001) // D
