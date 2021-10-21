@@ -48,10 +48,10 @@
     <ClCompile Include="CDebugger.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CProfiler.cpp">
+    <ClCompile Include="CNetPacket.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CNetPacket.cpp">
+    <ClCompile Include="CProfiler.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,13 +95,13 @@
     <ClInclude Include="TC_LFQueue.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="CProfiler.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="ObjectPool_TLS.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="CNetPacket.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="CProfiler.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
   </ItemGroup>

@@ -45,9 +45,20 @@ public:
 	void SetThreadId();
 
 	static void SetProfileFileName(WCHAR* szFileName);
+	static void InitProfiler(int num);
+	static void DestroyProfiler();
+	static void Begin(const WCHAR* szName);
+	static void End(const WCHAR* szName);
+	static void Print();
 
 private:
 	int SearchName(const WCHAR* s);
+
+public:
+	static CProfiler** s_profilers;
+	static DWORD s_MultiProfiler;
+	static LONG s_ProfilerIndex;
+	static SRWLOCK s_lock;
 
 private:
 	typedef struct

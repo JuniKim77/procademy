@@ -2,6 +2,7 @@
 #include "CCrashDump.h"
 #include "CNetPacket.h"
 #include "MessageProtocol.h"
+#include "CProfiler.h"
 
 namespace procademy
 {
@@ -17,7 +18,9 @@ namespace procademy
 
 	void CEchoServerNoLock::OnClientJoin(SESSION_ID SessionID)
 	{
+		CProfiler::Begin(L"ALLOC");
 		CNetPacket* packet = CNetPacket::AllocAddRef();
+		CProfiler::End(L"ALLOC");
 
 		WORD len = 8;
 		int64_t value = 0x7fffffffffffffff;

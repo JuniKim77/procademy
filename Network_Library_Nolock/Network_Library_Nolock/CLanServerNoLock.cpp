@@ -2,6 +2,7 @@
 #include "CLogger.h"
 #include "CNetPacket.h"
 #include "CCrashDump.h"
+#include "CProfiler.h"
 
 struct packetDebug
 {
@@ -259,7 +260,9 @@ namespace procademy
 
 			IncrementIOProc(session, 30000);
 
+			CProfiler::Begin(L"SEND");
 			int sendRet = WSASend(session->socket, buffers, session->numSendingPacket, nullptr, 0, &session->sendOverlapped, nullptr);
+			CProfiler::End(L"SEND");
 
 			if (sendRet == SOCKET_ERROR)
 			{
@@ -508,7 +511,6 @@ namespace procademy
 		session->ip = clientAddr.sin_addr.S_un.S_addr;
 		session->port = clientAddr.sin_port;
 		session->sessionID = id;
-		session->lastNum = 0;
 
 		HANDLE hResult = CreateIoCompletionPort((HANDLE)client, mHcp, (ULONG_PTR)session, 0);
 
@@ -555,11 +557,15 @@ namespace procademy
 		{
 			if (pOverlapped == &session->recvOverlapped) // Recv
 			{
+				CProfiler::Begin(L"CompleteRecv");
 				CompleteRecv(session, transferredSize);
+				CProfiler::End(L"CompleteRecv");
 			}
 			else // Send
 			{
+				CProfiler::Begin(L"CompleteSend");
 				CompleteSend(session, transferredSize);
+				CProfiler::End(L"CompleteSend");
 			}
 		}
 
@@ -580,7 +586,9 @@ namespace procademy
 			{
 				return;
 			}
+			CProfiler::Begin(L"ALLOC");
 			CNetPacket* packet = CNetPacket::AllocAddRef();
+			CProfiler::End(L"ALLOC");
 			InterlockedIncrement(&mMonitor.recvTPS);
 			InterlockedIncrement(&mMonitor.sendTPS);
 
@@ -614,28 +622,15 @@ namespace procademy
 		{
 			session->sendQ.Dequeue(&packet);
 
-			char* buf = packet->GetBufferPtr();
-			DWORD num = *((DWORD*)(buf + 2));
-
-			packDebug(10000, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-				num);
-
-			if (*buf == 8 && num != MAXUINT32)
-			{
-				if (session->lastNum >= num)
-					CRASH();
-
-				session->lastNum = num;
-			}
-
 			packet->SubRef();
 			packet = nullptr;
 		}
 
 		session->numSendingPacket = 0;
 		session->isSending = false;
-
+		CProfiler::Begin(L"SendPost");
 		SendPost(session);
+		CProfiler::End(L"SendPost");
 	}
 
 	void CLanServerNoLock::CloseSessions()
@@ -902,7 +897,11 @@ namespace procademy
 			*((DWORD*)(buf + 2)));
 		session->sendQ.Enqueue(packet);
 
-		if (SendPost(session))
+		CProfiler::Begin(L"SendPost");
+		bool ret = SendPost(session);
+		CProfiler::End(L"SendPost");
+
+		if (ret)
 		{
 			DecrementIOProc(session, 20010);
 		}

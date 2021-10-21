@@ -39,7 +39,6 @@ namespace procademy
 		u_short						port;
 		ULONG						ip;
 		u_int64						sessionID;
-		DWORD						lastNum = 0;
 
 		Session()
 			: isSending(false)
