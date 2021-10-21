@@ -1,6 +1,6 @@
 #include "CLanServerNoLock.h"
 #include "CLogger.h"
-#include "CPacket.h"
+#include "CNetPacket.h"
 #include "CCrashDump.h"
 
 struct packetDebug
@@ -307,7 +307,7 @@ namespace procademy
 		}
 		else
 		{
-			CPacket* packetBufs[100];
+			CNetPacket* packetBufs[100];
 			DWORD snapSize = session->sendQ.GetSize();
 
 			if (snapSize > 100)
@@ -318,63 +318,11 @@ namespace procademy
 
 			for (DWORD i = 0; i < snapSize; ++i)
 			{
-				//session->sendQ.Dequeue(&session->packetBufs[i]);
-				bufs[i].buf = packetBufs[i]->GetBufferPtr();
+				bufs[i].buf = packetBufs[i]->GetZeroPtr();
 				bufs[i].len = packetBufs[i]->GetSize();
 			}
 
 			session->numSendingPacket = snapSize;
-
-			/*char* pRear = session->send.queue.GetRearBufferPtr();
-			char* pFront = session->send.queue.GetFrontBufferPtr();
-			char* pBuf = session->send.queue.GetBuffer();
-			int capa = session->send.queue.GetCapacity();
-
-			if (pRear >= pFront)
-			{
-				bufs[0].buf = pFront;
-				bufs[0].len = (ULONG)(pRear - pFront);
-				bufs[1].buf = pRear;
-				bufs[1].len = 0;
-			}
-			else
-			{
-				bufs[0].buf = pFront;
-				bufs[0].len = (ULONG)(capa + 1 - (pFront - pBuf));
-				bufs[1].buf = pBuf;
-				bufs[1].len = (ULONG)(pRear - pBuf);
-			}*/
-
-			/*if (pFront - pBuf < 2997)
-			{
-				USHORT num = *((USHORT*)&(*(pFront + 2)));
-
-				session->debugs[session->index].begin = num;
-			}
-			else
-			{
-				session->debugs[session->index].begin = 0;
-			}
-			if ((int)(pRear - pBuf) - 8 >= 0)
-			{
-				USHORT num2 = *((USHORT*)&(*(pRear - 8)));
-
-				session->debugs[session->index].end = num2;
-			}
-			else
-			{
-				session->debugs[session->index].end = 0;
-			}
-
-			if (session->debugs[session->index].begin != 0 &&
-				session->debugs[(unsigned char)(session->index - 1)].end != 0 &&
-				session->debugs[(unsigned char)(session->index - 1)].end >= session->debugs[session->index].begin &&
-				session->index > 1)
-			{
-				int test = 0;
-			}
-
-			session->index++;*/
 		}
 	}
 
@@ -421,7 +369,7 @@ namespace procademy
 	void CLanServerNoLock::ReleaseProc(Session* session)
 	{
 		SessionIoCount released;
-		CPacket* dummy;
+		CNetPacket* dummy;
 
 		released.ioCount = 0;
 		released.releaseCount.isReleased = 1;
@@ -623,7 +571,7 @@ namespace procademy
 	void CLanServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 	{
 		session->recvQ.MoveRear(transferredSize);
-
+		SHORT header = 0;
 		DWORD count = 0;
 
 		while (count < transferredSize)
@@ -632,26 +580,26 @@ namespace procademy
 			{
 				return;
 			}
-			CPacket* packet = CPacket::AllocAddRef();
+			CNetPacket* packet = CNetPacket::AllocAddRef();
 			InterlockedIncrement(&mMonitor.recvTPS);
 			InterlockedIncrement(&mMonitor.sendTPS);
-			//session->recv.queue.MoveRear(10);
-			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), 10);
 
-			//if (ret != 10)
-			//{
-			//	wprintf_s(L"Error\n");
-			//}
+			if (session->recvQ.GetUseSize() <= sizeof(SHORT))
+				break;
+			session->recvQ.Peek((char*)&header, sizeof(SHORT));
+
+			if (session->recvQ.GetUseSize() < (int)(sizeof(SHORT) + header))
+				break;
+
+			session->recvQ.MoveFront(sizeof(SHORT));
+
+			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), header);
 
 			packet->MoveRear(ret);
+			packet->SetHeader(true);
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
-			/*if (count == 0)
-			{
-				CDebugger::_Log(L"PacketProc Begin [S %5d] [L %4d]", session->sessionID, session->lastNum);
-			}*/
-			//count += (sizeof(header) + header.wPayloadSize);
-			count += ret;
+			count += (ret + sizeof(SHORT));
 			packet->SubRef();
 		}
 
@@ -660,7 +608,7 @@ namespace procademy
 
 	void CLanServerNoLock::CompleteSend(Session* session, DWORD transferredSize)
 	{
-		CPacket* packet;
+		CNetPacket* packet;
 
 		for (int i = 0; i < session->numSendingPacket; ++i)
 		{
@@ -739,8 +687,8 @@ namespace procademy
 				mMonitor.disconnectCount,
 				mMonitor.acceptCount - mMonitor.disconnectCount);
 			wprintf_s(L"[Packet Pool Capa: %d]\n[Packet Pool Use: %d]\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
-				CPacket::sPacketPool.GetCapacity(),
-				CPacket::sPacketPool.GetSize(),
+				CNetPacket::sPacketPool.GetCapacity(),
+				CNetPacket::sPacketPool.GetSize(),
 				mMonitor.sendTPS,
 				mMonitor.recvTPS);
 		}
@@ -931,7 +879,7 @@ namespace procademy
 		return false;
 	}
 
-	void CLanServerNoLock::SendPacket(SESSION_ID SessionID, CPacket* packet)
+	void CLanServerNoLock::SendPacket(SESSION_ID SessionID, CNetPacket* packet)
 	{
 		Session* session = FindSession(SessionID);
 

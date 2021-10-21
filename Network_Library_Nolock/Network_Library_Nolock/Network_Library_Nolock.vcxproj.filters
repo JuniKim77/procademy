@@ -30,9 +30,6 @@
     <ClCompile Include="CLogger.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CPacket.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="CSVReader.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
@@ -54,12 +51,12 @@
     <ClCompile Include="CProfiler.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="CNetPacket.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CLogger.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="CPacket.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="CSVReader.h">
@@ -102,6 +99,9 @@
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="ObjectPool_TLS.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="CNetPacket.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
   </ItemGroup>

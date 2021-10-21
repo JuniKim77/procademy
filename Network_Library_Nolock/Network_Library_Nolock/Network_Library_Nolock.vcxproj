@@ -147,7 +147,7 @@
     <ClCompile Include="CEchoServerNoLock.cpp" />
     <ClCompile Include="CLanServerNoLock.cpp" />
     <ClCompile Include="CLogger.cpp" />
-    <ClCompile Include="CPacket.cpp" />
+    <ClCompile Include="CNetPacket.cpp" />
     <ClCompile Include="CProfiler.cpp" />
     <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="main.cpp" />
@@ -159,7 +159,7 @@
     <ClInclude Include="CEchoServerNoLock.h" />
     <ClInclude Include="CLanServerNoLock.h" />
     <ClInclude Include="CLogger.h" />
-    <ClInclude Include="CPacket.h" />
+    <ClInclude Include="CNetPacket.h" />
     <ClInclude Include="CProfiler.h" />
     <ClInclude Include="CSVReader.h" />
     <ClInclude Include="MessageProtocol.h" />

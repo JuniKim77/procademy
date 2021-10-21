@@ -10,7 +10,7 @@
 namespace procademy
 {
 	typedef u_int64 SESSION_ID;
-	class CPacket;
+	class CNetPacket;
 
 	struct SessionIoCount
 	{
@@ -30,7 +30,7 @@ namespace procademy
 		WSAOVERLAPPED				recvOverlapped;
 		WSAOVERLAPPED				sendOverlapped;
 		RingBuffer					recvQ;
-		TC_LFQueue<CPacket*>		sendQ;
+		TC_LFQueue<CNetPacket*>		sendQ;
 		int							numSendingPacket = 0;
 		alignas(64) SessionIoCount	ioBlock;
 		alignas(64) bool			isSending;
@@ -74,7 +74,7 @@ namespace procademy
 		void WaitForThreadsFin();
 
 		bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
-		void SendPacket(SESSION_ID SessionID, CPacket* packet); // SESSION_ID / HOST_ID
+		void SendPacket(SESSION_ID SessionID, CNetPacket* packet); // SESSION_ID / HOST_ID
 
 		virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept 직후
 
@@ -82,7 +82,7 @@ namespace procademy
 		virtual void OnClientLeave(SESSION_ID SessionID) = 0; //< Release 후 호출
 
 
-		virtual void OnRecv(SESSION_ID SessionID, CPacket* packet) = 0; //< 패킷 수신 완료 후
+		virtual void OnRecv(SESSION_ID SessionID, CNetPacket* packet) = 0; //< 패킷 수신 완료 후
 		//	virtual void OnSend(SessionID, int sendsize) = 0;           < 패킷 송신 완료 후
 
 		//	virtual void OnWorkerThreadBegin() = 0;                    < 워커스레드 GQCS 바로 하단에서 호출

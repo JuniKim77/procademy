@@ -1,6 +1,6 @@
 #include "CEchoServerNoLock.h"
 #include "CCrashDump.h"
-#include "CPacket.h"
+#include "CNetPacket.h"
 #include "MessageProtocol.h"
 
 namespace procademy
@@ -17,12 +17,14 @@ namespace procademy
 
 	void CEchoServerNoLock::OnClientJoin(SESSION_ID SessionID)
 	{
-		CPacket* packet = CPacket::AllocAddRef();
+		CNetPacket* packet = CNetPacket::AllocAddRef();
 
 		WORD len = 8;
 		int64_t value = 0x7fffffffffffffff;
 
-		*packet << len << value;
+		*packet << value;
+
+		packet->SetHeader(true);
 
 		SendPacket(SessionID, packet);
 		InsertSessionID(SessionID);
@@ -34,7 +36,7 @@ namespace procademy
 		DeleteSessionID(SessionID);
 	}
 
-	void CEchoServerNoLock::OnRecv(SESSION_ID SessionID, CPacket* packet)
+	void CEchoServerNoLock::OnRecv(SESSION_ID SessionID, CNetPacket* packet)
 	{
 		//CompletePacket(SessionID, packet);
 
@@ -71,7 +73,7 @@ namespace procademy
 		UnlockMap();
 	}
 
-	void CEchoServerNoLock::CompletePacket(SESSION_ID SessionID, CPacket* packet)
+	void CEchoServerNoLock::CompletePacket(SESSION_ID SessionID, CNetPacket* packet)
 	{
 		/*st_MESSAGE_HEADER* header = (st_MESSAGE_HEADER*)packet->GetBufferPtr();
 
@@ -82,7 +84,7 @@ namespace procademy
 			break;
 		}*/
 
-		CPacket msg;
+		/*CNetPacket msg;
 
 		while (packet->GetSize() > 0)
 		{
@@ -99,10 +101,10 @@ namespace procademy
 			SendPacket(SessionID, &msg);
 
 			msg.Clear();
-		}
+		}*/
 	}
 
-	void CEchoServerNoLock::EchoProc(SESSION_ID sessionID, CPacket* packet)
+	void CEchoServerNoLock::EchoProc(SESSION_ID sessionID, CNetPacket* packet)
 	{
 		SendPacket(sessionID, packet);
 	}

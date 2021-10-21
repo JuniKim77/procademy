@@ -14,9 +14,14 @@
 
 namespace procademy
 {
-	class CPacket
+	class CNetPacket
 	{
 		friend class CLanServerNoLock;
+		template<typename DATA>
+		friend class TC_LFObjectPool;
+		template<typename DATA>
+		friend class ObjectPool_TLS;
+
 	public:
 		/*---------------------------------------------------------------
 		Packet Enum.
@@ -31,10 +36,8 @@ namespace procademy
 		//
 		// Return:
 		//////////////////////////////////////////////////////////////////////////
-		CPacket();
-		CPacket(int iBufferSize);
 
-		virtual ~CPacket();
+		virtual ~CNetPacket();
 
 		//////////////////////////////////////////////////////////////////////////
 		// 패킷  파괴.
@@ -58,7 +61,7 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int)패킷 버퍼 사이즈 얻기.
 		//////////////////////////////////////////////////////////////////////////
-		int	GetCapacity(void) { return mCapacity; }
+		int		GetCapacity(void) { return mCapacity; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 현재 사용중인 사이즈 얻기.
@@ -66,7 +69,7 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
-		int		GetSize(void) { return mSize; }
+		int		GetSize(void) { return mPacketSize + mHeaderSize; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 포인터 얻기.
@@ -74,8 +77,9 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (char *)버퍼 포인터.
 		//////////////////////////////////////////////////////////////////////////
-		char* GetBufferPtr(void) { return mBuffer; }
-		char* GetFrontPtr(void) { return mFront; }
+		char*	GetBufferPtr(void) { return mBuffer; }
+		char*	GetFrontPtr(void) { return mFront; }
+		char*	GetZeroPtr(void) { return mZero; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 Pos 이동. (음수이동은 안됨)
@@ -90,39 +94,39 @@ namespace procademy
 		/// 현재 버퍼의 사용 가능 사이즈 반환
 		/// </summary>
 		/// <returns>사용 가능 사이즈</returns>
-		int GetFreeSize() const;
+		int		GetFreeSize() const { return mCapacity - mPacketSize - HEADER_MAX_SIZE; }
 
 		// 연산자 오버로딩 넣기
-		CPacket& operator << (unsigned char byValue);
-		CPacket& operator << (char chValue);
+		CNetPacket& operator << (unsigned char byValue);
+		CNetPacket& operator << (char chValue);
 
-		CPacket& operator << (short shValue);
-		CPacket& operator << (unsigned short wValue);
+		CNetPacket& operator << (short shValue);
+		CNetPacket& operator << (unsigned short wValue);
 
-		CPacket& operator << (int iValue);
-		CPacket& operator << (unsigned int iValue);
-		CPacket& operator << (long lValue);
-		CPacket& operator << (unsigned long lValue);
-		CPacket& operator << (float fValue);
+		CNetPacket& operator << (int iValue);
+		CNetPacket& operator << (unsigned int iValue);
+		CNetPacket& operator << (long lValue);
+		CNetPacket& operator << (unsigned long lValue);
+		CNetPacket& operator << (float fValue);
 
-		CPacket& operator << (__int64 iValue);
-		CPacket& operator << (double dValue);
+		CNetPacket& operator << (__int64 iValue);
+		CNetPacket& operator << (double dValue);
 
 		// 연산자 오버로딩 빼기
-		CPacket& operator >> (unsigned char& byValue);
-		CPacket& operator >> (char& chValue);
+		CNetPacket& operator >> (unsigned char& byValue);
+		CNetPacket& operator >> (char& chValue);
 
-		CPacket& operator >> (short& shValue);
-		CPacket& operator >> (unsigned short& wValue);
+		CNetPacket& operator >> (short& shValue);
+		CNetPacket& operator >> (unsigned short& wValue);
 
-		CPacket& operator >> (int& iValue);
-		CPacket& operator >> (unsigned int& iValue);
-		CPacket& operator >> (long& dwValue);
-		CPacket& operator >> (unsigned long& dwValue);
-		CPacket& operator >> (float& fValue);
+		CNetPacket& operator >> (int& iValue);
+		CNetPacket& operator >> (unsigned int& iValue);
+		CNetPacket& operator >> (long& dwValue);
+		CNetPacket& operator >> (unsigned long& dwValue);
+		CNetPacket& operator >> (float& fValue);
 
-		CPacket& operator >> (__int64& iValue);
-		CPacket& operator >> (double& dValue);
+		CNetPacket& operator >> (__int64& iValue);
+		CNetPacket& operator >> (double& dValue);
 
 		//////////////////////////////////////////////////////////////////////////
 		// 데이타 얻기.
@@ -142,13 +146,16 @@ namespace procademy
 		int			PutData(const char* chpSrc, int iLength);
 		int			PutData(const wchar_t* chpSrc, int iLength);
 
-		CPacket& operator << (const char* s);
-		CPacket& operator << (const wchar_t* s);
+		CNetPacket& operator << (const char* s);
+		CNetPacket& operator << (const wchar_t* s);
 
-		static CPacket* AllocAddRef();
-		void			AddRef();
-		void			SubRef();
-		void			ResetCount();
+		static CNetPacket*	AllocAddRef();
+		void				AddRef();
+		void				SubRef();
+		void				ResetCount();
+		void				SetHeader(bool isLengthOnly);
+		void				Encode();
+		void				Decode();
 
 	protected:
 		/// <summary>
@@ -158,6 +165,24 @@ namespace procademy
 		void		writeBuffer(const char* src, int size);
 
 	private:
+		CNetPacket();
+		CNetPacket(int iBufferSize);
+
+	private:
+		enum {
+			HEADER_MAX_SIZE = 5,
+			FIXED_KEY = 0xa9
+		};
+#pragma pack(push, 1)
+		struct st_Header
+		{
+			BYTE	code;
+			USHORT	len;
+			BYTE	randKey;
+			BYTE	checkSum;
+		};
+#pragma pack(pop)
+
 		struct st_RefCount
 		{
 			union
@@ -172,15 +197,17 @@ namespace procademy
 		};
 
 		st_RefCount	mRefCount;
-		char* mBuffer;
+		char*		mBuffer;
 		int			mCapacity;
-		int			mSize;
-		char* mFront;
-		char* mRear;
+		int			mPacketSize;
+		int			mHeaderSize;
+		char*		mFront;
+		char*		mRear;
+		char*		mZero;
 #ifdef MEMORY_POOL_VER
-		alignas(64) static TC_LFObjectPool<CPacket> sPacketPool;
+		alignas(64) static TC_LFObjectPool<CNetPacket> sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)
-		alignas(64) static ObjectPool_TLS<CPacket> sPacketPool;
+		alignas(64) static ObjectPool_TLS<CNetPacket> sPacketPool;
 #endif // MEMORY_POOL_VER
 	};
 #endif
