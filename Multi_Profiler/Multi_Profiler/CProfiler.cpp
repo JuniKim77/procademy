@@ -5,6 +5,11 @@
 #include <string.h>
 #include <wchar.h>
 
+CProfiler** CProfiler::s_profilers;
+LONG CProfiler::s_ProfilerIndex = 0;
+DWORD CProfiler::s_MultiProfiler;
+SRWLOCK CProfiler::s_lock;
+
 CProfiler::CProfiler(const WCHAR* szmSettingFileName)
 {
 	ProfileInitialize(szmSettingFileName);
@@ -247,6 +252,64 @@ void CProfiler::SetProfileFileName(WCHAR* szFileName)
 		t.tm_sec);
 
 	wcscat_s(szFileName, FILE_NAME_MAX, fileName);
+}
+
+void CProfiler::InitProfiler(int num)
+{
+	s_MultiProfiler = TlsAlloc();
+	InitializeSRWLock(&s_lock);
+	s_profilers = new CProfiler * [num];
+
+	for (int i = 0; i < num; ++i)
+	{
+		s_profilers[i] = new CProfiler(L"settings.csv");
+	}
+}
+
+void CProfiler::DestroyProfiler()
+{
+	for (int i = 0; i < s_ProfilerIndex; ++i)
+	{
+		delete s_profilers[i];
+	}
+
+	delete[] s_profilers;
+}
+
+void CProfiler::Begin(const WCHAR* szName)
+{
+	CProfiler* profiler = (CProfiler*)TlsGetValue(s_MultiProfiler);
+
+	if (profiler == nullptr)
+	{
+		AcquireSRWLockExclusive(&s_lock);
+		profiler = s_profilers[s_ProfilerIndex++];
+		TlsSetValue(s_MultiProfiler, profiler);
+		profiler->SetThreadId();
+		ReleaseSRWLockExclusive(&s_lock);
+	}
+
+	profiler->ProfileBegin(szName);
+}
+
+void CProfiler::End(const WCHAR* szName)
+{
+	CProfiler* profiler = (CProfiler*)TlsGetValue(s_MultiProfiler);
+
+	profiler->ProfileEnd(szName);
+}
+
+void CProfiler::Print()
+{
+	WCHAR fileName[FILE_NAME_MAX] = L"Profile";
+
+	CProfiler::SetProfileFileName(fileName);
+
+	for (int i = 0; i < s_ProfilerIndex; ++i)
+	{
+		s_profilers[i]->ProfileDataOutText(fileName);
+		s_profilers[i]->ProfileReset();
+	}
 }
 
 int CProfiler::SearchName(const WCHAR* s)
