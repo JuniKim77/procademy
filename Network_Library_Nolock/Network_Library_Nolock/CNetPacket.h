@@ -1,9 +1,9 @@
 #ifndef  __PACKET__
 #define  __PACKET__
 
-#define NEW_DELETE_VER
+//#define NEW_DELETE_VER
 //#define MEMORY_POOL_VER
-//#define TLS_MEMORY_POOL_VER
+#define TLS_MEMORY_POOL_VER
 
 #ifdef MEMORY_POOL_VER
 #include "TC_LFObjectPool.h"
@@ -70,6 +70,7 @@ namespace procademy
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mPacketSize + mHeaderSize; }
+		USHORT	GetPacketSize() { return (USHORT)*mZero; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 포인터 얻기.

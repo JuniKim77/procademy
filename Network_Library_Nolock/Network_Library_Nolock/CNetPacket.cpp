@@ -2,6 +2,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <Windows.h>
+#include "CProfiler.h"
 
 namespace procademy
 {
@@ -20,12 +21,12 @@ namespace procademy
 	CNetPacket::CNetPacket(int iBufferSize)
 		: mCapacity(iBufferSize)
 		, mPacketSize(0)
-		, mHeaderSize(0)
+		, mHeaderSize(2)
 	{
 		mBuffer = (char*)malloc(mCapacity);
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mBuffer + HEADER_MAX_SIZE;
-		mZero = mBuffer;
+		mZero = mBuffer + (HEADER_MAX_SIZE - 2);
 
 #ifdef DEBUG
 		if (mBuffer != 0)
@@ -426,6 +427,7 @@ namespace procademy
 		if (InterlockedCompareExchange(&mRefCount.counter, stdRef.counter, 0) == 0)
 		{
 			Clear();
+			CProfiler::Begin(L"FREE");
 #ifdef NEW_DELETE_VER
 			delete this;
 #elif defined(MEMORY_POOL_VER)
@@ -433,6 +435,7 @@ namespace procademy
 #elif defined(TLS_MEMORY_POOL_VER)
 			sPacketPool.Free(this);
 #endif // NEW_DELETE_VER
+			CProfiler::End(L"FREE");
 		}
 	}
 

@@ -369,6 +369,7 @@ namespace procademy
 
 	void CLanServerNoLock::ReleaseProc(Session* session)
 	{
+		CProfiler::Begin(L"RELEASEPROC");
 		SessionIoCount released;
 		CNetPacket* dummy;
 
@@ -408,6 +409,7 @@ namespace procademy
 		//LockSessionMap();
 		DeleteSessionData(id);
 		//UnlockSessionMap();
+		CProfiler::End(L"RELEASEPROC");
 	}
 
 	bool CLanServerNoLock::AcceptProc()
@@ -575,7 +577,6 @@ namespace procademy
 	void CLanServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 	{
 		session->recvQ.MoveRear(transferredSize);
-		SHORT header = 0;
 		DWORD count = 0;
 
 		while (count < transferredSize)
@@ -592,17 +593,16 @@ namespace procademy
 
 			if (session->recvQ.GetUseSize() <= sizeof(SHORT))
 				break;
-			session->recvQ.Peek((char*)&header, sizeof(SHORT));
+			session->recvQ.Peek((char*)packet->GetZeroPtr(), sizeof(SHORT));
 
-			if (session->recvQ.GetUseSize() < (int)(sizeof(SHORT) + header))
+			if (session->recvQ.GetUseSize() < (int)(sizeof(SHORT) + packet->GetPacketSize()))
 				break;
 
 			session->recvQ.MoveFront(sizeof(SHORT));
 
-			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), header);
+			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)packet->GetPacketSize());
 
 			packet->MoveRear(ret);
-			packet->SetHeader(true);
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
 			count += (ret + sizeof(SHORT));
