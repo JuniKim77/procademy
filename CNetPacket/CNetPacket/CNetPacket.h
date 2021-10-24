@@ -17,6 +17,11 @@ namespace procademy
 	class CNetPacket
 	{
 		friend class CLanServerNoLock;
+		template<typename DATA>
+		friend class TC_LFObjectPool;
+		template<typename DATA>
+		friend class ObjectPool_TLS;
+
 	public:
 		/*---------------------------------------------------------------
 		Packet Enum.
@@ -31,6 +36,7 @@ namespace procademy
 		//
 		// Return:
 		//////////////////////////////////////////////////////////////////////////
+
 		virtual ~CNetPacket();
 
 		//////////////////////////////////////////////////////////////////////////
@@ -55,7 +61,7 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int)패킷 버퍼 사이즈 얻기.
 		//////////////////////////////////////////////////////////////////////////
-		int	GetCapacity(void) { return mCapacity; }
+		int		GetCapacity(void) { return mCapacity; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 현재 사용중인 사이즈 얻기.
@@ -64,6 +70,7 @@ namespace procademy
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mPacketSize + mHeaderSize; }
+		USHORT	GetPacketSize() { return (USHORT)*mZero; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 포인터 얻기.
@@ -71,9 +78,9 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (char *)버퍼 포인터.
 		//////////////////////////////////////////////////////////////////////////
-		char*	GetBufferPtr(void) { return mBuffer; }
-		char*	GetFrontPtr(void) { return mFront; }
-		char*	GetZeroPtr(void) { return mZero; }
+		char* GetBufferPtr(void) { return mBuffer; }
+		char* GetFrontPtr(void) { return mFront; }
+		char* GetZeroPtr(void) { return mZero; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 Pos 이동. (음수이동은 안됨)
@@ -143,7 +150,7 @@ namespace procademy
 		CNetPacket& operator << (const char* s);
 		CNetPacket& operator << (const wchar_t* s);
 
-		static CNetPacket*	AllocAddRef();
+		static CNetPacket* AllocAddRef();
 		void				AddRef();
 		void				SubRef();
 		void				ResetCount();
@@ -157,6 +164,7 @@ namespace procademy
 		/// </summary>
 		void		resize();
 		void		writeBuffer(const char* src, int size);
+
 	private:
 		CNetPacket();
 		CNetPacket(int iBufferSize);
@@ -190,13 +198,13 @@ namespace procademy
 		};
 
 		st_RefCount	mRefCount;
-		char*		mBuffer;
+		char* mBuffer;
 		int			mCapacity;
 		int			mPacketSize;
 		int			mHeaderSize;
-		char*		mFront;
-		char*		mRear;
-		char*		mZero;
+		char* mFront;
+		char* mRear;
+		char* mZero;
 #ifdef MEMORY_POOL_VER
 		alignas(64) static TC_LFObjectPool<CNetPacket> sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)
