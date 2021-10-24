@@ -21,6 +21,15 @@
     <ClCompile Include="CCrashDump.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="CProfiler.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CSVReader.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CNetPacket.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ObjectPool_TLS.h">
@@ -30,6 +39,15 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="TC_LFObjectPool.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CProfiler.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CSVReader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CNetPacket.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

@@ -161,15 +161,18 @@ namespace procademy
 
 		InterlockedIncrement((LONG*)&mFreeCount);
 
-		freeCounter.counter = CChunk::MAX_SIZE;
-		freeCounter.freeStatus.isFreed = 1;
-		//packetLog(10000, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
-		if (InterlockedCompareExchange(&mFreeCount.counter, freeCounter.counter, CChunk::MAX_SIZE) == CChunk::MAX_SIZE)
+		if (mFreeCount.counter == CChunk::MAX_SIZE)
 		{
-			//packetLog(10020, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
-			block->pOrigin->threadID = 0;
-			pObjPool->mMemoryPool->Free(block->pOrigin);
-			//packetLog(10030, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
+			freeCounter.counter = CChunk::MAX_SIZE;
+			freeCounter.freeStatus.isFreed = 1;
+			//packetLog(10000, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
+			if (InterlockedCompareExchange(&mFreeCount.counter, freeCounter.counter, CChunk::MAX_SIZE) == CChunk::MAX_SIZE)
+			{
+				//packetLog(10020, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
+				block->pOrigin->threadID = 0;
+				pObjPool->mMemoryPool->Free(block->pOrigin);
+				//packetLog(10030, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
+			}
 		}
 
 		return true;

@@ -141,10 +141,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CCrashDump.cpp" />
+    <ClCompile Include="CNetPacket.cpp" />
+    <ClCompile Include="CProfiler.cpp" />
+    <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CCrashDump.h" />
+    <ClInclude Include="CNetPacket.h" />
+    <ClInclude Include="CProfiler.h" />
+    <ClInclude Include="CSVReader.h" />
     <ClInclude Include="ObjectPool_TLS.h" />
     <ClInclude Include="TC_LFObjectPool.h" />
   </ItemGroup>
