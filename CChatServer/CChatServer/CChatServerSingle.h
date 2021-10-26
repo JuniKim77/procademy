@@ -12,6 +12,7 @@ namespace procademy
 	{
 	private:
 		struct st_MSG {
+			BYTE			type;
 			u_int64			sessionNo;
 			CNetPacket*		packet;
 		};
@@ -25,9 +26,12 @@ namespace procademy
 		virtual void	OnRecv(SESSION_ID SessionID, CNetPacket* packet) override;
 		virtual void	OnError(int errorcode, const WCHAR* log) override;
 
+		bool Start(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient); // 오픈 IP / 포트 / 워커스레드 수(생성수, 러닝수) / 나글옵션 / 최대접속자 수
+		bool Start(u_short port, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient);
+		void Stop();
+
 	private:
 		static unsigned int WINAPI UpdateFunc(LPVOID arg);
-		static unsigned int WINAPI CheckHeartFunc(LPVOID arg);
 
 		/// <summary>
 		/// 초기 설정
@@ -59,13 +63,20 @@ namespace procademy
 		/// </summary>
 		/// <param name="sessionNo"></param>
 		/// <returns></returns>
-		CPlayer*		SearchPlayer(u_int64 sessionNo);
+		CPlayer*		FindPlayer(u_int64 sessionNo);
 		void			InsertPlayer(CPlayer* player);
 		void			DeletePlayer(u_int64 sessionNo);
-		void			LockPlayerMap();
-		void			UnlockPlayerMap();
-		void			LockField();
-		void			UnlockField();
+
+	/// <summary>
+	/// Make Packet Funcs
+	/// </summary>
+		CNetPacket* MakeCSReqLogin(INT64 accountNo, WCHAR* ID, WCHAR nickname, char* sessionKey);
+		CNetPacket* MakeCSResLogin(BYTE status, INT64 accountNo);
+		CNetPacket* MakeCSReqSectorMove(INT64 accountNo, WORD sectorX, WORD sectorY);
+		CNetPacket* MakeCSResSectorMove(INT64 accountNo, WORD sectorX, WORD sectorY);
+		CNetPacket* MakeCSReqMessage(INT64 accountNo, WORD messageLen, WCHAR* message);
+		CNetPacket* MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD meesageLen, WCHAR* message);
+		CNetPacket* MakeCSReqHeartbeat();
 
 	public:
 		enum {
@@ -75,16 +86,13 @@ namespace procademy
 
 	private:
 		HANDLE									mUpdateThread;
-		HANDLE									mHeartCheckThread;
 		HANDLE									mIOCP;
 
 		TC_LFQueue<st_MSG*>						mMsgQ;
 
 		std::unordered_map<u_int64, CPlayer*>	mPlayerMap;
-		SRWLOCK									mPlayerMapLock;
 		TC_LFObjectPool<CPlayer>				mPlayerPool;
 
 		std::list<CPlayer*>						mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
-		SRWLOCK									mFieldLock;
 	};
 }

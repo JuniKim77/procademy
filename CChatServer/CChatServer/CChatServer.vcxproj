@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CChatServerSingle.cpp" />
     <ClCompile Include="CCrashDump.cpp" />
     <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="CNetPacket.cpp" />
@@ -155,9 +156,9 @@
     <ClInclude Include="CLogger.h" />
     <ClInclude Include="CNetPacket.h" />
     <ClInclude Include="CNetServerNoLock.h" />
+    <ClInclude Include="CommonProtocol.h" />
     <ClInclude Include="CProfiler.h" />
     <ClInclude Include="CSVReader.h" />
-    <ClInclude Include="MessageProtocol.h" />
     <ClInclude Include="ObjectPool.h" />
     <ClInclude Include="ObjectPool_TLS.h" />
     <ClInclude Include="Protocol.h" />
