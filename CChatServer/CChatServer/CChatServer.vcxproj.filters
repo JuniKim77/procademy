@@ -36,9 +36,6 @@
     <ClCompile Include="CLogger.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CNetServerNoLock.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="CProfiler.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
@@ -49,6 +46,9 @@
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
     <ClCompile Include="CChatServerSingle.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CNetServerNoLock.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

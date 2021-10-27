@@ -693,8 +693,6 @@ namespace procademy
 				mMonitor.sendTPS,
 				mMonitor.recvTPS);
 #endif // NEW_DELETE_VER
-
-			
 		}
 
 		mMonitor.recvTPS = 0;
