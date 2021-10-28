@@ -157,6 +157,9 @@ namespace procademy
 		void				SetHeader(bool isLengthOnly);
 		void				Encode();
 		void				Decode();
+		
+		static int			GetPoolCapacity();
+		static DWORD		GetPoolSize();
 
 	protected:
 		/// <summary>

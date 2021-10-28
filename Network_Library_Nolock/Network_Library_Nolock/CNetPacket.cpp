@@ -523,6 +523,17 @@ namespace procademy
 		}
 	}
 
+	int CNetPacket::GetPoolCapacity()
+	{
+		return CNetPacket::sPacketPool.GetCapacity();
+
+	}
+
+	DWORD CNetPacket::GetPoolSize()
+	{
+		return CNetPacket::sPacketPool.GetSize();
+	}
+
 	void CNetPacket::resize()
 	{
 		char* pBuffer = (char*)malloc((long long)mCapacity + eBUFFER_DEFAULT);

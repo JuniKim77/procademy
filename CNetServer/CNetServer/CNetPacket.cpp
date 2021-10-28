@@ -21,12 +21,12 @@ namespace procademy
 	CNetPacket::CNetPacket(int iBufferSize)
 		: mCapacity(iBufferSize)
 		, mPacketSize(0)
-		, mHeaderSize(HEADER_MAX_SIZE)
+		, mHeaderSize(2)
 	{
 		mBuffer = (char*)malloc(mCapacity);
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mBuffer + HEADER_MAX_SIZE;
-		mZero = mBuffer;
+		mZero = mBuffer + (HEADER_MAX_SIZE - 2);
 
 #ifdef DEBUG
 		if (mBuffer != 0)
@@ -521,6 +521,17 @@ namespace procademy
 
 			pFront++;
 		}
+	}
+
+	int CNetPacket::GetPoolCapacity()
+	{
+		return CNetPacket::sPacketPool.GetCapacity();
+
+	}
+
+	DWORD CNetPacket::GetPoolSize()
+	{
+		return CNetPacket::sPacketPool.GetSize();
 	}
 
 	void CNetPacket::resize()

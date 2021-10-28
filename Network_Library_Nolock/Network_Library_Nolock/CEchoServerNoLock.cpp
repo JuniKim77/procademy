@@ -3,6 +3,8 @@
 #include "CNetPacket.h"
 #include "MessageProtocol.h"
 #include "CProfiler.h"
+#include "CLogger.h"
+#include <conio.h>
 
 namespace procademy
 {
@@ -48,6 +50,86 @@ namespace procademy
 
 	void CEchoServerNoLock::OnError(int errorcode, const WCHAR* log)
 	{
+	}
+
+	bool CEchoServerNoLock::BeginServer(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient)
+	{
+		if (Start(port, ip, createThread, runThread, nagle, maxClient) == false)
+		{
+			return false;
+		}
+
+		mMonitoringThread = (HANDLE)_beginthreadex(nullptr, 0, MonitoringThread, this, 0, nullptr);
+
+		KeyCheckProc();
+
+		WaitForThreadsFin();
+
+		return true;
+	}
+
+	bool CEchoServerNoLock::BeginServer(u_short port, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient)
+	{
+		return BeginServer(port, INADDR_ANY, createThread, runThread, nagle, maxClient);
+	}
+
+	void CEchoServerNoLock::KeyCheckProc()
+	{
+		while (1)
+		{
+			char ch = _getch();
+
+			switch (ch)
+			{
+			case 'Z':
+				if (mbZeroCopy)
+				{
+					mbZeroCopy = false;
+					wprintf_s(L"\nUnset ZeroCopy Mode\n\n");
+				}
+				else
+				{
+					mbZeroCopy = true;
+					wprintf_s(L"\nSet ZeroCopy Mode\n\n");
+				}
+				break;
+			case 'G':
+				if (mbNagle)
+				{
+					mbNagle = false;
+					wprintf_s(L"\nUnset Nagle Mode\n\n");
+				}
+				else
+				{
+					mbNagle = true;
+					wprintf_s(L"\nSet Nagle Mode\n\n");
+				}
+				break;
+			case 'M':
+				if (mbMonitoring)
+				{
+					mbMonitoring = false;
+					wprintf_s(L"\nUnset monitoring Mode\n\n");
+				}
+				else
+				{
+					mbMonitoring = true;
+					wprintf_s(L"\nSet monitoring Mode\n\n");
+				}
+				break;
+			case 'P':
+				CProfiler::Print();
+				break;
+			case 'D':
+				CRASH();
+				break;
+			case 'Q':
+				QuitServer();
+				return;
+			default:
+				break;
+			}
+		}
 	}
 
 	void CEchoServerNoLock::InsertSessionID(u_int64 sessionNo)
@@ -120,5 +202,47 @@ namespace procademy
 	void CEchoServerNoLock::UnlockMap()
 	{
 		ReleaseSRWLockExclusive(&mSessionLock);
+	}
+	void CEchoServerNoLock::MonitorProc()
+	{
+		HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
+
+		while (!mbIsQuit)
+		{
+			DWORD retval = WaitForSingleObject(dummyEvent, 1000);
+
+			if (retval == WAIT_TIMEOUT)
+			{
+				wprintf_s(L"\nMonitoring[M]: (%d) | Quit[Q]\n", mbMonitoring);
+				wprintf_s(L"ZeroCopy[Z]: (%d) | Nagle[N]: (%d)\n", mbZeroCopy, mbNagle);
+				wprintf_s(L"=======================================\n[Total Accept Count: %lu]\n[Total Diconnect Count: %lu]\n[Live Session Count: %lu]\n",
+					mMonitor.acceptCount,
+					mMonitor.disconnectCount,
+					mMonitor.acceptCount - mMonitor.disconnectCount);
+#ifdef NEW_DELETE_VER
+				wprintf_s(L"[Packet Pool Capa: %d]\n[Packet Pool Use: %d]\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
+					0,
+					0,
+					mMonitor.sendTPS,
+					mMonitor.recvTPS);
+#else
+				wprintf_s(L"[Packet Pool Capa: %d]\n[Packet Pool Use: %d]\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
+					CNetPacket::GetPoolCapacity(),
+					CNetPacket::GetPoolSize(),
+					mMonitor.prevSendTPS,
+					mMonitor.prevRecvTPS);
+#endif // NEW_DELETE_VER
+			}
+		}
+
+		CloseHandle(dummyEvent);
+	}
+	unsigned int __stdcall CEchoServerNoLock::MonitoringThread(LPVOID arg)
+	{
+		CEchoServerNoLock* server = (CEchoServerNoLock*)arg;
+
+		server->MonitorProc();
+
+		return 0;
 	}
 }

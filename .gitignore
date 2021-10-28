@@ -389,6 +389,8 @@ ASALocalRun/
 *.bak
 
 # Profiler
+CNetServer/CNetServer/_log
+Network_Library_Nolock/Network_Library_Nolock/_log
 MemoryPool_TLS/MemoryPool_TLS/*.txt
 MyProfiler/MyProfiler/*.txt
 redBlackTree/redBlackTree/*.txt
