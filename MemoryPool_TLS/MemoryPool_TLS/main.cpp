@@ -8,6 +8,13 @@
 #define dfTEST_SIZE (100000)
 //#define TEST_A
 
+class CTest
+{
+private:
+	int a;
+	long long b;
+};
+
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
 
 void TLS_ALLOC_PROC();
@@ -20,9 +27,9 @@ __declspec(thread) int* arr1[dfTEST_SIZE];
 __declspec(thread) int* arr2[dfTEST_SIZE];
 procademy::ObjectPool_TLS<int> g_pool_tls;
 #else
-__declspec(thread) procademy::CNetPacket* arr1[dfTEST_SIZE];
-__declspec(thread) procademy::CNetPacket* arr2[dfTEST_SIZE];
-procademy::ObjectPool_TLS<procademy::CNetPacket> g_pool_tls;
+__declspec(thread) CTest* arr1[dfTEST_SIZE];
+__declspec(thread) CTest* arr2[dfTEST_SIZE];
+procademy::ObjectPool_TLS<CTest> g_pool_tls;
 #endif // TEST_A
 
 int main()
@@ -115,7 +122,7 @@ void NEW_DELETE_ALLOC_PROC()
 
 		arr2[i] = new int;
 #else
-		arr2[i] = new procademy::CNetPacket;
+		arr2[i] = new CTest;
 #endif // TEST_A
 
 	}

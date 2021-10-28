@@ -9,8 +9,8 @@ extern packetDebug g_packetDebugs[USHRT_MAX + 1];
 extern void packetLog(
 	int			logicId,
 	DWORD		threadId,
-	void* pChunk,
-	void* pPacket,
+	void*		pChunk,
+	void*		pPacket,
 	int			allocCount,
 	LONG		freeCount
 );
@@ -39,21 +39,8 @@ namespace procademy
 			st_Chunk_Block				mArray[MAX_SIZE];
 			ObjectPool_TLS* pObjPool = nullptr;
 			int							mAllocCount = 0;
-			alignas(64) st_FreeCount	mFreeCount;
+			alignas(64) LONG			mFreeCount;
 			DWORD						threadID;
-		};
-
-		struct st_FreeCount
-		{
-			union
-			{
-				LONG counter = 0;
-				struct
-				{
-					SHORT freeCount;
-					SHORT isFreed;
-				} freeStatus;
-			};
 		};
 
 		struct st_Chunk_Block
@@ -110,8 +97,7 @@ namespace procademy
 			chunk->threadID = GetCurrentThreadId();
 			chunk->pObjPool = this;
 			chunk->mAllocCount = 0;
-			chunk->mFreeCount.freeStatus.freeCount = 0;
-			chunk->mFreeCount.freeStatus.isFreed = 0;
+			chunk->mFreeCount = 0;
 			TlsSetValue(mIndex, chunk);
 		}
 
@@ -150,7 +136,6 @@ namespace procademy
 	inline bool ObjectPool_TLS<DATA>::CChunk::Free(DATA* pData)
 	{
 		st_Chunk_Block* block = (st_Chunk_Block*)pData;
-		st_FreeCount freeCounter;
 
 		if (block->code != this ||
 			block->checkSum_over != CHUNK_CHECKSUM)
@@ -159,20 +144,12 @@ namespace procademy
 			return false;
 		}
 
-		InterlockedIncrement((LONG*)&mFreeCount);
+		LONG ret = InterlockedIncrement(&mFreeCount);
 
-		if (mFreeCount.counter == CChunk::MAX_SIZE)
+		if (ret == CChunk::MAX_SIZE)
 		{
-			freeCounter.counter = CChunk::MAX_SIZE;
-			freeCounter.freeStatus.isFreed = 1;
-			//packetLog(10000, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
-			if (InterlockedCompareExchange(&mFreeCount.counter, freeCounter.counter, CChunk::MAX_SIZE) == CChunk::MAX_SIZE)
-			{
-				//packetLog(10020, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
-				block->pOrigin->threadID = 0;
-				pObjPool->mMemoryPool->Free(block->pOrigin);
-				//packetLog(10030, GetCurrentThreadId(), this, pData, mAllocCount, mFreeCount.freeStatus.freeCount);
-			}
+			block->pOrigin->threadID = 0;
+			pObjPool->mMemoryPool->Free(block->pOrigin);
 		}
 
 		return true;
