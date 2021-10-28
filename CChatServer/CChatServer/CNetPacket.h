@@ -16,7 +16,7 @@ namespace procademy
 {
 	class CNetPacket
 	{
-		friend class CNetServerNoLock;
+		friend class CLanServerNoLock;
 		template<typename DATA>
 		friend class TC_LFObjectPool;
 		template<typename DATA>
@@ -70,7 +70,7 @@ namespace procademy
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mPacketSize + mHeaderSize; }
-		USHORT	GetPacketSize() { return (USHORT)*(mZero + 1); }
+		USHORT	GetPacketSize() { return (USHORT)*mZero; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 포인터 얻기.
@@ -78,9 +78,9 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (char *)버퍼 포인터.
 		//////////////////////////////////////////////////////////////////////////
-		char*	GetBufferPtr(void) { return mBuffer; }
-		char*	GetFrontPtr(void) { return mFront; }
-		char*	GetZeroPtr(void) { return mZero; }
+		char* GetBufferPtr(void) { return mBuffer; }
+		char* GetFrontPtr(void) { return mFront; }
+		char* GetZeroPtr(void) { return mZero; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 Pos 이동. (음수이동은 안됨)
@@ -150,13 +150,16 @@ namespace procademy
 		CNetPacket& operator << (const char* s);
 		CNetPacket& operator << (const wchar_t* s);
 
-		static CNetPacket*	AllocAddRef();
+		static CNetPacket* AllocAddRef();
 		void				AddRef();
 		void				SubRef();
 		void				ResetCount();
 		void				SetHeader(bool isLengthOnly);
 		void				Encode();
 		void				Decode();
+
+		static int			GetPoolCapacity();
+		static DWORD		GetPoolSize();
 
 	protected:
 		/// <summary>
@@ -198,13 +201,13 @@ namespace procademy
 		};
 
 		st_RefCount	mRefCount;
-		char*		mBuffer;
+		char* mBuffer;
 		int			mCapacity;
 		int			mPacketSize;
 		int			mHeaderSize;
-		char*		mFront;
-		char*		mRear;
-		char*		mZero;
+		char* mFront;
+		char* mRear;
+		char* mZero;
 #ifdef MEMORY_POOL_VER
 		alignas(64) static TC_LFObjectPool<CNetPacket> sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)

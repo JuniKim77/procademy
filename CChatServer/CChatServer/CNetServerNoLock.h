@@ -1,8 +1,8 @@
 #pragma once
 #pragma comment(lib, "ws2_32")
 
-#include <WinSock2.h>
 #include <WS2tcpip.h>
+#include <WinSock2.h>
 #include "RingBuffer.h"
 #include "TC_LFStack.h"
 #include "TC_LFQueue.h"
@@ -64,7 +64,7 @@ namespace procademy
 
 	class CNetServerNoLock
 	{
-	public:
+	protected:
 		~CNetServerNoLock();
 		bool Start(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient); // 오픈 IP / 포트 / 워커스레드 수(생성수, 러닝수) / 나글옵션 / 최대접속자 수
 		bool Start(u_short port, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient);
@@ -88,7 +88,7 @@ namespace procademy
 		//	virtual void OnWorkerThreadEnd() = 0;                      < 워커스레드 1루프 종료 후
 
 		virtual void OnError(int errorcode, const WCHAR* log) = 0;
-		void MonitorProc();
+		void QuitServer();
 
 	private:
 		Session* FindSession(u_int64 sessionNo);
@@ -99,6 +99,8 @@ namespace procademy
 		bool BeginThreads();
 		static unsigned int WINAPI WorkerThread(LPVOID arg);
 		static unsigned int WINAPI AcceptThread(LPVOID arg);
+		static unsigned int WINAPI MonitoringThread(LPVOID arg);
+		void NetworkMonitorProc();
 		bool RecvPost(Session* session, bool isAccepted = false);
 		bool SendPost(Session* session);
 		void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
@@ -126,8 +128,6 @@ namespace procademy
 		/// <summary>
 		/// Options
 		/// </summary>
-		bool				mbNagle = true;
-		bool				mbMonitoring = true;
 		BYTE				mMaxRunThreadSize = 0;
 		BYTE				mWorkerThreadSize = 0;
 		u_short				mMaxClient = 0;
@@ -136,21 +136,26 @@ namespace procademy
 		/// Network Status
 		/// </summary>
 		bool				mbIsRunning = false;
-		bool				mbZeroCopy = true;
 		BYTE				mNumThreads = 0;
+		bool				mbIsQuit = false;
 
 		/// <summary>
 		/// Handles
 		/// </summary>
 		HANDLE				mHcp;
-		HANDLE*				mhThreads;
+		HANDLE* mhThreads;
 
 		/// <summary>
 		/// Session Objects
 		/// </summary>
-		Session*			mSessionArray;
+		Session* mSessionArray;
 		u_int64				mSessionIDCounter = 1;
 		TC_LFStack<u_short> mEmptyIndexes;
+
+	protected:
+		bool				mbNagle = true;
+		bool				mbMonitoring = true;
+		bool				mbZeroCopy = true;
 
 		struct Monitor
 		{
@@ -158,7 +163,8 @@ namespace procademy
 			alignas(64) DWORD	recvTPS;
 			alignas(64) DWORD	acceptCount;
 			alignas(64) DWORD	disconnectCount;
-			SRWLOCK				lock;
+			DWORD prevSendTPS;
+			DWORD prevRecvTPS;
 		};
 
 		/// <summary>
@@ -167,4 +173,3 @@ namespace procademy
 		alignas(64) Monitor		mMonitor;
 	};
 }
-

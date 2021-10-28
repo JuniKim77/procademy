@@ -1,7 +1,6 @@
 #include "CNetServerNoLock.h"
 #include <unordered_map>
 #include <list>
-#include "TC_LFQueue.h"
 #include "TC_LFObjectPool.h"
 
 namespace procademy
@@ -9,14 +8,40 @@ namespace procademy
 	class CChatServerSingle : public CNetServerNoLock
 	{
 	private:
+		enum en_MSG_TYPE
+		{
+			MSG_TYPE_RECV,
+			MSG_TYPE_CONNECT,
+			MSG_TYPE_DISCONNECT,
+			MSG_TYPE_TIMEOUT
+		};
+
+		struct st_Sector
+		{
+			int x;
+			int y;
+		};
+
+		struct st_Sector_Around
+		{
+			int count;
+			st_Sector around[9];
+		};
+
 		struct st_Player
 		{
-
+			ULONGLONG	lastRecvTime = 0;
+			INT64		accountNo = 0;
+			WCHAR		ID[20];
+			WCHAR		nickName[20];
+			short		curSectorX = -1;
+			short		curSectorY = -1;
+			bool		bLogin = false;
 		};
 
 		struct st_MSG {
 			BYTE			type;
-			u_int64			sessionNo;
+			SESSION_ID		sessionNo;
 			CNetPacket*		packet;
 		};
 
@@ -28,9 +53,13 @@ namespace procademy
 		virtual void	OnClientLeave(SESSION_ID SessionID) override;
 		virtual void	OnRecv(SESSION_ID SessionID, CNetPacket* packet) override;
 		virtual void	OnError(int errorcode, const WCHAR* log) override;
+		bool			BeginServer(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient); // 오픈 IP / 포트 / 워커스레드 수(생성수, 러닝수) / 나글옵션 / 최대접속자 수
+		bool			BeginServer(u_short port, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient);
 
 	private:
 		static unsigned int WINAPI UpdateFunc(LPVOID arg);
+		static unsigned int WINAPI MonitorFunc(LPVOID arg);
+		static unsigned int WINAPI HeartbeatFunc(LPVOID arg);
 
 		/// <summary>
 		/// 초기 설정
@@ -53,10 +82,11 @@ namespace procademy
 		/// </summary>
 		/// <returns></returns>
 		bool			CheckHeart();
-		bool			CompleteMessage();
-		bool			LoginProc(u_int64 sessionNo);
-		bool			MoveSectorProc(u_int64 sessionNo);
-		bool			SendMessageProc(u_int64 sessionNo);
+		bool			MonitoringProc();
+		bool			CompleteMessage(u_int64 sessionNo, CNetPacket* packet);
+		bool			LoginProc(u_int64 sessionNo, CNetPacket* packet);
+		bool			MoveSectorProc(u_int64 sessionNo, CNetPacket* packet);
+		bool			SendMessageProc(u_int64 sessionNo, CNetPacket* packet);
 
 		/// <summary>
 		/// sessionNo가 player의 key 값
@@ -64,8 +94,12 @@ namespace procademy
 		/// <param name="sessionNo"></param>
 		/// <returns></returns>
 		st_Player*		FindPlayer(u_int64 sessionNo);
-		void			InsertPlayer(st_Player* player);
+		void			InsertPlayer(u_int64 sessionNo, st_Player* player);
 		void			DeletePlayer(u_int64 sessionNo);
+		void			Sector_AddPlayer(WORD x, WORD y, st_Player* player);
+		void			Sector_RemovePlayer(WORD x, WORD y, st_Player* player);
+		void			GetSectorAround(WORD x, WORD y, st_Sector_Around* output);
+		void			SendMessageSectorAround(CNetPacket* packet, WORD size, st_Sector_Around* input);
 
 	/// <summary>
 	/// Make Packet Funcs
@@ -82,6 +116,8 @@ namespace procademy
 
 	private:
 		HANDLE									mUpdateThread;
+		HANDLE									mMonitoringThread;
+		HANDLE									mHeartbeatThread;
 		HANDLE									mIOCP;
 
 		TC_LFObjectPool<st_MSG>					mMsgPool;
@@ -90,6 +126,6 @@ namespace procademy
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;
 		TC_LFObjectPool<st_Player>				mPlayerPool;
 
-		std::list<st_Player*>						mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
+		std::list<st_Player*>					mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
 	};
 }

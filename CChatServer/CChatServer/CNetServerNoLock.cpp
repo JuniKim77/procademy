@@ -8,8 +8,8 @@ struct packetDebug
 {
 	int			logicId;
 	DWORD		threadId;
-	void*		pChunk;
-	void*		pPacket;
+	void* pChunk;
+	void* pPacket;
 	int			allocCount;
 	LONG		freeCount;
 };
@@ -20,8 +20,8 @@ packetDebug g_packetDebugs[USHRT_MAX + 1] = { 0, };
 void packetLog(
 	int			logicId = -9999,
 	DWORD		threadId = 0,
-	void*		pChunk = nullptr,
-	void*		pPacket = nullptr,
+	void* pChunk = nullptr,
+	void* pPacket = nullptr,
 	int			allocCount = -9999,
 	LONG		freeCount = 9999
 )
@@ -153,15 +153,20 @@ namespace procademy
 
 	bool CNetServerNoLock::BeginThreads()
 	{
-		mhThreads[0] = (HANDLE)_beginthreadex(nullptr, 0, AcceptThread, this, 0, nullptr);
+		BYTE i = 0;
+
+		mhThreads[i++] = (HANDLE)_beginthreadex(nullptr, 0, AcceptThread, this, 0, nullptr);
 		mNumThreads++;
 
-		for (BYTE i = 1; i <= mWorkerThreadSize; ++i)
+		for (; i <= mWorkerThreadSize; ++i)
 		{
 			mhThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, this, 0, nullptr);
 		}
 
 		mNumThreads += mWorkerThreadSize;
+
+		mhThreads[i++] = (HANDLE)_beginthreadex(nullptr, 0, MonitoringThread, this, 0, nullptr);
+		mNumThreads++;
 
 		return true;
 	}
@@ -192,6 +197,15 @@ namespace procademy
 				break;
 			}
 		}
+
+		return 0;
+	}
+
+	unsigned int __stdcall CNetServerNoLock::MonitoringThread(LPVOID arg)
+	{
+		CNetServerNoLock* server = (CNetServerNoLock*)arg;
+
+		server->NetworkMonitorProc();
 
 		return 0;
 	}
@@ -593,17 +607,16 @@ namespace procademy
 
 			if (session->recvQ.GetUseSize() <= sizeof(SHORT))
 				break;
-			session->recvQ.Peek(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE);
+			session->recvQ.Peek((char*)packet->GetZeroPtr(), sizeof(SHORT));
 
 			if (session->recvQ.GetUseSize() < (int)(sizeof(SHORT) + packet->GetPacketSize()))
 				break;
 
-			session->recvQ.MoveFront(CNetPacket::HEADER_MAX_SIZE);
+			session->recvQ.MoveFront(sizeof(SHORT));
 
 			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)packet->GetPacketSize());
 
 			packet->MoveRear(ret);
-			packet->Decode();
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
 			count += (ret + sizeof(SHORT));
@@ -670,33 +683,36 @@ namespace procademy
 		return (u_short)(sessionNo >> (8 * 6));
 	}
 
-	void CNetServerNoLock::MonitorProc()
+	void CNetServerNoLock::NetworkMonitorProc()
 	{
-		if (mbMonitoring)
+		HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
+
+		while (!mbIsQuit)
 		{
-			wprintf_s(L"\nMonitoring[M]: (%d) | Quit[Q]\n", mbMonitoring);
-			wprintf_s(L"ZeroCopy[Z]: (%d) | Nagle[N]: (%d)\n", mbZeroCopy, mbNagle);
-			wprintf_s(L"=======================================\n[Total Accept Count: %lu]\n[Total Diconnect Count: %lu]\n[Live Session Count: %lu]\n",
-				mMonitor.acceptCount,
-				mMonitor.disconnectCount,
-				mMonitor.acceptCount - mMonitor.disconnectCount);
-#ifdef NEW_DELETE_VER
-			wprintf_s(L"[Packet Pool Capa: %d]\n[Packet Pool Use: %d]\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
-				0,
-				0,
-				mMonitor.sendTPS,
-				mMonitor.recvTPS);
-#else
-			wprintf_s(L"[Packet Pool Capa: %d]\n[Packet Pool Use: %d]\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
-				CNetPacket::sPacketPool.GetCapacity(),
-				CNetPacket::sPacketPool.GetSize(),
-				mMonitor.sendTPS,
-				mMonitor.recvTPS);
-#endif // NEW_DELETE_VER
+			DWORD retval = WaitForSingleObject(dummyEvent, 1000);
+
+			if (retval == WAIT_TIMEOUT)
+			{
+				mMonitor.prevRecvTPS = mMonitor.recvTPS;
+				mMonitor.prevSendTPS = mMonitor.sendTPS;
+
+				mMonitor.recvTPS = 0;
+				mMonitor.sendTPS = 0;
+			}
 		}
 
-		mMonitor.recvTPS = 0;
-		mMonitor.sendTPS = 0;
+		CloseHandle(dummyEvent);
+	}
+
+	void CNetServerNoLock::QuitServer()
+	{
+		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Exit\n");
+
+		PostQueuedCompletionStatus(mHcp, 0, 0, 0);
+
+		mbIsQuit = true;
+
+		closesocket(mListenSocket);
 	}
 
 	CNetServerNoLock::~CNetServerNoLock()
@@ -715,6 +731,8 @@ namespace procademy
 
 	bool CNetServerNoLock::Start(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient)
 	{
+		CLogger::SetDirectory(L"_log");
+
 		if (mbIsRunning == true)
 		{
 			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Network is already running\n");
@@ -728,7 +746,7 @@ namespace procademy
 		mMaxClient = maxClient;
 		mbNagle = nagle;
 
-		mhThreads = new HANDLE[(long long)createThread + 1];
+		mhThreads = new HANDLE[(long long)createThread + 2];
 		mSessionArray = (Session*)_aligned_malloc(sizeof(Session) * maxClient, 64);
 		for (int i = 0; i < maxClient; ++i)
 		{
@@ -766,99 +784,6 @@ namespace procademy
 
 	void CNetServerNoLock::WaitForThreadsFin()
 	{
-		HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
-
-		while (1)
-		{
-			DWORD retval = WaitForSingleObject(dummyEvent, 1000);
-
-			if (retval == WAIT_TIMEOUT)
-			{
-				MonitorProc();
-
-				if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x5A) & 0x8001) // Z
-				{
-					if (mbZeroCopy)
-					{
-						mbZeroCopy = false;
-						wprintf_s(L"\nUnset ZeroCopy Mode\n\n");
-					}
-					else
-					{
-						mbZeroCopy = true;
-						wprintf_s(L"\nSet ZeroCopy Mode\n\n");
-					}
-				}
-
-				if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x47) & 0x8001) // G
-				{
-					if (mbNagle)
-					{
-						mbNagle = false;
-						wprintf_s(L"\nUnset Nagle Mode\n\n");
-					}
-					else
-					{
-						mbNagle = true;
-						wprintf_s(L"\nSet Nagle Mode\n\n");
-					}
-				}
-
-				if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x4D) & 0x8001) // M
-				{
-					if (mbMonitoring)
-					{
-						mbMonitoring = false;
-						wprintf_s(L"\nUnset monitoring Mode\n\n");
-					}
-					else
-					{
-						mbMonitoring = true;
-						wprintf_s(L"\nSet monitoring Mode\n\n");
-					}
-				}
-
-				if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x50) & 0x8001) // P
-				{
-					/*wprintf_s(L"========================\n");
-					for (u_short i = 0; i < mMaxClient; ++i)
-					{
-						if (mSessionArray[i].bIsAlive != true)
-						{
-							int recvSize = mSessionArray[i].recvQ.GetUseSize();
-							int sendSize = mSessionArray[i].sendQ.GetSize();
-
-							if (recvSize > 0 || sendSize > 0)
-							{
-								wprintf_s(L"[Socket: %llu] [RecvUse: %d] [SendUse: %d] [Sending: %d] [io_Count: %d] [Alive: %d]\n",
-									mSessionArray[i].socket, recvSize, sendSize, mSessionArray[i].isSending, mSessionArray[i].ioBlock.ioCount,
-									mSessionArray[i].bIsAlive);
-							}
-						}
-					}*/
-					CProfiler::Print();
-				}
-
-				if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x44) & 0x8001) // D
-				{
-					CRASH();
-				}
-
-				if (GetAsyncKeyState(VK_SHIFT) & 0x8001 && GetAsyncKeyState(0x51) & 0x8001) // Q
-				{
-					wprintf_s(L"Exit\n");
-
-					PostQueuedCompletionStatus(mHcp, 0, 0, 0);
-
-					closesocket(mListenSocket);
-
-					break;
-				}
-			}
-		}
-
-		CloseHandle(dummyEvent);
-
 		DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
 
 		switch (waitResult)
@@ -901,8 +826,8 @@ namespace procademy
 		header.wPayloadSize = packet->GetSize();*/
 		packet->AddRef();
 		char* buf = packet->GetBufferPtr();
-		/*packDebug(10000, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-			*((DWORD*)(buf + 2)));*/
+		packDebug(10000, GetCurrentThreadId(), session->sessionID & 0xffffffff,
+			*((DWORD*)(buf + 2)));
 		session->sendQ.Enqueue(packet);
 
 		CProfiler::Begin(L"SendPost");
@@ -914,5 +839,4 @@ namespace procademy
 			DecrementIOProc(session, 20010);
 		}
 	}
-
 }
