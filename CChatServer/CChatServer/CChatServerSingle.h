@@ -32,6 +32,7 @@ namespace procademy
 		{
 			ULONGLONG	lastRecvTime = 0;
 			INT64		accountNo = 0;
+			SESSION_ID	sessionNo = 0;
 			WCHAR		ID[20];
 			WCHAR		nickName[20];
 			short		curSectorX = -1;
@@ -83,30 +84,33 @@ namespace procademy
 		/// <returns></returns>
 		bool			CheckHeart();
 		bool			MonitoringProc();
-		bool			CompleteMessage(u_int64 sessionNo, CNetPacket* packet);
-		bool			LoginProc(u_int64 sessionNo, CNetPacket* packet);
-		bool			MoveSectorProc(u_int64 sessionNo, CNetPacket* packet);
-		bool			SendMessageProc(u_int64 sessionNo, CNetPacket* packet);
+		bool			CompleteMessage(SESSION_ID sessionNo, CNetPacket* packet);
+		bool			LoginProc(SESSION_ID sessionNo, CNetPacket* packet);
+		bool			MoveSectorProc(SESSION_ID sessionNo, CNetPacket* packet);
+		bool			SendMessageProc(SESSION_ID sessionNo, CNetPacket* packet);
+		bool			HeartUpdateProc(SESSION_ID sessionNo);
+		bool			CheckTimeOutProc();
+		void			BeginThreads();
 
 		/// <summary>
 		/// sessionNo°¡ playerÀÇ key °ª
 		/// </summary>
 		/// <param name="sessionNo"></param>
 		/// <returns></returns>
-		st_Player*		FindPlayer(u_int64 sessionNo);
-		void			InsertPlayer(u_int64 sessionNo, st_Player* player);
-		void			DeletePlayer(u_int64 sessionNo);
+		st_Player*		FindPlayer(SESSION_ID sessionNo);
+		void			InsertPlayer(SESSION_ID sessionNo, st_Player* player);
+		void			DeletePlayer(SESSION_ID sessionNo);
 		void			Sector_AddPlayer(WORD x, WORD y, st_Player* player);
 		void			Sector_RemovePlayer(WORD x, WORD y, st_Player* player);
 		void			GetSectorAround(WORD x, WORD y, st_Sector_Around* output);
-		void			SendMessageSectorAround(CNetPacket* packet, WORD size, st_Sector_Around* input);
+		void			SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input);
 
 	/// <summary>
 	/// Make Packet Funcs
 	/// </summary>
-		CNetPacket* MakeCSResLogin(BYTE status, INT64 accountNo);
-		CNetPacket* MakeCSResSectorMove(INT64 accountNo, WORD sectorX, WORD sectorY);
-		CNetPacket* MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD meesageLen, WCHAR* message);
+		CNetPacket* MakeCSResLogin(BYTE status, SESSION_ID accountNo);
+		CNetPacket* MakeCSResSectorMove(SESSION_ID accountNo, WORD sectorX, WORD sectorY);
+		CNetPacket* MakeCSResMessage(SESSION_ID accountNo, WCHAR* ID, WCHAR* nickname, WORD meesageLen, WCHAR* message);
 
 	public:
 		enum {
