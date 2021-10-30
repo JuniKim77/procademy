@@ -11,8 +11,8 @@ namespace procademy
 		enum en_MSG_TYPE
 		{
 			MSG_TYPE_RECV,
-			MSG_TYPE_CONNECT,
-			MSG_TYPE_DISCONNECT,
+			MSG_TYPE_JOIN,
+			MSG_TYPE_LEAVE,
 			MSG_TYPE_TIMEOUT
 		};
 
@@ -85,7 +85,9 @@ namespace procademy
 		bool			CheckHeart();
 		bool			MonitoringProc();
 		bool			CompleteMessage(SESSION_ID sessionNo, CNetPacket* packet);
+		bool			JoinProc(SESSION_ID sessionNo);
 		bool			LoginProc(SESSION_ID sessionNo, CNetPacket* packet);
+		bool			LeaveProc(SESSION_ID sessionNo);
 		bool			MoveSectorProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool			SendMessageProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool			HeartUpdateProc(SESSION_ID sessionNo);

@@ -64,17 +64,21 @@ bool procademy::CChatServerSingle::GQCSProc()
 	case MSG_TYPE_RECV:
         CompleteMessage(completionKey->sessionNo, completionKey->packet);
 		break;
-	case MSG_TYPE_CONNECT:
+	case MSG_TYPE_JOIN:
+        JoinProc(completionKey->sessionNo);
 		break;
-	case MSG_TYPE_DISCONNECT:
+	case MSG_TYPE_LEAVE:
+        LeaveProc(completionKey->sessionNo);
 		break;
 	case MSG_TYPE_TIMEOUT:
         CheckTimeOutProc();
 		break;
 	default:
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message\n");
 		break;
 	}
 
+    mMsgPool.Free(completionKey);
 
     return true;
 }
@@ -155,6 +159,26 @@ bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPac
     return false;
 }
 
+bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
+{
+    st_Player* player = FindPlayer(sessionNo);
+
+    if (player != nullptr)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Player[%llu]\n", sessionNo);
+
+        return false;
+    }
+
+    player = mPlayerPool.Alloc();
+    player->sessionNo = sessionNo;
+    player->lastRecvTime = GetTickCount64();
+
+    InsertPlayer(sessionNo, player);
+
+    return true;
+}
+
 bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* packet)
 {
 	INT64	    AccountNo;
@@ -197,14 +221,42 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     return true;
 }
 
+bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
+{
+    st_Player* player = FindPlayer(sessionNo);
+
+    if (player == nullptr)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
+            sessionNo);
+
+        return false;
+    }
+
+    if (player->curSectorX != -1 && player->curSectorY != -1)
+    {
+        Sector_RemovePlayer(player->curSectorX, player->curSectorY, player);
+    }
+
+    DeletePlayer(sessionNo);
+
+    player->accountNo = 0;
+    player->lastRecvTime = 0;
+    player->curSectorX = -1;
+    player->curSectorY = -1;
+    player->bLogin = false;
+    
+    mPlayerPool.Free(player);
+
+    return false;
+}
+
 bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPacket* packet)
 {
 	INT64	AccountNo;
 	WORD	SectorX;
 	WORD	SectorY;
     st_Player* player = FindPlayer(sessionNo);
-
-    *packet >> AccountNo >> SectorX >> SectorY;
 
     if (player == nullptr)
     {
@@ -213,6 +265,8 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
         return false;
     }
+
+    *packet >> AccountNo >> SectorX >> SectorY;
 
     if (player->accountNo != AccountNo)
     {
@@ -255,8 +309,6 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
     st_Player*          player = FindPlayer(sessionNo);
     st_Sector_Around    sectorAround;
 
-    *packet >> AccountNo >> messageLen;
-
     if (player == nullptr)
     {
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found\n",
@@ -264,6 +316,8 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
         return false;
     }
+
+    *packet >> AccountNo >> messageLen;
 
     if (player->accountNo != AccountNo)
     {
@@ -457,6 +511,7 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(SESSION_ID
 
 procademy::CChatServerSingle::CChatServerSingle()
 {
+    Initialize();
 }
 
 procademy::CChatServerSingle::~CChatServerSingle()
@@ -474,7 +529,7 @@ void procademy::CChatServerSingle::OnClientJoin(SESSION_ID SessionID)
 
     msg = mMsgPool.Alloc();
 
-    msg->type = MSG_TYPE_CONNECT;
+    msg->type = MSG_TYPE_JOIN;
     msg->sessionNo = SessionID;
     msg->packet = nullptr;
 
@@ -487,7 +542,7 @@ void procademy::CChatServerSingle::OnClientLeave(SESSION_ID SessionID)
 
     msg = mMsgPool.Alloc();
 
-    msg->type = MSG_TYPE_DISCONNECT;
+    msg->type = MSG_TYPE_LEAVE;
     msg->sessionNo = SessionID;
     msg->packet = nullptr;
 
