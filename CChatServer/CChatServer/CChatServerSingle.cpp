@@ -2,18 +2,25 @@
 #include "CNetPacket.h"
 #include "CommonProtocol.h"
 #include "CLogger.h"
+#include "TextParser.h"
 
 unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
 {
     CChatServerSingle* chatServer = (CChatServerSingle*)arg;
 
-    while (1)
+    while (!chatServer->mExit)
     {
-        if (!chatServer->GQCSProc())
+        if (!chatServer->mBegin)
         {
-            break;
+            WaitForSingleObject(chatServer->mBeginEvent, INFINITE);
+        }
+        else
+        {
+            chatServer->GQCSProc();
         }
     }
+
+    wprintf(L"Update Thread End\n");
 
     return 0;
 }
@@ -24,6 +31,8 @@ unsigned int __stdcall procademy::CChatServerSingle::MonitorFunc(LPVOID arg)
 
     chatServer->MonitoringProc();
 
+    wprintf(L"Monitoring Thread End\n");
+
     return 0;
 }
 
@@ -31,63 +40,86 @@ unsigned int __stdcall procademy::CChatServerSingle::HeartbeatFunc(LPVOID arg)
 {
     CChatServerSingle* chatServer = (CChatServerSingle*)arg;
 
-    chatServer->CheckHeart();
+    while (!chatServer->mExit)
+    {
+        if (!chatServer->mBegin)
+        {
+            WaitForSingleObject(chatServer->mBeginEvent, INFINITE);
+        }
+        else
+        {
+            chatServer->CheckHeart();
+        }
+    }
+
+    wprintf(L"HeartBeat Thread End\n");
 
     return 0;
 }
 
-void procademy::CChatServerSingle::Initialize()
+void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
 {
+    mMsgQ.Enqueue(msg);
+    PostQueuedCompletionStatus(mIOCP, 1, (ULONG_PTR)msg, 0);
 }
 
-void procademy::CChatServerSingle::EnqueueMessage(st_MSG* packet)
+void procademy::CChatServerSingle::GQCSProc()
 {
-    PostQueuedCompletionStatus(mIOCP, 0, (ULONG_PTR)packet, 0);
-}
-
-bool procademy::CChatServerSingle::GQCSProc()
-{
-    DWORD transferredSize = 0;
-    st_MSG* completionKey = nullptr;
-    WSAOVERLAPPED* pOverlapped = nullptr;
-    
-    BOOL gqcsRet = GetQueuedCompletionStatus(mIOCP, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
-
-    // ECHO Server End
-    if (completionKey == nullptr)
+    while (mBegin)
     {
-        return false;
+        DWORD transferredSize = 0;
+        st_MSG* completionKey = nullptr;
+        WSAOVERLAPPED* pOverlapped = nullptr;
+
+        BOOL gqcsRet = GetQueuedCompletionStatus(mIOCP, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
+
+        // ECHO Server End
+        if (transferredSize == 0)
+        {
+            return;
+        }
+
+        while (!mMsgQ.IsEmpty())
+        {
+            st_MSG* msg = nullptr;
+            if (!mMsgQ.Dequeue(&msg))
+            {
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Message Q Error\n");
+            }
+            if (msg == nullptr)
+            {
+                int teat = 0;
+            }
+
+            switch (msg->type)
+            {
+            case MSG_TYPE_RECV:
+                CompleteMessage(msg->sessionNo, msg->packet);
+                break;
+            case MSG_TYPE_JOIN:
+                JoinProc(msg->sessionNo);
+                break;
+            case MSG_TYPE_LEAVE:
+                LeaveProc(msg->sessionNo);
+                break;
+            case MSG_TYPE_TIMEOUT:
+                CheckTimeOutProc();
+                break;
+            default:
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message\n");
+                break;
+            }
+
+            mMsgPool.Free(msg);
+        }
     }
-
-    switch (completionKey->type)
-    {
-	case MSG_TYPE_RECV:
-        CompleteMessage(completionKey->sessionNo, completionKey->packet);
-		break;
-	case MSG_TYPE_JOIN:
-        JoinProc(completionKey->sessionNo);
-		break;
-	case MSG_TYPE_LEAVE:
-        LeaveProc(completionKey->sessionNo);
-		break;
-	case MSG_TYPE_TIMEOUT:
-        CheckTimeOutProc();
-		break;
-	default:
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message\n");
-		break;
-	}
-
-    mMsgPool.Free(completionKey);
-
-    return true;
 }
 
 bool procademy::CChatServerSingle::CheckHeart()
 {
     HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
 
-    while (1)
+    while (mBegin)
     {
         DWORD retval = WaitForSingleObject(dummyevent, 1000);
 
@@ -113,14 +145,18 @@ bool procademy::CChatServerSingle::CheckHeart()
 bool procademy::CChatServerSingle::MonitoringProc()
 {
     HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
+    WCHAR str[1024];
 
-    while (1)
+    while (!mExit)
     {
         DWORD retval = WaitForSingleObject(dummyevent, 1000);
 
         if (retval == WAIT_TIMEOUT)
         {
             // Ãâ·Â
+            MakeMonitorStr(str);
+            
+            wprintf(str);
         }
     }
 
@@ -131,7 +167,7 @@ bool procademy::CChatServerSingle::MonitoringProc()
 
 bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPacket* packet)
 {
-    BYTE type;
+    WORD type;
 
     *packet >> type;
 
@@ -212,6 +248,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     memcpy_s(player->nickName, sizeof(player->nickName), Nickname, sizeof(Nickname));
     player->bLogin = true;
     player->lastRecvTime = GetTickCount64();
+    mLoginCount++;
 
     response = MakeCSResLogin(1, player->accountNo);
 
@@ -245,6 +282,7 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
     player->curSectorX = -1;
     player->curSectorY = -1;
     player->bLogin = false;
+    mLoginCount--;
     
     mPlayerPool.Free(player);
 
@@ -364,12 +402,14 @@ bool procademy::CChatServerSingle::CheckTimeOutProc()
     for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end();)
     {
         if (iter->second == nullptr)
+        {
             ++iter;
             continue;
+        }
 
         SESSION_ID sessionNo = iter->second->sessionNo;
 
-        if (curTime - iter->second->lastRecvTime > 40000) // 40ms
+        if (curTime - iter->second->lastRecvTime > mTimeOut) // 40ms
         {
             Sector_RemovePlayer(iter->second->curSectorX, iter->second->curSectorY, iter->second);
             
@@ -393,7 +433,7 @@ void procademy::CChatServerSingle::BeginThreads()
     mHeartbeatThread = (HANDLE)_beginthreadex(nullptr, 0, HeartbeatFunc, this, 0, nullptr);
 }
 
-procademy::CChatServerSingle::st_Player* procademy::CChatServerSingle::FindPlayer(SESSION_ID sessionNo)
+procademy::st_Player* procademy::CChatServerSingle::FindPlayer(SESSION_ID sessionNo)
 {
     std::unordered_map<u_int64, st_Player*>::iterator iter = mPlayerMap.find(sessionNo);
 
@@ -445,8 +485,8 @@ void procademy::CChatServerSingle::GetSectorAround(WORD x, WORD y, st_Sector_Aro
     {
         for (WORD j = beginX; j < x + 2; ++j)
         {
-            output->around[output->count].y = j;
-            output->around[output->count].x = i;
+            output->around[output->count].y = i;
+            output->around[output->count].x = j;
             output->count++;
         }
     }
@@ -466,6 +506,30 @@ void procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, s
             SendPacket((*iter)->sessionNo, packet);
         }
     }
+}
+
+void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s)
+{
+    LONGLONG idx = 0;
+    int len;
+
+    idx += swprintf_s(s + idx, 1024 - idx, L"\n========================================\n");
+    //idx += swprintf_s(s + idx, 1024 - idx, L"");
+    idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%lld\n", L"Session Num : ", mPlayerMap.size());
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
+    idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %u\n", L"Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %d\n", L"Update Msg Pool : ", mMsgPool.GetCapacity(), mMsgPool.GetSize());
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Update Msg Queue : ", mMsgQ.GetSize());
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %d\n", L"Player Pool : ", mPlayerPool.GetCapacity(), mPlayerPool.GetSize());
+    idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept Total : ", mMonitor.acceptTotal);
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept TPS : ", mMonitor.prevAcceptTPS);
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Update TPS : ", mMonitor.prevAcceptTPS);
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
+    idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
 }
 
 procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status, SESSION_ID accountNo)
@@ -501,7 +565,7 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(SESSION_ID
     packet->PutData(ID, 20);
     packet->PutData(nickname, 20);
     *packet << meesageLen;
-    packet->PutData(message, meesageLen);
+    packet->PutData(message, meesageLen / 2);
 
     packet->SetHeader(false);
     packet->Encode();
@@ -511,7 +575,8 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(SESSION_ID
 
 procademy::CChatServerSingle::CChatServerSingle()
 {
-    Initialize();
+    LoadInitFile(L"ChatServer.cnf");
+    BeginThreads();
 }
 
 procademy::CChatServerSingle::~CChatServerSingle()
@@ -567,21 +632,66 @@ void procademy::CChatServerSingle::OnError(int errorcode, const WCHAR* log)
 {
 }
 
-bool procademy::CChatServerSingle::BeginServer(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient)
+bool procademy::CChatServerSingle::BeginServer()
 {
-    if (Start(port, ip, createThread, runThread, nagle, maxClient) == false)
+    HANDLE handles[3] = { mUpdateThread, mMonitoringThread, mHeartbeatThread };
+
+    if (Start() == false)
     {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error\n");
+
         return false;
     }
 
-    BeginThreads();
+    ResetEvent(mBeginEvent);
 
     WaitForThreadsFin();
+
+    PostQueuedCompletionStatus(mIOCP, 0, 0, 0);
+
+    DWORD ret = WaitForMultipleObjects(3, handles, true, INFINITE);
+
+    switch (ret)
+    {
+    case WAIT_FAILED:
+        wprintf_s(L"ChatServer Thread Handle Error\n");
+        break;
+    case WAIT_TIMEOUT:
+        wprintf_s(L"ChatServer Thread Timeout Error\n");
+        break;
+    case WAIT_OBJECT_0:
+        wprintf_s(L"ChatServer None Error\n");
+        break;
+    default:
+        break;
+    }
 
     return true;
 }
 
-bool procademy::CChatServerSingle::BeginServer(u_short port, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient)
+
+void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
 {
-    return BeginServer(port, INADDR_ANY, createThread, runThread, nagle, maxClient);
+    TextParser  tp;
+    int         num;
+    WCHAR       buffer[MAX_PARSER_LENGTH];
+    BYTE        code;
+    BYTE        key;
+
+    tp.LoadFile(fileName);
+
+    tp.GetValue(L"PACKET_CODE", &num);
+    code = (BYTE)num;
+    CNetPacket::SetCode(code);
+
+    tp.GetValue(L"PACKET_KEY", &num);
+    key = (BYTE)num;
+    CNetPacket::SetPacketKey(key);
+
+    tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
+
+    tp.GetValue(L"IOCP_ACTIVE_THREAD", &num);
+
+    mIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, (DWORD)num);
 }
+

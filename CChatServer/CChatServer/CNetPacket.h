@@ -16,7 +16,7 @@ namespace procademy
 {
 	class CNetPacket
 	{
-		friend class CLanServerNoLock;
+		friend class CChatServerSingle;
 		template<typename DATA>
 		friend class TC_LFObjectPool;
 		template<typename DATA>
@@ -28,6 +28,7 @@ namespace procademy
 		----------------------------------------------------------------*/
 		enum en_PACKET
 		{
+			HEADER_MAX_SIZE = 5,
 			eBUFFER_DEFAULT = 3000		// 패킷의 기본 버퍼 사이즈.
 		};
 
@@ -70,7 +71,7 @@ namespace procademy
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mPacketSize + mHeaderSize; }
-		USHORT	GetPacketSize() { return (USHORT)*mZero; }
+		USHORT	GetPacketSize() { return mPacketSize; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 포인터 얻기.
@@ -150,16 +151,18 @@ namespace procademy
 		CNetPacket& operator << (const char* s);
 		CNetPacket& operator << (const wchar_t* s);
 
-		static CNetPacket* AllocAddRef();
+		static CNetPacket*	AllocAddRef();
 		void				AddRef();
 		void				SubRef();
-		void				ResetCount();
 		void				SetHeader(bool isLengthOnly);
 		void				Encode();
 		void				Decode();
 
 		static int			GetPoolCapacity();
 		static DWORD		GetPoolSize();
+		static void			SetCode(BYTE code) { sCode = code; }
+		static void			SetPacketKey(BYTE key) { sPacketKey = key; }
+
 
 	protected:
 		/// <summary>
@@ -172,11 +175,7 @@ namespace procademy
 		CNetPacket();
 		CNetPacket(int iBufferSize);
 
-	private:
-		enum {
-			HEADER_MAX_SIZE = 5,
-			FIXED_KEY = 0xa9
-		};
+	public:
 #pragma pack(push, 1)
 		struct st_Header
 		{
@@ -186,28 +185,19 @@ namespace procademy
 			BYTE	checkSum;
 		};
 #pragma pack(pop)
+	private:
 
-		struct st_RefCount
-		{
-			union
-			{
-				LONG counter = 0;
-				struct
-				{
-					SHORT count;
-					SHORT isFreed;
-				} refStaus;
-			};
-		};
-
-		st_RefCount	mRefCount;
-		char* mBuffer;
+		SHORT		mRefCount;
+		char*		mBuffer;
 		int			mCapacity;
 		int			mPacketSize;
 		int			mHeaderSize;
-		char* mFront;
-		char* mRear;
-		char* mZero;
+		char*		mFront;
+		char*		mRear;
+		char*		mZero;
+		static BYTE	sCode;
+		static BYTE	sPacketKey;
+
 #ifdef MEMORY_POOL_VER
 		alignas(64) static TC_LFObjectPool<CNetPacket> sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)

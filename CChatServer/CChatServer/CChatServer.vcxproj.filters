@@ -51,6 +51,9 @@
     <ClCompile Include="CNetPacket.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="TextParser.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CNetServerNoLock.h">
@@ -97,6 +100,12 @@
     </ClInclude>
     <ClInclude Include="CommonProtocol.h">
       <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="TextParser.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ChatServerDTO.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

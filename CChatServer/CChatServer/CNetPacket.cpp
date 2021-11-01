@@ -3,9 +3,13 @@
 #include <string.h>
 #include <Windows.h>
 #include "CProfiler.h"
+#include "CLogger.h"
 
 namespace procademy
 {
+	BYTE	CNetPacket::sCode = 0;
+	BYTE	CNetPacket::sPacketKey = 0;
+
 	//#define DEBUG
 #ifdef MEMORY_POOL_VER
 	alignas(64) TC_LFObjectPool<CNetPacket> CNetPacket::sPacketPool;
@@ -50,6 +54,7 @@ namespace procademy
 		mPacketSize = 0;
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mFront;
+		mZero = mBuffer;
 	}
 
 	int CNetPacket::MoveFront(int iSize)
@@ -344,7 +349,7 @@ namespace procademy
 
 	int CNetPacket::GetData(char* chpDest, int iLength)
 	{
-		int size = iLength >= mPacketSize ? iLength : mPacketSize;
+		int size = iLength >= mPacketSize ? mPacketSize : iLength;
 
 		memcpy(chpDest, mFront, size);
 		MoveFront(size);
@@ -406,25 +411,21 @@ namespace procademy
 		ret = sPacketPool.Alloc();
 #endif // NEW_DELETE_VER
 
-		ret->ResetCount();
+		ret->mRefCount = 1;
+
 		return ret;
 	}
 
 	void CNetPacket::AddRef()
 	{
-		InterlockedIncrement((LONG*)&mRefCount.counter);
+		InterlockedIncrement((LONG*)&mRefCount);
 	}
 
 	void CNetPacket::SubRef()
 	{
-		st_RefCount stdRef;
+		int ret = InterlockedDecrement((LONG*)&mRefCount);
 
-		InterlockedDecrement((LONG*)&mRefCount.counter);
-
-		stdRef.counter = 0;
-		stdRef.refStaus.isFreed = 1;
-
-		if (InterlockedCompareExchange(&mRefCount.counter, stdRef.counter, 0) == 0)
+		if (ret == 0)
 		{
 			Clear();
 			CProfiler::Begin(L"FREE");
@@ -439,12 +440,6 @@ namespace procademy
 		}
 	}
 
-	void CNetPacket::ResetCount()
-	{
-		mRefCount.refStaus.count = 1;
-		mRefCount.refStaus.isFreed = 0;
-	}
-
 	void CNetPacket::SetHeader(bool isLengthOnly)
 	{
 		if (isLengthOnly)
@@ -457,7 +452,7 @@ namespace procademy
 		{
 			st_Header header;
 
-			header.code = 0x55;
+			header.code = sCode;
 			header.len = (USHORT)mPacketSize;
 			//header.randKey = 0x31;
 			header.randKey = (BYTE)rand();
@@ -481,17 +476,17 @@ namespace procademy
 
 	void CNetPacket::Encode()
 	{
-		char* pFront = mFront;
+		char* pFront = mFront - 1;
 		BYTE P = 0;
 		BYTE E = 0;
 		BYTE D;
 		st_Header header = *((st_Header*)mZero);
 
-		for (BYTE i = 1; i <= (BYTE)mPacketSize; ++i)
+		for (BYTE i = 1; i <= (BYTE)(mPacketSize + 1); ++i)
 		{
 			D = (BYTE)*pFront;
 			P = D ^ (P + header.randKey + i);
-			E = P ^ (E + FIXED_KEY + i);
+			E = P ^ (E + sPacketKey + i);
 
 			*pFront = (char)E;
 
@@ -501,7 +496,7 @@ namespace procademy
 
 	void CNetPacket::Decode()
 	{
-		char* pFront = mFront;
+		char* pFront = mFront - 1;
 		BYTE curP;
 		BYTE prevP = 0;
 		BYTE curE;
@@ -509,10 +504,10 @@ namespace procademy
 		BYTE D;
 		st_Header header = *((st_Header*)mZero);
 
-		for (BYTE i = 1; i <= (BYTE)mPacketSize; ++i)
+		for (BYTE i = 1; i <= (BYTE)(mPacketSize + 1); ++i)
 		{
 			curE = (BYTE)*pFront;
-			curP = curE ^ (prevE + FIXED_KEY + i);
+			curP = curE ^ (prevE + sPacketKey + i);
 			D = curP ^ (prevP + header.randKey + i);
 
 			*pFront = (char)D;
@@ -520,6 +515,22 @@ namespace procademy
 			prevP = curP;
 
 			pFront++;
+		}
+
+		BYTE sum = 0;
+		pFront = mFront;
+
+		for (int i = 0; i < mPacketSize; ++i)
+		{
+			sum += (BYTE)*pFront;
+			pFront++;
+		}
+
+		header = *((st_Header*)mZero);
+
+		if (sum != header.checkSum)
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CheckSum Not Matched\n");
 		}
 	}
 

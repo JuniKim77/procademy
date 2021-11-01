@@ -3,6 +3,8 @@
 #include "CNetPacket.h"
 #include "CCrashDump.h"
 #include "CProfiler.h"
+#include "TextParser.h"
+#include <conio.h>
 
 struct packetDebug
 {
@@ -109,7 +111,7 @@ namespace procademy
 		SOCKADDR_IN addr;
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(mPort);
-		addr.sin_addr.S_un.S_addr = htonl(mBindIP);
+		InetPton(AF_INET, mBindIP, &addr.sin_addr);
 
 		int bindRet = bind(mListenSocket, (SOCKADDR*)&addr, sizeof(addr));
 
@@ -134,12 +136,12 @@ namespace procademy
 		SYSTEM_INFO si;
 		GetSystemInfo(&si);
 
-		if (mMaxRunThreadSize > si.dwNumberOfProcessors)
+		if (mActiveThreadNum > si.dwNumberOfProcessors)
 		{
 			CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Setting: Max Running thread is larger than the number of processors");
 		}
 
-		mHcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, mMaxRunThreadSize);
+		mHcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, mActiveThreadNum);
 
 		if (mHcp == NULL)
 		{
@@ -155,15 +157,17 @@ namespace procademy
 	{
 		BYTE i = 0;
 
+		mBeginEvent = CreateEvent(nullptr, true, 0, nullptr);
+
 		mhThreads[i++] = (HANDLE)_beginthreadex(nullptr, 0, AcceptThread, this, 0, nullptr);
 		mNumThreads++;
 
-		for (; i <= mWorkerThreadSize; ++i)
+		for (; i <= mWorkerThreadNum; ++i)
 		{
 			mhThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, this, 0, nullptr);
 		}
 
-		mNumThreads += mWorkerThreadSize;
+		mNumThreads += mWorkerThreadNum;
 
 		mhThreads[i++] = (HANDLE)_beginthreadex(nullptr, 0, MonitoringThread, this, 0, nullptr);
 		mNumThreads++;
@@ -175,11 +179,15 @@ namespace procademy
 	{
 		CNetServerNoLock* server = (CNetServerNoLock*)arg;
 
-		while (1)
+		while (!server->mExit)
 		{
-			if (server->OnCompleteMessage() == false)
+			if (!server->mBegin)
 			{
-				break;
+				WaitForSingleObject(server->mBeginEvent, INFINITE);
+			}
+			else
+			{
+				server->CompleteMessage();
 			}
 		}
 
@@ -190,11 +198,15 @@ namespace procademy
 	{
 		CNetServerNoLock* server = (CNetServerNoLock*)arg;
 
-		while (1)
+		while (!server->mExit)
 		{
-			if (server->AcceptProc() == false)
+			if (!server->mBegin)
 			{
-				break;
+				WaitForSingleObject(server->mBeginEvent, INFINITE);
+			}
+			else
+			{
+				server->AcceptProc();
 			}
 		}
 
@@ -397,7 +409,7 @@ namespace procademy
 
 		u_int64 id = session->sessionID;
 		session->sessionID = 0;
-		InterlockedIncrement((LONG*)&mMonitor.disconnectCount);
+		InterlockedIncrement((LONG*)&disconnectCount);
 		session->bIsAlive = false;
 
 		OnClientLeave(id);
@@ -426,7 +438,7 @@ namespace procademy
 		CProfiler::End(L"RELEASEPROC");
 	}
 
-	bool CNetServerNoLock::AcceptProc()
+	void CNetServerNoLock::AcceptProc()
 	{
 		SOCKADDR_IN clientAddr;
 		int addrLen = sizeof(clientAddr);
@@ -441,12 +453,12 @@ namespace procademy
 			{
 				CLogger::_Log(dfLOG_LEVEL_ERROR, L"ListenSocket [Error: %d]\n", err);
 
-				return false;
+				return;
 			}
 
 			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Accept [Error: %d]\n", err);
 
-			return false;
+			return;
 		}
 
 		if (OnConnectionRequest(clientAddr.sin_addr.S_un.S_addr, clientAddr.sin_port) == false)
@@ -460,7 +472,7 @@ namespace procademy
 
 			closesocket(client);
 
-			return false;
+			return;
 		}
 
 		if (mbZeroCopy)
@@ -471,7 +483,7 @@ namespace procademy
 				CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Zero Copy [Error: %d]\n", WSAGetLastError());
 				closesocket(client);
 
-				return false;
+				return;
 			}
 		}
 
@@ -484,7 +496,7 @@ namespace procademy
 				CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Nagle [Error: %d]\n", WSAGetLastError());
 				closesocket(client);
 
-				return false;
+				return;
 			}
 		}
 
@@ -492,7 +504,8 @@ namespace procademy
 
 		if (session == nullptr)
 		{
-			return false;
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Create Session Fail\n");
+			return;
 		}
 
 		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Socket Accept [IP: %s] [Port: %u]\n",
@@ -507,8 +520,6 @@ namespace procademy
 		session->bIsAlive = true;
 		OnClientJoin(session->sessionID);
 		RecvPost(session, true);
-
-		return true;
 	}
 
 	Session* CNetServerNoLock::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
@@ -536,61 +547,64 @@ namespace procademy
 			return nullptr;
 		}
 
-		InterlockedIncrement((LONG*)&mMonitor.acceptCount);
+		//InterlockedIncrement((LONG*)&mMonitor.acceptCount);
+		acceptCount++;
 
 		return session;
 	}
 
-	bool CNetServerNoLock::OnCompleteMessage()
+	void CNetServerNoLock::CompleteMessage()
 	{
-		DWORD transferredSize = 0;
-		Session* completionKey = nullptr;
-		WSAOVERLAPPED* pOverlapped = nullptr;
-		Session* session = nullptr;
-
-		BOOL gqcsRet = GetQueuedCompletionStatus(mHcp, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
-
-		// ECHO Server End
-		if (transferredSize == 0 && (PULONG_PTR)completionKey == nullptr && pOverlapped == nullptr)
+		while (1)
 		{
-			PostQueuedCompletionStatus(mHcp, 0, 0, 0);
+			DWORD transferredSize = 0;
+			Session* completionKey = nullptr;
+			WSAOVERLAPPED* pOverlapped = nullptr;
+			Session* session = nullptr;
 
-			return false;
-		}
+			BOOL gqcsRet = GetQueuedCompletionStatus(mHcp, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
 
-		if (pOverlapped == nullptr) // I/O Fail
-		{
-			OnError(10000, L"IOCP Error");
-
-			return false;
-		}
-
-		session = (Session*)completionKey;
-
-		if (transferredSize != 0) // Normal close
-		{
-			if (pOverlapped == &session->recvOverlapped) // Recv
+			// ECHO Server End
+			if (transferredSize == 0 && (PULONG_PTR)completionKey == nullptr && pOverlapped == nullptr)
 			{
-				//CProfiler::Begin(L"CompleteRecv");
-				CompleteRecv(session, transferredSize);
-				//CProfiler::End(L"CompleteRecv");
+				PostQueuedCompletionStatus(mHcp, 0, 0, 0);
+
+				return;
 			}
-			else // Send
+
+			if (pOverlapped == nullptr) // I/O Fail
 			{
-				//CProfiler::Begin(L"CompleteSend");
-				CompleteSend(session, transferredSize);
-				//CProfiler::End(L"CompleteSend");
+				OnError(10000, L"IOCP Error");
+
+				return;
 			}
+
+			session = (Session*)completionKey;
+
+			if (transferredSize != 0) // Normal close
+			{
+				if (pOverlapped == &session->recvOverlapped) // Recv
+				{
+					//CProfiler::Begin(L"CompleteRecv");
+					CompleteRecv(session, transferredSize);
+					//CProfiler::End(L"CompleteRecv");
+				}
+				else // Send
+				{
+					//CProfiler::Begin(L"CompleteSend");
+					CompleteSend(session, transferredSize);
+					//CProfiler::End(L"CompleteSend");
+				}
+			}
+
+			DecrementIOProc(session, 10000);
 		}
-
-		DecrementIOProc(session, 10000);
-
-		return true;
 	}
 
 	void CNetServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 	{
 		session->recvQ.MoveRear(transferredSize);
+		CNetPacket::st_Header header;
 		DWORD count = 0;
 
 		while (count < transferredSize)
@@ -599,24 +613,29 @@ namespace procademy
 			{
 				return;
 			}
+
+			if (session->recvQ.GetUseSize() <= CNetPacket::HEADER_MAX_SIZE)
+				break;
+
+			session->recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
+
+			if (session->recvQ.GetUseSize() < (CNetPacket::HEADER_MAX_SIZE + header.len))
+				break;
+
 			CProfiler::Begin(L"ALLOC");
 			CNetPacket* packet = CNetPacket::AllocAddRef();
 			CProfiler::End(L"ALLOC");
-			InterlockedIncrement(&mMonitor.recvTPS);
-			InterlockedIncrement(&mMonitor.sendTPS);
 
-			if (session->recvQ.GetUseSize() <= sizeof(SHORT))
-				break;
-			session->recvQ.Peek((char*)packet->GetZeroPtr(), sizeof(SHORT));
+			memcpy_s(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE, (char*)&header, CNetPacket::HEADER_MAX_SIZE);
 
-			if (session->recvQ.GetUseSize() < (int)(sizeof(SHORT) + packet->GetPacketSize()))
-				break;
+			InterlockedIncrement(&recvTPS);
 
-			session->recvQ.MoveFront(sizeof(SHORT));
+			session->recvQ.MoveFront(CNetPacket::HEADER_MAX_SIZE);
 
-			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)packet->GetPacketSize());
+			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)header.len);
 
 			packet->MoveRear(ret);
+			packet->Decode();
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
 			count += (ret + sizeof(SHORT));
@@ -629,7 +648,7 @@ namespace procademy
 	void CNetServerNoLock::CompleteSend(Session* session, DWORD transferredSize)
 	{
 		CNetPacket* packet;
-
+		InterlockedAdd((LONG*)&sendTPS, session->numSendingPacket);
 		for (int i = 0; i < session->numSendingPacket; ++i)
 		{
 			session->sendQ.Dequeue(&packet);
@@ -687,17 +706,19 @@ namespace procademy
 	{
 		HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
 
-		while (!mbIsQuit)
+		while (!mExit)
 		{
 			DWORD retval = WaitForSingleObject(dummyEvent, 1000);
 
-			if (retval == WAIT_TIMEOUT)
+			if (retval == WAIT_TIMEOUT && mbMonitoring == true)
 			{
-				mMonitor.prevRecvTPS = mMonitor.recvTPS;
-				mMonitor.prevSendTPS = mMonitor.sendTPS;
+				mMonitor.prevRecvTPS = recvTPS;
+				mMonitor.prevSendTPS = sendTPS;
+				mMonitor.acceptTotal = acceptCount;
+				mMonitor.prevAcceptTPS = acceptCount - mMonitor.prevAcceptTPS;
 
-				mMonitor.recvTPS = 0;
-				mMonitor.sendTPS = 0;
+				recvTPS = 0;
+				sendTPS = 0;
 			}
 		}
 
@@ -709,10 +730,25 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Exit\n");
 
 		PostQueuedCompletionStatus(mHcp, 0, 0, 0);
-
-		mbIsQuit = true;
+		mBegin = false;
+		mExit = true;
 
 		closesocket(mListenSocket);
+	}
+
+	CNetServerNoLock::CNetServerNoLock()
+	{
+		LoadInitFile(L"ChatServer.cnf");
+
+		mhThreads = new HANDLE[(long long)mWorkerThreadNum + 2];
+		mSessionArray = (Session*)_aligned_malloc(sizeof(Session) * mMaxClient, 64);
+		for (int i = 0; i < mMaxClient; ++i)
+		{
+			new (&mSessionArray[i]) (Session);
+		}
+
+		BeginThreads();
+		CLogger::SetDirectory(L"_log");
 	}
 
 	CNetServerNoLock::~CNetServerNoLock()
@@ -729,52 +765,30 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Lib End\n");
 	}
 
-	bool CNetServerNoLock::Start(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient)
+	bool CNetServerNoLock::Start()
 	{
-		CLogger::SetDirectory(L"_log");
-
-		if (mbIsRunning == true)
+		if (mBegin == true)
 		{
 			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Network is already running\n");
 			return false;
 		}
-
-		mPort = port;
-		mBindIP = ip;
-		mWorkerThreadSize = createThread;
-		mMaxRunThreadSize = runThread;
-		mMaxClient = maxClient;
-		mbNagle = nagle;
-
-		mhThreads = new HANDLE[(long long)createThread + 2];
-		mSessionArray = (Session*)_aligned_malloc(sizeof(Session) * maxClient, 64);
-		for (int i = 0; i < maxClient; ++i)
-		{
-			new (&mSessionArray[i]) (Session);
-		}
-		//mSessionArray = new Session[maxClient];
 
 		if (!CreateListenSocket())
 		{
 			return false;
 		}
 
-		BeginThreads();
-
-		mbIsRunning = true;
+		mBegin = true;
+		SetEvent(mBeginEvent);
 
 		InitializeEmptyIndex();
 
 		return true;
 	}
 
-	bool CNetServerNoLock::Start(u_short port, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient)
-	{
-		return Start(port, INADDR_ANY, createThread, runThread, nagle, maxClient);
-	}
-
 	void CNetServerNoLock::Stop()
 	{
+		mBegin = false;
 	}
 
 	int CNetServerNoLock::GetSessionCount()
@@ -784,6 +798,71 @@ namespace procademy
 
 	void CNetServerNoLock::WaitForThreadsFin()
 	{
+		while (1)
+		{
+			char ch = _getch();
+
+			switch (ch)
+			{
+			case 'g':
+				if (mbNagle)
+				{
+					wprintf(L"Unset Nagle\n");
+					mbNagle = false;
+				}
+				else
+				{
+					wprintf(L"Set Nagle\n");
+					mbNagle = true;
+				}
+				break;
+			case 'z':
+				if (mbZeroCopy)
+				{
+					wprintf(L"Unset Zerocopy\n");
+					mbZeroCopy = false;
+				}
+				else
+				{
+					wprintf(L"Set Zerocopy\n");
+					mbZeroCopy = true;
+				}
+				break;
+			case 'm':
+				if (mbMonitoring)
+				{
+					wprintf(L"Unset Monitoring\n");
+					mbMonitoring = false;
+				}
+				else
+				{
+					wprintf(L"Set Monitoring\n");
+					mbMonitoring = true;
+				}
+				break;
+			case 's':
+				if (mBegin)
+				{
+					mBegin = false;
+					wprintf(L"STOP\n");
+				}
+				else
+				{
+					mBegin = true;
+					SetEvent(mBeginEvent);
+					wprintf(L"RUN\n");
+				}
+				break;
+			case 'q':
+				QuitServer();
+				goto EXIT;
+				break;
+			default:
+				break;
+			}
+		}
+
+		EXIT:
 		DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
 
 		switch (waitResult)
@@ -838,5 +917,41 @@ namespace procademy
 		{
 			DecrementIOProc(session, 20010);
 		}
+	}
+	void CNetServerNoLock::LoadInitFile(const WCHAR* fileName)
+	{
+		TextParser  tp;
+		int         num;
+		WCHAR       buffer[MAX_PARSER_LENGTH];
+
+		tp.LoadFile(fileName);
+
+		tp.GetValue(L"BIND_IP", mBindIP);
+
+		tp.GetValue(L"BIND_PORT", &num);
+		mPort = (u_short)num;
+
+		tp.GetValue(L"IOCP_WORKER_THREAD", &num);
+		mWorkerThreadNum = (BYTE)num;
+
+		tp.GetValue(L"IOCP_ACTIVE_THREAD", &num);
+		mActiveThreadNum = (BYTE)num;
+
+		tp.GetValue(L"CLIENT_MAX", &num);
+		mMaxClient = (u_short)num;
+
+		tp.GetValue(L"NAGLE", buffer);
+		if (wcscmp(L"TRUE", buffer) == 0)
+			mbNagle = true;
+		else
+			mbNagle = false;
+
+		tp.GetValue(L"LOG_LEVEL", buffer);
+		if (wcscmp(buffer, L"DEBUG") == 0)
+			CLogger::setLogLevel(dfLOG_LEVEL_DEBUG);
+		else if (wcscmp(buffer, L"WARNING") == 0)
+			CLogger::setLogLevel(dfLOG_LEVEL_NOTICE);
+		else if (wcscmp(buffer, L"ERROR") == 0)
+			CLogger::setLogLevel(dfLOG_LEVEL_ERROR);
 	}
 }
