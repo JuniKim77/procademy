@@ -57,6 +57,7 @@ int main()
 	packet->SubRef();
 
 	procademy::CNetPacket* code = procademy::CNetPacket::AllocAddRef();
+	procademy::CNetPacket::SetPacketKey(0xa9);
 
 	char orin[] = "aaaaaaaaaabbbbbbbbbbcccccccccc1234567890abcdefghijklmn";
 
@@ -65,6 +66,8 @@ int main()
 	code->SetHeader(false);
 	code->Encode();
 	code->Decode();
+
+	int ret = strcmp(orin, code->GetFrontPtr());
 
 	code->SubRef();
 	
