@@ -203,45 +203,12 @@ namespace procademy
 	{
 		ReleaseSRWLockExclusive(&mSessionLock);
 	}
-	void CEchoServerNoLock::MonitorProc()
-	{
-		HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
 
-		while (!mbIsQuit)
-		{
-			DWORD retval = WaitForSingleObject(dummyEvent, 1000);
-
-			if (retval == WAIT_TIMEOUT)
-			{
-				wprintf_s(L"\nMonitoring[M]: (%d) | Quit[Q]\n", mbMonitoring);
-				wprintf_s(L"ZeroCopy[Z]: (%d) | Nagle[N]: (%d)\n", mbZeroCopy, mbNagle);
-				wprintf_s(L"=======================================\n[Total Accept Count: %lu]\n[Total Diconnect Count: %lu]\n[Live Session Count: %lu]\n",
-					mMonitor.acceptCount,
-					mMonitor.disconnectCount,
-					mMonitor.acceptCount - mMonitor.disconnectCount);
-#ifdef NEW_DELETE_VER
-				wprintf_s(L"[Packet Pool Capa: %d]\n[Packet Pool Use: %d]\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
-					0,
-					0,
-					mMonitor.sendTPS,
-					mMonitor.recvTPS);
-#else
-				wprintf_s(L"[Packet Pool Capa: %d]\n[Packet Pool Use: %d]\n[Send TPS: %u]\n[Recv TPS: %u]\n=======================================\n",
-					CNetPacket::GetPoolCapacity(),
-					CNetPacket::GetPoolSize(),
-					mMonitor.prevSendTPS,
-					mMonitor.prevRecvTPS);
-#endif // NEW_DELETE_VER
-			}
-		}
-
-		CloseHandle(dummyEvent);
-	}
 	unsigned int __stdcall CEchoServerNoLock::MonitoringThread(LPVOID arg)
 	{
 		CEchoServerNoLock* server = (CEchoServerNoLock*)arg;
 
-		server->MonitorProc();
+		
 
 		return 0;
 	}

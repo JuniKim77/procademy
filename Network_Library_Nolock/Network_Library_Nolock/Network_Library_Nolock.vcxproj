@@ -152,6 +152,7 @@
     <ClCompile Include="CSVReader.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
+    <ClCompile Include="TextParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CCrashDump.h" />
@@ -170,6 +171,7 @@
     <ClInclude Include="TC_LFObjectPool.h" />
     <ClInclude Include="TC_LFQueue.h" />
     <ClInclude Include="TC_LFStack.h" />
+    <ClInclude Include="TextParser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

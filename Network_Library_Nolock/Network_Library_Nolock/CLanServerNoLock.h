@@ -1,8 +1,8 @@
 #pragma once
 #pragma comment(lib, "ws2_32")
 
-#include <WinSock2.h>
 #include <WS2tcpip.h>
+#include <WinSock2.h>
 #include "RingBuffer.h"
 #include "TC_LFStack.h"
 #include "TC_LFQueue.h"
@@ -65,9 +65,9 @@ namespace procademy
 	class CLanServerNoLock
 	{
 	protected:
+		CLanServerNoLock();
 		~CLanServerNoLock();
-		bool Start(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient); // 오픈 IP / 포트 / 워커스레드 수(생성수, 러닝수) / 나글옵션 / 최대접속자 수
-		bool Start(u_short port, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient);
+		bool Start();
 		void Stop();
 		int GetSessionCount();
 		void WaitForThreadsFin();
@@ -79,7 +79,7 @@ namespace procademy
 
 		virtual void OnClientJoin(SESSION_ID SessionID) = 0; //< Accept 후 접속처리 완료 후 호출.
 		virtual void OnClientLeave(SESSION_ID SessionID) = 0; //< Release 후 호출
-
+		virtual void LoadInitFile(const WCHAR* fileName);
 
 		virtual void OnRecv(SESSION_ID SessionID, CNetPacket* packet) = 0; //< 패킷 수신 완료 후
 		//	virtual void OnSend(SessionID, int sendsize) = 0;           < 패킷 송신 완료 후
@@ -107,9 +107,9 @@ namespace procademy
 		void IncrementIOProc(Session* session, int logic);
 		void DecrementIOProc(Session* session, int logic);
 		void ReleaseProc(Session* session);
-		bool AcceptProc();
+		void AcceptProc();
 		Session* CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
-		bool OnCompleteMessage();
+		void CompleteMessage();
 		void CompleteRecv(Session* session, DWORD transferredSize);
 		void CompleteSend(Session* session, DWORD transferredSize);
 		void CloseSessions();
@@ -118,59 +118,46 @@ namespace procademy
 		u_short GetIndexFromSessionNo(u_int64 sessionNo);
 
 	private:
-		/// <summary>
-		/// Listen Socket Info
-		/// </summary>
+		SOCKET				mListenSocket = INVALID_SOCKET;
+		BYTE				mNumThreads = 0;
+		HANDLE				mHcp = INVALID_HANDLE_VALUE;
+		HANDLE* mhThreads = nullptr;
+		Session* mSessionArray = nullptr;
+		u_int64				mSessionIDCounter = 1;
+		TC_LFStack<u_short> mEmptyIndexes;
 		u_short				mPort = 0;
-		u_long				mBindIP = 0;
-		SOCKET				mListenSocket;
-
-		/// <summary>
-		/// Options
-		/// </summary>
-		BYTE				mMaxRunThreadSize = 0;
-		BYTE				mWorkerThreadSize = 0;
+		WCHAR				mBindIP[32];
+		BYTE				mActiveThreadNum = 0;
+		BYTE				mWorkerThreadNum = 0;
 		u_short				mMaxClient = 0;
 
 		/// <summary>
-		/// Network Status
+		/// 모니터링 변수들
 		/// </summary>
-		bool				mbIsRunning = false;
-		BYTE				mNumThreads = 0;
-		bool				mbIsQuit = false;
-
-		/// <summary>
-		/// Handles
-		/// </summary>
-		HANDLE				mHcp;
-		HANDLE*				mhThreads;
-
-		/// <summary>
-		/// Session Objects
-		/// </summary>
-		Session*			mSessionArray;
-		u_int64				mSessionIDCounter = 1;
-		TC_LFStack<u_short> mEmptyIndexes;
+		alignas(64) DWORD	sendTPS;
+		alignas(64) DWORD	recvTPS;
+		alignas(64) DWORD	acceptCount;
+		alignas(64) DWORD	disconnectCount;
 
 	protected:
 		bool				mbNagle = true;
 		bool				mbMonitoring = true;
 		bool				mbZeroCopy = true;
+		bool				mExit = false;
+		bool				mBegin = false;
+		HANDLE				mBeginEvent = INVALID_HANDLE_VALUE;
 
 		struct Monitor
 		{
-			alignas(64) DWORD	sendTPS;
-			alignas(64) DWORD	recvTPS;
-			alignas(64) DWORD	acceptCount;
-			alignas(64) DWORD	disconnectCount;
-			DWORD prevSendTPS;
-			DWORD prevRecvTPS;
+			DWORD			prevSendTPS;
+			DWORD			prevRecvTPS;
+			DWORD			acceptTotal;
+			DWORD			prevAcceptTPS = 0;
 		};
 
 		/// <summary>
 		/// Monitoring members
 		/// </summary>
-		alignas(64) Monitor		mMonitor;
+		Monitor		mMonitor;
 	};
 }
-
