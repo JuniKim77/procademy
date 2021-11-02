@@ -2,16 +2,25 @@
 
 namespace procademy
 {
+	class st_Player;
+
 	struct st_Sector
 	{
-		int x;
-		int y;
+		std::list<st_Player*>	list;
+		DWORD					recvCount;
+		DWORD					sendCount;
+	};
+
+	struct st_Coordinate
+	{
+		int		x;
+		int		y;
 	};
 
 	struct st_Sector_Around
 	{
 		int count;
-		st_Sector around[9];
+		st_Coordinate around[9];
 	};
 
 	struct st_Player

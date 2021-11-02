@@ -74,6 +74,8 @@ namespace procademy
 		void			GetSectorAround(WORD x, WORD y, st_Sector_Around* output);
 		void			SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input);
 		void			MakeMonitorStr(WCHAR* s);
+		void			PrintRecvSendRatio();
+		void			ClearTPS();
 
 	/// <summary>
 	/// Make Packet Funcs
@@ -95,13 +97,13 @@ namespace procademy
 		HANDLE									mIOCP;
 
 		TC_LFObjectPool<st_MSG>					mMsgPool;
-		TC_LFQueue<st_MSG*>						mMsgQ;
 
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;
 		TC_LFObjectPool<st_Player>				mPlayerPool;
 		DWORD									mLoginCount = 0;
+		DWORD									mUpdateTPS = 0;
 
-		std::list<st_Player*>					mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
+		st_Sector								mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
 		int										mTimeOut;
 };
 }

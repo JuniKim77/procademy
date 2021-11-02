@@ -59,7 +59,6 @@ unsigned int __stdcall procademy::CChatServerSingle::HeartbeatFunc(LPVOID arg)
 
 void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
 {
-    mMsgQ.Enqueue(msg);
     PostQueuedCompletionStatus(mIOCP, 1, (ULONG_PTR)msg, 0);
 }
 
@@ -67,11 +66,11 @@ void procademy::CChatServerSingle::GQCSProc()
 {
     while (mBegin)
     {
-        DWORD transferredSize = 0;
-        st_MSG* completionKey = nullptr;
-        WSAOVERLAPPED* pOverlapped = nullptr;
+        DWORD           transferredSize = 0;
+        st_MSG*         msg = nullptr;
+        WSAOVERLAPPED*  pOverlapped = nullptr;
 
-        BOOL gqcsRet = GetQueuedCompletionStatus(mIOCP, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
+        BOOL gqcsRet = GetQueuedCompletionStatus(mIOCP, &transferredSize, (PULONG_PTR)&msg, &pOverlapped, INFINITE);
 
         // ECHO Server End
         if (transferredSize == 0)
@@ -79,39 +78,28 @@ void procademy::CChatServerSingle::GQCSProc()
             return;
         }
 
-        while (!mMsgQ.IsEmpty())
+        mUpdateTPS++;
+
+        switch (msg->type)
         {
-            st_MSG* msg = nullptr;
-            if (!mMsgQ.Dequeue(&msg))
-            {
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Message Q Error\n");
-            }
-            if (msg == nullptr)
-            {
-                int teat = 0;
-            }
-
-            switch (msg->type)
-            {
-            case MSG_TYPE_RECV:
-                CompleteMessage(msg->sessionNo, msg->packet);
-                break;
-            case MSG_TYPE_JOIN:
-                JoinProc(msg->sessionNo);
-                break;
-            case MSG_TYPE_LEAVE:
-                LeaveProc(msg->sessionNo);
-                break;
-            case MSG_TYPE_TIMEOUT:
-                CheckTimeOutProc();
-                break;
-            default:
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message\n");
-                break;
-            }
-
-            mMsgPool.Free(msg);
+        case MSG_TYPE_RECV:
+            CompleteMessage(msg->sessionNo, msg->packet);
+            break;
+        case MSG_TYPE_JOIN:
+            JoinProc(msg->sessionNo);
+            break;
+        case MSG_TYPE_LEAVE:
+            LeaveProc(msg->sessionNo);
+            break;
+        case MSG_TYPE_TIMEOUT:
+            CheckTimeOutProc();
+            break;
+        default:
+            CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message\n");
+            break;
         }
+
+        mMsgPool.Free(msg);
     }
 }
 
@@ -157,6 +145,10 @@ bool procademy::CChatServerSingle::MonitoringProc()
             MakeMonitorStr(str);
             
             wprintf(str);
+
+            PrintRecvSendRatio();
+
+            ClearTPS();
         }
     }
 
@@ -192,7 +184,7 @@ bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPac
 
     packet->SubRef();
 
-    return false;
+    return true;
 }
 
 bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
@@ -369,6 +361,8 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     GetSectorAround(player->curSectorX, player->curSectorY, &sectorAround);
 
+    mSector[player->curSectorY][player->curSectorX].recvCount++;
+
     CNetPacket* response = MakeCSResMessage(player->accountNo, player->ID, player->nickName, messageLen, (WCHAR*)packet->GetFrontPtr());
 
     SendMessageSectorAround(response, &sectorAround);
@@ -455,16 +449,16 @@ void procademy::CChatServerSingle::DeletePlayer(SESSION_ID sessionNo)
 
 void procademy::CChatServerSingle::Sector_AddPlayer(WORD x, WORD y, st_Player* player)
 {
-    mSector[y][x].push_back(player);
+    mSector[y][x].list.push_back(player);
 }
 
 void procademy::CChatServerSingle::Sector_RemovePlayer(WORD x, WORD y, st_Player* player)
 {
-    for (auto iter = mSector[y][x].begin(); iter != mSector[y][x].end(); ++iter)
+    for (auto iter = mSector[y][x].list.begin(); iter != mSector[y][x].list.end(); ++iter)
     {
         if ((*iter)->accountNo == player->accountNo)
         {
-            mSector[y][x].erase(iter);
+            mSector[y][x].list.erase(iter);
 
             return;
         }
@@ -499,11 +493,10 @@ void procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, s
         int curX = input->around[i].x;
         int curY = input->around[i].y;
 
-        for (std::list<st_Player*>::iterator iter = mSector[curY][curX].begin(); iter != mSector[curY][curX].end(); ++iter)
+        for (std::list<st_Player*>::iterator iter = mSector[curY][curX].list.begin(); iter != mSector[curY][curX].list.end(); ++iter)
         {
-            packet->AddRef();
-
             SendPacket((*iter)->sessionNo, packet);
+            mSector[curY][curX].sendCount++;
         }
     }
 }
@@ -521,15 +514,55 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s)
     idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
     idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %u\n", L"Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
     idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %d\n", L"Update Msg Pool : ", mMsgPool.GetCapacity(), mMsgPool.GetSize());
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Update Msg Queue : ", mMsgQ.GetSize());
     idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %d\n", L"Player Pool : ", mPlayerPool.GetCapacity(), mPlayerPool.GetSize());
     idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
     idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept Total : ", mMonitor.acceptTotal);
     idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept TPS : ", mMonitor.acceptTPS);
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Update TPS : ", mMonitor.acceptTPS);
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Update TPS : ", mUpdateTPS);
     idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
     idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
     idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
+}
+
+void procademy::CChatServerSingle::PrintRecvSendRatio()
+{
+    FILE* fout = nullptr;
+    WCHAR str[20000];
+    int idx = 0;
+
+    _wfopen_s(&fout, L"sectorRatio.txt", L"w");
+
+    if (fout == nullptr)
+        return;
+
+    for (int i = 0; i < 50; ++i)
+    {
+        for (int j = 0; j < 50; ++j)
+        {
+            if (mSector[i][j].recvCount != 0)
+                idx += swprintf_s(str + idx, 20000 - idx, L"%6.2lf ", mSector[i][j].sendCount / (double)mSector[i][j].recvCount);
+            else
+                idx += swprintf_s(str + idx, 20000 - idx, L"%6d ", 0);
+        }
+
+        idx += swprintf_s(str + idx, 20000 - idx, L"\n");
+    }
+
+    fwprintf_s(fout, str);
+    fclose(fout);
+}
+
+void procademy::CChatServerSingle::ClearTPS()
+{
+    mUpdateTPS = 0;
+    for (int i = 0; i < 50; ++i)
+    {
+        for (int j = 0; j < 50; ++j)
+        {
+            mSector[i][j].recvCount = 0;
+            mSector[i][j].sendCount = 0;
+        }
+    }
 }
 
 procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status, SESSION_ID accountNo)

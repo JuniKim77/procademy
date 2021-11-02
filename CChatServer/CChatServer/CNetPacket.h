@@ -187,7 +187,7 @@ namespace procademy
 #pragma pack(pop)
 	private:
 
-		SHORT		mRefCount;
+		SHORT		mRefCount = 0;
 		char*		mBuffer;
 		int			mCapacity;
 		int			mPacketSize;
