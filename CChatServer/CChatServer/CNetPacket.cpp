@@ -5,6 +5,9 @@
 #include "CProfiler.h"
 #include "CLogger.h"
 
+#define NET_VERSION
+//#define TEST
+
 namespace procademy
 {
 	BYTE	CNetPacket::sCode = 0;
@@ -30,12 +33,11 @@ namespace procademy
 		mBuffer = (char*)malloc(mCapacity);
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mBuffer + HEADER_MAX_SIZE;
+#ifdef NET_VERSION
 		mZero = mBuffer;
-
-#ifdef DEBUG
-		if (mBuffer != 0)
-			memset(mBuffer, 0, mCapacity);
-#endif
+#else
+		mZero = mBuffer + (HEADER_MAX_SIZE - sizeof(SHORT));
+#endif // NET_VERSION
 	}
 
 	CNetPacket::~CNetPacket()
@@ -54,7 +56,6 @@ namespace procademy
 		mPacketSize = 0;
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mFront;
-		mZero = mBuffer;
 	}
 
 	int CNetPacket::MoveFront(int iSize)
@@ -428,7 +429,6 @@ namespace procademy
 		if (ret == 0)
 		{
 			Clear();
-			CProfiler::Begin(L"FREE");
 #ifdef NEW_DELETE_VER
 			delete this;
 #elif defined(MEMORY_POOL_VER)
@@ -436,7 +436,6 @@ namespace procademy
 #elif defined(TLS_MEMORY_POOL_VER)
 			sPacketPool.Free(this);
 #endif // NEW_DELETE_VER
-			CProfiler::End(L"FREE");
 		}
 	}
 
@@ -454,8 +453,11 @@ namespace procademy
 
 			header.code = sCode;
 			header.len = (USHORT)mPacketSize;
-			//header.randKey = 0x31;
+#ifdef TEST
+			header.randKey = 0x31;
+#else
 			header.randKey = (BYTE)rand();
+#endif // TEST
 
 			char* pFront = mFront;
 			BYTE sum = 0;
@@ -530,19 +532,30 @@ namespace procademy
 
 		if (sum != header.checkSum)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CheckSum Not Matched\n");
+			CRASH();
 		}
 	}
 
 	int CNetPacket::GetPoolCapacity()
 	{
+#ifdef MEMORY_POOL_VER
 		return CNetPacket::sPacketPool.GetCapacity();
-
+#elif defined(TLS_MEMORY_POOL_VER)
+		return CNetPacket::sPacketPool.GetCapacity();
+#else
+		return 0;
+#endif // MEMORY_POOL_VER
 	}
 
 	DWORD CNetPacket::GetPoolSize()
 	{
+#ifdef MEMORY_POOL_VER
 		return CNetPacket::sPacketPool.GetSize();
+#elif defined(TLS_MEMORY_POOL_VER)
+		return CNetPacket::sPacketPool.GetSize();
+#else
+		return 0;
+#endif // MEMORY_POOL_VER
 	}
 
 	void CNetPacket::resize()

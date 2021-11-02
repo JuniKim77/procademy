@@ -3,6 +3,9 @@
 #include <string.h>
 #include <Windows.h>
 
+#define NET_VERSION
+#define TEST
+
 namespace procademy
 {
 	BYTE	CNetPacket::sCode = 0;
@@ -23,17 +26,20 @@ namespace procademy
 	CNetPacket::CNetPacket(int iBufferSize)
 		: mCapacity(iBufferSize)
 		, mPacketSize(0)
+#ifdef NET_VERSION
 		, mHeaderSize(HEADER_MAX_SIZE)
+#else
+		, mHeaderSize(2)
+#endif // NET_VERSION
 	{
 		mBuffer = (char*)malloc(mCapacity);
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mBuffer + HEADER_MAX_SIZE;
+#ifdef NET_VERSION
 		mZero = mBuffer;
-
-#ifdef DEBUG
-		if (mBuffer != 0)
-			memset(mBuffer, 0, mCapacity);
-#endif
+#else
+		mZero = mBuffer + (HEADER_MAX_SIZE - sizeof(SHORT));
+#endif // NET_VERSION
 	}
 
 	CNetPacket::~CNetPacket()
@@ -448,9 +454,12 @@ namespace procademy
 			st_Header header;
 
 			header.code = sCode;
-			header.len = (USHORT)mPacketSize;
+			header.len = (USHORT)mPacketSize;			
+#ifdef TEST
 			header.randKey = 0x31;
-			//header.randKey = (BYTE)rand();
+#else
+			header.randKey = (BYTE)rand();
+#endif // TEST
 
 			char* pFront = mFront;
 			BYTE sum = 0;
@@ -525,7 +534,7 @@ namespace procademy
 
 		if (sum != header.checkSum)
 		{
-			int ttt = 0;
+			//CRASH();
 		}
 	}
 
