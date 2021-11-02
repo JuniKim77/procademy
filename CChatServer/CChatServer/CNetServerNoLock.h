@@ -136,8 +136,9 @@ namespace procademy
 		/// </summary>
 		alignas(64) DWORD	sendTPS;
 		alignas(64) DWORD	recvTPS;
-		alignas(64) DWORD	acceptCount;
 		alignas(64) DWORD	disconnectCount;
+		DWORD				acceptTotal;
+		DWORD				acceptTPS;
 
 	protected:
 		bool				mbNagle = true;
@@ -152,7 +153,7 @@ namespace procademy
 			DWORD			prevSendTPS;
 			DWORD			prevRecvTPS;
 			DWORD			acceptTotal;
-			DWORD			prevAcceptTPS = 0;
+			DWORD			acceptTPS = 0;
 		};
 
 		/// <summary>

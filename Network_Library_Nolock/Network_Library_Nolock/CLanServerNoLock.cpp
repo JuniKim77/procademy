@@ -548,7 +548,8 @@ namespace procademy
 		}
 
 		//InterlockedIncrement((LONG*)&mMonitor.acceptCount);
-		acceptCount++;
+		acceptTotal++;
+		acceptTPS++;
 
 		return session;
 	}
@@ -604,7 +605,7 @@ namespace procademy
 	void CLanServerNoLock::CompleteRecv(Session* session, DWORD transferredSize)
 	{
 		session->recvQ.MoveRear(transferredSize);
-		CNetPacket::st_Header header;
+		USHORT header;
 		DWORD count = 0;
 
 		while (count < transferredSize)
@@ -614,28 +615,28 @@ namespace procademy
 				return;
 			}
 
-			if (session->recvQ.GetUseSize() <= CNetPacket::HEADER_MAX_SIZE)
+			if (session->recvQ.GetUseSize() <= sizeof(USHORT))
 				break;
 
-			session->recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
+			session->recvQ.Peek((char*)&header, sizeof(USHORT));
 
-			if (session->recvQ.GetUseSize() < (CNetPacket::HEADER_MAX_SIZE + header.len))
+			if (session->recvQ.GetUseSize() < (sizeof(USHORT) + header))
 				break;
 
 			CProfiler::Begin(L"ALLOC");
 			CNetPacket* packet = CNetPacket::AllocAddRef();
 			CProfiler::End(L"ALLOC");
 
-			memcpy_s(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE, (char*)&header, CNetPacket::HEADER_MAX_SIZE);
+			memcpy_s(packet->GetZeroPtr(), sizeof(USHORT), (char*)&header, sizeof(USHORT));
 
 			InterlockedIncrement(&recvTPS);
 
-			session->recvQ.MoveFront(CNetPacket::HEADER_MAX_SIZE);
+			session->recvQ.MoveFront(sizeof(USHORT));
 
-			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)header.len);
+			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)header);
 
 			packet->MoveRear(ret);
-			packet->Decode();
+
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
 			count += (ret + sizeof(SHORT));
@@ -714,11 +715,12 @@ namespace procademy
 			{
 				mMonitor.prevRecvTPS = recvTPS;
 				mMonitor.prevSendTPS = sendTPS;
-				mMonitor.acceptTotal = acceptCount;
-				mMonitor.prevAcceptTPS = acceptCount - mMonitor.prevAcceptTPS;
+				mMonitor.acceptTotal = acceptTotal;
+				mMonitor.acceptTPS = acceptTPS;
 
 				recvTPS = 0;
 				sendTPS = 0;
+				acceptTPS = 0;
 			}
 		}
 

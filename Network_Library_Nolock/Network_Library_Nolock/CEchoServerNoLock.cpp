@@ -10,6 +10,8 @@ namespace procademy
 {
 	CEchoServerNoLock::CEchoServerNoLock()
 	{
+		LoadInitFile(L"ChatServer.cnf");
+		BeginThreads();
 		InitializeSRWLock(&mSessionLock);
 	}
 
@@ -50,86 +52,74 @@ namespace procademy
 
 	void CEchoServerNoLock::OnError(int errorcode, const WCHAR* log)
 	{
+		
 	}
 
-	bool CEchoServerNoLock::BeginServer(u_short port, u_long ip, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient)
+	bool procademy::CEchoServerNoLock::BeginServer()
 	{
-		if (Start(port, ip, createThread, runThread, nagle, maxClient) == false)
+		if (Start() == false)
 		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error\n");
+
 			return false;
 		}
 
-		mMonitoringThread = (HANDLE)_beginthreadex(nullptr, 0, MonitoringThread, this, 0, nullptr);
-
-		KeyCheckProc();
+		ResetEvent(mBeginEvent);
 
 		WaitForThreadsFin();
+
+		DWORD ret = WaitForSingleObject(mMonitoringThread, INFINITE);
+
+		switch (ret)
+		{
+		case WAIT_FAILED:
+			wprintf_s(L"EchoServer Thread Handle Error\n");
+			break;
+		case WAIT_TIMEOUT:
+			wprintf_s(L"EchoServer Thread Timeout Error\n");
+			break;
+		case WAIT_OBJECT_0:
+			wprintf_s(L"EchoServer None Error\n");
+			break;
+		default:
+			break;
+		}
 
 		return true;
 	}
 
-	bool CEchoServerNoLock::BeginServer(u_short port, BYTE createThread, BYTE runThread, bool nagle, u_short maxClient)
+	unsigned int __stdcall CEchoServerNoLock::MonitorFunc(LPVOID arg)
 	{
-		return BeginServer(port, INADDR_ANY, createThread, runThread, nagle, maxClient);
+		CEchoServerNoLock* echoServer = (CEchoServerNoLock*)arg;
+
+		echoServer->MonitoringProc();
+
+		wprintf(L"Monitoring Thread End\n");
+
+		return 0;
 	}
 
-	void CEchoServerNoLock::KeyCheckProc()
+	bool CEchoServerNoLock::MonitoringProc()
 	{
-		while (1)
-		{
-			char ch = _getch();
+		HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
+		WCHAR str[1024];
 
-			switch (ch)
+		while (!mExit)
+		{
+			DWORD retval = WaitForSingleObject(dummyevent, 1000);
+
+			if (retval == WAIT_TIMEOUT)
 			{
-			case 'Z':
-				if (mbZeroCopy)
-				{
-					mbZeroCopy = false;
-					wprintf_s(L"\nUnset ZeroCopy Mode\n\n");
-				}
-				else
-				{
-					mbZeroCopy = true;
-					wprintf_s(L"\nSet ZeroCopy Mode\n\n");
-				}
-				break;
-			case 'G':
-				if (mbNagle)
-				{
-					mbNagle = false;
-					wprintf_s(L"\nUnset Nagle Mode\n\n");
-				}
-				else
-				{
-					mbNagle = true;
-					wprintf_s(L"\nSet Nagle Mode\n\n");
-				}
-				break;
-			case 'M':
-				if (mbMonitoring)
-				{
-					mbMonitoring = false;
-					wprintf_s(L"\nUnset monitoring Mode\n\n");
-				}
-				else
-				{
-					mbMonitoring = true;
-					wprintf_s(L"\nSet monitoring Mode\n\n");
-				}
-				break;
-			case 'P':
-				CProfiler::Print();
-				break;
-			case 'D':
-				CRASH();
-				break;
-			case 'Q':
-				QuitServer();
-				return;
-			default:
-				break;
+				// Ãâ·Â
+				MakeMonitorStr(str);
+
+				wprintf(str);
 			}
 		}
+
+		CloseHandle(dummyevent);
+
+		return true;
 	}
 
 	void CEchoServerNoLock::InsertSessionID(u_int64 sessionNo)
@@ -204,12 +194,27 @@ namespace procademy
 		ReleaseSRWLockExclusive(&mSessionLock);
 	}
 
-	unsigned int __stdcall CEchoServerNoLock::MonitoringThread(LPVOID arg)
+	void CEchoServerNoLock::MakeMonitorStr(WCHAR* s)
 	{
-		CEchoServerNoLock* server = (CEchoServerNoLock*)arg;
+		LONGLONG idx = 0;
+		int len;
 
-		
-
-		return 0;
+		idx += swprintf_s(s + idx, 1024 - idx, L"\n========================================\n");
+		//idx += swprintf_s(s + idx, 1024 - idx, L"");
+		idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
+		idx += swprintf_s(s + idx, 1024 - idx, L"%22s%lld\n", L"Session Num : ", mSessionJoinMap.size());
+		idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
+		idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %u\n", L"Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
+		idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
+		idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept Total : ", mMonitor.acceptTotal);
+		idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept TPS : ", mMonitor.acceptTPS);
+		idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Update TPS : ", mMonitor.acceptTPS);
+		idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
+		idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
+		idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
+	}
+	void CEchoServerNoLock::BeginThreads()
+	{
+		mMonitoringThread = (HANDLE)_beginthreadex(nullptr, 0, MonitorFunc, this, 0, nullptr);
 	}
 }

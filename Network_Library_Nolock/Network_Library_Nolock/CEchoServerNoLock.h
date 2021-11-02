@@ -16,22 +16,21 @@ namespace procademy
 		bool			BeginServer();
 
 	private:
-		static unsigned int WINAPI MonitorFunc(LPVOID arg);
-		bool MonitoringProc();
-		void KeyCheckProc();
-		void InsertSessionID(u_int64 sessionNo);
-		void DeleteSessionID(u_int64 sessionNo);
-		void CompletePacket(SESSION_ID SessionID, CNetPacket* packet);
-		void EchoProc(SESSION_ID sessionID, CNetPacket* packet);
-		void LockMap();
-		void UnlockMap();
+		static unsigned int WINAPI	MonitorFunc(LPVOID arg);
 
-		static unsigned int WINAPI MonitoringThread(LPVOID arg);
+		bool			MonitoringProc();
+		void			InsertSessionID(u_int64 sessionNo);
+		void			DeleteSessionID(u_int64 sessionNo);
+		void			CompletePacket(SESSION_ID SessionID, CNetPacket* packet);
+		void			EchoProc(SESSION_ID sessionID, CNetPacket* packet);
+		void			LockMap();
+		void			UnlockMap();
+		void			MakeMonitorStr(WCHAR* s);
+		void			BeginThreads();
 
 	private:
 		std::unordered_map<u_int64, int>	mSessionJoinMap;
 		SRWLOCK								mSessionLock;
-		HANDLE								mMonitoringThread;
-		bool								mbIsQuit = false;
+		HANDLE								mMonitoringThread = INVALID_HANDLE_VALUE;
 	};
 }

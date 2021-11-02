@@ -14,7 +14,7 @@ int main()
 
 	procademy::CEchoServerNoLock server;
 
-	server.BeginServer(dfSERVER_PORT, dfTHREAD_NUM, dfTHREAD_NUM, false, 200);
+	server.BeginServer();
 
 	//CDebugger::PrintLogOut(L"Debug.txt");
 

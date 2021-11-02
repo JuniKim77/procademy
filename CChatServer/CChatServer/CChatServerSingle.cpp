@@ -525,8 +525,8 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s)
     idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %d\n", L"Player Pool : ", mPlayerPool.GetCapacity(), mPlayerPool.GetSize());
     idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
     idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept Total : ", mMonitor.acceptTotal);
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept TPS : ", mMonitor.prevAcceptTPS);
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Update TPS : ", mMonitor.prevAcceptTPS);
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept TPS : ", mMonitor.acceptTPS);
+    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Update TPS : ", mMonitor.acceptTPS);
     idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
     idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
     idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");

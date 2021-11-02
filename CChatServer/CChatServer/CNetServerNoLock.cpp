@@ -548,7 +548,8 @@ namespace procademy
 		}
 
 		//InterlockedIncrement((LONG*)&mMonitor.acceptCount);
-		acceptCount++;
+		acceptTotal++;
+		acceptTPS++;
 
 		return session;
 	}
@@ -714,11 +715,12 @@ namespace procademy
 			{
 				mMonitor.prevRecvTPS = recvTPS;
 				mMonitor.prevSendTPS = sendTPS;
-				mMonitor.acceptTotal = acceptCount;
-				mMonitor.prevAcceptTPS = acceptCount - mMonitor.prevAcceptTPS;
+				mMonitor.acceptTotal = acceptTotal;
+				mMonitor.acceptTPS = acceptTPS;
 
 				recvTPS = 0;
 				sendTPS = 0;
+				acceptTPS = 0;
 			}
 		}
 
