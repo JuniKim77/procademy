@@ -4,6 +4,8 @@
 #include "CLogger.h"
 #include "TextParser.h"
 
+WCHAR str[20000];
+
 unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
 {
     CChatServerSingle* chatServer = (CChatServerSingle*)arg;
@@ -146,7 +148,7 @@ bool procademy::CChatServerSingle::MonitoringProc()
             
             wprintf(str);
 
-            PrintRecvSendRatio();
+            //PrintRecvSendRatio();
 
             ClearTPS();
         }
@@ -493,6 +495,9 @@ void procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, s
         int curX = input->around[i].x;
         int curY = input->around[i].y;
 
+        mSector[curY][curX].updateCount++;
+        mSector[curY][curX].playerCount += mSector[curY][curX].list.size();
+
         for (std::list<st_Player*>::iterator iter = mSector[curY][curX].list.begin(); iter != mSector[curY][curX].list.end(); ++iter)
         {
             SendPacket((*iter)->sessionNo, packet);
@@ -527,7 +532,6 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s)
 void procademy::CChatServerSingle::PrintRecvSendRatio()
 {
     FILE* fout = nullptr;
-    WCHAR str[20000];
     int idx = 0;
 
     _wfopen_s(&fout, L"sectorRatio.txt", L"w");
@@ -548,6 +552,31 @@ void procademy::CChatServerSingle::PrintRecvSendRatio()
         idx += swprintf_s(str + idx, 20000 - idx, L"\n");
     }
 
+    str[idx++] = L'\n';
+    str[idx++] = L'\n';
+    str[idx] = L'\0';
+
+    fwprintf_s(fout, str);
+
+    idx = 0;
+
+    for (int i = 0; i < 50; ++i)
+    {
+        for (int j = 0; j < 50; ++j)
+        {
+            if (mSector[i][j].updateCount != 0)
+                idx += swprintf_s(str + idx, 20000 - idx, L"%6.2lf ", mSector[i][j].playerCount / (double)mSector[i][j].updateCount);
+            else
+                idx += swprintf_s(str + idx, 20000 - idx, L"%6d ", 0);
+        }
+
+        idx += swprintf_s(str + idx, 20000 - idx, L"\n");
+    }
+
+    str[idx++] = L'\n';
+    str[idx++] = L'\n';
+    str[idx] = L'\0';
+
     fwprintf_s(fout, str);
     fclose(fout);
 }
@@ -561,6 +590,8 @@ void procademy::CChatServerSingle::ClearTPS()
         {
             mSector[i][j].recvCount = 0;
             mSector[i][j].sendCount = 0;
+            mSector[i][j].updateCount = 0;
+            mSector[i][j].playerCount = 0;
         }
     }
 }
@@ -609,6 +640,7 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(SESSION_ID
 procademy::CChatServerSingle::CChatServerSingle()
 {
     LoadInitFile(L"ChatServer.cnf");
+    CNetPacket::sPacketPool.OnOffCounting();
     BeginThreads();
 }
 

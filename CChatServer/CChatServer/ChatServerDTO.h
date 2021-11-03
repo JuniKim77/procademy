@@ -9,6 +9,8 @@ namespace procademy
 		std::list<st_Player*>	list;
 		DWORD					recvCount;
 		DWORD					sendCount;
+		DWORD					playerCount;
+		DWORD					updateCount;
 	};
 
 	struct st_Coordinate
