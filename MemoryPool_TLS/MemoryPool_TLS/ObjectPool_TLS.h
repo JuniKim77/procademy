@@ -37,7 +37,7 @@ namespace procademy
 			};
 
 			st_Chunk_Block				mArray[MAX_SIZE];
-			ObjectPool_TLS* pObjPool = nullptr;
+			ObjectPool_TLS*				pObjPool = nullptr;
 			int							mAllocCount = 0;
 			alignas(64) LONG			mFreeCount;
 			DWORD						threadID;
@@ -46,24 +46,25 @@ namespace procademy
 		struct st_Chunk_Block
 		{
 			DATA			data;
-			void* code;
-			CChunk* pOrigin;
+			void*			code;
+			CChunk*			pOrigin;
 			unsigned int	checkSum_over = CHUNK_CHECKSUM;
 		};
 
 	public:
 		ObjectPool_TLS(bool bPlacementNew = false, bool sizeCheck = false);
 		virtual	~ObjectPool_TLS();
-		DATA* Alloc(void);
+		DATA*	Alloc(void);
 		bool	Free(DATA* pData);
 		int		GetCapacity(void);
 		DWORD	GetSize(void) { return mSize; }
+		void	OnOffCounting() { mbSizeCheck = !mbSizeCheck; }
 
 	private:
-		TC_LFObjectPool<CChunk>* mMemoryPool;
-		DWORD mSize;
-		bool mbSizeCheck;
-		DWORD mIndex;
+		TC_LFObjectPool<CChunk>*	mMemoryPool;
+		DWORD						mSize;
+		bool						mbSizeCheck;
+		DWORD						mIndex;
 	};
 
 	template<typename DATA>
@@ -101,6 +102,11 @@ namespace procademy
 			TlsSetValue(mIndex, chunk);
 		}
 
+		if (mbSizeCheck)
+		{
+			InterlockedIncrement((LONG*)&mSize);
+		}
+			
 		return chunk->Alloc();
 	}
 	template<typename DATA>
@@ -109,6 +115,11 @@ namespace procademy
 		st_Chunk_Block* block = (st_Chunk_Block*)pData;
 
 		block->pOrigin->Free(pData);
+
+		if (mbSizeCheck)
+		{
+			InterlockedDecrement((LONG*)&mSize);
+		}
 
 		return true;
 	}

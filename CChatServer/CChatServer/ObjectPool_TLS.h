@@ -54,10 +54,11 @@ namespace procademy
 	public:
 		ObjectPool_TLS(bool bPlacementNew = false, bool sizeCheck = false);
 		virtual	~ObjectPool_TLS();
-		DATA* Alloc(void);
+		DATA*	Alloc(void);
 		bool	Free(DATA* pData);
 		int		GetCapacity(void);
 		DWORD	GetSize(void) { return mSize; }
+		void	OnOffCounting() { mbSizeCheck = !mbSizeCheck; }
 
 	private:
 		TC_LFObjectPool<CChunk>*	mMemoryPool;
@@ -101,6 +102,11 @@ namespace procademy
 			TlsSetValue(mIndex, chunk);
 		}
 
+		if (mbSizeCheck)
+		{
+			InterlockedIncrement((LONG*)&mSize);
+		}
+
 		return chunk->Alloc();
 	}
 	template<typename DATA>
@@ -109,6 +115,11 @@ namespace procademy
 		st_Chunk_Block* block = (st_Chunk_Block*)pData;
 
 		block->pOrigin->Free(pData);
+
+		if (mbSizeCheck)
+		{
+			InterlockedDecrement((LONG*)&mSize);
+		}
 
 		return true;
 	}
