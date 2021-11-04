@@ -10,20 +10,26 @@ struct packetDebug
 {
 	int			logicId;
 	DWORD		threadId;
-	void* pChunk;
-	void* pPacket;
+	void*		pChunk;
 	int			allocCount;
+	void*		pPacket;
 	LONG		freeCount;
 };
 
 USHORT g_debugIdx = 0;
 packetDebug g_packetDebugs[USHRT_MAX + 1] = { 0, };
+USHORT g_debugPacket = 0;
+procademy::CNetPacket* g_sessionDebugs[USHRT_MAX + 1] = { 0, };
+USHORT g_debugPacket2 = 0;
+procademy::CNetPacket* g_sessionDebugs2[USHRT_MAX + 1] = { 0, };
+USHORT g_debugPacket3 = 0;
+procademy::CNetPacket* g_sessionDebugs3[USHRT_MAX + 1] = { 0, };
 
 void packetLog(
 	int			logicId = -9999,
 	DWORD		threadId = 0,
-	void* pChunk = nullptr,
-	void* pPacket = nullptr,
+	void*		pChunk = nullptr,
+	void*		pPacket = nullptr,
 	int			allocCount = -9999,
 	LONG		freeCount = 9999
 )
@@ -425,6 +431,8 @@ namespace procademy
 				break;
 			}
 
+			USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket2);
+			g_sessionDebugs2[ret] = dummy;
 			dummy->SubRef();
 		}
 		session->recvQ.ClearBuffer();
@@ -855,6 +863,8 @@ namespace procademy
 					wprintf(L"RUN\n");
 				}
 				break;
+			case 'd':
+				CRASH();
 			case 'q':
 				QuitServer();
 				goto EXIT;
@@ -885,7 +895,11 @@ namespace procademy
 
 	bool CNetServerNoLock::Disconnect(SESSION_ID SessionID)
 	{
-		return false;
+		Session* session = FindSession(SessionID);
+
+		//ReleaseProc(session);
+
+		return true;
 	}
 
 	void CNetServerNoLock::SendPacket(SESSION_ID SessionID, CNetPacket* packet)
@@ -894,21 +908,15 @@ namespace procademy
 
 		IncrementIOProc(session, 20000);
 
-		if (SessionID != session->sessionID)
+		if (SessionID != session->sessionID || session->ioBlock.releaseCount.isReleased == 1)
 		{
 			DecrementIOProc(session, 20020);
-
+			USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket);
+			g_sessionDebugs[ret] = packet;
 			return;
 		}
 
-		/*st_NETWORK_HEADER header;
-
-		header.byCode = dfNETWORK_CODE;
-		header.wPayloadSize = packet->GetSize();*/
 		packet->AddRef();
-		char* buf = packet->GetBufferPtr();
-		packDebug(10000, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-			*((DWORD*)(buf + 2)));
 		session->sendQ.Enqueue(packet);
 
 		CProfiler::Begin(L"SendPost");

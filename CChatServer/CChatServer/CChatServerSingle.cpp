@@ -220,10 +220,11 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Not Found\n", sessionNo);
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Not Found\n", sessionNo);*/
 
         response = MakeCSResLogin(0, 0);
         SendPacket(sessionNo, response);
+        response->SubRef();
 
         return false;
     }
@@ -292,8 +293,8 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found\n",
-            sessionNo);
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found\n",
+            sessionNo);*/
 
         return false;
     }
@@ -343,8 +344,8 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found\n",
-            sessionNo);
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found\n",
+            sessionNo);*/
 
         return false;
     }
@@ -397,18 +398,20 @@ bool procademy::CChatServerSingle::CheckTimeOutProc()
 
     for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end();)
     {
-        if (iter->second == nullptr)
-        {
-            ++iter;
-            continue;
-        }
-
         SESSION_ID sessionNo = iter->second->sessionNo;
 
-        if (curTime - iter->second->lastRecvTime > mTimeOut) // 40ms
+        if (curTime - iter->second->lastRecvTime > mTimeOut) // 40000ms
         {
-            Sector_RemovePlayer(iter->second->curSectorX, iter->second->curSectorY, iter->second);
-            
+            if (iter->second->curSectorX != -1 && iter->second->curSectorY != -1)
+            {
+                Sector_RemovePlayer(iter->second->curSectorX, iter->second->curSectorY, iter->second);
+            }
+
+            if (iter->second->bLogin)
+            {
+                mLoginCount--;
+            }
+
             iter = mPlayerMap.erase(iter);
 
             Disconnect(sessionNo);

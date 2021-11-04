@@ -419,12 +419,12 @@ namespace procademy
 
 	void CNetPacket::AddRef()
 	{
-		InterlockedIncrement((LONG*)&mRefCount);
+		InterlockedIncrement16((SHORT*)&mRefCount);
 	}
 
 	void CNetPacket::SubRef()
 	{
-		int ret = InterlockedDecrement((LONG*)&mRefCount);
+		int ret = InterlockedDecrement16((SHORT*)&mRefCount);
 
 		if (ret == 0)
 		{

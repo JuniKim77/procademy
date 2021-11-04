@@ -65,6 +65,8 @@ namespace procademy
 		DWORD						mSize;
 		bool						mbSizeCheck;
 		DWORD						mIndex;
+		CChunk*						chunkTrack[USHRT_MAX + 1];
+		USHORT						trackIdx = 0;
 	};
 
 	template<typename DATA>
@@ -94,12 +96,15 @@ namespace procademy
 		if (chunk == nullptr || chunk->threadID != GetCurrentThreadId() || chunk->mAllocCount == CChunk::MAX_SIZE)
 		{
 			chunk = mMemoryPool->Alloc();
-			//packetLog(30040, GetCurrentThreadId(), chunk, nullptr, chunk->mAllocCount, chunk->mFreeCount.freeStatus.freeCount);
+			//packetLog(30040, GetCurrentThreadId(), chunk, nullptr, chunk->mAllocCount, chunk->mFreeCount);
 			chunk->threadID = GetCurrentThreadId();
 			chunk->pObjPool = this;
 			chunk->mAllocCount = 0;
 			chunk->mFreeCount = 0;
 			TlsSetValue(mIndex, chunk);
+
+			USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
+			chunkTrack[ret] = chunk;
 		}
 
 		if (mbSizeCheck)
@@ -136,7 +141,7 @@ namespace procademy
 
 		st_Chunk_Block* pBlock = (st_Chunk_Block*)&mArray[mAllocCount++];
 
-		//packetLog(20000, GetCurrentThreadId(), this, pBlock, mAllocCount, mFreeCount.freeStatus.freeCount);
+		//packetLog(20000, GetCurrentThreadId(), this, pBlock, mAllocCount, mFreeCount);
 		pBlock->pOrigin = this;
 		pBlock->code = this;
 		pBlock->checkSum_over = CHUNK_CHECKSUM;
@@ -156,9 +161,11 @@ namespace procademy
 		}
 
 		LONG ret = InterlockedIncrement(&mFreeCount);
+		//packetLog(40020, GetCurrentThreadId(), this, block, mAllocCount, ret);
 
 		if (ret == CChunk::MAX_SIZE)
 		{
+			//packetLog(40040, GetCurrentThreadId(), this, block, mAllocCount, ret);
 			block->pOrigin->threadID = 0;
 			pObjPool->mMemoryPool->Free(block->pOrigin);
 		}

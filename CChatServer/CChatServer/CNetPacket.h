@@ -16,6 +16,7 @@ namespace procademy
 {
 	class CNetPacket
 	{
+		friend class CNetServerNoLock;
 		friend class CChatServerSingle;
 		template<typename DATA>
 		friend class TC_LFObjectPool;
