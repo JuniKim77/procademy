@@ -14,6 +14,22 @@ struct st_ETHERNET
 
 int main()
 {
+	DWORD process_id = GetCurrentProcessId();
+	HANDLE process_handle = OpenProcess(
+		PROCESS_QUERY_LIMITED_INFORMATION,
+		FALSE,
+		process_id
+	);
+	wchar_t buffer[MAX_PATH] = {};
+	if (process_handle) {
+		
+		DWORD buffer_size = MAX_PATH;
+		if (QueryFullProcessImageNameW(process_handle, 0, buffer, &buffer_size)) {
+			wprintf(L"QueryFullProcessImageNameW process name : %s\n", buffer);
+		}
+		CloseHandle(process_handle);
+	}
+
 	PDH_HQUERY cpuQuery;
 	PdhOpenQuery(NULL, NULL, &cpuQuery);
 
@@ -21,18 +37,12 @@ int main()
 	PDH_HCOUNTER cpuTotal;
 	PDH_HCOUNTER cpu1;
 	PDH_HCOUNTER cpu2;
-	PDH_HCOUNTER cpu3;
-	PDH_HCOUNTER cpu4;
-	PDH_HCOUNTER cpu5;
-	PDH_HCOUNTER cpu6;
+	PDH_HCOUNTER processUserUsage;
 
 	PdhAddCounter(cpuQuery, L"\\Processor(_Total)\\% Processor Time", NULL, &cpuTotal);
 	PdhAddCounter(cpuQuery, L"\\Processor(0)\\% Processor Time", NULL, &cpu1);
 	PdhAddCounter(cpuQuery, L"\\Processor(1)\\% Processor Time", NULL, &cpu2);
-	PdhAddCounter(cpuQuery, L"\\Processor(2)\\% Processor Time", NULL, &cpu3);
-	PdhAddCounter(cpuQuery, L"\\Processor(3)\\% Processor Time", NULL, &cpu4);
-	PdhAddCounter(cpuQuery, L"\\Processor(4)\\% Processor Time", NULL, &cpu5);
-	PdhAddCounter(cpuQuery, L"\\Processor(5)\\% Processor Time", NULL, &cpu6);
+	PdhAddCounter(cpuQuery, L"\\Process(CPDH)\\Thread Count", NULL, &processUserUsage);
 
 
 	// 첫 갱신
@@ -51,24 +61,10 @@ int main()
 		PdhGetFormattedCounterValue(cpuTotal, PDH_FMT_DOUBLE, NULL, &counterVal);
 		// 얻은 데이터 사용
 		wprintf(L"CPU Usage : %f%%\n", counterVal.doubleValue);
-		PdhGetFormattedCounterValue(cpu1, PDH_FMT_DOUBLE, NULL, &counterVal);
-		// 얻은 데이터 사용
-		wprintf(L"CPU_1 Usage : %f%%\n", counterVal.doubleValue);
-		PdhGetFormattedCounterValue(cpu2, PDH_FMT_DOUBLE, NULL, &counterVal);
-		// 얻은 데이터 사용
-		wprintf(L"CPU_2 Usage : %f%%\n", counterVal.doubleValue);
-		PdhGetFormattedCounterValue(cpu3, PDH_FMT_DOUBLE, NULL, &counterVal);
-		// 얻은 데이터 사용
-		wprintf(L"CPU_3 Usage : %f%%\n", counterVal.doubleValue);
-		PdhGetFormattedCounterValue(cpu4, PDH_FMT_DOUBLE, NULL, &counterVal);
-		// 얻은 데이터 사용
-		wprintf(L"CPU_4 Usage : %f%%\n", counterVal.doubleValue);
-		PdhGetFormattedCounterValue(cpu5, PDH_FMT_DOUBLE, NULL, &counterVal);
-		// 얻은 데이터 사용
-		wprintf(L"CPU_5 Usage : %f%%\n", counterVal.doubleValue);
-		PdhGetFormattedCounterValue(cpu6, PDH_FMT_DOUBLE, NULL, &counterVal);
-		// 얻은 데이터 사용
-		wprintf(L"CPU_6 Usage : %f%%\n", counterVal.doubleValue);
+		PdhGetFormattedCounterValue(processUserUsage, PDH_FMT_DOUBLE, NULL, &counterVal);
+		
+		wprintf(L"Process Handle Count : %f%%\n", counterVal.doubleValue);
+
 	}
 
 	return 0;

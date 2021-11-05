@@ -1,6 +1,9 @@
 #pragma once
 
-#include <wtypes.h>
+#pragma comment(lib, "Pdh.lib")
+
+#include <stdio.h>
+#include <Pdh.h>
 
 /// <summary>
 /// CCpuUsage CPUTime();
@@ -42,5 +45,12 @@ namespace procademy
 		ULARGE_INTEGER		mProcess_LastKernel;
 		ULARGE_INTEGER		mProcess_LastUser;
 		ULARGE_INTEGER		mProcess_LastTime;
+
+		PDH_HQUERY			mCpuQuery;
+		WCHAR				mProcessname[MAX_PATH]; // NAME
+		PDH_HCOUNTER		mProcessUserMemory; // "\\Process(NAME)\\Private Bytes"
+		PDH_HCOUNTER		mProcessNonPagedMemory; // "\\Process(NAME)\\Pool Nonpaged Bytes"
+		PDH_HCOUNTER		mAvailableMemory; // L"\\Memory\\Available MBytes"
+		PDH_HCOUNTER		mNonPagedMemory; // L"\\Memory\\Pool Nonpaged Bytes"
 	};
 }
