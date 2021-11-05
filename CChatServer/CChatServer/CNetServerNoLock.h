@@ -144,8 +144,9 @@ namespace procademy
 		bool				mbNagle = true;
 		bool				mbMonitoring = true;
 		bool				mbZeroCopy = true;
-		bool				mExit = false;
-		bool				mBegin = false;
+		bool				mbExit = false;
+		bool				mbBegin = false;
+		bool				mbPrint = false;
 		HANDLE				mBeginEvent = INVALID_HANDLE_VALUE;
 
 		struct Monitor

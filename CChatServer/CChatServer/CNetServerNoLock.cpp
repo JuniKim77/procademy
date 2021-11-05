@@ -185,9 +185,9 @@ namespace procademy
 	{
 		CNetServerNoLock* server = (CNetServerNoLock*)arg;
 
-		while (!server->mExit)
+		while (!server->mbExit)
 		{
-			if (!server->mBegin)
+			if (!server->mbBegin)
 			{
 				WaitForSingleObject(server->mBeginEvent, INFINITE);
 			}
@@ -204,9 +204,9 @@ namespace procademy
 	{
 		CNetServerNoLock* server = (CNetServerNoLock*)arg;
 
-		while (!server->mExit)
+		while (!server->mbExit)
 		{
-			if (!server->mBegin)
+			if (!server->mbBegin)
 			{
 				WaitForSingleObject(server->mBeginEvent, INFINITE);
 			}
@@ -715,7 +715,7 @@ namespace procademy
 	{
 		HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
 
-		while (!mExit)
+		while (!mbExit)
 		{
 			DWORD retval = WaitForSingleObject(dummyEvent, 1000);
 
@@ -740,8 +740,8 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Exit\n");
 
 		PostQueuedCompletionStatus(mHcp, 0, 0, 0);
-		mBegin = false;
-		mExit = true;
+		mbBegin = false;
+		mbExit = true;
 
 		closesocket(mListenSocket);
 	}
@@ -777,7 +777,7 @@ namespace procademy
 
 	bool CNetServerNoLock::Start()
 	{
-		if (mBegin == true)
+		if (mbBegin == true)
 		{
 			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Network is already running\n");
 			return false;
@@ -788,7 +788,7 @@ namespace procademy
 			return false;
 		}
 
-		mBegin = true;
+		mbBegin = true;
 		SetEvent(mBeginEvent);
 
 		InitializeEmptyIndex();
@@ -798,7 +798,7 @@ namespace procademy
 
 	void CNetServerNoLock::Stop()
 	{
-		mBegin = false;
+		mbBegin = false;
 	}
 
 	int CNetServerNoLock::GetSessionCount()
@@ -851,17 +851,21 @@ namespace procademy
 				}
 				break;
 			case 's':
-				if (mBegin)
+				if (mbBegin)
 				{
-					mBegin = false;
+					mbBegin = false;
 					wprintf(L"STOP\n");
 				}
 				else
 				{
-					mBegin = true;
+					mbBegin = true;
 					SetEvent(mBeginEvent);
 					wprintf(L"RUN\n");
 				}
+				break;
+			case 'p':
+				mbPrint = true;
+				wprintf(L"Set Print\n");
 				break;
 			case 'd':
 				CRASH();
@@ -908,7 +912,7 @@ namespace procademy
 
 		IncrementIOProc(session, 20000);
 
-		if (SessionID != session->sessionID || session->ioBlock.releaseCount.isReleased == 1)
+		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
 		{
 			DecrementIOProc(session, 20020);
 			USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket);
@@ -920,13 +924,14 @@ namespace procademy
 		session->sendQ.Enqueue(packet);
 
 		CProfiler::Begin(L"SendPost");
-		bool ret = SendPost(session);
+		SendPost(session);
 		CProfiler::End(L"SendPost");
 
-		if (ret)
+		/*if (ret)
 		{
 			DecrementIOProc(session, 20010);
-		}
+		}*/
+		DecrementIOProc(session, 20010);
 	}
 	void CNetServerNoLock::LoadInitFile(const WCHAR* fileName)
 	{

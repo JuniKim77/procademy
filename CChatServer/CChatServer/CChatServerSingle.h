@@ -72,7 +72,7 @@ namespace procademy
 		void			Sector_AddPlayer(WORD x, WORD y, st_Player* player);
 		void			Sector_RemovePlayer(WORD x, WORD y, st_Player* player);
 		void			GetSectorAround(WORD x, WORD y, st_Sector_Around* output);
-		void			SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input);
+		DWORD			SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input);
 		void			MakeMonitorStr(WCHAR* s);
 		void			PrintRecvSendRatio();
 		void			ClearTPS();

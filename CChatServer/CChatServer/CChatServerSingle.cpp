@@ -10,9 +10,9 @@ unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
 {
     CChatServerSingle* chatServer = (CChatServerSingle*)arg;
 
-    while (!chatServer->mExit)
+    while (!chatServer->mbExit)
     {
-        if (!chatServer->mBegin)
+        if (!chatServer->mbBegin)
         {
             WaitForSingleObject(chatServer->mBeginEvent, INFINITE);
         }
@@ -42,9 +42,9 @@ unsigned int __stdcall procademy::CChatServerSingle::HeartbeatFunc(LPVOID arg)
 {
     CChatServerSingle* chatServer = (CChatServerSingle*)arg;
 
-    while (!chatServer->mExit)
+    while (!chatServer->mbExit)
     {
-        if (!chatServer->mBegin)
+        if (!chatServer->mbBegin)
         {
             WaitForSingleObject(chatServer->mBeginEvent, INFINITE);
         }
@@ -66,7 +66,7 @@ void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
 
 void procademy::CChatServerSingle::GQCSProc()
 {
-    while (mBegin)
+    while (mbBegin)
     {
         DWORD           transferredSize = 0;
         st_MSG*         msg = nullptr;
@@ -109,7 +109,7 @@ bool procademy::CChatServerSingle::CheckHeart()
 {
     HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
 
-    while (mBegin)
+    while (mbBegin)
     {
         DWORD retval = WaitForSingleObject(dummyevent, 1000);
 
@@ -137,7 +137,7 @@ bool procademy::CChatServerSingle::MonitoringProc()
     HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
     WCHAR str[1024];
 
-    while (!mExit)
+    while (!mbExit)
     {
         DWORD retval = WaitForSingleObject(dummyevent, 1000);
 
@@ -148,7 +148,10 @@ bool procademy::CChatServerSingle::MonitoringProc()
             
             wprintf(str);
 
-            //PrintRecvSendRatio();
+            if (mbPrint)
+            {
+                PrintRecvSendRatio();
+            }
 
             ClearTPS();
         }
@@ -220,9 +223,21 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     if (player == nullptr)
     {
-        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Not Found\n", sessionNo);*/
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found\n", sessionNo);*/
 
-        response = MakeCSResLogin(0, 0);
+        response = MakeCSResLogin(0, sessionNo);
+        SendPacket(sessionNo, response);
+        response->SubRef();
+
+        return false;
+    }
+
+    if (player->accountNo != 0)
+    {
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
+            sessionNo, player->accountNo, AccountNo);*/
+
+        response = MakeCSResLogin(0, sessionNo);
         SendPacket(sessionNo, response);
         response->SubRef();
 
@@ -259,8 +274,8 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
-            sessionNo);
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
+            sessionNo);*/
 
         return false;
     }
@@ -276,8 +291,11 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
     player->lastRecvTime = 0;
     player->curSectorX = -1;
     player->curSectorY = -1;
+    if (player->bLogin)
+    {
+        mLoginCount--;
+    }
     player->bLogin = false;
-    mLoginCount--;
     
     mPlayerPool.Free(player);
 
@@ -368,7 +386,7 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     CNetPacket* response = MakeCSResMessage(player->accountNo, player->ID, player->nickName, messageLen, (WCHAR*)packet->GetFrontPtr());
 
-    SendMessageSectorAround(response, &sectorAround);
+    mSector[player->curSectorY][player->curSectorX].sendCount += SendMessageSectorAround(response, &sectorAround);
 
     response->SubRef();
 
@@ -491,8 +509,10 @@ void procademy::CChatServerSingle::GetSectorAround(WORD x, WORD y, st_Sector_Aro
     }
 }
 
-void procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input)
+DWORD procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input)
 {
+    DWORD ret = 0;
+
     for (int i = 0; i < input->count; ++i)
     {
         int curX = input->around[i].x;
@@ -500,13 +520,15 @@ void procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, s
 
         mSector[curY][curX].updateCount++;
         mSector[curY][curX].playerCount += mSector[curY][curX].list.size();
+        ret += mSector[curY][curX].list.size();
 
         for (std::list<st_Player*>::iterator iter = mSector[curY][curX].list.begin(); iter != mSector[curY][curX].list.end(); ++iter)
         {
             SendPacket((*iter)->sessionNo, packet);
-            mSector[curY][curX].sendCount++;
         }
     }
+
+    return ret;
 }
 
 void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s)
@@ -534,10 +556,13 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s)
 
 void procademy::CChatServerSingle::PrintRecvSendRatio()
 {
+    mbPrint = false;
+
     FILE* fout = nullptr;
     int idx = 0;
+    st_Sector_Around sectorAround;
 
-    _wfopen_s(&fout, L"sectorRatio.txt", L"w");
+    _wfopen_s(&fout, L"sectorRatio.csv", L"w");
 
     if (fout == nullptr)
         return;
@@ -547,40 +572,33 @@ void procademy::CChatServerSingle::PrintRecvSendRatio()
         for (int j = 0; j < 50; ++j)
         {
             if (mSector[i][j].recvCount != 0)
-                idx += swprintf_s(str + idx, 20000 - idx, L"%6.2lf ", mSector[i][j].sendCount / (double)mSector[i][j].recvCount);
+            {
+                GetSectorAround(j, i, &sectorAround);
+                double avgPlayers = 0.0;
+
+                for (int i = 0; i < sectorAround.count; ++i)
+                {
+                    int curX = sectorAround.around[i].x;
+                    int curY = sectorAround.around[i].y;
+
+                    avgPlayers += mSector[curY][curX].playerCount / (double)mSector[curY][curX].updateCount;
+                }
+
+                idx += swprintf_s(str + idx, 20000 - idx, L"%.2lf<%.2lf>,",
+                    mSector[i][j].sendCount / (double)mSector[i][j].recvCount,
+                    avgPlayers);
+            }
             else
-                idx += swprintf_s(str + idx, 20000 - idx, L"%6d ", 0);
+            {
+                idx += swprintf_s(str + idx, 20000 - idx, L"%6d,", 0);
+            }
         }
 
         idx += swprintf_s(str + idx, 20000 - idx, L"\n");
     }
 
-    str[idx++] = L'\n';
-    str[idx++] = L'\n';
-    str[idx] = L'\0';
-
     fwprintf_s(fout, str);
 
-    idx = 0;
-
-    for (int i = 0; i < 50; ++i)
-    {
-        for (int j = 0; j < 50; ++j)
-        {
-            if (mSector[i][j].updateCount != 0)
-                idx += swprintf_s(str + idx, 20000 - idx, L"%6.2lf ", mSector[i][j].playerCount / (double)mSector[i][j].updateCount);
-            else
-                idx += swprintf_s(str + idx, 20000 - idx, L"%6d ", 0);
-        }
-
-        idx += swprintf_s(str + idx, 20000 - idx, L"\n");
-    }
-
-    str[idx++] = L'\n';
-    str[idx++] = L'\n';
-    str[idx] = L'\0';
-
-    fwprintf_s(fout, str);
     fclose(fout);
 }
 
