@@ -894,7 +894,7 @@ namespace procademy
 
 		IncrementIOProc(session, 20000);
 
-		if (SessionID != session->sessionID)
+		if (SessionID != session->sessionID || session->ioBlock.releaseCount.isReleased == 1)
 		{
 			DecrementIOProc(session, 20020);
 
@@ -915,10 +915,11 @@ namespace procademy
 		bool ret = SendPost(session);
 		CProfiler::End(L"SendPost");
 
-		if (ret)
+		/*if (ret)
 		{
 			DecrementIOProc(session, 20010);
-		}
+		}*/
+		DecrementIOProc(session, 20010);
 	}
 	void CLanServerNoLock::LoadInitFile(const WCHAR* fileName)
 	{
