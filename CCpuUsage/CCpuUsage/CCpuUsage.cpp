@@ -21,6 +21,25 @@ procademy::CCpuUsage::CCpuUsage(HANDLE mhProcess)
 	mProcess_LastUser.QuadPart = 0;
 	mProcess_LastTime.QuadPart = 0;
 
+	PdhOpenQuery(NULL, NULL, &mCpuQuery);
+	GetProcessName(mProcessName);
+
+	WCHAR szQuery[1024];
+
+	swprintf_s(szQuery, MAX_PATH, L"\\Process(%s)\\Private Bytes", mProcessName);
+	PdhAddCounter(mCpuQuery, szQuery, NULL, &mProcessUserMemoryCounter);
+	swprintf_s(szQuery, MAX_PATH, L"\\Process(%s)\\Pool Nonpaged Bytes", mProcessName);
+	PdhAddCounter(mCpuQuery, szQuery, NULL, &mProcessNonPagedMemoryCounter);
+	swprintf_s(szQuery, MAX_PATH, L"\\Process(%s)\\Handle Count", mProcessName);
+	PdhAddCounter(mCpuQuery, szQuery, NULL, &mProcessHandleCountCounter);
+	swprintf_s(szQuery, MAX_PATH, L"\\Process(%s)\\Thread Count", mProcessName);
+	PdhAddCounter(mCpuQuery, szQuery, NULL, &mProcessThreadCountCounter);
+	
+	PdhAddCounter(mCpuQuery, L"\\Memory\\Available MBytes", NULL, &mAvailableMemoryCounter);
+	PdhAddCounter(mCpuQuery, L"\\Memory\\Pool Nonpaged Bytes", NULL, &mNonPagedMemoryCounter);
+
+	GetEthernetCounters();
+
 	UpdateCpuTime();
 }
 
@@ -79,4 +98,129 @@ void procademy::CCpuUsage::UpdateCpuTime()
 	mProcess_LastTime = NowTime;
 	mProcess_LastKernel = Kernel;
 	mProcess_LastUser = User;
+
+	PdhCollectQueryData(mCpuQuery);
+
+	PDH_FMT_COUNTERVALUE CounterValue;
+
+	PdhGetFormattedCounterValue(mProcessUserMemoryCounter, PDH_FMT_LARGE, NULL, &CounterValue);
+	mProcessUserMemory = CounterValue.largeValue;
+	PdhGetFormattedCounterValue(mProcessNonPagedMemoryCounter, PDH_FMT_LARGE, NULL, &CounterValue);
+	mProcessNonPagedMemory = CounterValue.largeValue;
+	PdhGetFormattedCounterValue(mAvailableMemoryCounter, PDH_FMT_LARGE, NULL, &CounterValue);
+	mAvailableMemory = CounterValue.largeValue;
+	PdhGetFormattedCounterValue(mNonPagedMemoryCounter, PDH_FMT_LARGE, NULL, &CounterValue);
+	mNonPagedMemory = CounterValue.largeValue;
+	PdhGetFormattedCounterValue(mProcessHandleCountCounter, PDH_FMT_LONG, NULL, &CounterValue);
+	mProcessHandleCount = (DWORD)CounterValue.longValue;
+	PdhGetFormattedCounterValue(mProcessThreadCountCounter, PDH_FMT_LONG, NULL, &CounterValue);
+	mProcessThreadCount = (DWORD)CounterValue.longValue;
+
+	mPdhValueNetwork_RecvBytes = 0;
+	mPdhValueNetwork_SendBytes = 0;
+
+	// Network
+	for (int i = 0; i < PDH_ETHERNET_MAX; ++i)
+	{
+		if (mEthernetStruct[i].bUse)
+		{
+			PdhGetFormattedCounterValue(mEthernetStruct[i].pdhCounterNetworkRecvBytes,
+				PDH_FMT_LONG, NULL, &CounterValue);
+
+			mPdhValueNetwork_RecvBytes += (DWORD)CounterValue.longValue;
+
+			PdhGetFormattedCounterValue(mEthernetStruct[i].pdhCounterNetworkSendBytes,
+				PDH_FMT_LONG, NULL, &CounterValue);
+
+			mPdhValueNetwork_SendBytes += (DWORD)CounterValue.longValue;
+		}
+	}
+}
+
+bool procademy::CCpuUsage::GetProcessName(WCHAR* output)
+{
+	bool ret = true;
+	DWORD process_id = GetCurrentProcessId();
+	HANDLE process_handle = OpenProcess(
+		PROCESS_QUERY_LIMITED_INFORMATION,
+		FALSE,
+		process_id
+	);
+
+	WCHAR buffer[MAX_PATH] = {};
+	DWORD buffer_size = MAX_PATH;
+	DWORD i;
+
+	if (process_handle) {
+		if (!QueryFullProcessImageNameW(process_handle, 0, buffer, &buffer_size)) {
+			ret = false;
+		}
+		else
+		{
+			for (i = buffer_size; i > 0; --i)
+			{
+				if (buffer[i] == L'.')
+				{
+					buffer[i] = L'\0';
+				}
+
+				if (buffer[i] == L'\\')
+				{
+					break;
+				}
+			}
+
+			wcscpy_s(output, MAX_PATH, buffer + i + 1);
+		}
+
+		CloseHandle(process_handle);
+	}
+
+	return true;
+}
+
+bool procademy::CCpuUsage::GetEthernetCounters()
+{
+	DWORD dwCounterSize = 0;
+	DWORD dwInterfaceSize = 0;
+	WCHAR* szCounters = nullptr;
+	WCHAR* szInterfaces = nullptr;
+
+	PdhEnumObjectItems(NULL, NULL, L"Network Interface", szCounters, &dwCounterSize, szInterfaces, &dwInterfaceSize, PERF_DETAIL_WIZARD, 0);
+
+	szCounters = new WCHAR[dwCounterSize];
+	szInterfaces = new WCHAR[dwInterfaceSize];
+
+	if (PdhEnumObjectItems(NULL, NULL, L"Network Interface", szCounters, &dwCounterSize, szInterfaces, &dwInterfaceSize, PERF_DETAIL_WIZARD, 0) != ERROR_SUCCESS)
+	{
+		delete[] szCounters;
+		delete[] szInterfaces;
+
+		return false;
+	}
+
+	WCHAR* szCur = szInterfaces;
+	WCHAR szQuery[1024];
+	int count = 0;
+
+	for (; *szCur != L'\0' && count < PDH_ETHERNET_MAX; szCur += wcslen(szCur) + 1, count++)
+	{
+		mEthernetStruct[count].bUse = true;
+		mEthernetStruct[count].szName[0] = L'\0';
+
+		wcscpy_s(mEthernetStruct[count].szName, szCur);
+
+		szQuery[0] = L'\0';
+		swprintf_s(szQuery, _countof(szQuery), L"\\Network Interface(%s)\\Bytes Received/sec", szCur);
+		PdhAddCounter(mCpuQuery, szQuery, NULL, &mEthernetStruct[count].pdhCounterNetworkRecvBytes);
+
+		szQuery[0] = L'\0';
+		swprintf_s(szQuery, _countof(szQuery), L"\\Network Interface(%s)\\Bytes Sent/sec", szCur);
+		PdhAddCounter(mCpuQuery, szQuery, NULL, &mEthernetStruct[count].pdhCounterNetworkSendBytes);
+	}
+
+	delete[] szCounters;
+	delete[] szInterfaces;
+
+	return true;
 }
