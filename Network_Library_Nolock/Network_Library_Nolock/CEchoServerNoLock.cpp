@@ -64,8 +64,6 @@ namespace procademy
 			return false;
 		}
 
-		ResetEvent(mBeginEvent);
-
 		WaitForThreadsFin();
 
 		DWORD ret = WaitForSingleObject(mMonitoringThread, INFINITE);
@@ -104,7 +102,7 @@ namespace procademy
 		HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
 		WCHAR str[1024];
 
-		while (!mExit)
+		while (!mbExit)
 		{
 			DWORD retval = WaitForSingleObject(dummyevent, 1000);
 

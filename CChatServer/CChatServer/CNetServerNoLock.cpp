@@ -97,6 +97,29 @@ namespace procademy
 	{
 	}
 
+	bool CNetServerNoLock::CreateIOCP()
+	{
+		// 논리 코어 개수 확인 로직
+		SYSTEM_INFO si;
+		GetSystemInfo(&si);
+
+		if (mActiveThreadNum > si.dwNumberOfProcessors)
+		{
+			CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Setting: Max Running thread is larger than the number of processors");
+		}
+
+		mHcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, mActiveThreadNum);
+
+		if (mHcp == NULL)
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]\n", WSAGetLastError());
+			closesocket(mListenSocket);
+			return false;
+		}
+
+		return true;
+	}
+
 	bool CNetServerNoLock::CreateListenSocket()
 	{
 		WSADATA wsa;
@@ -138,32 +161,12 @@ namespace procademy
 			return false;
 		}
 
-		// 논리 코어 개수 확인 로직
-		SYSTEM_INFO si;
-		GetSystemInfo(&si);
-
-		if (mActiveThreadNum > si.dwNumberOfProcessors)
-		{
-			CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Setting: Max Running thread is larger than the number of processors");
-		}
-
-		mHcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, mActiveThreadNum);
-
-		if (mHcp == NULL)
-		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]\n", WSAGetLastError());
-			closesocket(mListenSocket);
-			return false;
-		}
-
 		return true;
 	}
 
 	bool CNetServerNoLock::BeginThreads()
 	{
 		BYTE i = 0;
-
-		mBeginEvent = CreateEvent(nullptr, true, 0, nullptr);
 
 		mhThreads[i++] = (HANDLE)_beginthreadex(nullptr, 0, AcceptThread, this, 0, nullptr);
 		mNumThreads++;
@@ -187,14 +190,7 @@ namespace procademy
 
 		while (!server->mbExit)
 		{
-			if (!server->mbBegin)
-			{
-				WaitForSingleObject(server->mBeginEvent, INFINITE);
-			}
-			else
-			{
-				server->CompleteMessage();
-			}
+			server->CompleteMessage();
 		}
 
 		return 0;
@@ -206,11 +202,7 @@ namespace procademy
 
 		while (!server->mbExit)
 		{
-			if (!server->mbBegin)
-			{
-				WaitForSingleObject(server->mBeginEvent, INFINITE);
-			}
-			else
+			if (server->mbBegin)
 			{
 				server->AcceptProc();
 			}
@@ -375,20 +367,18 @@ namespace procademy
 		{
 			/*packDebug(logic, GetCurrentThreadId(), session->sessionID & 0xffffffff,
 				session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
+			int test = 0;
 		}
 
 		if (ret.releaseCount.count < 0)
 		{
-			WCHAR temp[1024] = { 0, };
-			swprintf_s(temp, 1024, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [isAlive: %d] [recv: %d] [Send: %d]\n\n",
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [isAlive: %d] [recv: %d] [Send: %d]\n\n",
 				session->sessionID & 0xffffffffff,
 				session->ioBlock.ioCount,
 				session->isSending,
 				session->bIsAlive,
 				session->recvQ.GetUseSize(),
 				session->sendQ.GetSize());
-
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"%s", temp);
 
 			CRASH();
 		}
@@ -431,8 +421,8 @@ namespace procademy
 				break;
 			}
 
-			USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket2);
-			g_sessionDebugs2[ret] = dummy;
+			/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket2);
+			g_sessionDebugs2[ret] = dummy;*/
 			dummy->SubRef();
 		}
 		session->recvQ.ClearBuffer();
@@ -464,7 +454,7 @@ namespace procademy
 				return;
 			}
 
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Accept [Error: %d]\n", err);
+			CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Listen Socket Close [Error: %d]\n", err);
 
 			return;
 		}
@@ -757,7 +747,9 @@ namespace procademy
 			new (&mSessionArray[i]) (Session);
 		}
 
+		InitializeEmptyIndex();
 		BeginThreads();
+		CreateIOCP();
 		CLogger::SetDirectory(L"_log");
 	}
 
@@ -789,9 +781,6 @@ namespace procademy
 		}
 
 		mbBegin = true;
-		SetEvent(mBeginEvent);
-
-		InitializeEmptyIndex();
 
 		return true;
 	}
@@ -799,6 +788,19 @@ namespace procademy
 	void CNetServerNoLock::Stop()
 	{
 		mbBegin = false;
+		BOOL ret;
+
+		closesocket(mListenSocket);
+
+		for (USHORT i = 0; i < mMaxClient; ++i)
+		{
+			if (mSessionArray[i].bIsAlive)
+			{
+				ret = CancelIoEx((HANDLE)mSessionArray[i].socket, nullptr);
+
+				//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
+			}
+		}
 	}
 
 	int CNetServerNoLock::GetSessionCount()
@@ -853,13 +855,12 @@ namespace procademy
 			case 's':
 				if (mbBegin)
 				{
-					mbBegin = false;
+					Stop();
 					wprintf(L"STOP\n");
 				}
 				else
 				{
-					mbBegin = true;
-					SetEvent(mBeginEvent);
+					Start();
 					wprintf(L"RUN\n");
 				}
 				break;
@@ -878,7 +879,7 @@ namespace procademy
 			}
 		}
 
-		EXIT:
+	EXIT:
 		DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
 
 		switch (waitResult)
@@ -900,8 +901,14 @@ namespace procademy
 	bool CNetServerNoLock::Disconnect(SESSION_ID SessionID)
 	{
 		Session* session = FindSession(SessionID);
+		BOOL ret;
 
-		//ReleaseProc(session);
+		if (session == nullptr)
+			return false;
+
+		ret = CancelIoEx((HANDLE)session->socket, nullptr);
+
+		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
 
 		return true;
 	}
@@ -927,10 +934,6 @@ namespace procademy
 		SendPost(session);
 		CProfiler::End(L"SendPost");
 
-		/*if (ret)
-		{
-			DecrementIOProc(session, 20010);
-		}*/
 		DecrementIOProc(session, 20010);
 	}
 	void CNetServerNoLock::LoadInitFile(const WCHAR* fileName)

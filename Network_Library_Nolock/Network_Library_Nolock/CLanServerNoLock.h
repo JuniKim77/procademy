@@ -95,6 +95,7 @@ namespace procademy
 		void InsertSessionData(Session* session);
 		void DeleteSessionData(u_int64 sessionNo);
 		void UpdateSessionData(u_int64 sessionNo, Session* session);
+		bool CreateIOCP();
 		bool CreateListenSocket();
 		bool BeginThreads();
 		static unsigned int WINAPI WorkerThread(LPVOID arg);
@@ -121,8 +122,8 @@ namespace procademy
 		SOCKET				mListenSocket = INVALID_SOCKET;
 		BYTE				mNumThreads = 0;
 		HANDLE				mHcp = INVALID_HANDLE_VALUE;
-		HANDLE* mhThreads = nullptr;
-		Session* mSessionArray = nullptr;
+		HANDLE*				mhThreads = nullptr;
+		Session*			mSessionArray = nullptr;
 		u_int64				mSessionIDCounter = 1;
 		TC_LFStack<u_short> mEmptyIndexes;
 		u_short				mPort = 0;
@@ -144,9 +145,8 @@ namespace procademy
 		bool				mbNagle = true;
 		bool				mbMonitoring = true;
 		bool				mbZeroCopy = true;
-		bool				mExit = false;
-		bool				mBegin = false;
-		HANDLE				mBeginEvent = INVALID_HANDLE_VALUE;
+		bool				mbExit = false;
+		bool				mbBegin = false;
 
 		struct Monitor
 		{

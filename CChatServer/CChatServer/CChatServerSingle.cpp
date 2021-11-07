@@ -4,7 +4,9 @@
 #include "CLogger.h"
 #include "TextParser.h"
 
-WCHAR str[20000];
+#define MAX_STR (30000)
+
+WCHAR str[MAX_STR];
 
 unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
 {
@@ -12,14 +14,7 @@ unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
 
     while (!chatServer->mbExit)
     {
-        if (!chatServer->mbBegin)
-        {
-            WaitForSingleObject(chatServer->mBeginEvent, INFINITE);
-        }
-        else
-        {
-            chatServer->GQCSProc();
-        }
+        chatServer->GQCSProc();
     }
 
     wprintf(L"Update Thread End\n");
@@ -44,14 +39,7 @@ unsigned int __stdcall procademy::CChatServerSingle::HeartbeatFunc(LPVOID arg)
 
     while (!chatServer->mbExit)
     {
-        if (!chatServer->mbBegin)
-        {
-            WaitForSingleObject(chatServer->mBeginEvent, INFINITE);
-        }
-        else
-        {
-            chatServer->CheckHeart();
-        }
+        chatServer->CheckHeart();
     }
 
     wprintf(L"HeartBeat Thread End\n");
@@ -66,7 +54,7 @@ void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
 
 void procademy::CChatServerSingle::GQCSProc()
 {
-    while (mbBegin)
+    while (1)
     {
         DWORD           transferredSize = 0;
         st_MSG*         msg = nullptr;
@@ -584,17 +572,17 @@ void procademy::CChatServerSingle::PrintRecvSendRatio()
                     avgPlayers += mSector[curY][curX].playerCount / (double)mSector[curY][curX].updateCount;
                 }
 
-                idx += swprintf_s(str + idx, 20000 - idx, L"%.2lf<%.2lf>,",
+                idx += swprintf_s(str + idx, MAX_STR - idx, L"%.2lf<%.2lf>,",
                     mSector[i][j].sendCount / (double)mSector[i][j].recvCount,
                     avgPlayers);
             }
             else
             {
-                idx += swprintf_s(str + idx, 20000 - idx, L"%6d,", 0);
+                idx += swprintf_s(str + idx, MAX_STR - idx, L"%6d,", 0);
             }
         }
 
-        idx += swprintf_s(str + idx, 20000 - idx, L"\n");
+        idx += swprintf_s(str + idx, MAX_STR - idx, L"\n");
     }
 
     fwprintf_s(fout, str);
@@ -728,8 +716,6 @@ bool procademy::CChatServerSingle::BeginServer()
 
         return false;
     }
-
-    ResetEvent(mBeginEvent);
 
     WaitForThreadsFin();
 

@@ -95,6 +95,7 @@ namespace procademy
 		void InsertSessionData(Session* session);
 		void DeleteSessionData(u_int64 sessionNo);
 		void UpdateSessionData(u_int64 sessionNo, Session* session);
+		bool CreateIOCP();
 		bool CreateListenSocket();
 		bool BeginThreads();
 		static unsigned int WINAPI WorkerThread(LPVOID arg);
@@ -147,7 +148,6 @@ namespace procademy
 		bool				mbExit = false;
 		bool				mbBegin = false;
 		bool				mbPrint = false;
-		HANDLE				mBeginEvent = INVALID_HANDLE_VALUE;
 
 		struct Monitor
 		{

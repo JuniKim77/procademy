@@ -91,6 +91,29 @@ namespace procademy
 	{
 	}
 
+	bool CLanServerNoLock::CreateIOCP()
+	{
+		// 논리 코어 개수 확인 로직
+		SYSTEM_INFO si;
+		GetSystemInfo(&si);
+
+		if (mActiveThreadNum > si.dwNumberOfProcessors)
+		{
+			CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Setting: Max Running thread is larger than the number of processors");
+		}
+
+		mHcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, mActiveThreadNum);
+
+		if (mHcp == NULL)
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]\n", WSAGetLastError());
+			closesocket(mListenSocket);
+			return false;
+		}
+
+		return true;
+	}
+
 	bool CLanServerNoLock::CreateListenSocket()
 	{
 		WSADATA wsa;
@@ -132,32 +155,12 @@ namespace procademy
 			return false;
 		}
 
-		// 논리 코어 개수 확인 로직
-		SYSTEM_INFO si;
-		GetSystemInfo(&si);
-
-		if (mActiveThreadNum > si.dwNumberOfProcessors)
-		{
-			CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Setting: Max Running thread is larger than the number of processors");
-		}
-
-		mHcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, mActiveThreadNum);
-
-		if (mHcp == NULL)
-		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]\n", WSAGetLastError());
-			closesocket(mListenSocket);
-			return false;
-		}
-
 		return true;
 	}
 
 	bool CLanServerNoLock::BeginThreads()
 	{
 		BYTE i = 0;
-
-		mBeginEvent = CreateEvent(nullptr, true, 0, nullptr);
 
 		mhThreads[i++] = (HANDLE)_beginthreadex(nullptr, 0, AcceptThread, this, 0, nullptr);
 		mNumThreads++;
@@ -179,16 +182,9 @@ namespace procademy
 	{
 		CLanServerNoLock* server = (CLanServerNoLock*)arg;
 
-		while (!server->mExit)
+		while (!server->mbExit)
 		{
-			if (!server->mBegin)
-			{
-				WaitForSingleObject(server->mBeginEvent, INFINITE);
-			}
-			else
-			{
-				server->CompleteMessage();
-			}
+			server->CompleteMessage();
 		}
 
 		return 0;
@@ -198,13 +194,9 @@ namespace procademy
 	{
 		CLanServerNoLock* server = (CLanServerNoLock*)arg;
 
-		while (!server->mExit)
+		while (!server->mbExit)
 		{
-			if (!server->mBegin)
-			{
-				WaitForSingleObject(server->mBeginEvent, INFINITE);
-			}
-			else
+			if (server->mbBegin)
 			{
 				server->AcceptProc();
 			}
@@ -373,16 +365,13 @@ namespace procademy
 
 		if (ret.releaseCount.count < 0)
 		{
-			WCHAR temp[1024] = { 0, };
-			swprintf_s(temp, 1024, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [isAlive: %d] [recv: %d] [Send: %d]\n\n",
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [isAlive: %d] [recv: %d] [Send: %d]\n\n",
 				session->sessionID & 0xffffffffff,
 				session->ioBlock.ioCount,
 				session->isSending,
 				session->bIsAlive,
 				session->recvQ.GetUseSize(),
 				session->sendQ.GetSize());
-
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"%s", temp);
 
 			CRASH();
 		}
@@ -425,6 +414,8 @@ namespace procademy
 				break;
 			}
 
+			/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket2);
+			g_sessionDebugs2[ret] = dummy;*/
 			dummy->SubRef();
 		}
 		session->recvQ.ClearBuffer();
@@ -456,7 +447,7 @@ namespace procademy
 				return;
 			}
 
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Accept [Error: %d]\n", err);
+			CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Listen Socket Close [Error: %d]\n", err);
 
 			return;
 		}
@@ -536,6 +527,7 @@ namespace procademy
 		session->ip = clientAddr.sin_addr.S_un.S_addr;
 		session->port = clientAddr.sin_port;
 		session->sessionID = id;
+		session->bIsAlive = true;
 
 		HANDLE hResult = CreateIoCompletionPort((HANDLE)client, mHcp, (ULONG_PTR)session, 0);
 
@@ -707,7 +699,7 @@ namespace procademy
 	{
 		HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
 
-		while (!mExit)
+		while (!mbExit)
 		{
 			DWORD retval = WaitForSingleObject(dummyEvent, 1000);
 
@@ -732,8 +724,8 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Exit\n");
 
 		PostQueuedCompletionStatus(mHcp, 0, 0, 0);
-		mBegin = false;
-		mExit = true;
+		mbBegin = false;
+		mbExit = true;
 
 		closesocket(mListenSocket);
 	}
@@ -749,7 +741,9 @@ namespace procademy
 			new (&mSessionArray[i]) (Session);
 		}
 
+		InitializeEmptyIndex();
 		BeginThreads();
+		CreateIOCP();
 		CLogger::SetDirectory(L"_log");
 	}
 
@@ -769,7 +763,7 @@ namespace procademy
 
 	bool CLanServerNoLock::Start()
 	{
-		if (mBegin == true)
+		if (mbBegin == true)
 		{
 			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Network is already running\n");
 			return false;
@@ -780,17 +774,27 @@ namespace procademy
 			return false;
 		}
 
-		mBegin = true;
-		SetEvent(mBeginEvent);
-
-		InitializeEmptyIndex();
+		mbBegin = true;
 
 		return true;
 	}
 
 	void CLanServerNoLock::Stop()
 	{
-		mBegin = false;
+		mbBegin = false;
+		BOOL ret;
+
+		closesocket(mListenSocket);
+
+		for (USHORT i = 0; i < mMaxClient; ++i)
+		{
+			if (mSessionArray[i].bIsAlive)
+			{
+				ret = CancelIoEx((HANDLE)mSessionArray[i].socket, nullptr);
+
+				//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
+			}
+		}
 	}
 
 	int CLanServerNoLock::GetSessionCount()
@@ -843,15 +847,14 @@ namespace procademy
 				}
 				break;
 			case 's':
-				if (mBegin)
+				if (mbBegin)
 				{
-					mBegin = false;
+					Stop();
 					wprintf(L"STOP\n");
 				}
 				else
 				{
-					mBegin = true;
-					SetEvent(mBeginEvent);
+					Start();
 					wprintf(L"RUN\n");
 				}
 				break;
@@ -885,7 +888,17 @@ namespace procademy
 
 	bool CLanServerNoLock::Disconnect(SESSION_ID SessionID)
 	{
-		return false;
+		Session* session = FindSession(SessionID);
+		BOOL ret;
+
+		if (session == nullptr)
+			return false;
+
+		ret = CancelIoEx((HANDLE)session->socket, nullptr);
+
+		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
+
+		return true;
 	}
 
 	void CLanServerNoLock::SendPacket(SESSION_ID SessionID, CNetPacket* packet)
@@ -901,24 +914,13 @@ namespace procademy
 			return;
 		}
 
-		/*st_NETWORK_HEADER header;
-
-		header.byCode = dfNETWORK_CODE;
-		header.wPayloadSize = packet->GetSize();*/
 		packet->AddRef();
-		char* buf = packet->GetBufferPtr();
-		packDebug(10000, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-			*((DWORD*)(buf + 2)));
 		session->sendQ.Enqueue(packet);
 
 		CProfiler::Begin(L"SendPost");
 		bool ret = SendPost(session);
 		CProfiler::End(L"SendPost");
 
-		/*if (ret)
-		{
-			DecrementIOProc(session, 20010);
-		}*/
 		DecrementIOProc(session, 20010);
 	}
 	void CLanServerNoLock::LoadInitFile(const WCHAR* fileName)
