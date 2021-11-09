@@ -240,6 +240,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     // token verification
 
+    SetReady(sessionNo);
     player->accountNo = AccountNo;
     player->sessionNo = sessionNo;
     memcpy_s(player->ID, sizeof(player->ID), ID, sizeof(ID));

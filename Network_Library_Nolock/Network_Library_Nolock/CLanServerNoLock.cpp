@@ -907,9 +907,11 @@ namespace procademy
 
 		IncrementIOProc(session, 20000);
 
-		if (SessionID != session->sessionID || session->ioBlock.releaseCount.isReleased == 1)
+		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
 		{
 			DecrementIOProc(session, 20020);
+			/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket);
+			g_sessionDebugs[ret] = packet;*/
 
 			return;
 		}

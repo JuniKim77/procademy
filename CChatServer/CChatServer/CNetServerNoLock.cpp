@@ -397,6 +397,7 @@ namespace procademy
 
 		released.ioCount = 0;
 		released.releaseCount.isReleased = 1;
+		session->bIsReady = false;
 
 		if (InterlockedCompareExchange(&session->ioBlock.ioCount, released.ioCount, 0) != 0)
 		{
@@ -420,7 +421,7 @@ namespace procademy
 			{
 				break;
 			}
-
+			
 			/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket2);
 			g_sessionDebugs2[ret] = dummy;*/
 			dummy->SubRef();
@@ -534,6 +535,7 @@ namespace procademy
 		session->ip = clientAddr.sin_addr.S_un.S_addr;
 		session->port = clientAddr.sin_port;
 		session->sessionID = id;
+		session->bIsAlive = true;
 
 		HANDLE hResult = CreateIoCompletionPort((HANDLE)client, mHcp, (ULONG_PTR)session, 0);
 
@@ -736,6 +738,16 @@ namespace procademy
 		closesocket(mListenSocket);
 	}
 
+	void CNetServerNoLock::SetReady(SESSION_ID sessionID)
+	{
+		Session* session = FindSession(sessionID);
+
+		if (session == nullptr)
+			return;
+
+		session->bIsReady = true;
+	}
+
 	CNetServerNoLock::CNetServerNoLock()
 	{
 		LoadInitFile(L"ChatServer.cnf");
@@ -794,12 +806,8 @@ namespace procademy
 
 		for (USHORT i = 0; i < mMaxClient; ++i)
 		{
-			if (mSessionArray[i].bIsAlive)
-			{
-				ret = CancelIoEx((HANDLE)mSessionArray[i].socket, nullptr);
-
-				//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
-			}
+			ret = CancelIoEx((HANDLE)mSessionArray[i].socket, nullptr);
+			//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
 		}
 	}
 
@@ -927,12 +935,15 @@ namespace procademy
 			return;
 		}
 
-		packet->AddRef();
-		session->sendQ.Enqueue(packet);
+		if (session->bIsReady)
+		{
+			packet->AddRef();
+			session->sendQ.Enqueue(packet);
 
-		CProfiler::Begin(L"SendPost");
-		SendPost(session);
-		CProfiler::End(L"SendPost");
+			CProfiler::Begin(L"SendPost");
+			SendPost(session);
+			CProfiler::End(L"SendPost");
+		}
 
 		DecrementIOProc(session, 20010);
 	}
