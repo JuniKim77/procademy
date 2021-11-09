@@ -1,4 +1,6 @@
 #define TEST_SIZE (4000000)
+#define SUB_SIZE (1000)
+#define TOTAL_SIZE (10000)
 
 #include "RedBlackTree.h"
 #include <time.h>
@@ -48,7 +50,7 @@ int main()
 
 	for (int t = 1; t <= count; ++t)
 	{
-		TestBiasedDistributionNumber(32);
+		TestBiasedDistributionNumber(16);
 	}
 
 	return 0;
@@ -75,9 +77,9 @@ void getRandBiasedNum(unsigned int* output, int msb)
 
 	num |= rand();
 
-	num &= 0x1ffff;
+	num &= 0x3ffff;
 
-	num |= (msb << 17);
+	num |= (msb << 18);
 
 	*output = num;
 }
@@ -85,6 +87,7 @@ void getRandBiasedNum(unsigned int* output, int msb)
 void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance, bool biased = false, int msb = 0)
 {
 	unsigned int num;
+	unsigned int num_list[SUB_SIZE];
 
 	if (biased)
 	{
@@ -95,12 +98,20 @@ void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 		getRandNum(&num);
 	}
 
+	int count = 0;
+
 	while (1)
 	{
+		if (count == SUB_SIZE)
+			break;
+
 		auto ret = setNum.insert(num);
 
 		if (ret.second == true)
-			break;
+		{
+			num_list[count] = num;
+			count++;
+		}
 
 		if (biased)
 		{
@@ -114,6 +125,10 @@ void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 
 	if (checkPerformance)
 	{
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+
+		}
 		int depth = rbTree.GetDepthInsertNode(num);
 		ProfileSetDepth(depth, L"RedBlackInsert");
 		PRO_BEGIN(L"RedBlackInsert");
@@ -293,13 +308,15 @@ void TestNormalDistributionNumber()
 	BinaryTree bTree;
 
 	std::unordered_set<unsigned int> setNums;
-
-	for (int i = 0; i < TEST_SIZE; i++)
+	
+	// pre setting 100¸¸ °Ç
+	for (int i = 0; i < 1000; i++)
 	{
 		insertNum(bTree, rbTree, myHash, setNums, false);
 	}
 
-	for (int i = 0; i < TEST_SIZE * 2; ++i)
+	// run
+	for (int i = 0; i < TOTAL_SIZE * 2; ++i)
 	{
 		unsigned int num;
 		getRandNum(&num);
@@ -322,7 +339,7 @@ void TestNormalDistributionNumber()
 		}*/
 	}
 
-	for (int i = 0; i < TEST_SIZE; ++i)
+	for (int i = 0; i < TOTAL_SIZE; ++i)
 	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
@@ -339,7 +356,7 @@ void TestBiasedDistributionNumber(int groupNum)
 	MyHashMap myHash;
 	BinaryTree bTree;
 
-	int size = TEST_SIZE;
+	int size = TEST_SIZE / 4;
 	int eachSize = size / groupNum;
 
 	std::unordered_set<unsigned int> setNums;
@@ -353,7 +370,7 @@ void TestBiasedDistributionNumber(int groupNum)
 	}
 	
 
-	for (int i = 0; i < TEST_SIZE * 2; ++i)
+	for (int i = 0; i < 1000 * 2; ++i)
 	{
 		unsigned int num;
 		getRandNum(&num);
@@ -376,7 +393,7 @@ void TestBiasedDistributionNumber(int groupNum)
 		}*/
 	}
 
-	for (int i = 0; i < TEST_SIZE; ++i)
+	for (int i = 0; i < size; ++i)
 	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
