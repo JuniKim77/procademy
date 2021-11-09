@@ -47,6 +47,7 @@ namespace procademy
 		DWORD		ProcessThreadCount() { return mProcessThreadCount; }
 		LONGLONG	NetworkRecvBytes() { return mPdhValueNetwork_RecvBytes; }
 		LONGLONG	NetworkSendBytes() { return mPdhValueNetwork_SendBytes; }
+		void		GetBigNumberStr(LONGLONG value, WCHAR* s, int size);
 
 	private:
 		bool		GetProcessName(WCHAR* output);

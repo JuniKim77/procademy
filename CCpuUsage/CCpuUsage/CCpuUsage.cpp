@@ -137,6 +137,61 @@ void procademy::CCpuUsage::UpdateCpuTime()
 	}
 }
 
+void procademy::CCpuUsage::GetBigNumberStr(LONGLONG value, WCHAR* s, int size)
+{
+	int idx = 0;
+	bool first = true;
+
+	if (value >= 1000000000)
+	{
+		if (first)
+		{
+			idx += swprintf_s(s + idx, size - idx, L"%llu,", value / 1000000000);
+			first = false;
+		}
+		else
+		{
+			idx += swprintf_s(s + idx, size - idx, L"%03llu,", value / 1000000000);
+		}
+	}
+	value = value % 1000000000;
+	if (value >= 1000000)
+	{
+		if (first)
+		{
+			idx += swprintf_s(s + idx, size - idx, L"%llu,", value / 1000000);
+			first = false;
+		}
+		else
+		{
+			idx += swprintf_s(s + idx, size - idx, L"%03llu,", value / 1000000);
+		}
+	}
+	value = value % 1000000;
+	if (value >= 1000)
+	{
+		if (first)
+		{
+			idx += swprintf_s(s + idx, size - idx, L"%llu,", value / 1000);
+			first = false;
+		}
+		else
+		{
+			idx += swprintf_s(s + idx, size - idx, L"%03llu,", value / 1000);
+		}
+	}
+	if (first)
+	{
+		idx += swprintf_s(s + idx, size - idx, L"%llu", value % 1000);
+		first = false;
+	}
+	else
+	{
+		idx += swprintf_s(s + idx, size - idx, L"%03llu", value % 1000);
+	}
+	
+}
+
 bool procademy::CCpuUsage::GetProcessName(WCHAR* output)
 {
 	bool ret = true;
