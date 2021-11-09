@@ -1,2 +1,2 @@
-Total,Name,Average(us),Min(us),Max(us),Call,Depth
+Total,Name,Average(us),Min(us),Max(us),Call(1000),Depth
 116,24,20,20,20,16,14
