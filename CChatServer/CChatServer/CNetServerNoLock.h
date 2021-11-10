@@ -35,7 +35,6 @@ namespace procademy
 		alignas(64) SessionIoCount	ioBlock;
 		alignas(64) bool			isSending;
 		bool						bIsAlive = false;
-		bool						bIsReady = false;
 		SOCKET						socket = INVALID_SOCKET;
 		u_short						port;
 		ULONG						ip;
@@ -90,7 +89,6 @@ namespace procademy
 
 		virtual void OnError(int errorcode, const WCHAR* log) = 0;
 		void QuitServer();
-		void SetReady(SESSION_ID sessionID);
 
 	private:
 		Session* FindSession(u_int64 sessionNo);

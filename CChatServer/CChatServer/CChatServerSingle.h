@@ -3,6 +3,7 @@
 #include <list>
 #include "TC_LFObjectPool.h"
 #include "ChatServerDTO.h"
+#include "CCpuUsage.h"
 
 namespace procademy
 {
@@ -73,7 +74,7 @@ namespace procademy
 		void			Sector_RemovePlayer(WORD x, WORD y, st_Player* player);
 		void			GetSectorAround(WORD x, WORD y, st_Sector_Around* output);
 		DWORD			SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input);
-		void			MakeMonitorStr(WCHAR* s);
+		void			MakeMonitorStr(WCHAR* s, int size);
 		void			PrintRecvSendRatio();
 		void			ClearTPS();
 
@@ -105,5 +106,6 @@ namespace procademy
 
 		st_Sector								mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
 		int										mTimeOut;
+		CCpuUsage								mCpuUsage;
 };
 }

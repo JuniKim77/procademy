@@ -16,14 +16,38 @@ struct packetDebug
 	LONG		freeCount;
 };
 
+struct ioDebug
+{
+	int			logicId;
+	UINT64		sessionID;
+	SHORT		released;
+	SHORT		ioCount;
+	DWORD		threadId;
+};
+
 USHORT g_debugIdx = 0;
 packetDebug g_packetDebugs[USHRT_MAX + 1] = { 0, };
 USHORT g_debugPacket = 0;
 procademy::CNetPacket* g_sessionDebugs[USHRT_MAX + 1] = { 0, };
-USHORT g_debugPacket2 = 0;
-procademy::CNetPacket* g_sessionDebugs2[USHRT_MAX + 1] = { 0, };
-USHORT g_debugPacket3 = 0;
-procademy::CNetPacket* g_sessionDebugs3[USHRT_MAX + 1] = { 0, };
+USHORT g_ioIdx = 0;
+ioDebug g_ioDebugs[USHRT_MAX + 1] = { 0, };
+
+void ioDebugLog(
+	int			logicId,
+	DWORD		threadId,
+	UINT64		sessionID,
+	SHORT		ioCount,
+	SHORT		released
+)
+{
+	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ioIdx);
+
+	g_ioDebugs[index].logicId = logicId;
+	g_ioDebugs[index].sessionID = sessionID;
+	g_ioDebugs[index].ioCount = ioCount;
+	g_ioDebugs[index].released = released;
+	g_ioDebugs[index].threadId = threadId;
+}
 
 void packetLog(
 	int			logicId = -9999,
@@ -354,7 +378,7 @@ namespace procademy
 	void CNetServerNoLock::IncrementIOProc(Session* session, int logic)
 	{
 		InterlockedIncrement(&session->ioBlock.ioCount);
-		/*ioDebug(logic, GetCurrentThreadId(), session->sessionID & 0xffffffff,
+		/*ioDebugLog(logic, GetCurrentThreadId(), session->sessionID & 0xffffffff,
 			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
 	}
 
@@ -365,7 +389,7 @@ namespace procademy
 		ret.ioCount = InterlockedDecrement(&session->ioBlock.ioCount);
 		if (ret.releaseCount.count <= 0)
 		{
-			/*packDebug(logic, GetCurrentThreadId(), session->sessionID & 0xffffffff,
+			/*ioDebugLog(logic, GetCurrentThreadId(), session->sessionID & 0xffffffff,
 				session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
 			int test = 0;
 		}
@@ -397,7 +421,6 @@ namespace procademy
 
 		released.ioCount = 0;
 		released.releaseCount.isReleased = 1;
-		session->bIsReady = false;
 
 		if (InterlockedCompareExchange(&session->ioBlock.ioCount, released.ioCount, 0) != 0)
 		{
@@ -738,16 +761,6 @@ namespace procademy
 		closesocket(mListenSocket);
 	}
 
-	void CNetServerNoLock::SetReady(SESSION_ID sessionID)
-	{
-		Session* session = FindSession(sessionID);
-
-		if (session == nullptr)
-			return;
-
-		session->bIsReady = true;
-	}
-
 	CNetServerNoLock::CNetServerNoLock()
 	{
 		LoadInitFile(L"ChatServer.cnf");
@@ -930,22 +943,20 @@ namespace procademy
 		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
 		{
 			DecrementIOProc(session, 20020);
-			USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket);
-			g_sessionDebugs[ret] = packet;
+			/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket);
+			g_sessionDebugs[ret] = packet;*/
 			return;
 		}
+		/*ioDebugLog(20010, GetCurrentThreadId(), session->sessionID & 0xffffffff,
+			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
+		packet->AddRef();
+		session->sendQ.Enqueue(packet);
 
-		if (session->bIsReady)
-		{
-			packet->AddRef();
-			session->sendQ.Enqueue(packet);
+		CProfiler::Begin(L"SendPost");
+		SendPost(session);
+		CProfiler::End(L"SendPost");
 
-			CProfiler::Begin(L"SendPost");
-			SendPost(session);
-			CProfiler::End(L"SendPost");
-		}
-
-		DecrementIOProc(session, 20010);
+		DecrementIOProc(session, 20020);
 	}
 	void CNetServerNoLock::LoadInitFile(const WCHAR* fileName)
 	{

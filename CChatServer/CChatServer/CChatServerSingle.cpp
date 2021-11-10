@@ -123,7 +123,7 @@ bool procademy::CChatServerSingle::CheckHeart()
 bool procademy::CChatServerSingle::MonitoringProc()
 {
     HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
-    WCHAR str[1024];
+    WCHAR str[2048];
 
     while (!mbExit)
     {
@@ -132,7 +132,7 @@ bool procademy::CChatServerSingle::MonitoringProc()
         if (retval == WAIT_TIMEOUT)
         {
             // 출력
-            MakeMonitorStr(str);
+            MakeMonitorStr(str, 2048);
             
             wprintf(str);
 
@@ -213,9 +213,9 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     {
         /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found\n", sessionNo);*/
 
-        response = MakeCSResLogin(0, sessionNo);
+        /*response = MakeCSResLogin(0, 0);
         SendPacket(sessionNo, response);
-        response->SubRef();
+        response->SubRef();*/
 
         return false;
     }
@@ -225,9 +225,9 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
         /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
             sessionNo, player->accountNo, AccountNo);*/
 
-        response = MakeCSResLogin(0, sessionNo);
+        /*response = MakeCSResLogin(0, 0);
         SendPacket(sessionNo, response);
-        response->SubRef();
+        response->SubRef();*/
 
         return false;
     }
@@ -240,7 +240,6 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     // token verification
 
-    SetReady(sessionNo);
     player->accountNo = AccountNo;
     player->sessionNo = sessionNo;
     memcpy_s(player->ID, sizeof(player->ID), ID, sizeof(ID));
@@ -250,8 +249,8 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     mLoginCount++;
 
     response = MakeCSResLogin(1, player->accountNo);
-
-    SendPacket(sessionNo, response);
+    // 로그?
+    SendPacket(player->sessionNo, response);
     response->SubRef();
 
     return true;
@@ -336,7 +335,7 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     CNetPacket* response = MakeCSResSectorMove(player->accountNo, player->curSectorX, player->curSectorY);
 
-    SendPacket(sessionNo, response);
+    SendPacket(player->sessionNo, response);
     response->SubRef();
 
     return true;
@@ -520,27 +519,46 @@ DWORD procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, 
     return ret;
 }
 
-void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s)
+void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
 {
     LONGLONG idx = 0;
     int len;
+    WCHAR bigNumber[18];
 
-    idx += swprintf_s(s + idx, 1024 - idx, L"\n========================================\n");
-    //idx += swprintf_s(s + idx, 1024 - idx, L"");
-    idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%lld\n", L"Session Num : ", mPlayerMap.size());
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
-    idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %u\n", L"Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %d\n", L"Update Msg Pool : ", mMsgPool.GetCapacity(), mMsgPool.GetSize());
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22sAlloc %d | Use %d\n", L"Player Pool : ", mPlayerPool.GetCapacity(), mPlayerPool.GetSize());
-    idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept Total : ", mMonitor.acceptTotal);
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Accept TPS : ", mMonitor.acceptTPS);
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Update TPS : ", mUpdateTPS);
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
-    idx += swprintf_s(s + idx, 1024 - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
-    idx += swprintf_s(s + idx, 1024 - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d]\n", mbZeroCopy, mbNagle);
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"%22s%lld\n", L"Session Num : ", mPlayerMap.size());
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
+    idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %d\n", L"Update Msg Pool : ", mMsgPool.GetCapacity(), mMsgPool.GetSize());
+    idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %d\n", L"Player Pool : ", mPlayerPool.GetCapacity(), mPlayerPool.GetSize());
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Accept Total : ", mMonitor.acceptTotal);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Accept TPS : ", mMonitor.acceptTPS);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Update TPS : ", mUpdateTPS);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"CPU usage [T:%.1f U:%.1f K:%.1f] [Chat:%.1f U:%.1f K%.1f]\n",
+        mCpuUsage.ProcessorTotal(), mCpuUsage.ProcessorUser(), mCpuUsage.ProcessorKernel(),
+        mCpuUsage.ProcessTotal(), mCpuUsage.ProcessUser(), mCpuUsage.ProcessKernel());
+    mCpuUsage.GetBigNumberStr(mCpuUsage.ProcessUserMemory(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"ProcessUserMemory : ", bigNumber);
+    mCpuUsage.GetBigNumberStr(mCpuUsage.ProcessNonPagedMemory(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"ProcessNonPagedMemory : ", bigNumber);
+    mCpuUsage.GetBigNumberStr(mCpuUsage.AvailableMemory(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"AvailableMemory : ", bigNumber);
+    mCpuUsage.GetBigNumberStr(mCpuUsage.NonPagedMemory(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"NonPagedMemory : ", bigNumber);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%d\n", L"ProcessHandleCount : ", mCpuUsage.ProcessHandleCount());
+    idx += swprintf_s(s + idx, size - idx, L"%25s%d\n", L"ProcessThreadCount : ", mCpuUsage.ProcessHandleCount());
+    mCpuUsage.GetBigNumberStr(mCpuUsage.NetworkRecvBytes(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"NetworkRecvBytes : ", bigNumber);
+    mCpuUsage.GetBigNumberStr(mCpuUsage.NetworkSendBytes(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"NetworkSendBytes : ", bigNumber);
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
 }
 
 void procademy::CChatServerSingle::PrintRecvSendRatio()

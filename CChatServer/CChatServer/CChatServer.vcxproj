@@ -141,6 +141,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CChatServerSingle.cpp" />
+    <ClCompile Include="CCpuUsage.cpp" />
     <ClCompile Include="CCrashDump.cpp" />
     <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="CNetPacket.cpp" />
@@ -152,6 +153,7 @@
     <ClCompile Include="TextParser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CCpuUsage.h" />
     <ClInclude Include="CCrashDump.h" />
     <ClInclude Include="CChatServerSingle.h" />
     <ClInclude Include="ChatServerDTO.h" />
