@@ -116,6 +116,7 @@ namespace procademy
 		void InitializeEmptyIndex();
 		SESSION_ID GenerateSessionID();
 		u_short GetIndexFromSessionNo(SESSION_ID sessionNo);
+	protected:
 		u_int64 GetLowNumFromSessionNo(SESSION_ID sessionNo);
 
 	private:

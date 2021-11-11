@@ -6,38 +6,7 @@
 
 #define MAX_STR (30000)
 
-struct msgDebug
-{
-    int			logicId;
-    INT64	    SessionNo;
-    INT64	    AccountNo;
-    int			secX;
-    int			secY;
-    bool        login;
-};
-
 WCHAR str[MAX_STR];
-USHORT g_msgIdx;
-msgDebug g_msgDebugs[USHRT_MAX + 1];
-
-void msgDebugLog(
-    int			logicId,
-    INT64	    SessionNo,
-    INT64	    AccountNo,
-    int			secX,
-    int			secY,
-    bool        login
-)
-{
-    USHORT index = g_msgIdx++;
-
-    g_msgDebugs[index].logicId = logicId;
-    g_msgDebugs[index].SessionNo = SessionNo;
-    g_msgDebugs[index].AccountNo = AccountNo;
-    g_msgDebugs[index].secX = secX;
-    g_msgDebugs[index].secY = secY;
-    g_msgDebugs[index].login = login;
-}
 
 unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
 {
@@ -214,21 +183,26 @@ bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPac
 
 bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
 {
-    st_Player* player = FindPlayer(sessionNo);
+    st_Player* player;
+
+    if (IsSessionLeaved(sessionNo))
+    {
+        return false;
+    }
+
+    player = FindPlayer(sessionNo);
 
     if (player != nullptr)
     {
         //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Player[%llu]\n", sessionNo);
-        CRASH();
+        //CRASH();
 
         return false;
     }
 
     player = mPlayerPool.Alloc();
-    player->sessionNo = sessionNo & 0xffffffffffff;
+    player->sessionNo = sessionNo;
     player->lastRecvTime = GetTickCount64();
-
-    msgDebugLog(1000, sessionNo & 0xffffffffffff, -1, player->curSectorX, player->curSectorY, player->bLogin);
 
     InsertPlayer(sessionNo, player);
 
@@ -242,31 +216,33 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 	WCHAR	    Nickname[20];		// null 포함
 	char	    SessionKey[64];		// 인증토큰
     CNetPacket* response;
-    st_Player* player = FindPlayer(sessionNo);
+    st_Player* player;
+
+    if (IsSessionLeaved(sessionNo))
+    {
+        return false;
+    }
+
+    player = FindPlayer(sessionNo);
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found\n", sessionNo);
-
-        CRASH();
-
-        return false;
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found\n", sessionNo);*/
 
         /*response = MakeCSResLogin(0, 0);
         SendPacket(sessionNo, response);
         response->SubRef();*/
+        JoinProc(sessionNo);
     }
 
     if (player->accountNo != 0 || player->bLogin)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Double Login\n",
-            sessionNo, player->accountNo);
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
+            sessionNo, player->accountNo, AccountNo);*/
 
-        /*response = MakeCSResLogin(0, 0);
+        response = MakeCSResLogin(0, 0);
         SendPacket(sessionNo, response);
-        response->SubRef();*/
-
-        CRASH();
+        response->SubRef();
 
         return false;
     }
@@ -289,8 +265,6 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     player->lastRecvTime = GetTickCount64();
     mLoginCount++;
 
-    msgDebugLog(2000, sessionNo & 0xffffffffffff, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
-
     response = MakeCSResLogin(1, player->accountNo);
     // 로그?
     SendPacket(player->sessionNo, response);
@@ -305,15 +279,12 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
-            sessionNo);
-
-        CRASH();
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
+            sessionNo);*/
+        mLeavedList.insert(GetLowNumFromSessionNo(sessionNo));
 
         return false;
     }
-
-    msgDebugLog(3000, sessionNo & 0xffffffffffff, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
 
     if (player->curSectorX != -1 && player->curSectorY != -1)
     {
@@ -346,10 +317,8 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found\n",
-            sessionNo);
-
-        CRASH();
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found\n",
+            sessionNo);*/
 
         return false;
     }
@@ -386,8 +355,6 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
     Sector_AddPlayer(SectorX, SectorY, player);
     player->lastRecvTime = GetTickCount64();
 
-    msgDebugLog(4000, sessionNo & 0xffffffffffff, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
-
     CNetPacket* response = MakeCSResSectorMove(player->accountNo, player->curSectorX, player->curSectorY);
 
     SendPacket(player->sessionNo, response);
@@ -405,10 +372,8 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found\n",
-            sessionNo);
-
-        CRASH();
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found\n",
+            sessionNo);*/
 
         return false;
     }
@@ -426,8 +391,6 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
     }
 
     player->lastRecvTime = GetTickCount64();
-
-    msgDebugLog(5000, sessionNo & 0xffffffffffff, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
 
     GetSectorAround(player->curSectorX, player->curSectorY, &sectorAround);
 
@@ -450,8 +413,6 @@ bool procademy::CChatServerSingle::HeartUpdateProc(SESSION_ID sessionNo)
     {
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"HeartUpdateProc - [Session %llu] Not Found\n",
             sessionNo);
-
-        CRASH();
 
         return false;
     }
@@ -503,7 +464,7 @@ void procademy::CChatServerSingle::BeginThreads()
 
 procademy::st_Player* procademy::CChatServerSingle::FindPlayer(SESSION_ID sessionNo)
 {
-    std::unordered_map<u_int64, st_Player*>::iterator iter = mPlayerMap.find(sessionNo & 0xffffffffffff);
+    std::unordered_map<u_int64, st_Player*>::iterator iter = mPlayerMap.find(sessionNo);
 
     if (iter == mPlayerMap.end())
         return nullptr;
@@ -513,12 +474,12 @@ procademy::st_Player* procademy::CChatServerSingle::FindPlayer(SESSION_ID sessio
 
 void procademy::CChatServerSingle::InsertPlayer(SESSION_ID sessionNo, st_Player* player)
 {
-    mPlayerMap[sessionNo & 0xffffffffffff] = player;
+    mPlayerMap[sessionNo] = player;
 }
 
 void procademy::CChatServerSingle::DeletePlayer(SESSION_ID sessionNo)
 {
-    mPlayerMap.erase(sessionNo & 0xffffffffffff);
+    mPlayerMap.erase(sessionNo);
 }
 
 void procademy::CChatServerSingle::Sector_AddPlayer(WORD x, WORD y, st_Player* player)
@@ -540,22 +501,18 @@ void procademy::CChatServerSingle::Sector_RemovePlayer(WORD x, WORD y, st_Player
 
     CLogger::_Log(dfLOG_LEVEL_ERROR, L"DeleteFromSector[X %u][Y %u] - Not Found Player[%lld]",
         x, y, player->accountNo);
-
-    CRASH();
 }
 
 void procademy::CChatServerSingle::GetSectorAround(WORD x, WORD y, st_Sector_Around* output)
 {
     WORD beginX = x == 0 ? 0 : x - 1;
     WORD beginY = y == 0 ? 0 : y - 1;
-    WORD endX = x == 49 ? 49 : x + 1;
-    WORD endY = y == 49 ? 49 : y + 1;
 
     output->count = 0;
 
-    for (WORD i = beginY; i <= endY; ++i)
+    for (WORD i = beginY; i < y + 2; ++i)
     {
-        for (WORD j = beginX; j <= endX; ++j)
+        for (WORD j = beginX; j < x + 2; ++j)
         {
             output->around[output->count].y = i;
             output->around[output->count].x = j;
@@ -689,6 +646,11 @@ void procademy::CChatServerSingle::ClearTPS()
             mSector[i][j].playerCount = 0;
         }
     }
+}
+
+bool procademy::CChatServerSingle::IsSessionLeaved(SESSION_ID sessionNo)
+{
+    return mLeavedList.find(GetLowNumFromSessionNo(sessionNo)) != mLeavedList.end();
 }
 
 procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status, SESSION_ID accountNo)

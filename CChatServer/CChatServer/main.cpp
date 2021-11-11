@@ -3,7 +3,7 @@
 #include "CCrashDump.h"
 #include "CProfiler.h"
 
-//#define dfTHREAD_NUM (3)
+#define dfTHREAD_NUM (3)
 #define dfSERVER_PORT (6000)
 
 int main()

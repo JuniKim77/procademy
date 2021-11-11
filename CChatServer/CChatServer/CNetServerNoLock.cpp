@@ -415,7 +415,7 @@ namespace procademy
 
 	void CNetServerNoLock::ReleaseProc(Session* session)
 	{
-		//CProfiler::Begin(L"RELEASEPROC");
+		CProfiler::Begin(L"RELEASEPROC");
 		SessionIoCount released;
 		CNetPacket* dummy;
 
@@ -455,7 +455,7 @@ namespace procademy
 		ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
 
 		DeleteSessionData(id);
-		//CProfiler::End(L"RELEASEPROC");
+		CProfiler::End(L"RELEASEPROC");
 	}
 
 	void CNetServerNoLock::AcceptProc()
@@ -644,9 +644,9 @@ namespace procademy
 			if (session->recvQ.GetUseSize() < (CNetPacket::HEADER_MAX_SIZE + header.len))
 				break;
 
-			//CProfiler::Begin(L"ALLOC");
+			CProfiler::Begin(L"ALLOC");
 			CNetPacket* packet = CNetPacket::AllocAddRef();
-			//CProfiler::End(L"ALLOC");
+			CProfiler::End(L"ALLOC");
 
 			memcpy_s(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE, (char*)&header, CNetPacket::HEADER_MAX_SIZE);
 
@@ -681,9 +681,9 @@ namespace procademy
 
 		session->numSendingPacket = 0;
 		session->isSending = false;
-		//CProfiler::Begin(L"SendPost");
+		CProfiler::Begin(L"SendPost");
 		SendPost(session);
-		//CProfiler::End(L"SendPost");
+		CProfiler::End(L"SendPost");
 	}
 
 	void CNetServerNoLock::CloseSessions()
@@ -950,9 +950,9 @@ namespace procademy
 		packet->AddRef();
 		session->sendQ.Enqueue(packet);
 
-		//CProfiler::Begin(L"SendPost");
+		CProfiler::Begin(L"SendPost");
 		SendPost(session);
-		//CProfiler::End(L"SendPost");
+		CProfiler::End(L"SendPost");
 
 		DecrementIOProc(session, 20020);
 	}
