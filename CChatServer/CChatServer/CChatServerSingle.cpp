@@ -6,38 +6,7 @@
 
 #define MAX_STR (30000)
 
-struct msgDebug
-{
-    int            logicId;
-    INT64        SessionNo;
-    INT64        AccountNo;
-    int            secX;
-    int            secY;
-    bool        login;
-};
-
 WCHAR str[MAX_STR];
-USHORT g_msgIdx;
-msgDebug g_msgDebugs[USHRT_MAX + 1];
-
-void msgDebugLog(
-    int            logicId,
-    INT64        SessionNo,
-    INT64        AccountNo,
-    int            secX,
-    int            secY,
-    bool        login
-)
-{
-    USHORT index = g_msgIdx++;
-
-    g_msgDebugs[index].logicId = logicId;
-    g_msgDebugs[index].SessionNo = SessionNo;
-    g_msgDebugs[index].AccountNo = AccountNo;
-    g_msgDebugs[index].secX = secX;
-    g_msgDebugs[index].secY = secY;
-    g_msgDebugs[index].login = login;
-}
 
 unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
 {
@@ -218,7 +187,6 @@ bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
 
     if (IsSessionLeaved(sessionNo))
     {
-        msgDebugLog(3000, sessionNo & 0xffffffffffff, -1, 0, 0, 0);
         return false;
     }
 
@@ -228,7 +196,6 @@ bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
     {
         //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Player[%llu]\n", sessionNo);
         //CRASH();
-        msgDebugLog(3020, sessionNo & 0xffffffffffff, -1, player->curSectorX, player->curSectorY, player->bLogin);
 
         return false;
     }
@@ -253,7 +220,6 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     if (IsSessionLeaved(sessionNo))
     {
-        msgDebugLog(1000, sessionNo & 0xffffffffffff, -1, 0, 0, 0);
         return false;
     }
 
@@ -266,7 +232,6 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
         /*response = MakeCSResLogin(0, 0);
         SendPacket(sessionNo, response);
         response->SubRef();*/
-        msgDebugLog(1020, sessionNo & 0xffffffffffff, -1, 0, 0, 0);
         JoinProc(sessionNo);
     }
 
@@ -317,8 +282,6 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
         /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
             sessionNo);*/
         mLeavedList.insert(GetLowNumFromSessionNo(sessionNo));
-
-        msgDebugLog(2000, sessionNo & 0xffffffffffff, -1, 0, 0, 0);
 
         return false;
     }
