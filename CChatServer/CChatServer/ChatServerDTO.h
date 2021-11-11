@@ -25,13 +25,17 @@ namespace procademy
 		st_Coordinate around[9];
 	};
 
+	enum {
+		NAME_MAX = 20
+	};
+
 	struct st_Player
 	{
 		ULONGLONG	lastRecvTime = 0;
 		INT64		accountNo = 0;
 		SESSION_ID	sessionNo = 0;
-		WCHAR		ID[20];
-		WCHAR		nickName[20];
+		WCHAR		ID[NAME_MAX];
+		WCHAR		nickName[NAME_MAX];
 		short		curSectorX = -1;
 		short		curSectorY = -1;
 		bool		bLogin = false;

@@ -69,7 +69,6 @@ namespace procademy
 		~CNetServerNoLock();
 		bool Start();
 		void Stop();
-		int GetSessionCount();
 		void WaitForThreadsFin();
 
 		bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
@@ -91,10 +90,10 @@ namespace procademy
 		void QuitServer();
 
 	private:
-		Session* FindSession(u_int64 sessionNo);
+		Session* FindSession(SESSION_ID sessionNo);
 		void InsertSessionData(Session* session);
-		void DeleteSessionData(u_int64 sessionNo);
-		void UpdateSessionData(u_int64 sessionNo, Session* session);
+		void DeleteSessionData(SESSION_ID sessionNo);
+		void UpdateSessionData(SESSION_ID sessionNo, Session* session);
 		bool CreateIOCP();
 		bool CreateListenSocket();
 		bool BeginThreads();
@@ -115,8 +114,10 @@ namespace procademy
 		void CompleteSend(Session* session, DWORD transferredSize);
 		void CloseSessions();
 		void InitializeEmptyIndex();
-		u_int64 GenerateSessionID();
-		u_short GetIndexFromSessionNo(u_int64 sessionNo);
+		SESSION_ID GenerateSessionID();
+		u_short GetIndexFromSessionNo(SESSION_ID sessionNo);
+	protected:
+		u_int64 GetLowNumFromSessionNo(SESSION_ID sessionNo);
 
 	private:
 		SOCKET				mListenSocket = INVALID_SOCKET;

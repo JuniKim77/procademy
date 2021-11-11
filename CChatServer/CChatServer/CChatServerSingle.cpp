@@ -131,6 +131,7 @@ bool procademy::CChatServerSingle::MonitoringProc()
 
         if (retval == WAIT_TIMEOUT)
         {
+            mCpuUsage.UpdateCpuTime();
             // 출력
             MakeMonitorStr(str, 2048);
             
@@ -182,11 +183,19 @@ bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPac
 
 bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
 {
-    st_Player* player = FindPlayer(sessionNo);
+    st_Player* player;
+
+    if (IsSessionLeaved(sessionNo))
+    {
+        return false;
+    }
+
+    player = FindPlayer(sessionNo);
 
     if (player != nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Player[%llu]\n", sessionNo);
+        //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Player[%llu]\n", sessionNo);
+        //CRASH();
 
         return false;
     }
@@ -207,7 +216,14 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 	WCHAR	    Nickname[20];		// null 포함
 	char	    SessionKey[64];		// 인증토큰
     CNetPacket* response;
-	st_Player*  player = FindPlayer(sessionNo);
+    st_Player* player;
+
+    if (IsSessionLeaved(sessionNo))
+    {
+        return false;
+    }
+
+    player = FindPlayer(sessionNo);
 
     if (player == nullptr)
     {
@@ -216,18 +232,17 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
         /*response = MakeCSResLogin(0, 0);
         SendPacket(sessionNo, response);
         response->SubRef();*/
-
-        return false;
+        JoinProc(sessionNo);
     }
 
-    if (player->accountNo != 0)
+    if (player->accountNo != 0 || player->bLogin)
     {
         /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
             sessionNo, player->accountNo, AccountNo);*/
 
-        /*response = MakeCSResLogin(0, 0);
+        response = MakeCSResLogin(0, 0);
         SendPacket(sessionNo, response);
-        response->SubRef();*/
+        response->SubRef();
 
         return false;
     }
@@ -242,8 +257,10 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     player->accountNo = AccountNo;
     player->sessionNo = sessionNo;
-    memcpy_s(player->ID, sizeof(player->ID), ID, sizeof(ID));
-    memcpy_s(player->nickName, sizeof(player->nickName), Nickname, sizeof(Nickname));
+    wcscpy_s(player->ID, NAME_MAX, ID);
+    wcscpy_s(player->nickName, NAME_MAX, Nickname);
+    //memcpy_s(player->ID, sizeof(player->ID), ID, sizeof(ID));
+    //memcpy_s(player->nickName, sizeof(player->nickName), Nickname, sizeof(Nickname));
     player->bLogin = true;
     player->lastRecvTime = GetTickCount64();
     mLoginCount++;
@@ -264,6 +281,7 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
     {
         /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
             sessionNo);*/
+        mLeavedList.insert(GetLowNumFromSessionNo(sessionNo));
 
         return false;
     }
@@ -287,7 +305,7 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
     
     mPlayerPool.Free(player);
 
-    return false;
+    return true;
 }
 
 bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPacket* packet)
@@ -312,6 +330,8 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
             sessionNo, player->accountNo, AccountNo);
 
+        CRASH();
+
         return false;
     }
 
@@ -319,6 +339,8 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
     {
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [AccountNo %lld] Out of Boundary\n",
             sessionNo, AccountNo);
+
+        CRASH();
 
         return false;
     }
@@ -362,6 +384,8 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
     {
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
             sessionNo, player->accountNo, AccountNo);
+
+        CRASH();
 
         return false;
     }
@@ -624,6 +648,11 @@ void procademy::CChatServerSingle::ClearTPS()
     }
 }
 
+bool procademy::CChatServerSingle::IsSessionLeaved(SESSION_ID sessionNo)
+{
+    return mLeavedList.find(GetLowNumFromSessionNo(sessionNo)) != mLeavedList.end();
+}
+
 procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status, SESSION_ID accountNo)
 {
     CNetPacket* packet = CNetPacket::AllocAddRef();
@@ -668,7 +697,6 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(SESSION_ID
 procademy::CChatServerSingle::CChatServerSingle()
 {
     LoadInitFile(L"ChatServer.cnf");
-    CNetPacket::sPacketPool.OnOffCounting();
     BeginThreads();
 }
 
@@ -778,6 +806,10 @@ void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
     tp.GetValue(L"PACKET_KEY", &num);
     key = (BYTE)num;
     CNetPacket::SetPacketKey(key);
+
+    tp.GetValue(L"POOL_SIZE_CHECK", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        CNetPacket::sPacketPool.OnOffCounting();
 
     tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
 

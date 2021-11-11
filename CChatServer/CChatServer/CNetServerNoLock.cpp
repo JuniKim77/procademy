@@ -96,7 +96,7 @@ namespace procademy
 		g_debugs[index].packetNum = packetNum;
 	}
 
-	Session* CNetServerNoLock::FindSession(u_int64 sessionNo)
+	Session* CNetServerNoLock::FindSession(SESSION_ID sessionNo)
 	{
 		u_short index = GetIndexFromSessionNo(sessionNo);
 
@@ -110,14 +110,14 @@ namespace procademy
 		mSessionArray[index] = *session;
 	}
 
-	void CNetServerNoLock::DeleteSessionData(u_int64 sessionNo)
+	void CNetServerNoLock::DeleteSessionData(SESSION_ID sessionNo)
 	{
 		u_short index = GetIndexFromSessionNo(sessionNo);
 
 		mEmptyIndexes.Push(index);
 	}
 
-	void CNetServerNoLock::UpdateSessionData(u_int64 sessionNo, Session* session)
+	void CNetServerNoLock::UpdateSessionData(SESSION_ID sessionNo, Session* session)
 	{
 	}
 
@@ -454,9 +454,7 @@ namespace procademy
 		ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
 		ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
 
-		//LockSessionMap();
 		DeleteSessionData(id);
-		//UnlockSessionMap();
 		CProfiler::End(L"RELEASEPROC");
 	}
 
@@ -702,7 +700,7 @@ namespace procademy
 		//InitializeSRWLock(&mStackLock);
 	}
 
-	u_int64 CNetServerNoLock::GenerateSessionID()
+	SESSION_ID CNetServerNoLock::GenerateSessionID()
 	{
 		if (mEmptyIndexes.IsEmpty())
 		{
@@ -721,9 +719,14 @@ namespace procademy
 		return id;
 	}
 
-	u_short CNetServerNoLock::GetIndexFromSessionNo(u_int64 sessionNo)
+	u_short CNetServerNoLock::GetIndexFromSessionNo(SESSION_ID sessionNo)
 	{
 		return (u_short)(sessionNo >> (8 * 6));
+	}
+
+	u_int64 CNetServerNoLock::GetLowNumFromSessionNo(SESSION_ID sessionNo)
+	{
+		return sessionNo & 0xffffffffffff;
 	}
 
 	void CNetServerNoLock::NetworkMonitorProc()
@@ -822,11 +825,6 @@ namespace procademy
 			ret = CancelIoEx((HANDLE)mSessionArray[i].socket, nullptr);
 			//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
 		}
-	}
-
-	int CNetServerNoLock::GetSessionCount()
-	{
-		return 0;
 	}
 
 	void CNetServerNoLock::WaitForThreadsFin()
