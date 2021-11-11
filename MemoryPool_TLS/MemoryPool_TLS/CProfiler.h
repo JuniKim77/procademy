@@ -3,7 +3,7 @@
 #define PROFILE_MAX (50)
 #define NAME_MAX (20)
 #define FILE_NAME_MAX (80)
-#define COLUMN_SIZE (6)
+#define COLUMN_SIZE (7)
 
 #include <wtypes.h>
 
@@ -50,15 +50,17 @@ public:
 	static void Begin(const WCHAR* szName);
 	static void End(const WCHAR* szName);
 	static void Print();
+	static void SetChunk(int i) { s_chunk_size = i; }
 
 private:
 	int SearchName(const WCHAR* s);
 
 public:
-	static CProfiler** s_profilers;
-	static DWORD s_MultiProfiler;
-	static LONG s_ProfilerIndex;
-	static SRWLOCK s_lock;
+	static CProfiler**		s_profilers;
+	static DWORD			s_MultiProfiler;
+	static LONG				s_ProfilerIndex;
+	static SRWLOCK			s_lock;
+	static int				s_chunk_size;
 
 private:
 	typedef struct

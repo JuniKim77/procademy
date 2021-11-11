@@ -33,7 +33,7 @@ namespace procademy
 			bool	Free(DATA* pData);
 
 			enum {
-				MAX_SIZE = 200
+				MAX_SIZE = 1000
 			};
 
 			st_Chunk_Block				mArray[MAX_SIZE];
@@ -65,6 +65,8 @@ namespace procademy
 		DWORD						mSize;
 		bool						mbSizeCheck;
 		DWORD						mIndex;
+		CChunk*						chunkTrack[USHRT_MAX + 1];
+		USHORT						trackIdx = 0;
 	};
 
 	template<typename DATA>
@@ -100,6 +102,9 @@ namespace procademy
 			chunk->mAllocCount = 0;
 			chunk->mFreeCount = 0;
 			TlsSetValue(mIndex, chunk);
+
+			/*USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
+			chunkTrack[ret] = chunk;*/
 		}
 
 		if (mbSizeCheck)

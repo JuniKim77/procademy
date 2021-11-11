@@ -4,15 +4,16 @@
 #include <wchar.h>
 #include "CNetPacket.h"
 
-#define dfTHREAD_SIZE (2)
+#define dfTHREAD_SIZE (3)
 #define dfTEST_SIZE (100000)
 //#define TEST_A
+#define CHUNK_SIZE (1000)
 
 class CTest
 {
 private:
-	int a;
-	long long b;
+	alignas(64) __int64 a;
+	alignas(64) __int64 b;
 };
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
@@ -69,12 +70,14 @@ int main()
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
-	int count = 100;
+	int count = 1000;
 
 	TLS_ALLOC_PROC();
 	TLS_FREE_PROC();
 	NEW_DELETE_ALLOC_PROC();
 	NEW_DELETE_FREE_PROC();
+
+	CProfiler::SetChunk(CHUNK_SIZE);
 
 	while (count-- > 0)
 	{
