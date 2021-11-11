@@ -1,6 +1,5 @@
 #include "CNetServerNoLock.h"
 #include <unordered_map>
-#include <unordered_set>
 #include <list>
 #include "TC_LFObjectPool.h"
 #include "ChatServerDTO.h"
@@ -78,7 +77,6 @@ namespace procademy
 		void			MakeMonitorStr(WCHAR* s, int size);
 		void			PrintRecvSendRatio();
 		void			ClearTPS();
-		bool			IsSessionLeaved(SESSION_ID sessionNo);
 
 	/// <summary>
 	/// Make Packet Funcs
@@ -102,7 +100,6 @@ namespace procademy
 		TC_LFObjectPool<st_MSG>					mMsgPool;
 
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;
-		std::unordered_set<u_int64>				mLeavedList;
 		TC_LFObjectPool<st_Player>				mPlayerPool;
 		DWORD									mLoginCount = 0;
 		DWORD									mUpdateTPS = 0;
