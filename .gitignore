@@ -396,3 +396,4 @@ MemoryPool_TLS/MemoryPool_TLS/*.txt
 MyProfiler/MyProfiler/*.txt
 redBlackTree/redBlackTree/*.txt
 MMO_TCP_Fighter_Server/MMO_TCP_Fighter_Server/*.txt
+CChatServer/CChatServer/_log/*.txt

@@ -532,8 +532,8 @@ namespace procademy
 		//    IP, ntohs(clientAddr.sin_port));
 
 		IncrementIOProc(session, 30000);
-
-		session->ioBlock.releaseCount.isReleased = 0;
+		InterlockedExchange16((SHORT*)&session->ioBlock.releaseCount.isReleased, 0);
+		//session->ioBlock.releaseCount.isReleased = 0;
 
 		/*ioDebug(10020, GetCurrentThreadId(), session->sessionID & 0xffffffff,
 			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/

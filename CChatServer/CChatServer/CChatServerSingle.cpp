@@ -3,6 +3,7 @@
 #include "CommonProtocol.h"
 #include "CLogger.h"
 #include "TextParser.h"
+#include <vector>
 
 #define MAX_STR (30000)
 
@@ -19,6 +20,7 @@ struct msgDebug
 WCHAR str[MAX_STR];
 USHORT g_msgIdx;
 msgDebug g_msgDebugs[USHRT_MAX + 1];
+std::unordered_map<INT64, std::vector<int>> g_msgSort;
 
 void msgDebugLog(
     int			logicId,
@@ -37,6 +39,15 @@ void msgDebugLog(
     g_msgDebugs[index].secX = secX;
     g_msgDebugs[index].secY = secY;
     g_msgDebugs[index].login = login;
+
+	INT64 cur = SessionNo & 0xffffffffffff;
+
+    if (g_msgSort[cur].size() == 0)
+    {
+        g_msgSort[cur].reserve(16);
+    }
+
+    g_msgSort[cur].push_back(logicId);
 }
 
 unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
@@ -80,6 +91,7 @@ unsigned int __stdcall procademy::CChatServerSingle::HeartbeatFunc(LPVOID arg)
 
 void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
 {
+    //mMsgQ.Enqueue(msg);
     PostQueuedCompletionStatus(mIOCP, 1, (ULONG_PTR)msg, 0);
 }
 
@@ -100,6 +112,8 @@ void procademy::CChatServerSingle::GQCSProc()
         }
 
         mUpdateTPS++;
+
+        //mMsgQ.Dequeue(&msg);
 
         switch (msg->type)
         {
@@ -225,10 +239,10 @@ bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
     }
 
     player = mPlayerPool.Alloc();
-    player->sessionNo = sessionNo & 0xffffffffffff;
+    player->sessionNo = sessionNo;
     player->lastRecvTime = GetTickCount64();
 
-    msgDebugLog(1000, sessionNo & 0xffffffffffff, -1, player->curSectorX, player->curSectorY, player->bLogin);
+    msgDebugLog(1000, sessionNo, -1, player->curSectorX, player->curSectorY, player->bLogin);
 
     InsertPlayer(sessionNo, player);
 
@@ -248,6 +262,32 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     {
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found\n", sessionNo);
 
+        /*INT64 cur = sessionNo & 0xffffffffffff;
+
+        for (USHORT i = 0; i < g_msgIdx; ++i)
+        {
+            g_msgSort[g_msgDebugs[i].SessionNo & 0xffffffffffff].push_back(g_msgDebugs[i].logicId);
+        }
+
+        std::vector<int>& curlist = g_msgSort[cur];*/
+        std::vector<int>& cur = g_msgSort[sessionNo & 0xffffffffffff];
+        std::vector<int> notLeaved;
+        notLeaved.reserve(5000);
+
+        for (auto iter = g_msgSort.begin(); iter != g_msgSort.end(); ++iter)
+        {
+            if (iter->second[iter->second.size() - 1] != 3000)
+            {
+                notLeaved.push_back(iter->first);
+            }
+        }
+
+        for (int i = 0; i < notLeaved.size(); ++i)
+        {
+            st_Player* player = mPlayerMap[notLeaved[i]];
+            int test = 0;
+        }
+
         CRASH();
 
         return false;
@@ -255,6 +295,11 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
         /*response = MakeCSResLogin(0, 0);
         SendPacket(sessionNo, response);
         response->SubRef();*/
+    }
+
+    if (player->sessionNo != sessionNo)
+    {
+        CRASH();
     }
 
     if (player->accountNo != 0 || player->bLogin)
@@ -289,7 +334,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     player->lastRecvTime = GetTickCount64();
     mLoginCount++;
 
-    msgDebugLog(2000, sessionNo & 0xffffffffffff, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
+    msgDebugLog(2000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
 
     response = MakeCSResLogin(1, player->accountNo);
     // ·Î±×?
@@ -308,12 +353,35 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
             sessionNo);
 
+        std::vector<int>& cur = g_msgSort[sessionNo & 0xffffffffffff];
+        std::vector<int> notLeaved;
+        notLeaved.reserve(5000);
+
+        for (auto iter = g_msgSort.begin(); iter != g_msgSort.end(); ++iter)
+        {
+            if (iter->second[iter->second.size() - 1] != 3000)
+            {
+                notLeaved.push_back(iter->first);
+            }
+        }
+
+        for (int i = 0; i < notLeaved.size(); ++i)
+        {
+            st_Player* player = mPlayerMap[notLeaved[i]];
+            int test = 0;
+        }
+
         CRASH();
 
         return false;
     }
 
-    msgDebugLog(3000, sessionNo & 0xffffffffffff, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
+    if (player->sessionNo != sessionNo)
+    {
+        CRASH();
+    }
+
+    msgDebugLog(3000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
 
     if (player->curSectorX != -1 && player->curSectorY != -1)
     {
@@ -354,6 +422,11 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
         return false;
     }
 
+    if (player->sessionNo != sessionNo)
+    {
+        CRASH();
+    }
+
     *packet >> AccountNo >> SectorX >> SectorY;
 
     if (player->accountNo != AccountNo)
@@ -386,7 +459,7 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
     Sector_AddPlayer(SectorX, SectorY, player);
     player->lastRecvTime = GetTickCount64();
 
-    msgDebugLog(4000, sessionNo & 0xffffffffffff, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
+    msgDebugLog(4000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
 
     CNetPacket* response = MakeCSResSectorMove(player->accountNo, player->curSectorX, player->curSectorY);
 
@@ -413,6 +486,11 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
         return false;
     }
 
+    if (player->sessionNo != sessionNo)
+    {
+        CRASH();
+    }
+
     *packet >> AccountNo >> messageLen;
 
     if (player->accountNo != AccountNo)
@@ -427,7 +505,7 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     player->lastRecvTime = GetTickCount64();
 
-    msgDebugLog(5000, sessionNo & 0xffffffffffff, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
+    msgDebugLog(5000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
 
     GetSectorAround(player->curSectorX, player->curSectorY, &sectorAround);
 
@@ -454,6 +532,11 @@ bool procademy::CChatServerSingle::HeartUpdateProc(SESSION_ID sessionNo)
         CRASH();
 
         return false;
+    }
+
+    if (player->sessionNo != sessionNo)
+    {
+        CRASH();
     }
 
     player->lastRecvTime = GetTickCount64();

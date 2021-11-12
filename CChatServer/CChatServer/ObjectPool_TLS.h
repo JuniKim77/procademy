@@ -103,8 +103,8 @@ namespace procademy
 			chunk->mFreeCount = 0;
 			TlsSetValue(mIndex, chunk);
 
-			/*USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
-			chunkTrack[ret] = chunk;*/
+			USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
+			chunkTrack[ret] = chunk;
 		}
 
 		if (mbSizeCheck)

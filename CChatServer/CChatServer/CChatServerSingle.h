@@ -98,6 +98,7 @@ namespace procademy
 		HANDLE									mIOCP;
 
 		TC_LFObjectPool<st_MSG>					mMsgPool;
+		//TC_LFQueue<st_MSG*>						mMsgQ;
 
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;
 		TC_LFObjectPool<st_Player>				mPlayerPool;
