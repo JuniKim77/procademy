@@ -144,7 +144,7 @@ namespace procademy
 	protected:
 		bool				mbNagle = true;
 		bool				mbMonitoring = true;
-		bool				mbZeroCopy = true;
+		bool				mbZeroCopy = false;
 		bool				mbExit = false;
 		bool				mbBegin = false;
 		bool				mbPrint = false;

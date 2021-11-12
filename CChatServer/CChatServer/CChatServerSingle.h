@@ -101,6 +101,7 @@ namespace procademy
 		//TC_LFQueue<st_MSG*>						mMsgQ;
 
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;
+		std::unordered_map<u_int64, int>		mLeavedMap;
 		TC_LFObjectPool<st_Player>				mPlayerPool;
 		DWORD									mLoginCount = 0;
 		DWORD									mUpdateTPS = 0;

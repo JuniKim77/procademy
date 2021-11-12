@@ -426,7 +426,7 @@ namespace procademy
 		{
 			return;
 		}
-
+		//
 		u_int64 id = session->sessionID;
 		session->sessionID = 0;
 		InterlockedIncrement((LONG*)&disconnectCount);
@@ -437,6 +437,7 @@ namespace procademy
 		closesocket(session->socket);
 
 		session->isSending = false;
+
 
 		while (1)
 		{
@@ -935,7 +936,7 @@ namespace procademy
 	void CNetServerNoLock::SendPacket(SESSION_ID SessionID, CNetPacket* packet)
 	{
 		Session* session = FindSession(SessionID);
-
+		//
 		IncrementIOProc(session, 20000);
 
 		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)

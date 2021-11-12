@@ -242,7 +242,7 @@ bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
     player->sessionNo = sessionNo;
     player->lastRecvTime = GetTickCount64();
 
-    msgDebugLog(1000, sessionNo, -1, player->curSectorX, player->curSectorY, player->bLogin);
+    //msgDebugLog(1000, sessionNo, -1, player->curSectorX, player->curSectorY, player->bLogin);
 
     InsertPlayer(sessionNo, player);
 
@@ -270,23 +270,6 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
         }
 
         std::vector<int>& curlist = g_msgSort[cur];*/
-        std::vector<int>& cur = g_msgSort[sessionNo & 0xffffffffffff];
-        std::vector<int> notLeaved;
-        notLeaved.reserve(5000);
-
-        for (auto iter = g_msgSort.begin(); iter != g_msgSort.end(); ++iter)
-        {
-            if (iter->second[iter->second.size() - 1] != 3000)
-            {
-                notLeaved.push_back(iter->first);
-            }
-        }
-
-        for (int i = 0; i < notLeaved.size(); ++i)
-        {
-            st_Player* player = mPlayerMap[notLeaved[i]];
-            int test = 0;
-        }
 
         CRASH();
 
@@ -325,7 +308,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     // token verification
 
     player->accountNo = AccountNo;
-    player->sessionNo = sessionNo;
+    //player->sessionNo = sessionNo;
     wcscpy_s(player->ID, NAME_MAX, ID);
     wcscpy_s(player->nickName, NAME_MAX, Nickname);
     //memcpy_s(player->ID, sizeof(player->ID), ID, sizeof(ID));
@@ -334,7 +317,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     player->lastRecvTime = GetTickCount64();
     mLoginCount++;
 
-    msgDebugLog(2000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
+    //msgDebugLog(2000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
 
     response = MakeCSResLogin(1, player->accountNo);
     // ·Î±×?
@@ -381,14 +364,14 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
         CRASH();
     }
 
-    msgDebugLog(3000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
+    //msgDebugLog(3000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
 
     if (player->curSectorX != -1 && player->curSectorY != -1)
     {
         Sector_RemovePlayer(player->curSectorX, player->curSectorY, player);
     }
 
-    DeletePlayer(sessionNo);
+    DeletePlayer(player->sessionNo);
 
     player->accountNo = 0;
     player->lastRecvTime = 0;
@@ -459,7 +442,7 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
     Sector_AddPlayer(SectorX, SectorY, player);
     player->lastRecvTime = GetTickCount64();
 
-    msgDebugLog(4000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
+    //msgDebugLog(4000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
 
     CNetPacket* response = MakeCSResSectorMove(player->accountNo, player->curSectorX, player->curSectorY);
 
@@ -505,7 +488,7 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     player->lastRecvTime = GetTickCount64();
 
-    msgDebugLog(5000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
+    //msgDebugLog(5000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
 
     GetSectorAround(player->curSectorX, player->curSectorY, &sectorAround);
 
@@ -586,7 +569,7 @@ void procademy::CChatServerSingle::BeginThreads()
 
 procademy::st_Player* procademy::CChatServerSingle::FindPlayer(SESSION_ID sessionNo)
 {
-    std::unordered_map<u_int64, st_Player*>::iterator iter = mPlayerMap.find(sessionNo & 0xffffffffffff);
+    std::unordered_map<u_int64, st_Player*>::iterator iter = mPlayerMap.find(sessionNo);
 
     if (iter == mPlayerMap.end())
         return nullptr;
@@ -596,12 +579,14 @@ procademy::st_Player* procademy::CChatServerSingle::FindPlayer(SESSION_ID sessio
 
 void procademy::CChatServerSingle::InsertPlayer(SESSION_ID sessionNo, st_Player* player)
 {
-    mPlayerMap[sessionNo & 0xffffffffffff] = player;
+    mPlayerMap[sessionNo] = player;
 }
 
 void procademy::CChatServerSingle::DeletePlayer(SESSION_ID sessionNo)
 {
-    mPlayerMap.erase(sessionNo & 0xffffffffffff);
+    auto iter = mPlayerMap.find(sessionNo);
+    mPlayerMap.erase(iter);
+    mLeavedMap[iter->second->sessionNo]++;
 }
 
 void procademy::CChatServerSingle::Sector_AddPlayer(WORD x, WORD y, st_Player* player)
@@ -611,13 +596,17 @@ void procademy::CChatServerSingle::Sector_AddPlayer(WORD x, WORD y, st_Player* p
 
 void procademy::CChatServerSingle::Sector_RemovePlayer(WORD x, WORD y, st_Player* player)
 {
-    for (auto iter = mSector[y][x].list.begin(); iter != mSector[y][x].list.end(); ++iter)
+    for (auto iter = mSector[y][x].list.begin(); iter != mSector[y][x].list.end();)
     {
         if ((*iter)->accountNo == player->accountNo)
         {
             mSector[y][x].list.erase(iter);
 
             return;
+        }
+        else
+        {
+            iter++;
         }
     }
 
