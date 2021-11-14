@@ -61,6 +61,7 @@ namespace procademy
 		bool			CheckTimeOutProc();
 		void			BeginThreads();
 		void			LoadInitFile(const WCHAR* fileName);
+		void			FreePlayer(st_Player* player);
 
 		/// <summary>
 		/// sessionNo°¡ playerÀÇ key °ª
@@ -101,7 +102,7 @@ namespace procademy
 		//TC_LFQueue<st_MSG*>						mMsgQ;
 
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;
-		std::unordered_map<u_int64, int>		mLeavedMap;
+		//std::unordered_map<u_int64, int>		mLeavedMap;
 		TC_LFObjectPool<st_Player>				mPlayerPool;
 		DWORD									mLoginCount = 0;
 		DWORD									mUpdateTPS = 0;

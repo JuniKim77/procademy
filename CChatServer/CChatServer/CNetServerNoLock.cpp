@@ -926,9 +926,7 @@ namespace procademy
 		if (session == nullptr)
 			return false;
 
-		ret = CancelIoEx((HANDLE)session->socket, nullptr);
-
-		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
+		closesocket(session->socket);
 
 		return true;
 	}
