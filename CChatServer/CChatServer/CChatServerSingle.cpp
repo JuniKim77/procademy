@@ -274,10 +274,6 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
         // CRASH();
 
         return false;
-
-        /*response = MakeCSResLogin(0, 0);
-        SendPacket(sessionNo, response);
-        response->SubRef();*/
     }
 
     if (player->sessionNo != sessionNo)
@@ -546,7 +542,12 @@ void procademy::CChatServerSingle::BeginThreads()
 
 procademy::st_Player* procademy::CChatServerSingle::FindPlayer(SESSION_ID sessionNo)
 {
-    return mPlayerMap[sessionNo];
+    std::unordered_map<u_int64, st_Player*>::iterator iter = mPlayerMap.find(sessionNo);
+
+    if (iter == mPlayerMap.end())
+        return nullptr;
+    
+    return iter->second;
 }
 
 void procademy::CChatServerSingle::InsertPlayer(SESSION_ID sessionNo, st_Player* player)

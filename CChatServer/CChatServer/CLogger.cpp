@@ -16,25 +16,27 @@ WCHAR CLogger::mFolderPath[MAX_PATH];
 
 void CLogger::_Log(int logLevel, const WCHAR* format, ...)
 {
+    WCHAR       fileName[MAX_PATH];
+    DWORD       dwLogCount;
+    tm          t;
+    time_t      curTime;
+    int         lenval = 0;
+    int         count = 0;
+    WCHAR       log[dfLOG_SIZE];
+    WCHAR*      pLog;
+    va_list     ap;
+
     if (mLogLevel == dfLOG_LEVEL_OFF)
         return;
     if (logLevel == dfLOG_LEVEL_DEBUG && mLogLevel > logLevel)
         return;
 
-    DWORD dwLogCount = InterlockedIncrement(&mLogCount);
-
-    tm t;
-    time_t curTime;
-    int lenval = 0;
-    int count = 0;
+    dwLogCount = InterlockedIncrement(&mLogCount);
 
     time(&curTime);
     localtime_s(&t, &curTime);
 
-    WCHAR log[dfLOG_SIZE];
-    WCHAR* pLog = log;
-
-    va_list ap;
+    pLog = log;
 
     switch (logLevel)
     {
@@ -43,9 +45,13 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
         break;
     case dfLOG_LEVEL_ERROR:
         lenval = swprintf_s(pLog, dfLOG_SIZE, L"[ERROR] [%d] ", dwLogCount);
+        swprintf_s(fileName, _countof(fileName), L"%s/%04d%02d_Error_Log.txt",
+            mFolderPath, t.tm_year + 1900, t.tm_mon + 1);
         break;
-    case dfLOG_LEVEL_NOTICE:
+    case dfLOG_LEVEL_SYSTEM:
         lenval = swprintf_s(pLog, dfLOG_SIZE, L"[SYSTEM] [%d] ", dwLogCount);
+        swprintf_s(fileName, _countof(fileName), L"%s/%04d%02d_System_Log.txt",
+            mFolderPath, t.tm_year + 1900, t.tm_mon + 1);
         break;
     default:
         break;
@@ -77,11 +83,6 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
     {
         return;
     }
-
-    WCHAR fileName[MAX_PATH];
-
-    swprintf_s(fileName, _countof(fileName), L"%s/%04d%02d_Log.txt",
-        mFolderPath, t.tm_year + 1900, t.tm_mon + 1);
 
     LockFile();
     {

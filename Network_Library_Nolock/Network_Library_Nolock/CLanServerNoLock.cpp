@@ -99,7 +99,7 @@ namespace procademy
 
 		if (mActiveThreadNum > si.dwNumberOfProcessors)
 		{
-			CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Setting: Max Running thread is larger than the number of processors");
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Setting: Max Running thread is larger than the number of processors");
 		}
 
 		mHcp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, mActiveThreadNum);
@@ -116,7 +116,9 @@ namespace procademy
 
 	bool CLanServerNoLock::CreateListenSocket()
 	{
-		WSADATA wsa;
+		WSADATA			wsa;
+		SOCKADDR_IN		addr;
+		LINGER			optval;
 
 		if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 		{
@@ -131,7 +133,8 @@ namespace procademy
 			return false;
 		}
 
-		SOCKADDR_IN addr;
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Create\n");
+
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(mPort);
 		InetPton(AF_INET, mBindIP, &addr.sin_addr);
@@ -145,8 +148,10 @@ namespace procademy
 			return false;
 		}
 
-		// 백로그 길이?
-		int listenRet = listen(mListenSocket, SOMAXCONN);
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Bind\n");
+
+		// 백로그 길이
+		int listenRet = listen(mListenSocket, mMaxClient);
 
 		if (listenRet == SOCKET_ERROR)
 		{
@@ -154,6 +159,25 @@ namespace procademy
 			closesocket(mListenSocket);
 			return false;
 		}
+
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Set Listening\n");
+
+		// TimeWait Zero
+		optval.l_onoff = 1;
+		optval.l_linger = 0;
+
+		int timeOutnRet = setsockopt(mListenSocket, SOL_SOCKET, SO_LINGER, (char*)&optval, sizeof(optval));
+		if (timeOutnRet == SOCKET_ERROR)
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Listen Socket Linger [Error: %d]\n", WSAGetLastError());
+			closesocket(mListenSocket);
+			return false;
+		}
+
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Option : TimeOut Zero\n");
+
+		SetZeroCopy(mbZeroCopy);
+		SetNagle(mbNagle);
 
 		return true;
 	}
@@ -458,37 +482,12 @@ namespace procademy
 
 			InetNtop(AF_INET, &clientAddr.sin_addr.S_un.S_addr, IP, 16);
 
-			CLogger::_Log(dfLOG_LEVEL_NOTICE, L"Socket Accept Denied [IP: %s] [Port: %u]\n",
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Socket Accept Denied [IP: %s] [Port: %u]\n",
 				IP, ntohs(clientAddr.sin_port));
 
 			closesocket(client);
 
 			return;
-		}
-
-		if (mbZeroCopy)
-		{
-			int optNum = 0;
-			if (setsockopt(client, SOL_SOCKET, SO_SNDBUF, (char*)&optNum, sizeof(optNum)) == SOCKET_ERROR)
-			{
-				CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Zero Copy [Error: %d]\n", WSAGetLastError());
-				closesocket(client);
-
-				return;
-			}
-		}
-
-		if (mbNagle)
-		{
-			BOOL optval = mbNagle;
-
-			if (setsockopt(client, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof(optval)) == SOCKET_ERROR)
-			{
-				CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Nagle [Error: %d]\n", WSAGetLastError());
-				closesocket(client);
-
-				return;
-			}
 		}
 
 		Session* session = CreateSession(client, clientAddr);
@@ -695,6 +694,55 @@ namespace procademy
 		return (u_short)(sessionNo >> (8 * 6));
 	}
 
+	u_int64 CLanServerNoLock::GetLowNumFromSessionNo(SESSION_ID sessionNo)
+	{
+		return u_int64();
+	}
+
+	void CLanServerNoLock::SetZeroCopy(bool on)
+	{
+		int optNum = on ? 0 : SEND_BUF_SIZE;
+
+		if (setsockopt(mListenSocket, SOL_SOCKET, SO_SNDBUF, (char*)&optNum, sizeof(optNum)) == SOCKET_ERROR)
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Zero Copy [Error: %d]\n", WSAGetLastError());
+			closesocket(mListenSocket);
+
+			return;
+		}
+
+		if (on)
+		{
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Zero Copy On\n");
+		}
+		else
+		{
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Zero Copy Off\n");
+		}
+	}
+
+	void CLanServerNoLock::SetNagle(bool on)
+	{
+		BOOL optval = on;
+
+		if (setsockopt(mListenSocket, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof(optval)) == SOCKET_ERROR)
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Nagle [Error: %d]\n", WSAGetLastError());
+			closesocket(mListenSocket);
+
+			return;
+		}
+
+		if (on)
+		{
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Nagle On\n");
+		}
+		else
+		{
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Nagle Off\n");
+		}
+	}
+
 	void CLanServerNoLock::NetworkMonitorProc()
 	{
 		HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
@@ -721,13 +769,13 @@ namespace procademy
 
 	void CLanServerNoLock::QuitServer()
 	{
-		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Exit\n");
+		Stop();
 
 		PostQueuedCompletionStatus(mHcp, 0, 0, 0);
-		mbBegin = false;
+
 		mbExit = true;
 
-		closesocket(mListenSocket);
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CNetServer\n");
 	}
 
 	CLanServerNoLock::CLanServerNoLock()
@@ -769,6 +817,8 @@ namespace procademy
 			return false;
 		}
 
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CLanServer Begin\n");
+
 		if (!CreateListenSocket())
 		{
 			return false;
@@ -795,6 +845,8 @@ namespace procademy
 				//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
 			}
 		}
+
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CLanServer\n");
 	}
 
 	int CLanServerNoLock::GetSessionCount()
@@ -811,28 +863,12 @@ namespace procademy
 			switch (ch)
 			{
 			case 'g':
-				if (mbNagle)
-				{
-					wprintf(L"Unset Nagle\n");
-					mbNagle = false;
-				}
-				else
-				{
-					wprintf(L"Set Nagle\n");
-					mbNagle = true;
-				}
+				mbNagle = !mbNagle;
+				SetNagle(mbNagle);
 				break;
 			case 'z':
-				if (mbZeroCopy)
-				{
-					wprintf(L"Unset Zerocopy\n");
-					mbZeroCopy = false;
-				}
-				else
-				{
-					wprintf(L"Set Zerocopy\n");
-					mbZeroCopy = true;
-				}
+				mbZeroCopy = !mbZeroCopy;
+				SetZeroCopy(mbZeroCopy);
 				break;
 			case 'm':
 				if (mbMonitoring)
@@ -889,16 +925,11 @@ namespace procademy
 	bool CLanServerNoLock::Disconnect(SESSION_ID SessionID)
 	{
 		Session* session = FindSession(SessionID);
-		BOOL ret;
 
 		if (session == nullptr)
 			return false;
 
-		ret = CancelIoEx((HANDLE)session->socket, nullptr);
-
-		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
-
-		return true;
+		return CancelIoEx((HANDLE)session->socket, nullptr);
 	}
 
 	void CLanServerNoLock::SendPacket(SESSION_ID SessionID, CNetPacket* packet)
@@ -957,7 +988,7 @@ namespace procademy
 		if (wcscmp(buffer, L"DEBUG") == 0)
 			CLogger::setLogLevel(dfLOG_LEVEL_DEBUG);
 		else if (wcscmp(buffer, L"WARNING") == 0)
-			CLogger::setLogLevel(dfLOG_LEVEL_NOTICE);
+			CLogger::setLogLevel(dfLOG_LEVEL_SYSTEM);
 		else if (wcscmp(buffer, L"ERROR") == 0)
 			CLogger::setLogLevel(dfLOG_LEVEL_ERROR);
 	}

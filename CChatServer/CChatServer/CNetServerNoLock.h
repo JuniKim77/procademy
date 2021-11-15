@@ -117,8 +117,14 @@ namespace procademy
 		SESSION_ID GenerateSessionID();
 		u_short GetIndexFromSessionNo(SESSION_ID sessionNo);
 		u_int64 GetLowNumFromSessionNo(SESSION_ID sessionNo);
+		void SetZeroCopy(bool on);
+		void SetNagle(bool on);
 
 	private:
+		enum {
+			SEND_BUF_SIZE = 8192
+		};
+
 		SOCKET				mListenSocket = INVALID_SOCKET;
 		BYTE				mNumThreads = 0;
 		HANDLE				mHcp = INVALID_HANDLE_VALUE;
