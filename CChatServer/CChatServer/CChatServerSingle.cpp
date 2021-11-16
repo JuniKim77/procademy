@@ -65,7 +65,10 @@ unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
 
     while (!chatServer->mbExit)
     {
-        chatServer->GQCSProc();
+        if (chatServer->mGQCSEx)
+            chatServer->GQCSProcEx();
+        else
+            chatServer->GQCSProc();
     }
 
     wprintf(L"Update Thread End\n");
@@ -100,7 +103,6 @@ unsigned int __stdcall procademy::CChatServerSingle::HeartbeatFunc(LPVOID arg)
 
 void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
 {
-    //mMsgQ.Enqueue(msg);
     PostQueuedCompletionStatus(mIOCP, 1, (ULONG_PTR)msg, 0);
 }
 
@@ -122,8 +124,6 @@ void procademy::CChatServerSingle::GQCSProc()
 
         mUpdateTPS++;
 
-        //mMsgQ.Dequeue(&msg);
-
         switch (msg->type)
         {
         case MSG_TYPE_RECV:
@@ -144,6 +144,51 @@ void procademy::CChatServerSingle::GQCSProc()
         }
 
         mMsgPool.Free(msg);
+    }
+}
+
+void procademy::CChatServerSingle::GQCSProcEx()
+{
+    while (1)
+    {
+        ULONG               dequeueSize = 0;
+        st_MSG*             msg = nullptr;
+        OVERLAPPED_ENTRY    overlappedArray[100];
+
+        BOOL gqcsexRet = GetQueuedCompletionStatusEx(mIOCP, overlappedArray, 100u, &dequeueSize, INFINITE, false);
+
+        for (ULONG i = 0; i < dequeueSize; ++i)
+        {
+            if (overlappedArray[i].dwNumberOfBytesTransferred == 0)
+            {
+                return;
+            }
+
+            msg = (st_MSG*)overlappedArray[i].lpCompletionKey;
+
+            mUpdateTPS++;
+
+            switch (msg->type)
+            {
+            case MSG_TYPE_RECV:
+                CompleteMessage(msg->sessionNo, msg->packet);
+                break;
+            case MSG_TYPE_JOIN:
+                JoinProc(msg->sessionNo);
+                break;
+            case MSG_TYPE_LEAVE:
+                LeaveProc(msg->sessionNo);
+                break;
+            case MSG_TYPE_TIMEOUT:
+                CheckTimeOutProc();
+                break;
+            default:
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message\n");
+                break;
+            }
+
+            mMsgPool.Free(msg);
+        }
     }
 }
 
@@ -315,7 +360,8 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     response = MakeCSResLogin(1, player->accountNo);
     // ·Î±×?
-    SendPacket(player->sessionNo, response);
+    //SendPacket(player->sessionNo, response);
+    SendPacketWorker(player->sessionNo, response);
     response->SubRef();
 
     return true;
@@ -417,7 +463,8 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     CNetPacket* response = MakeCSResSectorMove(player->accountNo, player->curSectorX, player->curSectorY);
 
-    SendPacket(player->sessionNo, response);
+    //SendPacket(player->sessionNo, response);
+    SendPacketWorker(player->sessionNo, response);
     response->SubRef();
 
     return true;
@@ -622,7 +669,8 @@ DWORD procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, 
 
         for (std::list<st_Player*>::iterator iter = mSector[curY][curX].list.begin(); iter != mSector[curY][curX].list.end(); ++iter)
         {
-            SendPacket((*iter)->sessionNo, packet);
+            //SendPacket((*iter)->sessionNo, packet);
+            SendPacketWorker((*iter)->sessionNo, packet);
         }
     }
 
@@ -891,6 +939,12 @@ void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
     tp.GetValue(L"POOL_SIZE_CHECK", buffer);
     if (wcscmp(L"TRUE", buffer) == 0)
         CNetPacket::sPacketPool.OnOffCounting();
+
+    tp.GetValue(L"GQCSEX", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        mGQCSEx = true;
+    else
+        mGQCSEx = false;
 
     tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
 

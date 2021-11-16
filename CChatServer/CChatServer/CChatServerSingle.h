@@ -45,6 +45,7 @@ namespace procademy
 		/// </summary>
 		/// <returns></returns>
 		void			GQCSProc();
+		void			GQCSProcEx();
 		/// <summary>
 		/// 전 플레이어를 돌면서 플레이어 체크
 		/// </summary>
@@ -110,5 +111,6 @@ namespace procademy
 		st_Sector								mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
 		int										mTimeOut;
 		CCpuUsage								mCpuUsage;
+		bool									mGQCSEx;
 };
 }

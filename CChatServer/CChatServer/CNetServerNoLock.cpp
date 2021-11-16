@@ -315,6 +315,8 @@ namespace procademy
 			{
 				if (InterlockedExchange8((char*)&session->isSending, false) == false)
 				{
+					// SendPost µµÁß Release
+					//break;
 					CRASH();
 				}
 
@@ -627,7 +629,7 @@ namespace procademy
 
 			session = (Session*)completionKey;
 
-			if (transferredSize != 0) // Normal close
+			if (transferredSize != 0)
 			{
 				if (pOverlapped == &session->recvOverlapped) // Recv
 				{
@@ -643,7 +645,14 @@ namespace procademy
 				}
 			}
 
-			DecrementIOProc(session, 10000);
+			if (transferredSize == 0 && pOverlapped == (LPOVERLAPPED)1)
+			{
+				SendPost(session);
+			}
+			else
+			{
+				DecrementIOProc(session, 10000);
+			}
 		}
 	}
 
@@ -1008,6 +1017,32 @@ namespace procademy
 
 		DecrementIOProc(session, 20020);
 	}
+
+	void CNetServerNoLock::SendPacketWorker(SESSION_ID SessionID, CNetPacket* packet)
+	{
+		Session* session = FindSession(SessionID);
+		//
+		IncrementIOProc(session, 20000);
+
+		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
+		{
+			DecrementIOProc(session, 20020);
+			/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket);
+			g_sessionDebugs[ret] = packet;*/
+			return;
+		}
+		/*ioDebugLog(20010, GetCurrentThreadId(), session->sessionID & 0xffffffff,
+			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
+		packet->AddRef();
+		session->sendQ.Enqueue(packet);
+
+		//CProfiler::Begin(L"SendPost");
+		PostQueuedCompletionStatus(mHcp, 0, (ULONG_PTR)session, (LPOVERLAPPED)1);
+		//CProfiler::End(L"SendPost");
+
+		DecrementIOProc(session, 20020);
+	}
+
 	void CNetServerNoLock::LoadInitFile(const WCHAR* fileName)
 	{
 		TextParser  tp;
