@@ -73,7 +73,7 @@ namespace procademy
 
 		bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
 		void SendPacket(SESSION_ID SessionID, CNetPacket* packet); // SESSION_ID / HOST_ID
-		void SendPacketWorker(SESSION_ID SessionID, CNetPacket* packet);
+		void SendPacketToWorker(SESSION_ID SessionID, CNetPacket* packet);
 		virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept 직후
 
 		virtual void OnClientJoin(SESSION_ID SessionID) = 0; //< Accept 후 접속처리 완료 후 호출.

@@ -649,10 +649,8 @@ namespace procademy
 			{
 				SendPost(session);
 			}
-			else
-			{
-				DecrementIOProc(session, 10000);
-			}
+
+			DecrementIOProc(session, 10000);
 		}
 	}
 
@@ -1018,7 +1016,7 @@ namespace procademy
 		DecrementIOProc(session, 20020);
 	}
 
-	void CNetServerNoLock::SendPacketWorker(SESSION_ID SessionID, CNetPacket* packet)
+	void CNetServerNoLock::SendPacketToWorker(SESSION_ID SessionID, CNetPacket* packet)
 	{
 		Session* session = FindSession(SessionID);
 		//
@@ -1037,6 +1035,7 @@ namespace procademy
 		session->sendQ.Enqueue(packet);
 
 		//CProfiler::Begin(L"SendPost");
+		IncrementIOProc(session, 20010);
 		PostQueuedCompletionStatus(mHcp, 0, (ULONG_PTR)session, (LPOVERLAPPED)1);
 		//CProfiler::End(L"SendPost");
 

@@ -361,7 +361,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     response = MakeCSResLogin(1, player->accountNo);
     // ·Î±×?
     //SendPacket(player->sessionNo, response);
-    SendPacketWorker(player->sessionNo, response);
+    SendPacketToWorker(player->sessionNo, response);
     response->SubRef();
 
     return true;
@@ -464,7 +464,7 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
     CNetPacket* response = MakeCSResSectorMove(player->accountNo, player->curSectorX, player->curSectorY);
 
     //SendPacket(player->sessionNo, response);
-    SendPacketWorker(player->sessionNo, response);
+    SendPacketToWorker(player->sessionNo, response);
     response->SubRef();
 
     return true;
@@ -670,7 +670,7 @@ DWORD procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, 
         for (std::list<st_Player*>::iterator iter = mSector[curY][curX].list.begin(); iter != mSector[curY][curX].list.end(); ++iter)
         {
             //SendPacket((*iter)->sessionNo, packet);
-            SendPacketWorker((*iter)->sessionNo, packet);
+            SendPacketToWorker((*iter)->sessionNo, packet);
         }
     }
 
