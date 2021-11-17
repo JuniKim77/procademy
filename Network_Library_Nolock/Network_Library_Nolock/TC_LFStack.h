@@ -82,7 +82,7 @@ void TC_LFStack<T>::Push(T data)
 	do
 	{
 		ptop = mTop.ptr_node;		// Node Address -> Low Part
-		top.ptr_node = ptop;
+		//top.ptr_node = node;
 		node->next = ptop;
 	} while (InterlockedCompareExchangePointer((PVOID*)&mTop.ptr_node, node, ptop) != ptop);
 
