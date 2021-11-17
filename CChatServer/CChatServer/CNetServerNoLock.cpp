@@ -4,7 +4,6 @@
 #include "CCrashDump.h"
 #include "CProfiler.h"
 #include "TextParser.h"
-#include <conio.h>
 
 struct packetDebug
 {
@@ -313,12 +312,7 @@ namespace procademy
 
 			if (session->sendQ.IsEmpty() == true)
 			{
-				if (InterlockedExchange8((char*)&session->isSending, false) == false)
-				{
-					// SendPost µµÁß Release
-					//break;
-					CRASH();
-				}
+				session->isSending = false;
 
 				if (session->sendQ.IsEmpty() == false)
 				{
@@ -837,6 +831,23 @@ namespace procademy
 		mbExit = true;
 
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CNetServer\n");
+
+		DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
+
+		switch (waitResult)
+		{
+		case WAIT_FAILED:
+			wprintf_s(L"Main Thread Handle Error\n");
+			break;
+		case WAIT_TIMEOUT:
+			wprintf_s(L"Main Thread Timeout Error\n");
+			break;
+		case WAIT_OBJECT_0:
+			wprintf_s(L"None Error\n");
+			break;
+		default:
+			break;
+		}
 	}
 
 	CNetServerNoLock::CNetServerNoLock()
@@ -904,80 +915,6 @@ namespace procademy
 		}
 
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CNetServer\n");
-	}
-
-	void CNetServerNoLock::WaitForThreadsFin()
-	{
-		while (1)
-		{
-			char ch = _getch();
-
-			switch (ch)
-			{
-			case 'g':
-				mbNagle = !mbNagle;
-				SetNagle(mbNagle);
-				break;
-			case 'z':
-				mbZeroCopy = !mbZeroCopy;
-				SetZeroCopy(mbZeroCopy);
-				break;
-			case 'm':
-				if (mbMonitoring)
-				{
-					wprintf(L"Unset Monitoring\n");
-					mbMonitoring = false;
-				}
-				else
-				{
-					wprintf(L"Set Monitoring\n");
-					mbMonitoring = true;
-				}
-				break;
-			case 's':
-				if (mbBegin)
-				{
-					Stop();
-					wprintf(L"STOP\n");
-				}
-				else
-				{
-					Start();
-					wprintf(L"RUN\n");
-				}
-				break;
-			case 'p':
-				mbPrint = true;
-				wprintf(L"Set Print\n");
-				break;
-			case 'd':
-				CRASH();
-			case 'q':
-				QuitServer();
-				goto EXIT;
-				break;
-			default:
-				break;
-			}
-		}
-
-	EXIT:
-		DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
-
-		switch (waitResult)
-		{
-		case WAIT_FAILED:
-			wprintf_s(L"Main Thread Handle Error\n");
-			break;
-		case WAIT_TIMEOUT:
-			wprintf_s(L"Main Thread Timeout Error\n");
-			break;
-		case WAIT_OBJECT_0:
-			wprintf_s(L"None Error\n");
-			break;
-		default:
-			break;
-		}
 	}
 
 	bool CNetServerNoLock::Disconnect(SESSION_ID SessionID)

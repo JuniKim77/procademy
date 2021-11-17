@@ -66,10 +66,9 @@ namespace procademy
 	{
 	protected:
 		CNetServerNoLock();
-		~CNetServerNoLock();
+		virtual ~CNetServerNoLock();
 		bool Start();
 		void Stop();
-		void WaitForThreadsFin();
 
 		bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
 		void SendPacket(SESSION_ID SessionID, CNetPacket* packet); // SESSION_ID / HOST_ID
@@ -88,6 +87,8 @@ namespace procademy
 
 		virtual void OnError(int errorcode, const WCHAR* log) = 0;
 		void QuitServer();
+		void SetZeroCopy(bool on);
+		void SetNagle(bool on);
 
 	private:
 		Session* FindSession(SESSION_ID sessionNo);
@@ -117,8 +118,6 @@ namespace procademy
 		SESSION_ID GenerateSessionID();
 		u_short GetIndexFromSessionNo(SESSION_ID sessionNo);
 		u_int64 GetLowNumFromSessionNo(SESSION_ID sessionNo);
-		void SetZeroCopy(bool on);
-		void SetNagle(bool on);
 
 	private:
 		enum {
@@ -134,8 +133,6 @@ namespace procademy
 		TC_LFStack<u_short> mEmptyIndexes;
 		u_short				mPort = 0;
 		WCHAR				mBindIP[32];
-		BYTE				mActiveThreadNum = 0;
-		BYTE				mWorkerThreadNum = 0;
 		u_short				mMaxClient = 0;
 
 		/// <summary>
@@ -154,6 +151,8 @@ namespace procademy
 		bool				mbExit = false;
 		bool				mbBegin = false;
 		bool				mbPrint = false;
+		BYTE				mActiveThreadNum = 0;
+		BYTE				mWorkerThreadNum = 0;
 
 		struct Monitor
 		{

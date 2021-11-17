@@ -27,6 +27,7 @@ namespace procademy
 		virtual void	OnRecv(SESSION_ID SessionID, CNetPacket* packet) override;
 		virtual void	OnError(int errorcode, const WCHAR* log) override;
 		bool			BeginServer();
+		void			WaitForThreadsFin();
 
 	private:
 		static unsigned int WINAPI UpdateFunc(LPVOID arg);
@@ -107,10 +108,12 @@ namespace procademy
 		TC_LFObjectPool<st_Player>				mPlayerPool;
 		DWORD									mLoginCount = 0;
 		DWORD									mUpdateTPS = 0;
+		DWORD									mGQCSCount = 0;
 
 		st_Sector								mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
 		int										mTimeOut;
 		CCpuUsage								mCpuUsage;
+		bool									mSendToWorker = true;
 		bool									mGQCSEx;
 };
 }

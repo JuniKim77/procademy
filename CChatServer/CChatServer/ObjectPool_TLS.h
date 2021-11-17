@@ -103,8 +103,8 @@ namespace procademy
 			chunk->mFreeCount = 0;
 			TlsSetValue(mIndex, chunk);
 
-			USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
-			chunkTrack[ret] = chunk;
+			//USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
+			//chunkTrack[ret] = chunk;
 		}
 
 		if (mbSizeCheck)
@@ -136,8 +136,8 @@ namespace procademy
 	template<typename DATA>
 	inline DATA* ObjectPool_TLS<DATA>::CChunk::Alloc(void)
 	{
-		if (mAllocCount == MAX_SIZE)
-			return nullptr;
+		//if (mAllocCount == MAX_SIZE)
+		//	return nullptr;
 
 		st_Chunk_Block* pBlock = (st_Chunk_Block*)&mArray[mAllocCount++];
 

@@ -1,9 +1,12 @@
+#define SEND_TO_WORKER
+
 #include "CChatServerSingle.h"
 #include "CNetPacket.h"
 #include "CommonProtocol.h"
 #include "CLogger.h"
 #include "TextParser.h"
 #include <vector>
+#include <conio.h>
 
 #define MAX_STR (30000)
 
@@ -156,6 +159,8 @@ void procademy::CChatServerSingle::GQCSProcEx()
         OVERLAPPED_ENTRY    overlappedArray[100];
 
         BOOL gqcsexRet = GetQueuedCompletionStatusEx(mIOCP, overlappedArray, 100u, &dequeueSize, INFINITE, false);
+
+        mGQCSCount++;
 
         for (ULONG i = 0; i < dequeueSize; ++i)
         {
@@ -321,10 +326,10 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
         return false;
     }
 
-    if (player->sessionNo != sessionNo)
-    {
-        CRASH();
-    }
+    //if (player->sessionNo != sessionNo)
+    //{
+    //    CRASH();
+    //}
 
     if (player->accountNo != 0 || player->bLogin)
     {
@@ -349,7 +354,6 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     // token verification
 
     player->accountNo = AccountNo;
-    //player->sessionNo = sessionNo;
     wcscpy_s(player->ID, NAME_MAX, ID);
     wcscpy_s(player->nickName, NAME_MAX, Nickname);
     player->bLogin = true;
@@ -359,9 +363,13 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     //msgDebugLog(2000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
     response = MakeCSResLogin(1, player->accountNo);
-    // ·Î±×?
-    //SendPacket(player->sessionNo, response);
+
+#ifdef SEND_TO_WORKER
     SendPacketToWorker(player->sessionNo, response);
+#else
+    SendPacket(player->sessionNo, response);
+#endif // SEND_TO_WORKER
+    
     response->SubRef();
 
     return true;
@@ -381,10 +389,10 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
         return false;
     }
 
-    if (player->sessionNo != sessionNo)
-    {
-        CRASH();
-    }
+    //if (player->sessionNo != sessionNo)
+    //{
+    //    CRASH();
+    //}
 
     //msgDebugLog(3000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
@@ -422,10 +430,10 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
         return false;
     }
 
-    if (player->sessionNo != sessionNo)
-    {
-        CRASH();
-    }
+    //if (player->sessionNo != sessionNo)
+    //{
+    //    CRASH();
+    //}
 
     *packet >> AccountNo >> SectorX >> SectorY;
 
@@ -463,8 +471,12 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     CNetPacket* response = MakeCSResSectorMove(player->accountNo, player->curSectorX, player->curSectorY);
 
-    //SendPacket(player->sessionNo, response);
+#ifdef SEND_TO_WORKER
     SendPacketToWorker(player->sessionNo, response);
+#else
+    SendPacket(player->sessionNo, response);
+#endif // SEND_TO_WORKER
+
     response->SubRef();
 
     return true;
@@ -487,10 +499,10 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
         return false;
     }
 
-    if (player->sessionNo != sessionNo)
-    {
-        CRASH();
-    }
+    //if (player->sessionNo != sessionNo)
+    //{
+    //    CRASH();
+    //}
 
     *packet >> AccountNo >> messageLen;
 
@@ -669,8 +681,11 @@ DWORD procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, 
 
         for (std::list<st_Player*>::iterator iter = mSector[curY][curX].list.begin(); iter != mSector[curY][curX].list.end(); ++iter)
         {
-            //SendPacket((*iter)->sessionNo, packet);
+#ifdef SEND_TO_WORKER
             SendPacketToWorker((*iter)->sessionNo, packet);
+#else
+            SendPacket((*iter)->sessionNo, packet);
+#endif // SEND_TO_WORKER
         }
     }
 
@@ -684,7 +699,8 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     WCHAR bigNumber[18];
 
     idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
-    idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d]\n", mbZeroCopy, mbNagle);
+    idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d] [SendToWorker: %d]\n", mbZeroCopy, mbNagle, mSendToWorker);
+    idx += swprintf_s(s + idx, size - idx, L"[GQCS_EX: %d] [WorkerTh: %d] [ActiveTh: %d]\n", mGQCSEx, mWorkerThreadNum, mActiveThreadNum);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
     idx += swprintf_s(s + idx, size - idx, L"%22s%lld\n", L"Session Num : ", mPlayerMap.size());
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
@@ -698,6 +714,8 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Update TPS : ", mUpdateTPS);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
+    if (mGQCSEx)
+        idx += swprintf_s(s + idx, size - idx, L"%22s%.1f\n", L"GQCS_EX Avg : ", mUpdateTPS / (double)mGQCSCount);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
     idx += swprintf_s(s + idx, size - idx, L"CPU usage [T:%.1f U:%.1f K:%.1f] [Chat:%.1f U:%.1f K%.1f]\n",
         mCpuUsage.ProcessorTotal(), mCpuUsage.ProcessorUser(), mCpuUsage.ProcessorKernel(),
@@ -770,6 +788,7 @@ void procademy::CChatServerSingle::PrintRecvSendRatio()
 void procademy::CChatServerSingle::ClearTPS()
 {
     mUpdateTPS = 0;
+    mGQCSCount = 0;
     for (int i = 0; i < 50; ++i)
     {
         for (int j = 0; j < 50; ++j)
@@ -915,6 +934,64 @@ bool procademy::CChatServerSingle::BeginServer()
     }
 
     return true;
+}
+
+void procademy::CChatServerSingle::WaitForThreadsFin()
+{
+    while (1)
+    {
+        char ch = _getch();
+
+        switch (ch)
+        {
+        case 'g':
+            mbNagle = !mbNagle;
+            SetNagle(mbNagle);
+            break;
+        case 'z':
+            mbZeroCopy = !mbZeroCopy;
+            SetZeroCopy(mbZeroCopy);
+            break;
+        case 'm':
+            if (mbMonitoring)
+            {
+                wprintf(L"Unset Monitoring\n");
+                mbMonitoring = false;
+            }
+            else
+            {
+                wprintf(L"Set Monitoring\n");
+                mbMonitoring = true;
+            }
+            break;
+        case 's':
+            if (mbBegin)
+            {
+                Stop();
+                wprintf(L"STOP\n");
+            }
+            else
+            {
+                Start();
+                wprintf(L"RUN\n");
+            }
+            break;
+        case 'p':
+            wprintf(L"Print Profiler\n");
+            break;
+        case 'r':
+            mbPrint = true;
+            wprintf(L"Set Print Ratio\n");
+            break;
+        case 'd':
+            CRASH();
+        case 'q':
+            QuitServer();
+            return;
+        default:
+            break;
+        }
+    }
 }
 
 
