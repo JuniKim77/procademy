@@ -158,8 +158,8 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 		{
 			for (int j = 0; j < 2; ++j)
 			{
-				time -= mProfiles[i].iMax[i];
-				time -= mProfiles[i].iMin[i];
+				time -= mProfiles[i].iMax[j];
+				time -= mProfiles[i].iMin[j];
 			}
 
 			avg = time / freq / (mProfiles[i].iCall - 4);
