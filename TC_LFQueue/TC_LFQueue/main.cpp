@@ -8,9 +8,9 @@
 #include <process.h>
 #include <wchar.h>
 
-#define THREAD_SIZE (3)
-#define MAX_ALLOC (6)
-#define THREAD_ALLOC (2)
+#define THREAD_SIZE (5)
+#define MAX_ALLOC (5)
+#define THREAD_ALLOC (1)
 
 extern USHORT g_debug_index;
 extern st_DEBUG g_debugs[USHRT_MAX + 1];
@@ -115,9 +115,9 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			{
 				return 0;
 			}
-			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileBegin(L"DEQUEUE");
+			//((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileBegin(L"DEQUEUE");
 			bool ret = g_q.Dequeue(&pDataArray[i]);
-			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileEnd(L"DEQUEUE");
+			//((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileEnd(L"DEQUEUE");
 			if (ret == false)
 			{
 				CRASH();
@@ -177,9 +177,9 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			{
 				return 0;
 			}
-			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileBegin(L"ENQUEUE");
+			//((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileBegin(L"ENQUEUE");
 			g_q.Enqueue(pDataArray[i]);
-			((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileEnd(L"ENQUEUE");
+			//((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileEnd(L"ENQUEUE");
 			pDataArray[i] = nullptr;
 			InterlockedIncrement((long*)&PushTPS);
 		}
@@ -201,10 +201,10 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 		DequeueTPS = 0;
 
 		wprintf(L"---------------------------------------------------------------------\n\n");
-		wprintf(L"[Enqueue TPS		: %ld\n", pop);
-		wprintf(L"[Dequeue  TPS		: %ld\n", push);
-		wprintf(L"[Queue Size		: %ld\n", g_q.GetSize());
-		wprintf(L"[Pool Capa		: %ld\n", g_q.GetPoolCapacity());
+		wprintf(L"Enqueue TPS		: %ld\n", pop);
+		wprintf(L"Dequeue TPS		: %ld\n", push);
+		wprintf(L"Queue Size		: %ld\n", g_q.GetSize());
+		wprintf(L"Pool Capa	    	: %ld\n", g_q.GetPoolCapacity());
 		wprintf(L"---------------------------------------------------------------------\n\n\n");
 		if (g_q.GetSize() > MAX_ALLOC)
 		{

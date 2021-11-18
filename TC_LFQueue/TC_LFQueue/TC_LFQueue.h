@@ -110,7 +110,7 @@ public:
 	void		Log(int logicId, t_Top snap_top, Node* next, bool isHead = false);
 
 private:
-	void		MoveTail(int logicId, t_Top* snap, Node** next);
+	void		MoveTail(int logicId, t_Top* snap);
 };
 
 template<typename DATA>
@@ -160,24 +160,19 @@ inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 
 		if (next == nullptr)
 		{
-			Node* snap_next = mTail.ptr_node;
 			if (InterlockedCompareExchangePointer((PVOID*)&top.ptr_node->next, node, nullptr) == nullptr)
 			{
-				if (snap_next == node)
-				{
-					int test = 0;
-				}
-				InterlockedIncrement((DWORD*)&mSize);
+				InterlockedIncrement((long*)&mSize);
 				//Log(LOGIC_ENQUEUE + 50, top, next);
 
-				MoveTail(LOGIC_ENQUEUE + 70, &top, &next);
+				MoveTail(LOGIC_ENQUEUE + 70, &top);
 
 				break;
 			}
 		}
 		else
 		{
-			MoveTail(LOGIC_ENQUEUE + 20, &top, &next);
+			MoveTail(LOGIC_ENQUEUE + 20, &top);
 		}
 	}
 }
@@ -188,18 +183,16 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 	alignas(16) t_Top top;
 	alignas(16) t_Top tail;
 
-	InterlockedDecrement((DWORD*)&mSize);
+	InterlockedDecrement((long*)&mSize);
 
 	if (mSize < 0)
 	{
-		InterlockedIncrement((DWORD*)&mSize);
+		InterlockedIncrement((long*)&mSize);
 
 		return false;
 	}
 
 	Node* next;
-	Node* tail_next;
-	DATA snap_data;
 
 	while (1)
 	{
@@ -209,27 +202,21 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 
 		tail.counter = mTail.counter;
 		tail.ptr_node = mTail.ptr_node;
-		tail_next = tail.ptr_node->next;
 
-		if (next != nullptr)
+		if (top.ptr_node == tail.ptr_node || next == nullptr)
 		{
-			if (top.ptr_node == tail.ptr_node)
+			MoveTail(LOGIC_ENQUEUE + 20, &tail);
+		}
+		else
+		{
+			*data = next->data;
+			if (InterlockedCompareExchange128((LONG64*)&mHead, top.counter + 1, (LONG64)next, (LONG64*)&top))
 			{
-				MoveTail(LOGIC_ENQUEUE + 20, &tail, &tail_next);
-			}
-			else
-			{
-				snap_data = next->data;
-				if (InterlockedCompareExchange128((LONG64*)&mHead, top.counter + 1, (LONG64)next, (LONG64*)&top))
-				{
-					//Log(LOGIC_DEQUEUE + 50, top, next, true);
-					break;
-				}
+				//Log(LOGIC_DEQUEUE + 50, top, next, true);
+				break;
 			}
 		}
 	}
-
-	*data = snap_data;
 
 	mMemoryPool.Free(top.ptr_node);
 
@@ -290,16 +277,16 @@ inline void TC_LFQueue<DATA>::Log(int logicId, t_Top snap_top, Node* next, bool 
 }
 
 template<typename DATA>
-inline void TC_LFQueue<DATA>::MoveTail(int logicId, t_Top* snap, Node** next)
+inline void TC_LFQueue<DATA>::MoveTail(int logicId, t_Top* snap)
 {
 	snap->counter = mTail.counter;
 	snap->ptr_node = mTail.ptr_node;
-	*next = snap->ptr_node->next;
+	Node* next = snap->ptr_node->next;
 
-	if (*next != nullptr)
+	if (next != nullptr)
 	{
 		//Log(logicId - 10, *snap, *next);
-		if (InterlockedCompareExchange128((LONG64*)&mTail, snap->counter + 1, (LONG64)*next, (LONG64*)snap) == 0)
+		if (InterlockedCompareExchange128((LONG64*)&mTail, snap->counter + 1, (LONG64)next, (LONG64*)snap) == 0)
 		{
 			//Log(logicId, snap, nullptr);
 		}

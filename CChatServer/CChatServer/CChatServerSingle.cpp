@@ -156,9 +156,9 @@ void procademy::CChatServerSingle::GQCSProcEx()
     {
         ULONG               dequeueSize = 0;
         st_MSG*             msg = nullptr;
-        OVERLAPPED_ENTRY    overlappedArray[100];
+        OVERLAPPED_ENTRY    overlappedArray[1000];
 
-        BOOL gqcsexRet = GetQueuedCompletionStatusEx(mIOCP, overlappedArray, 100u, &dequeueSize, INFINITE, false);
+        BOOL gqcsexRet = GetQueuedCompletionStatusEx(mIOCP, overlappedArray, mGQCSCExNum, &dequeueSize, INFINITE, false);
 
         mGQCSCount++;
 
@@ -326,10 +326,10 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
         return false;
     }
 
-    //if (player->sessionNo != sessionNo)
-    //{
-    //    CRASH();
-    //}
+    if (player->sessionNo != sessionNo)
+    {
+        CRASH();
+    }
 
     if (player->accountNo != 0 || player->bLogin)
     {
@@ -389,10 +389,10 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
         return false;
     }
 
-    //if (player->sessionNo != sessionNo)
-    //{
-    //    CRASH();
-    //}
+    if (player->sessionNo != sessionNo)
+    {
+        CRASH();
+    }
 
     //msgDebugLog(3000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
@@ -430,10 +430,10 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
         return false;
     }
 
-    //if (player->sessionNo != sessionNo)
-    //{
-    //    CRASH();
-    //}
+    if (player->sessionNo != sessionNo)
+    {
+        CRASH();
+    }
 
     *packet >> AccountNo >> SectorX >> SectorY;
 
@@ -499,10 +499,10 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
         return false;
     }
 
-    //if (player->sessionNo != sessionNo)
-    //{
-    //    CRASH();
-    //}
+    if (player->sessionNo != sessionNo)
+    {
+        CRASH();
+    }
 
     *packet >> AccountNo >> messageLen;
 
@@ -1022,6 +1022,9 @@ void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
         mGQCSEx = true;
     else
         mGQCSEx = false;
+
+    tp.GetValue(L"GQCSEX_NUM", &num);
+    mGQCSCExNum = num;
 
     tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
 

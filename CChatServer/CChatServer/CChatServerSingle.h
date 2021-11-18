@@ -109,6 +109,7 @@ namespace procademy
 		DWORD									mLoginCount = 0;
 		DWORD									mUpdateTPS = 0;
 		DWORD									mGQCSCount = 0;
+		DWORD									mGQCSCExNum = 0;
 
 		st_Sector								mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
 		int										mTimeOut;

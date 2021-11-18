@@ -390,7 +390,7 @@ void TestNormalDistributionNumber()
 	}
 
 	// run
-	for (int i = 0; i < TOTAL_SIZE * 2; ++i)
+	for (int i = 0; i < TOTAL_SIZE * 20; ++i)
 	{
 		unsigned int num;
 		getRandNum(&num);
@@ -408,7 +408,7 @@ void TestNormalDistributionNumber()
 		}
 	}
 
-	for (int i = 0; i < TOTAL_SIZE; ++i)
+	for (int i = 0; i < TOTAL_SIZE * 10; ++i)
 	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
@@ -436,7 +436,7 @@ void TestBiasedDistributionNumber(int groupNum)
 		}
 	}
 	
-	for (int i = 0; i < TOTAL_SIZE * 2; ++i)
+	for (int i = 0; i < TOTAL_SIZE * 20; ++i)
 	{
 		unsigned int num;
 		getRandNum(&num);
@@ -454,7 +454,7 @@ void TestBiasedDistributionNumber(int groupNum)
 		}
 	}
 
-	for (int i = 0; i < TOTAL_SIZE; ++i)
+	for (int i = 0; i < TOTAL_SIZE  * 10; ++i)
 	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
