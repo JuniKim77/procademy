@@ -390,26 +390,15 @@ void TestNormalDistributionNumber()
 	}
 
 	// run
-	for (int i = 0; i < TOTAL_SIZE * 20; ++i)
+	for (int i = 0; i < TOTAL_SIZE * 100; ++i)
 	{
-		unsigned int num;
-		getRandNum(&num);
+		insertNum(bTree, rbTree, myHash, setNums, true);
 
-		if ((num & 1) == 1)
+		if (!deleteNum(bTree, rbTree, myHash, setNums, true))
 		{
-			insertNum(bTree, rbTree, myHash, setNums, true);
+			printf("Delete error\n");
 		}
-		else
-		{
-			if (!deleteNum(bTree, rbTree, myHash, setNums, true))
-			{
-				printf("Delete error\n");
-			}
-		}
-	}
 
-	for (int i = 0; i < TOTAL_SIZE * 10; ++i)
-	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
 
@@ -436,26 +425,16 @@ void TestBiasedDistributionNumber(int groupNum)
 		}
 	}
 	
-	for (int i = 0; i < TOTAL_SIZE * 20; ++i)
+	// run
+	for (int i = 0; i < TOTAL_SIZE * 100; ++i)
 	{
-		unsigned int num;
-		getRandNum(&num);
+		insertNum(bTree, rbTree, myHash, setNums, true);
 
-		if ((num & 1) == 1)
+		if (!deleteNum(bTree, rbTree, myHash, setNums, true))
 		{
-			insertNum(bTree, rbTree, myHash, setNums, true);
+			printf("Delete error\n");
 		}
-		else
-		{
-			if (!deleteNum(bTree, rbTree, myHash, setNums, true))
-			{
-				printf("Delete error\n");
-			}
-		}
-	}
 
-	for (int i = 0; i < TOTAL_SIZE  * 10; ++i)
-	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
 
