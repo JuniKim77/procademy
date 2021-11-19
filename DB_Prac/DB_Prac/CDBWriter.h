@@ -5,10 +5,15 @@
 #include "mysql/include/mysql.h"
 #include "mysql/include/errmsg.h"
 #include "TC_LFQueue.h"
-#include "DB_protocol.h"
 
 namespace procademy
 {
+	struct DB_chunk
+	{
+		USHORT	type;
+		char	memory[1022];
+	};
+
 	class CDBWriter
 	{
 	public:

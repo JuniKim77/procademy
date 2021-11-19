@@ -2,6 +2,7 @@
 #include "CLogger.h"
 #include "CCrashDump.h"
 #include <process.h>
+#include "DB_protocol.h"
 
 procademy::CDBWriter::CDBWriter()
 {

@@ -2,6 +2,12 @@
 
 namespace procademy
 {
+	struct DB_chunk
+	{
+		USHORT	type;
+		char	memory[1022];
+	};
+
 #define dfCreateUser (1)
 	struct Create_User
 	{
@@ -28,7 +34,7 @@ namespace procademy
 	};
 
 #define dfSelectItem (4)
-	struct Create_Ability
+	struct Create_Item
 	{
 		USHORT type = dfSelectItem;
 		UINT32 accountID;
