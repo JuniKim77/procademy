@@ -7,6 +7,7 @@
 #include "TextParser.h"
 #include <vector>
 #include <conio.h>
+#include "CProfiler.h"
 
 #define MAX_STR (30000)
 
@@ -116,9 +117,9 @@ void procademy::CChatServerSingle::GQCSProc()
         DWORD           transferredSize = 0;
         st_MSG*         msg = nullptr;
         WSAOVERLAPPED*  pOverlapped = nullptr;
-
+ 
         BOOL gqcsRet = GetQueuedCompletionStatus(mIOCP, &transferredSize, (PULONG_PTR)&msg, &pOverlapped, INFINITE);
-
+        CProfiler::Begin(L"GQCSProc_Chat");
         // ECHO Server End
         if (transferredSize == 0)
         {
@@ -147,6 +148,7 @@ void procademy::CChatServerSingle::GQCSProc()
         }
 
         mMsgPool.Free(msg);
+        CProfiler::End(L"GQCSProc_Chat");
     }
 }
 
@@ -159,7 +161,7 @@ void procademy::CChatServerSingle::GQCSProcEx()
         OVERLAPPED_ENTRY    overlappedArray[1000];
 
         BOOL gqcsexRet = GetQueuedCompletionStatusEx(mIOCP, overlappedArray, mGQCSCExNum, &dequeueSize, INFINITE, false);
-
+        CProfiler::Begin(L"GQCSProcEx_Chat");
         mGQCSCount++;
 
         for (ULONG i = 0; i < dequeueSize; ++i)
@@ -194,6 +196,7 @@ void procademy::CChatServerSingle::GQCSProcEx()
 
             mMsgPool.Free(msg);
         }
+        CProfiler::End(L"GQCSProcEx_Chat");
     }
 }
 
@@ -978,6 +981,7 @@ void procademy::CChatServerSingle::WaitForThreadsFin()
             break;
         case 'p':
             wprintf(L"Print Profiler\n");
+            CProfiler::Print();
             break;
         case 'r':
             mbPrint = true;

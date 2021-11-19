@@ -33,7 +33,7 @@ namespace procademy
 			bool	Free(DATA* pData);
 
 			enum {
-				MAX_SIZE = 200
+				MAX_SIZE = 1000
 			};
 
 			st_Chunk_Block				mArray[MAX_SIZE];
