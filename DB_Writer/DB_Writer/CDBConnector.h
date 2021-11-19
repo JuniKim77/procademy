@@ -24,7 +24,6 @@ namespace procademy
 		enum en_DB_CONNECTOR
 		{
 			eQUERY_MAX_LEN = 2048
-
 		};
 
 		// 연결시도
@@ -46,8 +45,8 @@ namespace procademy
 		// 쿼리 날리고 결과셋 임시 보관
 		//
 		//////////////////////////////////////////////////////////////////////
-		bool		Query(WCHAR* szStringFormat, ...);
-		bool		Query_Save(WCHAR* szStringFormat, ...);	// DBWriter 스레드의 Save 쿼리 전용
+		bool		Query(const WCHAR* szStringFormat, ...);
+		bool		Query_Save(const WCHAR* szStringFormat, ...);	// DBWriter 스레드의 Save 쿼리 전용
 																// 결과셋을 저장하지 않음.
 
 		//////////////////////////////////////////////////////////////////////

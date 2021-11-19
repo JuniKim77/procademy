@@ -1,6 +1,7 @@
 #include "CDBConnector.h"
 #include <string.h>
 #include "CLogger.h"
+#include <strsafe.h>
 
 procademy::CDBConnector::CDBConnector(const WCHAR* szDBIP, const WCHAR* szUser, const WCHAR* szPassword, const WCHAR* szDBName, int iDBPort)
 {
@@ -55,14 +56,73 @@ bool procademy::CDBConnector::Disconnect(void)
 	return true;
 }
 
-bool procademy::CDBConnector::Query(WCHAR* szStringFormat, ...)
+bool procademy::CDBConnector::Query(const WCHAR* szStringFormat, ...)
 {
-	return false;
+	va_list		ap;
+	WCHAR		query[eQUERY_MAX_LEN];
+	char		cQuery[eQUERY_MAX_LEN * 2];
+	int			query_stat;
+	ULONGLONG	timeBegin;
+	ULONGLONG	timeEnd;
+
+	va_start(ap, szStringFormat);
+	{
+		StringCchVPrintf(query, eQUERY_MAX_LEN, szStringFormat, ap);
+	}
+	va_end(ap);
+
+	WideCharToMultiByte(CP_ACP, 0, query, -1, cQuery, sizeof(cQuery), NULL, NULL);
+
+	timeBegin = GetTickCount64();
+	
+	query_stat = mysql_query(mpMySQL, cQuery);
+
+	timeEnd = GetTickCount64();
+
+	if (query_stat != 0)
+	{
+		SaveLastError();
+
+		return false;
+	}
+
+	ULONGLONG dif = timeEnd - timeBegin;
+
+	if (dif > 5000)
+	{
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"[Query: %s - %dms Too Long Time]\n", query, dif);
+	}
+
+	mSqlResult = mysql_use_result(mpMySQL);
+
+	return true;
 }
 
-bool procademy::CDBConnector::Query_Save(WCHAR* szStringFormat, ...)
+bool procademy::CDBConnector::Query_Save(const WCHAR* szStringFormat, ...)
 {
-	return false;
+	va_list		ap;
+	WCHAR		query[eQUERY_MAX_LEN];
+	char		cQuery[eQUERY_MAX_LEN * 2];
+	int			query_stat;
+
+	va_start(ap, szStringFormat);
+	{
+		StringCchVPrintf(query, eQUERY_MAX_LEN, szStringFormat, ap);
+	}
+	va_end(ap);
+
+	WideCharToMultiByte(CP_ACP, 0, query, -1, cQuery, sizeof(cQuery), NULL, NULL);
+
+	query_stat = mysql_query(mpMySQL, cQuery);
+
+	if (query_stat != 0)
+	{
+		SaveLastError();
+
+		return false;
+	}
+
+	return true;
 }
 
 MYSQL_ROW procademy::CDBConnector::FetchRow(void)
