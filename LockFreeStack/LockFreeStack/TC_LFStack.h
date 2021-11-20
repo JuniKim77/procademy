@@ -129,8 +129,8 @@ template <typename T>
 void TC_LFStack<T>::Push(T data)
 {
 	// prerequisite
-	alignas(16) t_Top top;
-	top.counter = -9999;
+	//alignas(16) t_Top top;
+	//top.counter = -9999;
 	Node* ptop;
 
 	//cLog(PUSH_DEBUG, top);
@@ -141,7 +141,7 @@ void TC_LFStack<T>::Push(T data)
 	do
 	{
 		ptop = mTop.ptr_node;		// Node Address -> Low Part
-		/*top.ptr_node = node;*/
+		//top.ptr_node = node;
 		node->next = ptop;
 		//cLog(PUSH_DEBUG + 20, top);
 	} while (InterlockedCompareExchangePointer((PVOID*)&mTop.ptr_node, node, ptop) != ptop);
@@ -155,6 +155,7 @@ template <typename T>
 bool TC_LFStack<T>::Pop(T* result)
 {
 	alignas(16) t_Top top;
+	top.counter = -9999;
 	Node* next = nullptr;
 	USHORT idx = 0;
 
@@ -199,6 +200,17 @@ bool TC_LFStack<T>::Pop(T* result)
 
 	//cLog(POP_DEBUG + 50, top);
 	*result = top.ptr_node->data;
+
+	//do
+	//{
+	//	top.ptr_node = mTop.ptr_node; // snap
+	//	cLog(POP_DEBUG + 10, top);
+	//	next = top.ptr_node->next;
+	//	cLog(POP_DEBUG + 20, top);
+	//} while (InterlockedCompareExchangePointer((PVOID*)&mTop.ptr_node, next, top.ptr_node) != top.ptr_node);
+	//cLog(POP_DEBUG + 30, top);
+	//*result = top.ptr_node->data;
+
 	mMemoryPool.Free(top.ptr_node);
 
 	return true;
