@@ -161,11 +161,12 @@ void procademy::CChatServerSingle::GQCSProc()
 
 void procademy::CChatServerSingle::GQCSProcEx()
 {
+    OVERLAPPED_ENTRY* overlappedArray = new OVERLAPPED_ENTRY[mGQCSCExNum];
+
     while (1)
     {
         ULONG               dequeueSize = 0;
         st_MSG*             msg = nullptr;
-        OVERLAPPED_ENTRY    overlappedArray[1000];
 
         BOOL gqcsexRet = GetQueuedCompletionStatusEx(mIOCP, overlappedArray, mGQCSCExNum, &dequeueSize, INFINITE, false);
 #ifdef PROFILE
@@ -177,6 +178,7 @@ void procademy::CChatServerSingle::GQCSProcEx()
         {
             if (overlappedArray[i].dwNumberOfBytesTransferred == 0)
             {
+                delete[] overlappedArray;
                 return;
             }
 
@@ -209,6 +211,8 @@ void procademy::CChatServerSingle::GQCSProcEx()
         CProfiler::End(L"GQCSProcEx_Chat");
 #endif // PROFILE
     }
+
+    delete[] overlappedArray;
 }
 
 bool procademy::CChatServerSingle::CheckHeart()
@@ -591,7 +595,7 @@ bool procademy::CChatServerSingle::CheckTimeOutProc()
 {
     ULONGLONG curTime = GetTickCount64();
 
-    for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end();)
+    for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end(); ++iter)
     {
         SESSION_ID sessionNo = iter->second->sessionNo;
 
@@ -606,16 +610,12 @@ bool procademy::CChatServerSingle::CheckTimeOutProc()
             {
                 mLoginCount--;
             }
-            
+
             FreePlayer(iter->second);
 
             iter = mPlayerMap.erase(iter);*/
 
             Disconnect(sessionNo);
-        }
-        else
-        {
-            ++iter;
         }
     }
 
@@ -658,7 +658,7 @@ void procademy::CChatServerSingle::Sector_RemovePlayer(WORD x, WORD y, st_Player
 {
     for (auto iter = mSector[y][x].list.begin(); iter != mSector[y][x].list.end();)
     {
-        if ((*iter)->accountNo == player->accountNo)
+        if ((*iter)->sessionNo == player->sessionNo)
         {
             mSector[y][x].list.erase(iter);
 

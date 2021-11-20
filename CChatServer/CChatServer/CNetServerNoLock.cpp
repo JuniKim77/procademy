@@ -938,10 +938,10 @@ namespace procademy
 	{
 		Session* session = FindSession(SessionID);
 		BOOL ret;
-
+		//ret = CancelIoEx((HANDLE)session->socket, nullptr);
 		IncrementIOProc(session, 40000);
 
-		if (session == nullptr)
+		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
 		{
 			DecrementIOProc(session, 40020);
 
@@ -980,7 +980,6 @@ namespace procademy
 #else
 		SendPost(session);
 #endif // PROFILE
-		
 
 		DecrementIOProc(session, 20020);
 	}
