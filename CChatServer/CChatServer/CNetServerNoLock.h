@@ -7,6 +7,8 @@
 #include "TC_LFStack.h"
 #include "TC_LFQueue.h"
 
+//#define PROFILE
+
 namespace procademy
 {
 	typedef u_int64 SESSION_ID;
@@ -147,7 +149,7 @@ namespace procademy
 	protected:
 		bool				mbNagle = true;
 		bool				mbMonitoring = true;
-		bool				mbZeroCopy = false;
+		bool				mbZeroCopy = true;
 		bool				mbExit = false;
 		bool				mbBegin = false;
 		bool				mbPrint = false;

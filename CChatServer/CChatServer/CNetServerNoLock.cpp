@@ -352,7 +352,9 @@ namespace procademy
 
 	void CNetServerNoLock::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 	{
+#ifdef PROFILE
 		CProfiler::Begin(L"SetWSABuf");
+#endif // PROFILE
 		
 		if (isRecv)
 		{
@@ -395,8 +397,9 @@ namespace procademy
 
 			session->numSendingPacket = snapSize;
 		}
-
+#ifdef PROFILE
 		CProfiler::End(L"SetWSABuf");
+#endif // PROFILE
 	}
 
 	void CNetServerNoLock::IncrementIOProc(Session* session, int logic)
@@ -538,9 +541,13 @@ namespace procademy
 			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
 		session->bIsAlive = true;
 		OnClientJoin(session->sessionID);
+#ifdef PROFILE
 		CProfiler::Begin(L"RecvPost");
+#endif // PROFILE
 		RecvPost(session, true);
+#ifdef PROFILE
 		CProfiler::End(L"RecvPost");
+#endif // PROFILE
 	}
 
 	Session* CNetServerNoLock::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
@@ -586,7 +593,9 @@ namespace procademy
 			Session* session = nullptr;
 			
 			BOOL gqcsRet = GetQueuedCompletionStatus(mHcp, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
+#ifdef PROFILE
 			CProfiler::Begin(L"GQCS_Net");
+#endif // PROFILE
 
 			// ECHO Server End
 			if (transferredSize == 0 && (PULONG_PTR)completionKey == nullptr && pOverlapped == nullptr)
@@ -609,27 +618,41 @@ namespace procademy
 			{
 				if (pOverlapped == &session->recvOverlapped) // Recv
 				{
+#ifdef PROFILE
 					CProfiler::Begin(L"CompleteRecv");
 					CompleteRecv(session, transferredSize);
 					CProfiler::End(L"CompleteRecv");
+#else
+					CompleteRecv(session, transferredSize);
+#endif // PROFILE
 				}
 				else // Send
 				{
+#ifdef PROFILE
 					CProfiler::Begin(L"CompleteSend");
 					CompleteSend(session, transferredSize);
 					CProfiler::End(L"CompleteSend");
+#else
+					CompleteSend(session, transferredSize);
+#endif // PROFILE
 				}
 			}
 
 			if (transferredSize == 0 && pOverlapped == (LPOVERLAPPED)1)
 			{
+#ifdef PROFILE
 				CProfiler::Begin(L"SendPost");
 				SendPost(session);
 				CProfiler::End(L"SendPost");
+#else
+				SendPost(session);
+#endif // PROFILE
 			}
 
 			DecrementIOProc(session, 10000);
+#ifdef PROFILE
 			CProfiler::End(L"GQCS_Net");
+#endif // PROFILE
 		}
 	}
 
@@ -673,10 +696,13 @@ namespace procademy
 			count += (ret + sizeof(SHORT));
 			packet->SubRef();
 		}
-
+#ifdef PROFILE
 		CProfiler::Begin(L"RecvPost");
 		RecvPost(session);
 		CProfiler::End(L"RecvPost");
+#else
+		RecvPost(session);
+#endif // PROFILE
 	}
 
 	void CNetServerNoLock::CompleteSend(Session* session, DWORD transferredSize)
@@ -693,9 +719,13 @@ namespace procademy
 
 		session->numSendingPacket = 0;
 		session->isSending = false;
+#ifdef PROFILE
 		CProfiler::Begin(L"SendPost");
 		SendPost(session);
 		CProfiler::End(L"SendPost");
+#else
+		SendPost(session);
+#endif // PROFILE		
 	}
 
 	void CNetServerNoLock::CloseSessions()
@@ -909,10 +939,20 @@ namespace procademy
 		Session* session = FindSession(SessionID);
 		BOOL ret;
 
-		if (session == nullptr)
-			return false;
+		IncrementIOProc(session, 40000);
 
-		return CancelIoEx((HANDLE)session->socket, nullptr);
+		if (session == nullptr)
+		{
+			DecrementIOProc(session, 40020);
+
+			return false;
+		}
+
+		ret = CancelIoEx((HANDLE)session->socket, nullptr);
+
+		DecrementIOProc(session, 40040);
+
+		return ret;
 	}
 
 	void CNetServerNoLock::SendPacket(SESSION_ID SessionID, CNetPacket* packet)
@@ -933,9 +973,14 @@ namespace procademy
 		packet->AddRef();
 		session->sendQ.Enqueue(packet);
 
+#ifdef PROFILE
 		CProfiler::Begin(L"SendPost");
 		SendPost(session);
 		CProfiler::End(L"SendPost");
+#else
+		SendPost(session);
+#endif // PROFILE
+		
 
 		DecrementIOProc(session, 20020);
 	}

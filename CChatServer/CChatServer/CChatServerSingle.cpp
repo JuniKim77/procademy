@@ -119,7 +119,11 @@ void procademy::CChatServerSingle::GQCSProc()
         WSAOVERLAPPED*  pOverlapped = nullptr;
  
         BOOL gqcsRet = GetQueuedCompletionStatus(mIOCP, &transferredSize, (PULONG_PTR)&msg, &pOverlapped, INFINITE);
+        
+#ifdef PROFILE
         CProfiler::Begin(L"GQCSProc_Chat");
+#endif // PROFILE
+        
         // ECHO Server End
         if (transferredSize == 0)
         {
@@ -148,7 +152,10 @@ void procademy::CChatServerSingle::GQCSProc()
         }
 
         mMsgPool.Free(msg);
+
+#ifdef PROFILE
         CProfiler::End(L"GQCSProc_Chat");
+#endif // PROFILE
     }
 }
 
@@ -161,7 +168,9 @@ void procademy::CChatServerSingle::GQCSProcEx()
         OVERLAPPED_ENTRY    overlappedArray[1000];
 
         BOOL gqcsexRet = GetQueuedCompletionStatusEx(mIOCP, overlappedArray, mGQCSCExNum, &dequeueSize, INFINITE, false);
+#ifdef PROFILE
         CProfiler::Begin(L"GQCSProcEx_Chat");
+#endif // PROFILE
         mGQCSCount++;
 
         for (ULONG i = 0; i < dequeueSize; ++i)
@@ -196,7 +205,9 @@ void procademy::CChatServerSingle::GQCSProcEx()
 
             mMsgPool.Free(msg);
         }
+#ifdef PROFILE
         CProfiler::End(L"GQCSProcEx_Chat");
+#endif // PROFILE
     }
 }
 
@@ -322,26 +333,26 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     if (player == nullptr)
     {
-        // CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found\n", sessionNo);
+         CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found\n", sessionNo);
 
-        // CRASH();
+         CRASH();
 
         return false;
     }
 
     if (player->sessionNo != sessionNo)
     {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+
         CRASH();
+
+        return false;
     }
 
     if (player->accountNo != 0 || player->bLogin)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Double Login\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login\n",
             sessionNo, player->accountNo);
-
-        /*response = MakeCSResLogin(0, 0);
-        SendPacket(sessionNo, response);
-        response->SubRef();*/
 
         CRASH();
 
@@ -384,17 +395,21 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
 
     if (player == nullptr)
     {
-       /* CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
             sessionNo);
 
-        CRASH();*/
+        CRASH();
 
         return false;
     }
 
     if (player->sessionNo != sessionNo)
     {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+
         CRASH();
+
+        return false;
     }
 
     //msgDebugLog(3000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
@@ -425,17 +440,21 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     if (player == nullptr)
     {
-        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found\n",
             sessionNo);
 
-        CRASH();*/
+        CRASH();
 
         return false;
     }
 
     if (player->sessionNo != sessionNo)
     {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+
         CRASH();
+
+        return false;
     }
 
     *packet >> AccountNo >> SectorX >> SectorY;
@@ -494,17 +513,21 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     if (player == nullptr)
     {
-        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found\n",
             sessionNo);
 
-        CRASH();*/
+        CRASH();
 
         return false;
     }
 
     if (player->sessionNo != sessionNo)
     {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+
         CRASH();
+
+        return false;
     }
 
     *packet >> AccountNo >> messageLen;
@@ -542,17 +565,21 @@ bool procademy::CChatServerSingle::HeartUpdateProc(SESSION_ID sessionNo)
 
     if (player == nullptr)
     {
-       /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"HeartUpdateProc - [Session %llu] Not Found\n",
+       CLogger::_Log(dfLOG_LEVEL_ERROR, L"HeartUpdateProc - [Session %llu] Not Found\n",
             sessionNo);
 
-        CRASH();*/
+        CRASH();
 
         return false;
     }
 
     if (player->sessionNo != sessionNo)
     {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"HeartUpdateProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+
         CRASH();
+
+        return false;
     }
 
     player->lastRecvTime = GetTickCount64();
@@ -570,7 +597,7 @@ bool procademy::CChatServerSingle::CheckTimeOutProc()
 
         if (curTime - iter->second->lastRecvTime > mTimeOut) // 40000ms
         {
-            if (iter->second->curSectorX != -1 && iter->second->curSectorY != -1)
+            /*if (iter->second->curSectorX != -1 && iter->second->curSectorY != -1)
             {
                 Sector_RemovePlayer(iter->second->curSectorX, iter->second->curSectorY, iter->second);
             }
@@ -582,7 +609,7 @@ bool procademy::CChatServerSingle::CheckTimeOutProc()
             
             FreePlayer(iter->second);
 
-            iter = mPlayerMap.erase(iter);
+            iter = mPlayerMap.erase(iter);*/
 
             Disconnect(sessionNo);
         }
