@@ -37,7 +37,7 @@ int main()
 		CLogger::_Log(dfLOG_LEVEL_ERROR, L"IOCP_TEST TimeOut Error\n");
 		break;
 	case WAIT_OBJECT_0:
-		CLogger::_Log(dfLOG_LEVEL_NOTICE, L"IOCP_TEST End\n");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"IOCP_TEST End\n");
 		break;
 	default:
 		break;
@@ -67,9 +67,9 @@ void Init()
 {
 	CProfiler::InitProfiler(g_worker_thread + 1);
 
-	CLogger::_Log(dfLOG_LEVEL_NOTICE, L"IOCP_TEST Begin\n");
-
 	CLogger::SetDirectory(L"_log");
+
+	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"IOCP_TEST Begin\n");
 
 	g_iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, (DWORD)g_active_thread);
 
@@ -91,7 +91,7 @@ void KeyProc()
 		{
 		case 'p':
 			CProfiler::Print();
-			CLogger::_Log(dfLOG_LEVEL_NOTICE, L"IOCP_TEST Print\n");
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"IOCP_TEST Print\n");
 			break;
 		case 'q':
 			PostQueuedCompletionStatus(g_iocp, 0, 0, 0);
