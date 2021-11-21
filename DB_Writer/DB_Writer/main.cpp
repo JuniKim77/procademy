@@ -9,7 +9,7 @@ int main()
 	MYSQL_ROW sql_row;
 	bool ret;
 
-	/*for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < 100; ++i)
 	{
 		swprintf_s(temp, _countof(temp), L"test_%d", i);
 		ret = db.Query_Save(L"INSERT INTO test.item (item_id, name, value) VALUES (%d, '%s', %d)", i, temp, i * 10);
@@ -18,7 +18,7 @@ int main()
 		{
 			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Query Error\n");
 		}
-	}*/
+	}
 
 	db.Query(L"SELECT * FROM test.item");
 

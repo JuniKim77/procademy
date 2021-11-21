@@ -148,6 +148,7 @@
   <ItemGroup>
     <ClCompile Include="CCrashDump.cpp" />
     <ClCompile Include="CDBConnector.cpp" />
+    <ClCompile Include="CDBConnector_TLS.cpp" />
     <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TextParser.cpp" />
@@ -155,6 +156,7 @@
   <ItemGroup>
     <ClInclude Include="CCrashDump.h" />
     <ClInclude Include="CDBConnector.h" />
+    <ClInclude Include="CDBConnector_TLS.h" />
     <ClInclude Include="CLogger.h" />
     <ClInclude Include="DB_protocol.h" />
     <ClInclude Include="TC_LFObjectPool.h" />
