@@ -8,9 +8,9 @@
 #include <process.h>
 #include <wchar.h>
 
-#define THREAD_SIZE (5)
-#define MAX_ALLOC (5)
-#define THREAD_ALLOC (1)
+#define THREAD_SIZE (3)
+#define MAX_ALLOC (6)
+#define THREAD_ALLOC (2)
 
 extern USHORT g_debug_index;
 extern st_DEBUG g_debugs[USHRT_MAX + 1];

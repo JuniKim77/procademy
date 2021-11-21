@@ -107,7 +107,7 @@ public:
 	DWORD		GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
 	DWORD		GetPoolSize() { return mMemoryPool.GetSize(); }
 	void		linkCheck(int size);
-	void		Log(int logicId, t_Top snap_top, Node* next, bool isHead = false);
+	void		Log(int logicId, t_Top* snap_top, Node* next);
 
 private:
 	void		MoveTail(int logicId, t_Top* snap);
@@ -158,12 +158,19 @@ inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 		top.ptr_node = mTail.ptr_node;
 		next = top.ptr_node->next;
 
+		//if (top.ptr_node == top.ptr_node->next)
+		//{
+		//	int test = 0;
+		//}
+
 		if (next == nullptr)
 		{
+			//Log(LOGIC_ENQUEUE, &top, next);
+
 			if (InterlockedCompareExchangePointer((PVOID*)&top.ptr_node->next, node, nullptr) == nullptr)
 			{
 				InterlockedIncrement((long*)&mSize);
-				//Log(LOGIC_ENQUEUE + 50, top, next);
+				//Log(LOGIC_ENQUEUE + 10, &top, next);
 
 				MoveTail(LOGIC_ENQUEUE + 70, &top);
 
@@ -172,7 +179,7 @@ inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 		}
 		else
 		{
-			MoveTail(LOGIC_ENQUEUE + 20, &top);
+			MoveTail(LOGIC_ENQUEUE + 40, &top);
 		}
 	}
 }
@@ -203,19 +210,31 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 		tail.counter = mTail.counter;
 		tail.ptr_node = mTail.ptr_node;
 
+		//if (next == nullptr)
 		if (top.ptr_node == tail.ptr_node || next == nullptr)
 		{
-			MoveTail(LOGIC_ENQUEUE + 20, &tail);
+			MoveTail(LOGIC_DEQUEUE + 10, &tail);
 		}
 		else
 		{
+			//Log(LOGIC_DEQUEUE + 30, &top, next);
 			*data = next->data;
 			if (InterlockedCompareExchange128((LONG64*)&mHead, top.counter + 1, (LONG64)next, (LONG64*)&top))
 			{
-				//Log(LOGIC_DEQUEUE + 50, top, next, true);
+				//Log(LOGIC_DEQUEUE + 50, &top, next);
 				break;
 			}
 		}
+
+		/*Log(LOGIC_DEQUEUE + 30, &top, next);
+
+		*data = next->data;
+
+		if (InterlockedCompareExchange128((LONG64*)&mHead, top.counter + 1, (LONG64)next, (LONG64*)&top))
+		{
+			Log(LOGIC_DEQUEUE + 50, &top, next);
+			break;
+		}*/
 	}
 
 	mMemoryPool.Free(top.ptr_node);
@@ -263,36 +282,33 @@ inline void TC_LFQueue<DATA>::linkCheck(int size)
 }
 
 template<typename DATA>
-inline void TC_LFQueue<DATA>::Log(int logicId, t_Top snap_top, Node* next, bool isHead)
+inline void TC_LFQueue<DATA>::Log(int logicId, t_Top* snap_top, Node* next)
 {
-	if (isHead)
-	{
-		_Log(logicId, GetCurrentThreadId(), mSize, mHead.counter, snap_top.counter, mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next, snap_top.ptr_node, next);
-	}
-	else
-	{
-		_Log(logicId, GetCurrentThreadId(), mSize, mTail.counter, snap_top.counter, mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next, snap_top.ptr_node, next);
-	}
-	
+	_Log(logicId, GetCurrentThreadId(), mSize, mTail.counter, snap_top->counter, mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next, snap_top->ptr_node, next);
 }
 
 template<typename DATA>
 inline void TC_LFQueue<DATA>::MoveTail(int logicId, t_Top* snap)
 {
-	snap->counter = mTail.counter;
-	snap->ptr_node = mTail.ptr_node;
-	Node* next = snap->ptr_node->next;
+	alignas(16) t_Top snap_tail;
+
+	snap_tail.counter = mTail.counter;
+	snap_tail.ptr_node = mTail.ptr_node;
+
+	//snap->counter = mTail.counter;
+	//snap->ptr_node = mTail.ptr_node;
+	Node* next = snap_tail.ptr_node->next;
 
 	if (next != nullptr)
 	{
-		//Log(logicId - 10, *snap, *next);
-		if (InterlockedCompareExchange128((LONG64*)&mTail, snap->counter + 1, (LONG64)next, (LONG64*)snap) == 0)
+		//Log(logicId - 10, snap, snap->ptr_node->next);
+		if (InterlockedCompareExchange128((LONG64*)&mTail, snap_tail.counter + 1, (LONG64)next, (LONG64*)&snap_tail) == 0)
 		{
-			//Log(logicId, snap, nullptr);
+			//Log(logicId, snap, snap->ptr_node->next);
 		}
 		else
 		{
-			//Log(logicId, *snap, *next);
+			//Log(logicId + 10, snap, snap->ptr_node->next);
 		}
 	}
 }
