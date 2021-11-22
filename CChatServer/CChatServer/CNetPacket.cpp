@@ -4,9 +4,11 @@
 #include <Windows.h>
 #include "CProfiler.h"
 #include "CLogger.h"
+#include "CCrashDump.h"
 
 #define NET_VERSION
 //#define TEST
+//#define PROFILE
 
 namespace procademy
 {
@@ -403,6 +405,10 @@ namespace procademy
 
 	CNetPacket* CNetPacket::AllocAddRef()
 	{
+#ifdef PROFILE
+		CProfiler::Begin(L"AllocAddRef");
+#endif
+
 		CNetPacket* ret;
 #ifdef NEW_DELETE_VER
 		ret = new CNetPacket;
@@ -413,6 +419,10 @@ namespace procademy
 #endif // NEW_DELETE_VER
 
 		ret->mRefCount = 1;
+
+#ifdef PROFILE
+		CProfiler::End(L"AllocAddRef");
+#endif
 
 		return ret;
 	}
@@ -429,6 +439,11 @@ namespace procademy
 		if (ret == 0)
 		{
 			Clear();
+
+#ifdef PROFILE
+			CProfiler::Begin(L"Free");
+#endif
+
 #ifdef NEW_DELETE_VER
 			delete this;
 #elif defined(MEMORY_POOL_VER)
@@ -436,6 +451,10 @@ namespace procademy
 #elif defined(TLS_MEMORY_POOL_VER)
 			sPacketPool.Free(this);
 #endif // NEW_DELETE_VER
+
+#ifdef PROFILE
+			CProfiler::End(L"Free");
+#endif
 		}
 	}
 

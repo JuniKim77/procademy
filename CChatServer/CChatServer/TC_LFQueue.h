@@ -137,8 +137,8 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 		top.ptr_node = mHead.ptr_node;
 		next = top.ptr_node->next;
 
-		tail.counter = mTail.counter;
-		tail.ptr_node = mTail.ptr_node;
+		/*tail.counter = mTail.counter;
+		tail.ptr_node = mTail.ptr_node;*/
 
 		if (top.ptr_node == tail.ptr_node || next == nullptr)
 		{

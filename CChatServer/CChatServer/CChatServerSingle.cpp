@@ -75,7 +75,7 @@ unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
             chatServer->GQCSProc();
     }
 
-    wprintf(L"Update Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Update Thread End\n");
 
     return 0;
 }
@@ -86,7 +86,7 @@ unsigned int __stdcall procademy::CChatServerSingle::MonitorFunc(LPVOID arg)
 
     chatServer->MonitoringProc();
 
-    wprintf(L"Monitoring Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Monitoring Thread End\n");
 
     return 0;
 }
@@ -100,7 +100,7 @@ unsigned int __stdcall procademy::CChatServerSingle::HeartbeatFunc(LPVOID arg)
         chatServer->CheckHeart();
     }
 
-    wprintf(L"HeartBeat Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"HeartBeat Thread End\n");
 
     return 0;
 }
@@ -735,7 +735,9 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"%22s%lld\n", L"Session Num : ", mPlayerMap.size());
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+#ifdef TLS_MEMORY_POOL_VER
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
+#endif // TLS_MEMORY_POOL_VER
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %d\n", L"Update Msg Pool : ", mMsgPool.GetCapacity(), mMsgPool.GetSize());
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %d\n", L"Player Pool : ", mPlayerPool.GetCapacity(), mPlayerPool.GetSize());
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
@@ -951,13 +953,13 @@ bool procademy::CChatServerSingle::BeginServer()
     switch (ret)
     {
     case WAIT_FAILED:
-        wprintf_s(L"ChatServer Thread Handle Error\n");
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error\n");
         break;
     case WAIT_TIMEOUT:
-        wprintf_s(L"ChatServer Thread Timeout Error\n");
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error\n");
         break;
     case WAIT_OBJECT_0:
-        wprintf_s(L"ChatServer None Error\n");
+        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End\n");
         break;
     default:
         break;
@@ -1015,6 +1017,7 @@ void procademy::CChatServerSingle::WaitForThreadsFin()
             wprintf(L"Set Print Ratio\n");
             break;
         case 'd':
+            CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer Intended Crash\n");
             CRASH();
         case 'q':
             QuitServer();
@@ -1044,9 +1047,11 @@ void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
     key = (BYTE)num;
     CNetPacket::SetPacketKey(key);
 
+#ifdef TLS_MEMORY_POOL_VER
     tp.GetValue(L"POOL_SIZE_CHECK", buffer);
     if (wcscmp(L"TRUE", buffer) == 0)
         CNetPacket::sPacketPool.OnOffCounting();
+#endif // TLS_MEMORY_POOL_VER
 
     tp.GetValue(L"GQCSEX", buffer);
     if (wcscmp(L"TRUE", buffer) == 0)

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "CNetServerNoLock.h"
 #include <unordered_map>
 #include <list>
