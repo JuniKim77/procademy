@@ -18,29 +18,23 @@
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CCrashDump.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="CLogger.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="TextParser.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="CDBConnector.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="CDBConnector_TLS.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CCrashDump.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="CLogger.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="DB_protocol.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -50,13 +44,19 @@
     <ClInclude Include="TC_LFQueue.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="TextParser.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="CDBConnector.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="CDBConnector_TLS.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
