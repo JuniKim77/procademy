@@ -12,9 +12,6 @@
 #define MAX_ALLOC (6)
 #define THREAD_ALLOC (2)
 
-extern USHORT g_debug_index;
-extern st_DEBUG g_debugs[USHRT_MAX + 1];
-
 struct st_DATA
 {
 	LONG64 data;
@@ -130,7 +127,6 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			if (pDataArray[i]->data != 0x0000000055555555 ||
 				pDataArray[i]->count != 0)
 			{
-				USHORT idx = finder_log();
 				CRASH();
 			}
 		}
@@ -148,7 +144,6 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			if (pDataArray[i]->data != 0x0000000055555556 ||
 				pDataArray[i]->count != 1)
 			{
-				USHORT idx = finder_log();
 				CRASH();
 			}
 		}
@@ -166,7 +161,6 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 			if (pDataArray[i]->data != 0x0000000055555555 ||
 				pDataArray[i]->count != 0)
 			{
-				USHORT idx = finder_log();
 				CRASH();
 			}
 		}
