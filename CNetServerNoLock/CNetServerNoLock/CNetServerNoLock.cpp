@@ -414,12 +414,6 @@ namespace procademy
 		SessionIoCount ret;
 
 		ret.ioCount = InterlockedDecrement(&session->ioBlock.ioCount);
-		//if (ret.releaseCount.count <= 0)
-		//{
-		//	/*ioDebugLog(logic, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-		//		session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
-		//	int test = 0;
-		//}
 
 		if (ret.releaseCount.count < 0)
 		{
@@ -442,7 +436,6 @@ namespace procademy
 
 	void CNetServerNoLock::ReleaseProc(Session* session)
 	{
-		//CProfiler::Begin(L"RELEASEPROC");
 		SessionIoCount released;
 		CNetPacket* dummy;
 
@@ -483,7 +476,6 @@ namespace procademy
 		ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
 
 		DeleteSessionData(id);
-		//CProfiler::End(L"RELEASEPROC");
 	}
 
 	void CNetServerNoLock::AcceptProc()
@@ -938,7 +930,7 @@ namespace procademy
 	{
 		Session* session = FindSession(SessionID);
 		BOOL ret;
-		//ret = CancelIoEx((HANDLE)session->socket, nullptr);
+
 		IncrementIOProc(session, 40000);
 
 		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)

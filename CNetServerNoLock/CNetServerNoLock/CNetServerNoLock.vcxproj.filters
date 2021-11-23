@@ -16,6 +16,9 @@
     <Filter Include="소스 파일\Tools">
       <UniqueIdentifier>{1ee920bd-e455-4254-a992-ba1e0d39d393}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Tools">
+      <UniqueIdentifier>{ca719b50-8bf1-4ba1-be6f-57ba646cb910}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -50,26 +53,26 @@
     <ClInclude Include="CNetServerNoLock.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
+      <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
