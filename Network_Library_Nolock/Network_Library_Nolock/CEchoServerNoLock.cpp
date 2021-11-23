@@ -88,6 +88,62 @@ namespace procademy
 		return true;
 	}
 
+	void CEchoServerNoLock::WaitForThreadsFin()
+	{
+		while (1)
+		{
+			char ch = _getch();
+
+			switch (ch)
+			{
+			case 'g':
+				mbNagle = !mbNagle;
+				SetNagle(mbNagle);
+				break;
+			case 'z':
+				mbZeroCopy = !mbZeroCopy;
+				SetZeroCopy(mbZeroCopy);
+				break;
+			case 'm':
+				if (mbMonitoring)
+				{
+					wprintf(L"Unset Monitoring\n");
+					mbMonitoring = false;
+				}
+				else
+				{
+					wprintf(L"Set Monitoring\n");
+					mbMonitoring = true;
+				}
+				break;
+			case 's':
+				if (mbBegin)
+				{
+					Stop();
+					wprintf(L"STOP\n");
+				}
+				else
+				{
+					Start();
+					wprintf(L"RUN\n");
+				}
+				break;
+			case 'p':
+				wprintf(L"Print Profiler\n");
+				CProfiler::Print();
+				break;
+			case 'd':
+				CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer Intended Crash\n");
+				CRASH();
+			case 'q':
+				QuitServer();
+				return;
+			default:
+				break;
+			}
+		}
+	}
+
 	unsigned int __stdcall CEchoServerNoLock::MonitorFunc(LPVOID arg)
 	{
 		CEchoServerNoLock* echoServer = (CEchoServerNoLock*)arg;

@@ -14,6 +14,7 @@ namespace procademy
 		virtual void	OnRecv(SESSION_ID SessionID, CNetPacket* packet) override;
 		virtual void	OnError(int errorcode, const WCHAR* log) override;
 		bool			BeginServer();
+		void			WaitForThreadsFin();
 
 	private:
 		static unsigned int WINAPI	MonitorFunc(LPVOID arg);

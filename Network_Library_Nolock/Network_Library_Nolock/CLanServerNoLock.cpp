@@ -283,10 +283,7 @@ namespace procademy
 
 			if (session->sendQ.IsEmpty() == true)
 			{
-				if (InterlockedExchange8((char*)&session->isSending, false) == false)
-				{
-					CRASH();
-				}
+				session->isSending = false;
 
 				if (session->sendQ.IsEmpty() == false)
 				{
@@ -381,11 +378,6 @@ namespace procademy
 		SessionIoCount ret;
 
 		ret.ioCount = InterlockedDecrement(&session->ioBlock.ioCount);
-		if (ret.releaseCount.count <= 0)
-		{
-			/*packDebug(logic, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-				session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
-		}
 
 		if (ret.releaseCount.count < 0)
 		{
@@ -408,7 +400,6 @@ namespace procademy
 
 	void CLanServerNoLock::ReleaseProc(Session* session)
 	{
-		CProfiler::Begin(L"RELEASEPROC");
 		SessionIoCount released;
 		CNetPacket* dummy;
 
@@ -447,10 +438,7 @@ namespace procademy
 		ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
 		ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
 
-		//LockSessionMap();
 		DeleteSessionData(id);
-		//UnlockSessionMap();
-		CProfiler::End(L"RELEASEPROC");
 	}
 
 	void CLanServerNoLock::AcceptProc()
@@ -502,7 +490,6 @@ namespace procademy
 		//    IP, ntohs(clientAddr.sin_port));
 
 		IncrementIOProc(session, 30000);
-
 		session->ioBlock.releaseCount.isReleased = 0;
 
 		/*ioDebug(10020, GetCurrentThreadId(), session->sessionID & 0xffffffff,
@@ -587,6 +574,17 @@ namespace procademy
 					CompleteSend(session, transferredSize);
 					//CProfiler::End(L"CompleteSend");
 				}
+			}
+
+			if (transferredSize == 0 && pOverlapped == (LPOVERLAPPED)1)
+			{
+#ifdef PROFILE
+				CProfiler::Begin(L"SendPost");
+				SendPost(session);
+				CProfiler::End(L"SendPost");
+#else
+				SendPost(session);
+#endif // PROFILE
 			}
 
 			DecrementIOProc(session, 10000);
@@ -778,6 +776,23 @@ namespace procademy
 		mbExit = true;
 
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CNetServer\n");
+
+		DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
+
+		switch (waitResult)
+		{
+		case WAIT_FAILED:
+			wprintf_s(L"Main Thread Handle Error\n");
+			break;
+		case WAIT_TIMEOUT:
+			wprintf_s(L"Main Thread Timeout Error\n");
+			break;
+		case WAIT_OBJECT_0:
+			wprintf_s(L"None Error\n");
+			break;
+		default:
+			break;
+		}
 	}
 
 	CLanServerNoLock::CLanServerNoLock()
@@ -840,96 +855,29 @@ namespace procademy
 
 		for (USHORT i = 0; i < mMaxClient; ++i)
 		{
-			if (mSessionArray[i].bIsAlive)
-			{
-				ret = CancelIoEx((HANDLE)mSessionArray[i].socket, nullptr);
-
-				//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
-			}
+			ret = CancelIoEx((HANDLE)mSessionArray[i].socket, nullptr);
 		}
 
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CLanServer\n");
 	}
 
-	int CLanServerNoLock::GetSessionCount()
-	{
-		return 0;
-	}
-
-	void CLanServerNoLock::WaitForThreadsFin()
-	{
-		while (1)
-		{
-			char ch = _getch();
-
-			switch (ch)
-			{
-			case 'g':
-				mbNagle = !mbNagle;
-				SetNagle(mbNagle);
-				break;
-			case 'z':
-				mbZeroCopy = !mbZeroCopy;
-				SetZeroCopy(mbZeroCopy);
-				break;
-			case 'm':
-				if (mbMonitoring)
-				{
-					wprintf(L"Unset Monitoring\n");
-					mbMonitoring = false;
-				}
-				else
-				{
-					wprintf(L"Set Monitoring\n");
-					mbMonitoring = true;
-				}
-				break;
-			case 's':
-				if (mbBegin)
-				{
-					Stop();
-					wprintf(L"STOP\n");
-				}
-				else
-				{
-					Start();
-					wprintf(L"RUN\n");
-				}
-				break;
-			case 'q':
-				QuitServer();
-				goto EXIT;
-				break;
-			default:
-				break;
-			}
-		}
-
-	EXIT:
-		DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
-
-		switch (waitResult)
-		{
-		case WAIT_FAILED:
-			wprintf_s(L"Main Thread Handle Error\n");
-			break;
-		case WAIT_TIMEOUT:
-			wprintf_s(L"Main Thread Timeout Error\n");
-			break;
-		case WAIT_OBJECT_0:
-			wprintf_s(L"None Error\n");
-			break;
-		default:
-			break;
-		}
-	}
-
 	bool CLanServerNoLock::Disconnect(SESSION_ID SessionID)
 	{
 		Session* session = FindSession(SessionID);
+		BOOL ret;
 
-		if (session == nullptr)
+		IncrementIOProc(session, 40000);
+
+		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
+		{
+			DecrementIOProc(session, 40020);
+
 			return false;
+		}
+
+		ret = CancelIoEx((HANDLE)session->socket, nullptr);
+
+		DecrementIOProc(session, 40040);
 
 		return CancelIoEx((HANDLE)session->socket, nullptr);
 	}
@@ -952,12 +900,37 @@ namespace procademy
 		packet->AddRef();
 		session->sendQ.Enqueue(packet);
 
-		CProfiler::Begin(L"SendPost");
+		//CProfiler::Begin(L"SendPost");
 		bool ret = SendPost(session);
-		CProfiler::End(L"SendPost");
+		//CProfiler::End(L"SendPost");
 
 		DecrementIOProc(session, 20010);
 	}
+
+	void CLanServerNoLock::SendPacketToWorker(SESSION_ID SessionID, CNetPacket* packet)
+	{
+		Session* session = FindSession(SessionID);
+		//
+		IncrementIOProc(session, 20000);
+
+		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
+		{
+			DecrementIOProc(session, 20020);
+			/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket);
+			g_sessionDebugs[ret] = packet;*/
+			return;
+		}
+		/*ioDebugLog(20010, GetCurrentThreadId(), session->sessionID & 0xffffffff,
+			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
+		packet->AddRef();
+		session->sendQ.Enqueue(packet);
+
+		IncrementIOProc(session, 20010);
+		PostQueuedCompletionStatus(mHcp, 0, (ULONG_PTR)session, (LPOVERLAPPED)1);
+
+		DecrementIOProc(session, 20020);
+	}
+
 	void CLanServerNoLock::LoadInitFile(const WCHAR* fileName)
 	{
 		TextParser  tp;
