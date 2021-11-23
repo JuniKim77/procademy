@@ -2,7 +2,6 @@
 #include "CProfiler.h"
 #include <process.h>
 #include <wchar.h>
-#include "CNetPacket.h"
 
 #define dfTHREAD_SIZE (3)
 #define dfTEST_SIZE (100000)
@@ -70,14 +69,12 @@ int main()
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
-	int count = 1000;
+	int count = 1;
 
 	TLS_ALLOC_PROC();
 	TLS_FREE_PROC();
 	NEW_DELETE_ALLOC_PROC();
 	NEW_DELETE_FREE_PROC();
-
-	CProfiler::SetChunk(CHUNK_SIZE);
 
 	while (count-- > 0)
 	{

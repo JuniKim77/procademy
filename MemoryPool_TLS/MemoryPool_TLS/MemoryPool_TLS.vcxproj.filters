@@ -18,16 +18,13 @@
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CCrashDump.cpp">
+    <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CProfiler.cpp">
+    <ClCompile Include="..\..\CSVReader\CSVReader\CSVReader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CSVReader.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="CNetPacket.cpp">
+    <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,19 +32,16 @@
     <ClInclude Include="ObjectPool_TLS.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CCrashDump.h">
+    <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="TC_LFObjectPool.h">
+    <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CProfiler.h">
+    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CSVReader.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="CNetPacket.h">
+    <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
