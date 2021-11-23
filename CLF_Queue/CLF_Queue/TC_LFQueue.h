@@ -6,99 +6,110 @@
 template <typename DATA>
 class TC_LFQueue
 {
+private:
+	struct Node
+	{
+		DATA data;
+		Node* next;
+	};
+
+	struct t_Top
+	{
+		Node* ptr_node = nullptr;
+		LONG64 counter = -9999;
+	};
+#ifdef VER_CASH_LINE
+	alignas(64) t_Top	mHead;        // 시작노드를 포인트한다.
+	alignas(64) t_Top	mTail;        // 마지막노드를 포인트한다.
+	alignas(64) int		mSize = 0;
+#else
+	t_Top		mHead;        // 시작노드를 포인트한다.
+	t_Top		mTail;        // 마지막노드를 포인트한다.
+	int			mSize = 0;
+#endif // VER_CASH_LINE	
+	procademy::TC_LFObjectPool<Node> mMemoryPool;
+
 public:
-    TC_LFQueue();
-    ~TC_LFQueue();
-    void Enqueue(DATA data);
-    bool Dequeue(DATA* data);
-    bool IsEmpty() { return mSize == 0; }
-    DWORD GetSize() { return mSize; }
-    DWORD GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
-    DWORD GetPoolSize() { return mMemoryPool.GetSize(); }
-	void linkCheck(int size);
+	enum {
+		LOGIC_DEQUEUE = 10000,
+		LOGIC_ENQUEUE = 20000
+	};
+	TC_LFQueue();
+	~TC_LFQueue();
+	void		Enqueue(DATA data);
+	bool		Dequeue(DATA* data);
+	DWORD		Peek(DATA arr[], DWORD size);
+	bool		IsEmpty() { return mSize == 0; }
+	DWORD		GetSize() { return mSize; }
+	DWORD		GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
+	DWORD		GetPoolSize() { return mMemoryPool.GetSize(); }
+	void		linkCheck(int size);
+	void		Log(int logicId, t_Top snap_top, Node* next, bool isHead = false);
 
 private:
-    int mSize = 0;
-
-    struct Node
-    {
-        DATA data;
-        Node* next;
-    };
-
-    Node* mHead = nullptr;        // 시작노드를 포인트한다.
-    Node* mTail = nullptr;        // 마지막노드를 포인트한다.
-    procademy::TC_LFObjectPool<Node> mMemoryPool;
+	void		MoveTail(int logicId, t_Top* snap);
 };
 
 template<typename DATA>
 inline TC_LFQueue<DATA>::TC_LFQueue()
 {
-    Node* dummy = mMemoryPool.Alloc();
+	Node* dummy = mMemoryPool.Alloc();
 
-    dummy->next = nullptr;
-    mHead = dummy;
-    mTail = dummy;
+	dummy->next = nullptr;
+	mHead.ptr_node = dummy;
+	mHead.counter = 0;
+	mTail.ptr_node = dummy;
+	mTail.counter = 0;
 }
 
 template<typename DATA>
 inline TC_LFQueue<DATA>::~TC_LFQueue()
 {
-    Node* node = mHead;
+	Node* node = mHead.ptr_node;
 	int count = 0;
-    while (node != nullptr)
-    {
-        Node* temp = node;
+	while (node != nullptr)
+	{
+		Node* temp = node;
 
-        node = node->next;
+		node = node->next;
 		count++;
 		mMemoryPool.Free(temp);
-    }
+	}
 }
 
 template<typename DATA>
 inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 {
-	st_DEBUG* debug = (st_DEBUG*)TlsGetValue(g_records);
-	USHORT* index = (USHORT*)TlsGetValue(g_index);
-
-	(*index)++;
-
-	debug[*index].type = 'E';
-
-	InterlockedIncrement((DWORD*)&mSize);
-	debug[*index].size1 = mSize;
-
+	alignas(16) t_Top top;
 	Node* node = mMemoryPool.Alloc();
-	Node* tail;
 	Node* next;
 
 	node->data = data;
 	node->next = nullptr;
 
+	//Log(LOGIC_ENQUEUE, top, node);
+
 	while (1)
 	{
-		do
-		{
-			tail = mTail;
-			next = tail->next;
-		} while (next != nullptr);
+		top.counter = mTail.counter;
+		top.ptr_node = mTail.ptr_node;
+		next = top.ptr_node->next;
 
-		debug[*index].address1 = tail;
-
-		if (InterlockedCompareExchangePointer((PVOID*)&tail->next, node, next) == next)
+		if (next == nullptr)
 		{
-			debug[*index].address2 = mTail;
-			if (InterlockedCompareExchangePointer((PVOID*)&mTail, node, tail) == tail)
+			if (InterlockedCompareExchangePointer((PVOID*)&top.ptr_node->next, node, nullptr) == nullptr)
 			{
-				
+				InterlockedIncrement((DWORD*)&mSize);
+				//Log(LOGIC_ENQUEUE + 50, top, next);
+
+				MoveTail(LOGIC_ENQUEUE + 70, &top);
+
+				break;
 			}
-			else
-			{
-				CRASH();
-			}
-			debug[*index].address3 = mTail;
-			break;
+		}
+		else
+		{
+			MoveTail(LOGIC_ENQUEUE + 20, &top);
 		}
 	}
 }
@@ -106,15 +117,10 @@ inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 template<typename DATA>
 inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 {
-	st_DEBUG* debug = (st_DEBUG*)TlsGetValue(g_records);
-	USHORT* index = (USHORT*)TlsGetValue(g_index);
-
-	(*index)++;
-
-	debug[*index].type = 'D';
+	alignas(16) t_Top top;
+	alignas(16) t_Top tail;
 
 	InterlockedDecrement((DWORD*)&mSize);
-	debug[*index].size1 = mSize;
 
 	if (mSize < 0)
 	{
@@ -123,29 +129,61 @@ inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 		return false;
 	}
 
-	Node* top;
 	Node* next;
 
-	do
+	while (1)
 	{
-		top = mHead;
-		next = top->next;
-		top->data = next->data;
-		debug[*index].address1 = top;
-	} while (InterlockedCompareExchangePointer((PVOID*)&mHead, next, top) != top);
-	debug[*index].size2 = mSize;
-	debug[*index].address2 = mHead;
+		top.counter = mHead.counter;
+		top.ptr_node = mHead.ptr_node;
+		next = top.ptr_node->next;
 
-	*data = top->data;
-	mMemoryPool.Free(top);
+		/*tail.counter = mTail.counter;
+		tail.ptr_node = mTail.ptr_node;*/
+
+		if (top.ptr_node == tail.ptr_node || next == nullptr)
+		{
+			MoveTail(LOGIC_ENQUEUE + 20, &tail);
+		}
+		else
+		{
+			*data = next->data;
+			if (InterlockedCompareExchange128((LONG64*)&mHead, top.counter + 1, (LONG64)next, (LONG64*)&top))
+			{
+				//Log(LOGIC_DEQUEUE + 50, top, next, true);
+				break;
+			}
+		}
+	}
+
+	mMemoryPool.Free(top.ptr_node);
 
 	return true;
 }
 
 template<typename DATA>
+inline DWORD TC_LFQueue<DATA>::Peek(DATA arr[], DWORD size)
+{
+	DWORD i;
+	Node* pHead = mHead.ptr_node->next;
+
+	for (i = 0; i < size; ++i)
+	{
+		if (pHead == nullptr)
+		{
+			return i;
+		}
+
+		arr[i] = pHead->data;
+		pHead = pHead->next;
+	}
+
+	return i;
+}
+
+template<typename DATA>
 inline void TC_LFQueue<DATA>::linkCheck(int size)
 {
-	Node* node = mHead->next;
+	Node* node = mHead.ptr_node->next;
 
 	int count = 0;
 
@@ -158,5 +196,32 @@ inline void TC_LFQueue<DATA>::linkCheck(int size)
 	if (count == size)
 	{
 		wprintf_s(L"Enqueued Successfully\n=====================\n");
+	}
+}
+
+template<typename DATA>
+inline void TC_LFQueue<DATA>::Log(int logicId, t_Top snap_top, Node* next, bool isHead)
+{
+	if (isHead)
+	{
+		_Log(logicId, GetCurrentThreadId(), mSize, mHead.counter, snap_top.counter, mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next, snap_top.ptr_node, next);
+	}
+	else
+	{
+		_Log(logicId, GetCurrentThreadId(), mSize, mTail.counter, snap_top.counter, mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next, snap_top.ptr_node, next);
+	}
+
+}
+
+template<typename DATA>
+inline void TC_LFQueue<DATA>::MoveTail(int logicId, t_Top* snap)
+{
+	snap->counter = mTail.counter;
+	snap->ptr_node = mTail.ptr_node;
+	Node* next = snap->ptr_node->next;
+
+	if (next != nullptr)
+	{
+		InterlockedCompareExchange128((LONG64*)&mTail, snap->counter + 1, (LONG64)next, (LONG64*)snap);
 	}
 }
