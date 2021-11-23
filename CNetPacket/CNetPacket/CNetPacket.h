@@ -1,9 +1,9 @@
 #ifndef  __PACKET__
 #define  __PACKET__
 
-#define NEW_DELETE_VER
+//#define NEW_DELETE_VER
 //#define MEMORY_POOL_VER
-//#define TLS_MEMORY_POOL_VER
+#define TLS_MEMORY_POOL_VER
 
 #ifdef MEMORY_POOL_VER
 #include "TC_LFObjectPool.h"
@@ -16,6 +16,7 @@ namespace procademy
 {
 	class CNetPacket
 	{
+		friend class CNetServerNoLock;
 		friend class CChatServerSingle;
 		template<typename DATA>
 		friend class TC_LFObjectPool;
@@ -29,7 +30,7 @@ namespace procademy
 		enum en_PACKET
 		{
 			HEADER_MAX_SIZE = 5,
-			eBUFFER_DEFAULT = 3000		// 패킷의 기본 버퍼 사이즈.
+			eBUFFER_DEFAULT = 500		// 패킷의 기본 버퍼 사이즈.
 		};
 
 		//////////////////////////////////////////////////////////////////////////
@@ -71,7 +72,7 @@ namespace procademy
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mPacketSize + mHeaderSize; }
-		USHORT	GetPacketSize() { return *((USHORT*)(mZero + 1)); }
+		USHORT	GetPacketSize() { return mPacketSize; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 포인터 얻기.
@@ -151,7 +152,7 @@ namespace procademy
 		CNetPacket& operator << (const char* s);
 		CNetPacket& operator << (const wchar_t* s);
 
-		static CNetPacket*	AllocAddRef();
+		static CNetPacket* AllocAddRef();
 		void				AddRef();
 		void				SubRef();
 		void				SetHeader(bool isLengthOnly);
@@ -187,14 +188,14 @@ namespace procademy
 #pragma pack(pop)
 	private:
 
-		SHORT		mRefCount;
-		char*		mBuffer;
+		SHORT		mRefCount = 0;
+		char* mBuffer;
 		int			mCapacity;
 		int			mPacketSize;
 		int			mHeaderSize;
-		char*		mFront;
-		char*		mRear;
-		char*		mZero;
+		char* mFront;
+		char* mRear;
+		char* mZero;
 		static BYTE	sCode;
 		static BYTE	sPacketKey;
 
