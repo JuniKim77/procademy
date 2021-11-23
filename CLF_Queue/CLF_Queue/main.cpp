@@ -2,7 +2,6 @@
 
 #include "TC_LFQueue.h"
 #include "CLogger.h"
-#include "CLFQueue.h"
 #include "CCrashDump.h"
 #include <process.h>
 #include <wchar.h>
@@ -30,15 +29,9 @@ TC_LFQueue<st_DATA*> g_q;
 long PushTPS = 0;
 long DequeueTPS = 0;
 
-DWORD g_records;
-DWORD g_index;
-
 int main()
 {
 	procademy::CCrashDump::SetHandlerDump();
-
-	g_records = TlsAlloc();
-	g_index = TlsAlloc();
 
 	Init();
 
@@ -93,12 +86,6 @@ int main()
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
-	st_DEBUG* record = new st_DEBUG[USHRT_MAX];
-	TlsSetValue(g_records, record);
-	USHORT* index = new USHORT;
-	*index = 0;
-	TlsSetValue(g_index, index);
-
 	st_DATA* pDataArray[THREAD_ALLOC];
 	//st_DEBUG* pDataInfo[THREAD_ALLOC];
 
@@ -199,11 +186,7 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 
 void Init()
 {
-	st_DEBUG* record = new st_DEBUG[USHRT_MAX];
-	TlsSetValue(g_records, record);
 	USHORT* index = new USHORT;
-	*index = 0;
-	TlsSetValue(g_index, index);
 
 	st_DATA* pDataArray[MAX_ALLOC];
 

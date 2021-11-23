@@ -18,36 +18,24 @@
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CCrashDump.cpp">
+    <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CLogger.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="CDebugger.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="CLFQueue.cpp">
+    <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CCrashDump.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="CLogger.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="TC_LFObjectPool.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CDebugger.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="CLFQueue.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="TC_LFQueue.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
