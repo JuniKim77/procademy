@@ -116,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;..\..\CNetServerNoLock\CNetServerNoLock;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,7 +132,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;..\..\CNetServerNoLock\CNetServerNoLock;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -144,14 +144,14 @@
   <ItemGroup>
     <ClCompile Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.cpp" />
     <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp" />
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp" />
+    <ClCompile Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.cpp" />
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
     <ClCompile Include="..\..\CSVReader\CSVReader\CSVReader.cpp" />
     <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp" />
     <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp" />
     <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
     <ClCompile Include="CChatServerSingle.cpp" />
-    <ClCompile Include="CNetPacket.cpp" />
-    <ClCompile Include="CNetServerNoLock.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -159,6 +159,8 @@
     <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h" />
     <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue.h" />
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h" />
+    <ClInclude Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h" />
     <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h" />
@@ -169,8 +171,6 @@
     <ClInclude Include="..\..\TextParser\TextParser\TextParser.h" />
     <ClInclude Include="CChatServerSingle.h" />
     <ClInclude Include="ChatServerDTO.h" />
-    <ClInclude Include="CNetPacket.h" />
-    <ClInclude Include="CNetServerNoLock.h" />
     <ClInclude Include="CommonProtocol.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

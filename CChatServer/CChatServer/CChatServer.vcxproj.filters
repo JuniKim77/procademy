@@ -30,12 +30,6 @@
     <ClCompile Include="CChatServerSingle.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CNetServerNoLock.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="CNetPacket.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
@@ -57,14 +51,14 @@
     <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CNetServerNoLock.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="CNetPacket.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="CChatServerSingle.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -109,6 +103,12 @@
     </ClInclude>
     <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h">
       <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
