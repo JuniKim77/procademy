@@ -34,7 +34,7 @@ procademy::CCpuUsage::CCpuUsage(HANDLE mhProcess)
 	PdhAddCounter(mCpuQuery, szQuery, NULL, &mProcessHandleCountCounter);
 	swprintf_s(szQuery, MAX_PATH, L"\\Process(%s)\\Thread Count", mProcessName);
 	PdhAddCounter(mCpuQuery, szQuery, NULL, &mProcessThreadCountCounter);
-	
+
 	PdhAddCounter(mCpuQuery, L"\\Memory\\Available MBytes", NULL, &mAvailableMemoryCounter);
 	PdhAddCounter(mCpuQuery, L"\\Memory\\Pool Nonpaged Bytes", NULL, &mNonPagedMemoryCounter);
 
@@ -58,7 +58,7 @@ void procademy::CCpuUsage::UpdateCpuTime()
 	ULONGLONG UserDiff = User.QuadPart - mProcessor_LastUser.QuadPart;
 	ULONGLONG IdleDiff = Idle.QuadPart - mProcessor_LastIdle.QuadPart;
 
-	ULONGLONG Total = KernelDiff + UserDiff; // 커널(Idle 포함) 사용 시간 + 유저 사용 시간
+	ULONGLONG Total = KernelDiff + UserDiff;
 	ULONGLONG TimeDiff;
 
 	if (Total == 0)
@@ -85,8 +85,6 @@ void procademy::CCpuUsage::UpdateCpuTime()
 
 	GetProcessTimes(mhProcess, (LPFILETIME)&None, (LPFILETIME)&None, (LPFILETIME)&Kernel, (LPFILETIME)&User);
 
-	// 여기서는 100이라는 기준이 없다 그냥 내 프로세스가 혼자 쓴 시간들 이니까
-	// NowTime 이 기준 시간 이 시간 차이를 100으로 볼 것
 	TimeDiff = NowTime.QuadPart - mProcess_LastTime.QuadPart;
 	UserDiff = User.QuadPart - mProcess_LastUser.QuadPart;
 	KernelDiff = Kernel.QuadPart - mProcess_LastKernel.QuadPart;
@@ -100,6 +98,7 @@ void procademy::CCpuUsage::UpdateCpuTime()
 	mProcess_LastTime = NowTime;
 	mProcess_LastKernel = Kernel;
 	mProcess_LastUser = User;
+
 	PdhCollectQueryData(mCpuQuery);
 
 	PDH_FMT_COUNTERVALUE CounterValue;
@@ -190,7 +189,7 @@ void procademy::CCpuUsage::GetBigNumberStr(LONGLONG value, WCHAR* s, int size)
 	{
 		idx += swprintf_s(s + idx, size - idx, L"%03llu", value % 1000);
 	}
-	
+
 }
 
 bool procademy::CCpuUsage::GetProcessName(WCHAR* output)
