@@ -27,87 +27,75 @@
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CLogger.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
-    <ClCompile Include="CSVReader.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
-    <ClCompile Include="RingBuffer.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="CLanServerNoLock.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="CEchoServerNoLock.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CCrashDump.cpp">
+    <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CDebugger.cpp">
+    <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CNetPacket.cpp">
+    <ClCompile Include="..\..\CSVReader\CSVReader\CSVReader.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CProfiler.cpp">
+    <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="TextParser.cpp">
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CLogger.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="CSVReader.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="ObjectPool.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="RingBuffer.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="MessageProtocol.h">
-      <Filter>헤더 파일\Network</Filter>
-    </ClInclude>
-    <ClInclude Include="Protocol.h">
-      <Filter>헤더 파일\Network</Filter>
-    </ClInclude>
     <ClInclude Include="CLanServerNoLock.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="CEchoServerNoLock.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CCrashDump.h">
+    <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="CDebugger.h">
+    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="TC_LFObjectPool.h">
+    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="TC_LFStack.h">
+    <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="TC_LFQueue.h">
+    <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="ObjectPool_TLS.h">
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="CNetPacket.h">
+    <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="CProfiler.h">
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="TextParser.h">
+    <ClInclude Include="..\..\MemoryPool\MemoryPool\ObjectPool.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\MemoryPool_TLS\MemoryPool_TLS\ObjectPool_TLS.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
   </ItemGroup>
