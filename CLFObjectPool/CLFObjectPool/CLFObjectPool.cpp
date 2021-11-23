@@ -1,6 +1,5 @@
 #include "CLFObjectPool.h"
 #include "CCrashDump.h"
-#include "CDebugger.h"
 
 LONG64 g_null_counter = 0;
 
@@ -32,8 +31,6 @@ procademy::CLFObjectPool::~CLFObjectPool()
 		node = pNext;
 		count++;
 	}
-
-	CDebugger::_Log(L"========== Destroy[%d] ==========", count);
 }
 
 ULONG64* procademy::CLFObjectPool::Alloc(void)		// pop
