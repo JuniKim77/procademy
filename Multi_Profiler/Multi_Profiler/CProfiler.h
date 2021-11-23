@@ -87,7 +87,7 @@ private:
 	{
 		SEARCH_RESULT_FULL = -1
 	};
-	
+
 	PROFILE_SAMPLE mProfiles[PROFILE_MAX];
 	Setting mSetting;
 	DWORD mThreadId = 0;
