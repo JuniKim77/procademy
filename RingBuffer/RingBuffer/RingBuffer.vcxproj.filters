@@ -24,10 +24,10 @@
     <ClCompile Include="StreamQueue.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CDebugger.cpp">
+    <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CCrashDump.cpp">
+    <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,10 +38,10 @@
     <ClInclude Include="StreamQueue.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CDebugger.h">
+    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CCrashDump.h">
+    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
