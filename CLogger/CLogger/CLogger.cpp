@@ -4,6 +4,7 @@
 #include <time.h>
 #include <strsafe.h>
 #include <locale.h>
+#include <windows.h>
 #include <direct.h>
 
 #define dfLOG_SIZE (1024)

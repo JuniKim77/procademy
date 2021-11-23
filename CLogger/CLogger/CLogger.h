@@ -1,10 +1,11 @@
 #pragma once
-#include <windows.h>
 
 #define dfLOG_LEVEL_DEBUG (0)
 #define dfLOG_LEVEL_ERROR (1)
 #define dfLOG_LEVEL_SYSTEM (2)
 #define dfLOG_LEVEL_OFF (3)
+
+#include <wtypes.h>
 
 class CLogger
 {
