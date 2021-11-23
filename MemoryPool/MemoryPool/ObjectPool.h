@@ -18,7 +18,6 @@
 #include <new.h>
 #include <stdlib.h>
 #include <string.h>
-#include <Windows.h>
 
 #define CHECKSUM_UNDER (0xAAAAAAAA)
 #define CHECKSUM_OVER (0xBBBBBBBB)

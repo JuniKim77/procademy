@@ -26,6 +26,8 @@ namespace procademy
 		CNetPacket* packet = CNetPacket::AllocAddRef();
 		CProfiler::End(L"ALLOC");
 
+		packet->SetHeader(true);
+
 		WORD len = 8;
 		int64_t value = 0x7fffffffffffffff;
 

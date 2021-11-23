@@ -618,6 +618,8 @@ namespace procademy
 			CNetPacket* packet = CNetPacket::AllocAddRef();
 			CProfiler::End(L"ALLOC");
 
+			packet->SetHeader(true);
+
 			memcpy_s(packet->GetZeroPtr(), sizeof(USHORT), (char*)&header, sizeof(USHORT));
 
 			InterlockedIncrement(&recvTPS);

@@ -31,7 +31,7 @@ namespace procademy
 		enum en_PACKET
 		{
 			HEADER_MAX_SIZE = 5,
-			eBUFFER_DEFAULT = 500		// 패킷의 기본 버퍼 사이즈.
+			eBUFFER_DEFAULT = 1000		// 패킷의 기본 버퍼 사이즈.
 		};
 
 		//////////////////////////////////////////////////////////////////////////
@@ -153,7 +153,7 @@ namespace procademy
 		CNetPacket& operator << (const char* s);
 		CNetPacket& operator << (const wchar_t* s);
 
-		static CNetPacket* AllocAddRef();
+		static CNetPacket*	AllocAddRef();
 		void				AddRef();
 		void				SubRef();
 		void				SetHeader(bool isLengthOnly);
@@ -190,13 +190,13 @@ namespace procademy
 	private:
 
 		SHORT		mRefCount = 0;
-		char* mBuffer;
+		char*		mBuffer;
 		int			mCapacity;
 		int			mPacketSize;
 		int			mHeaderSize;
-		char* mFront;
-		char* mRear;
-		char* mZero;
+		char*		mFront;
+		char*		mRear;
+		char*		mZero;
 		static BYTE	sCode;
 		static BYTE	sPacketKey;
 
