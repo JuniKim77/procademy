@@ -26,9 +26,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="TC_LFObjectPool.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="TC_LFQueue.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -36,6 +33,9 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
