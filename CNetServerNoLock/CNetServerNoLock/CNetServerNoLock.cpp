@@ -279,6 +279,9 @@ namespace procademy
 
 		SetWSABuf(buffers, session, true);
 
+#ifdef PROFILE
+		CProfiler::Begin(L"WSARecv");
+#endif // PROFILE
 		int recvRet = WSARecv(session->socket, buffers, 2, nullptr, &flags, &session->recvOverlapped, nullptr);
 
 		if (recvRet == SOCKET_ERROR)
@@ -328,6 +331,9 @@ namespace procademy
 
 			IncrementIOProc(session, 30000);
 
+#ifdef PROFILE
+			CProfiler::Begin(L"WSASend");
+#endif // PROFILE
 			int sendRet = WSASend(session->socket, buffers, session->numSendingPacket, nullptr, 0, &session->sendOverlapped, nullptr);
 
 			if (sendRet == SOCKET_ERROR)
@@ -611,6 +617,7 @@ namespace procademy
 				if (pOverlapped == &session->recvOverlapped) // Recv
 				{
 #ifdef PROFILE
+					CProfiler::End(L"WSARecv");
 					CProfiler::Begin(L"CompleteRecv");
 					CompleteRecv(session, transferredSize);
 					CProfiler::End(L"CompleteRecv");
@@ -621,6 +628,7 @@ namespace procademy
 				else // Send
 				{
 #ifdef PROFILE
+					CProfiler::End(L"WSASend");
 					CProfiler::Begin(L"CompleteSend");
 					CompleteSend(session, transferredSize);
 					CProfiler::End(L"CompleteSend");
