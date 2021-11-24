@@ -1,3 +1,6 @@
+#define SUB_SIZE (1000)
+#define TOTAL_SIZE (1024)
+
 #include "RedBlackTree.h"
 #include <time.h>
 #include "MyProfiler.h"
@@ -46,7 +49,7 @@ int main()
 
 	for (int t = 1; t <= count; ++t)
 	{
-		TestBiasedDistributionNumber(8);
+		TestBiasedDistributionNumber(32);
 	}
 
 	return 0;
@@ -60,7 +63,7 @@ void getRandNum(unsigned int* number)
 
 	num |= rand();
 
-	num &= 0x7ffff;
+	num &= 0x3fffff;
 
 	*number = num;
 }
@@ -73,9 +76,9 @@ void getRandBiasedNum(unsigned int* output, int msb)
 
 	num |= rand();
 
-	num &= 0xffff;
+	num &= 0x1ffff;
 
-	num |= (msb << 16);
+	num |= (msb << 17);
 
 	*output = num;
 }
@@ -83,6 +86,7 @@ void getRandBiasedNum(unsigned int* output, int msb)
 void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance, bool biased = false, int msb = 0)
 {
 	unsigned int num;
+	unsigned int num_list[SUB_SIZE] = { 0, };
 
 	if (biased)
 	{
@@ -93,12 +97,20 @@ void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 		getRandNum(&num);
 	}
 
+	int count = 0;
+
 	while (1)
 	{
+		if (count == SUB_SIZE)
+			break;
+
 		auto ret = setNum.insert(num);
 
 		if (ret.second == true)
-			break;
+		{
+			num_list[count] = num;
+			count++;
+		}
 
 		if (biased)
 		{
@@ -112,33 +124,55 @@ void insertNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 
 	if (checkPerformance)
 	{
-		int depth = rbTree.GetDepthInsertNode(num);
-		ProfileSetDepth(depth, L"RedBlackInsert");
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			int depth = rbTree.GetDepthInsertNode(num_list[i]);
+			ProfileSetDepth(depth, L"RedBlackInsert");
+		}
+
 		PRO_BEGIN(L"RedBlackInsert");
-		rbTree.InsertNode(num);
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			rbTree.InsertNode(num_list[i]);
+		}
 		PRO_END(L"RedBlackInsert");
 
-		depth = bTree.GetDepthInsertNode(num);
-		ProfileSetDepth(depth, L"BinaryTreeInsert");
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			int depth = bTree.GetDepthInsertNode(num_list[i]);
+			ProfileSetDepth(depth, L"BinaryTreeInsert");
+		}
+
 		PRO_BEGIN(L"BinaryTreeInsert");
-		bTree.InsertNode(num);
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			bTree.InsertNode(num_list[i]);
+		}
 		PRO_END(L"BinaryTreeInsert");
 
 		PRO_BEGIN(L"HashTableInsert");
-		hash.InsertNode(num);
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			hash.InsertNode(num_list[i]);
+		}
 		PRO_END(L"HashTableInsert");
 	}
 	else
 	{
-		rbTree.InsertNode(num);
-		bTree.InsertNode(num);
-		hash.InsertNode(num);
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			rbTree.InsertNode(num_list[i]);
+			bTree.InsertNode(num_list[i]);
+			hash.InsertNode(num_list[i]);
+		}
 	}
 }
 
 bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance, bool biased = false, int msb = 0)
 {
 	unsigned int num;
+	unsigned int num_list[SUB_SIZE] = { 0, };
+
 	bool ret = true;
 	bool ret2 = true;
 	bool ret3 = true;
@@ -152,8 +186,13 @@ bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 		getRandNum(&num);
 	}
 
+	int count = 0;
+
 	while (1)
 	{
+		if (count == SUB_SIZE)
+			break;
+
 		auto iter = setNum.find(num);
 
 		if (iter == setNum.end())
@@ -169,33 +208,63 @@ bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 		}
 		else
 		{
-			if (checkPerformance)
+			num_list[count++] = num;
+
+			setNum.erase(iter);
+
+			if (biased)
 			{
-				int depth = rbTree.GetDepthDeleteNode(num);
-				ProfileSetDepth(depth, L"RedBlackDelete");
-				PRO_BEGIN(L"RedBlackDelete");
-				ret = rbTree.DeleteNode(*iter);
-				PRO_END(L"RedBlackDelete");
-
-				depth = bTree.GetDepthDeleteNode(num);
-				ProfileSetDepth(depth, L"BinaryTreeDelete");
-				PRO_BEGIN(L"BinaryTreeDelete");
-				ret2 = bTree.DeleteNode(*iter);
-				PRO_END(L"BinaryTreeDelete");
-
-				PRO_BEGIN(L"HashTableDelete");
-				ret3 = hash.DeleteNode(*iter);
-				PRO_END(L"HashTableDelete");
+				getRandBiasedNum(&num, msb);
 			}
 			else
 			{
-				ret = rbTree.DeleteNode(*iter);
-				ret2 = bTree.DeleteNode(*iter);
-				ret3 = hash.DeleteNode(*iter);
+				getRandNum(&num);
 			}
+		}
+	}
 
-			setNum.erase(iter);
-			break;
+	if (checkPerformance)
+	{
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			int depth = rbTree.GetDepthDeleteNode(num_list[i]);
+			ProfileSetDepth(depth, L"RedBlackDelete");
+		}
+
+		PRO_BEGIN(L"RedBlackDelete");
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			ret = rbTree.DeleteNode(num_list[i]);
+		}
+		PRO_END(L"RedBlackDelete");
+
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			int depth = bTree.GetDepthDeleteNode(num_list[i]);
+			ProfileSetDepth(depth, L"BinaryTreeDelete");
+		}
+
+		PRO_BEGIN(L"BinaryTreeDelete");
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			ret = bTree.DeleteNode(num_list[i]);
+		}
+		PRO_END(L"BinaryTreeDelete");
+
+		PRO_BEGIN(L"HashTableDelete");
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			ret3 = hash.DeleteNode(num_list[i]);
+		}
+		PRO_END(L"HashTableDelete");
+	}
+	else
+	{
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			ret = rbTree.DeleteNode(num_list[i]);
+			ret2 = bTree.DeleteNode(num_list[i]);
+			ret3 = hash.DeleteNode(num_list[i]);
 		}
 	}
 
@@ -205,6 +274,7 @@ bool deleteNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::unordered_set<unsigned int>& setNum, bool checkPerformance, bool biased = false, int msb = 0)
 {
 	unsigned int num;
+	unsigned int num_list[SUB_SIZE] = { 0, };
 
 	if (biased)
 	{
@@ -217,8 +287,13 @@ bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 
 	std::unordered_set<unsigned int>::iterator iter;
 
+	int count = 0;
+
 	while (1)
 	{
+		if (count == SUB_SIZE)
+			break;
+
 		iter = setNum.find(num);
 
 		if (iter == setNum.end())
@@ -234,7 +309,16 @@ bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 		}
 		else
 		{
-			break;
+			num_list[count++] = num;
+
+			if (biased)
+			{
+				getRandBiasedNum(&num, msb);
+			}
+			else
+			{
+				getRandNum(&num);
+			}
 		}
 	}
 
@@ -244,40 +328,47 @@ bool searchNum(BinaryTree& bTree, RedBlackTree& rbTree, MyHashMap& hash, std::un
 
 	if (checkPerformance)
 	{
-		int depth = rbTree.GetDepthSearchData(num);
-		ProfileSetDepth(depth, L"RedBlackSearch");
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			int depth = rbTree.GetDepthSearchData(num_list[i]);
+			ProfileSetDepth(depth, L"RedBlackSearch");
+		}
+
 		PRO_BEGIN(L"RedBlackSearch");
-		found = rbTree.SearchData(*iter);
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			found = rbTree.SearchData(num_list[i]);
+		}
 		PRO_END(L"RedBlackSearch");
 
-		depth = bTree.GetDepthSearchData(num);
-		ProfileSetDepth(depth, L"BinaryTreeSearch");
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			int depth = bTree.GetDepthSearchData(num_list[i]);
+			ProfileSetDepth(depth, L"BinaryTreeSearch");
+		}
+
 		PRO_BEGIN(L"BinaryTreeSearch");
-		found1 = bTree.SearchData(*iter);
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			found1 = bTree.SearchData(num_list[i]);
+		}
 		PRO_END(L"BinaryTreeSearch");
 
 		PRO_BEGIN(L"HashTableSearch");
-		found2 = hash.SearchData(*iter);
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			found2 = hash.SearchData(num_list[i]);
+		}
 		PRO_END(L"HashTableSearch");
 	}
 	else
 	{
-		found = rbTree.SearchData(*iter);
-		found1 = bTree.SearchData(*iter);
-		found2 = hash.SearchData(*iter);
-	}
-
-	if (!found)
-	{
-		printf("Search RedBlack error\n");
-	}
-	if (!found1)
-	{
-		printf("Search Binary error\n");
-	}
-	if (!found2)
-	{
-		printf("Search HashTable error\n");
+		for (int i = 0; i < SUB_SIZE; ++i)
+		{
+			found = rbTree.SearchData(num_list[i]);
+			found1 = bTree.SearchData(num_list[i]);
+			found2 = hash.SearchData(num_list[i]);
+		}
 	}
 
 	return found && found1 && found2;
@@ -291,37 +382,23 @@ void TestNormalDistributionNumber()
 	BinaryTree bTree;
 
 	std::unordered_set<unsigned int> setNums;
-
-	for (int i = 0; i < 100000; i++)
+	
+	// pre setting 100¸¸ °Ç
+	for (int i = 0; i < TOTAL_SIZE; i++)
 	{
 		insertNum(bTree, rbTree, myHash, setNums, false);
 	}
 
-	for (int i = 0; i < 200000; ++i)
+	// run
+	for (int i = 0; i < TOTAL_SIZE * 100; ++i)
 	{
-		unsigned int num;
-		getRandNum(&num);
+		insertNum(bTree, rbTree, myHash, setNums, true);
 
-		if ((num & 1) == 1)
+		if (!deleteNum(bTree, rbTree, myHash, setNums, true))
 		{
-			insertNum(bTree, rbTree, myHash, setNums, true);
-		}
-		else
-		{
-			if (!deleteNum(bTree, rbTree, myHash, setNums, true))
-			{
-				printf("Delete error\n");
-			}
+			printf("Delete error\n");
 		}
 
-		/*if (!rbTree.CheckBalance())
-		{
-			printf("Balance error\n");
-		}*/
-	}
-
-	for (int i = 0; i < 100000; ++i)
-	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
 
@@ -337,45 +414,27 @@ void TestBiasedDistributionNumber(int groupNum)
 	MyHashMap myHash;
 	BinaryTree bTree;
 
-	int size = 100000;
-	int eachSize = size / groupNum;
-
 	std::unordered_set<unsigned int> setNums;
 
+	// 32 * 32 = 1024(TOTAL_SIZE)
 	for (int g = 0; g < groupNum; ++g)
 	{
-		for (int i = 0; i < eachSize; i++)
+		for (int i = 0; i < 32; i++)
 		{
 			insertNum(bTree, rbTree, myHash, setNums, false, true, g);
 		}
 	}
 	
-
-	for (int i = 0; i < 200000; ++i)
+	// run
+	for (int i = 0; i < TOTAL_SIZE * 100; ++i)
 	{
-		unsigned int num;
-		getRandNum(&num);
+		insertNum(bTree, rbTree, myHash, setNums, true);
 
-		if ((num & 1) == 1)
+		if (!deleteNum(bTree, rbTree, myHash, setNums, true))
 		{
-			insertNum(bTree, rbTree, myHash, setNums, true);
-		}
-		else
-		{
-			if (!deleteNum(bTree, rbTree, myHash, setNums, true))
-			{
-				printf("Delete error\n");
-			}
+			printf("Delete error\n");
 		}
 
-		/*if (!rbTree.CheckBalance())
-		{
-			printf("Balance error\n");
-		}*/
-	}
-
-	for (int i = 0; i < 100000; ++i)
-	{
 		searchNum(bTree, rbTree, myHash, setNums, true);
 	}
 

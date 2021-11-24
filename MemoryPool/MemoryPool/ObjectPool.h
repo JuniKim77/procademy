@@ -46,7 +46,6 @@ namespace procademy
 		};
 
 	public:
-		ObjectPool();
 		//////////////////////////////////////////////////////////////////////////
 		// 생성자, 파괴자.
 		//
@@ -63,7 +62,7 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (DATA *) 데이타 블럭 포인터.
 		//////////////////////////////////////////////////////////////////////////
-		DATA* Alloc(void);
+		DATA*	Alloc(void);
 
 		//////////////////////////////////////////////////////////////////////////
 		// 사용중이던 블럭을 해제한다.
@@ -88,9 +87,11 @@ namespace procademy
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mSize; }
+		void	Lock(bool readonly);
+		void	Unlock(bool readonly);
 
 	private:
-		void AllocMemory(int size);
+		void*	AllocMemory(int size);
 
 	private:
 		int mSize;
@@ -98,19 +99,16 @@ namespace procademy
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		st_BLOCK_NODE* _pFreeNode;
+		SRWLOCK mSrwLock;
 	};
-	template<typename DATA>
-	inline ObjectPool<DATA>::ObjectPool()
-		: ObjectPool(0, false)
-	{
-	}
 	template<typename DATA>
 	inline ObjectPool<DATA>::ObjectPool(int iBlockNum, bool bPlacementNew)
 		: mSize(0)
 		, mCapacity(iBlockNum)
 		, mbPlacementNew(bPlacementNew)
 	{
-		AllocMemory(mCapacity);
+		_pFreeNode = (st_BLOCK_NODE*)AllocMemory(mCapacity);
+		InitializeSRWLock(&mSrwLock);
 	}
 	template<typename DATA>
 	inline ObjectPool<DATA>::~ObjectPool()
@@ -127,8 +125,8 @@ namespace procademy
 	{
 		if (_pFreeNode == nullptr)
 		{
-			AllocMemory(1);
-			mCapacity++;
+			_pFreeNode = (st_BLOCK_NODE*)AllocMemory(mCapacity);
+			mCapacity *= 2;
 		}
 
 		st_BLOCK_NODE* node = _pFreeNode;
@@ -164,24 +162,48 @@ namespace procademy
 		return true;
 	}
 	template<typename DATA>
-	inline void ObjectPool<DATA>::AllocMemory(int size)
+	inline void ObjectPool<DATA>::Lock(bool readonly)
+	{
+		if (readonly)
+		{
+			AcquireSRWLockShared(&mSrwLock);
+		}
+		else
+		{
+			AcquireSRWLockExclusive(&mSrwLock);
+		}
+	}
+	template<typename DATA>
+	inline void ObjectPool<DATA>::Unlock(bool readonly)
+	{
+		if (readonly)
+		{
+			ReleaseSRWLockShared(&mSrwLock);
+		}
+		else
+		{
+			ReleaseSRWLockExclusive(&mSrwLock);
+		}
+	}
+	template<typename DATA>
+	inline void* ObjectPool<DATA>::AllocMemory(int size)
 	{
 		st_BLOCK_NODE* node = nullptr;
+		st_BLOCK_NODE* nodePost = nullptr;
 
 		for (int i = 0; i < size; ++i)
 		{
 			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
 			node->checkSum_under = CHECKSUM_UNDER;
 			node->code = this;
-			if (mbPlacementNew)
-			{
-				new (&node->data) (DATA);
-			}
-			node->stpNextBlock = _pFreeNode;
+			new (&node->data) (DATA);
+			node->stpNextBlock = nodePost;
 			node->checkSum_over = CHECKSUM_OVER;
 
-			_pFreeNode = node;
+			nodePost = node;
 		}
+
+		return node;
 	}
 }
 #endif

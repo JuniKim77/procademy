@@ -116,6 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\CLFObjectPool\CLFObjectPool;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\Multi_Profiler\Multi_Profiler;..\..\CSVReader\CSVReader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,6 +132,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\CLFObjectPool\CLFObjectPool;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\Multi_Profiler\Multi_Profiler;..\..\CSVReader\CSVReader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,18 +142,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CCrashDump.cpp" />
-    <ClCompile Include="CDebugger.cpp" />
+    <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp" />
+    <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
+    <ClCompile Include="..\..\CSVReader\CSVReader\CSVReader.cpp" />
+    <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp" />
     <ClCompile Include="CLFQueue.cpp" />
-    <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CCrashDump.h" />
-    <ClInclude Include="CDebugger.h" />
+    <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h" />
+    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
+    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
+    <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h" />
+    <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h" />
     <ClInclude Include="CLFQueue.h" />
-    <ClInclude Include="CLogger.h" />
-    <ClInclude Include="TC_LFObjectPool.h" />
     <ClInclude Include="TC_LFQueue.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

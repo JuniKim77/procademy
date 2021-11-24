@@ -4,8 +4,8 @@
 
 MyHashMap::MyHashMap()
 {
-	mBucket = new bool[0x7ffff + 1];
-	memset(mBucket, 0, 0x7ffff + 1);
+	mBucket = new bool[0x3fffff + 1];
+	memset(mBucket, 0, 0x3fffff + 1);
 }
 
 MyHashMap::~MyHashMap()

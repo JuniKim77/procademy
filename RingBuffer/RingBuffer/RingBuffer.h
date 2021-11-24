@@ -4,10 +4,10 @@
 
 #define BUFFER_SIZE (150)
 
-class RingBuffer 
+class RingBuffer
 {
 	enum {
-		DEFAULT_SIZE = 10000
+		DEFAULT_SIZE = 3000
 	};
 
 public:
@@ -26,6 +26,8 @@ public:
 	// Return: (int)사용중인 용량.
 	/////////////////////////////////////////////////////////////////////////
 	int GetUseSize(void);
+
+	bool IsEmpty() { return mFront == mRear; }
 
 	/////////////////////////////////////////////////////////////////////////
 	// 현재 버퍼에 남은 용량 얻기.
@@ -115,9 +117,13 @@ public:
 
 	void Lock(bool readonly);
 	void Unlock(bool readonly);
+	char* GetBuffer() { return mBuffer; }
+	void InitializeLock()
+	{
+		InitializeSRWLock(&mSrwLock);
+	}
 
-	int GetRear() { return mRear; }
-	int GetFront() { return mFront; }
+	int GetCapacity() { return mCapacity; }
 
 private:
 	int mFront;

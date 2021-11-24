@@ -1,6 +1,7 @@
 #include "RingBuffer.h"
 #include <cstring>
 #include <stdio.h>
+#include "CLogger.h"
 
 RingBuffer::RingBuffer()
 	: RingBuffer(DEFAULT_SIZE)
@@ -20,8 +21,8 @@ RingBuffer::RingBuffer(int iBufferSize)
 	, mCapacity(iBufferSize)
 	, mBuffer(nullptr)
 {
-	mBuffer = new char[iBufferSize + 1];
-	memset(mBuffer, 0, iBufferSize + 1);
+	mBuffer = new char[(long long)iBufferSize + 1];
+	memset(mBuffer, 0, (long long)iBufferSize + 1);
 }
 
 void RingBuffer::Resize(int size)
@@ -29,10 +30,10 @@ void RingBuffer::Resize(int size)
 	if (size <= mCapacity)
 		return;
 
-	char* temp = new char[size + 1];
+	char* temp = new char[(long long)size + 1];
 	if (mRear >= mFront)
 	{
-		memcpy(temp, mBuffer, mCapacity + 1);
+		memcpy(temp, mBuffer, (long long)mCapacity + 1);
 		delete[] mBuffer;
 		mBuffer = temp;
 		mCapacity = size;
@@ -59,10 +60,12 @@ int RingBuffer::GetBufferSize(void)
 
 int RingBuffer::GetUseSize(void)
 {
-	if (mRear >= mFront)
-		return mRear - mFront;
+	int rear = mRear;
+
+	if (rear >= mFront)
+		return rear - mFront;
 	else // f 바로 뒤는 넣을 수 없다.
-		return mCapacity - (mFront - mRear - 1);
+		return mCapacity - (mFront - rear - 1);
 }
 
 int RingBuffer::GetFreeSize(void)
@@ -121,14 +124,20 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 		freeSize = (curFront - mRear - 1);
 	}
 
-	iSize = iSize > freeSize ? freeSize : iSize;
+	// iSize = iSize > freeSize ? freeSize : iSize;
+
+	if (iSize > freeSize)
+	{
+		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Enqueue size over");
+		iSize = freeSize;
+	}
 
 	if (mRear + iSize > mCapacity + 1)
 	{
 		int possibleToEnd = mCapacity - mRear + 1;
 
 		memcpy(mBuffer + mRear, chpData, possibleToEnd);
-		memcpy(mBuffer, chpData + possibleToEnd, iSize - possibleToEnd);
+		memcpy(mBuffer, chpData + possibleToEnd, (long long)iSize - possibleToEnd);
 	}
 	else
 	{
@@ -158,14 +167,20 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 		useSize = mCapacity - (mFront - curRear - 1);
 	}
 
-	iSize = iSize > useSize ? useSize : iSize;
+	//iSize = iSize > useSize ? useSize : iSize;
+
+	if (iSize > useSize)
+	{
+		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Dequeue size over");
+		iSize = useSize;
+	}
 
 	if (mFront + iSize >= mCapacity + 1)
 	{
 		int possibleToEnd = mCapacity + 1 - mFront;
 
 		memcpy(chpDest, mBuffer + mFront, possibleToEnd);
-		memcpy(chpDest + possibleToEnd, mBuffer, iSize - possibleToEnd);
+		memcpy(chpDest + possibleToEnd, mBuffer, (long long)iSize - possibleToEnd);
 	}
 	else
 	{
@@ -202,7 +217,7 @@ int RingBuffer::Peek(char* chpDest, int iSize)
 		int possibleToEnd = mCapacity + 1 - mFront;
 
 		memcpy(chpDest, mBuffer + mFront, possibleToEnd);
-		memcpy(chpDest + possibleToEnd, mBuffer, iSize - possibleToEnd);
+		memcpy(chpDest + possibleToEnd, mBuffer, (long long)iSize - possibleToEnd);
 	}
 	else
 	{
@@ -257,7 +272,7 @@ void RingBuffer::printInfo()
 
 	if (mRear >= mFront)
 	{
-		memcpy(buffer, mBuffer + mFront, mRear - mFront);
+		memcpy(buffer, mBuffer + mFront, (long long)mRear - mFront);
 	}
 	else
 	{

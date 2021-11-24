@@ -6,7 +6,7 @@ using namespace std;
 
 int main()
 {
-	CPacket packet;
+	procademy::CPacket packet;
 	
 	unsigned char byValue = 100;
 	char chValue = 50;

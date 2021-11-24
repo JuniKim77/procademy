@@ -3,7 +3,6 @@
 #include <cstring>
 #include <random>
 #include <conio.h>
-#include "CDebugger.h"
 #include "CCrashDump.h"
 
 #define STR_SIZE (120)
@@ -23,8 +22,6 @@ int post = 0;
 int main()
 {
 	procademy::CCrashDump::CCrashDump();
-	CDebugger::SetDirectory(L"./");
-	CDebugger::Initialize();
 
 	system(" mode  con lines=30   cols=120 ");
 	int seed = 10;
@@ -58,8 +55,6 @@ int main()
 	{
 		CloseHandle(hArray[i]);
 	}
-
-	CDebugger::PrintLogOut(L"Debug.txt");
 
 	return 0;
 }

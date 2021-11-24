@@ -89,7 +89,6 @@ bool CLFStack::Pop(ULONG64* result)
 
 	if (top.ptr_node == nullptr)
 	{
-		CDebugger::_Log(L"Pop [C%5lld]", top.counter);
 		CRASH();
 	}
 
