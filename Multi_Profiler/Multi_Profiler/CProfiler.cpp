@@ -1,9 +1,9 @@
 #include "CProfiler.h"
 #include <stdio.h>
 #include <time.h>
-#include "CSVReader.h"
 #include <string.h>
 #include <wchar.h>
+#include "TextParser.h"
 
 CProfiler** CProfiler::s_profilers;
 LONG CProfiler::s_ProfilerIndex = 0;
@@ -18,27 +18,58 @@ CProfiler::CProfiler(const WCHAR* szmSettingFileName)
 
 CProfiler::~CProfiler()
 {
+	if (mColumnSize != 0)
+	{
+		for (int i = 0; i < mColumnSize; ++i)
+		{
+			delete[] mSetting.colNames[i];
+		}
+
+		delete[] mSetting.colNames;
+		delete[] mSetting.colSize;
+	}
+
 	wprintf_s(L"Exit CProfiler\n");
 }
 
 void CProfiler::ProfileInitialize(const WCHAR* szmSettingFileName)
 {
-	CSVFile csv(szmSettingFileName);
+	TextParser	tp;
+	int			num;
+	WCHAR       buffer[MAX_PARSER_LENGTH];
 
-	for (int i = 0; i < COLUMN_SIZE; ++i)
+	tp.LoadFile(szmSettingFileName);
+
+	tp.GetValue(L"COLUMN_SIZE", &num);
+	mColumnSize = num;
+
+	mSetting.colNames = new WCHAR * [mColumnSize];
+	mSetting.colSize = new int[mColumnSize];
+
+	for (int i = 0; i < mColumnSize; ++i)
 	{
-		memset(mSetting.colNames[i], 0, NAME_MAX * 2);
-		csv.GetColumn(mSetting.colNames[i], NAME_MAX);
-		csv.NextColumn();
-		wcscat_s(mSetting.colNames[i], 32, L"  |");
+		mSetting.colNames[i] = new WCHAR[NAME_MAX];
+	}
+	//COLUMN_NAME_1
+	for (int i = 0; i < mColumnSize; ++i)
+	{
+		WCHAR colName[NAME_MAX];
+
+		swprintf_s(colName, L"COLUMN_NAME_%d", i + 1);
+
+		tp.GetValue(colName, mSetting.colNames[i]);
+		
+		wcscat_s(mSetting.colNames[i], NAME_MAX, L"  |");
 	}
 
 	mSetting.totalSize = 2;
 
-	for (int i = 0; i < COLUMN_SIZE; ++i)
+	for (int i = 0; i < mColumnSize; ++i)
 	{
-		csv.GetColumn(&mSetting.colSize[i]);
-		csv.NextColumn();
+		WCHAR colName[NAME_MAX];
+
+		swprintf_s(colName, L"COLUMN_SIZE_%d", i + 1);
+		tp.GetValue(colName, &mSetting.colSize[i]);
 
 		mSetting.totalSize += mSetting.colSize[i];
 	}
@@ -79,6 +110,50 @@ void CProfiler::ProfileEnd(const WCHAR* szName)
 	}
 
 	__int64 time = end.QuadPart - mProfiles[idx].lStartTime.QuadPart;
+
+	mProfiles[idx].iTotalTime += time;
+	++mProfiles[idx].iCall;
+
+	// Min Max Ã³¸®
+	if (mProfiles[idx].iMin[1] > time)
+	{
+		mProfiles[idx].iMin[1] = time;
+	}
+	if (mProfiles[idx].iMax[1] < time)
+	{
+		mProfiles[idx].iMax[1] = time;
+	}
+
+	if (mProfiles[idx].iMax[0] < mProfiles[idx].iMax[1])
+	{
+		__int64 temp = mProfiles[idx].iMax[0];
+		mProfiles[idx].iMax[0] = mProfiles[idx].iMax[1];
+		mProfiles[idx].iMax[1] = temp;
+	}
+	if (mProfiles[idx].iMin[0] > mProfiles[idx].iMin[1])
+	{
+		__int64 temp = mProfiles[idx].iMin[0];
+		mProfiles[idx].iMin[0] = mProfiles[idx].iMin[1];
+		mProfiles[idx].iMin[1] = temp;
+	}
+}
+
+void CProfiler::ProfileSetRecord(const WCHAR* szName, LONGLONG time)
+{
+	int idx = SearchName(szName);
+
+	if (idx == SEARCH_RESULT_FULL)
+	{
+		wprintf_s(L"Profiling List is Full\n");
+
+		return;
+	}
+
+	if (mProfiles[idx].bFlag == false)
+	{
+		mProfiles[idx].bFlag = true;
+		wcscat_s(mProfiles[idx].szName, _countof(mProfiles[idx].szName), szName);
+	}
 
 	mProfiles[idx].iTotalTime += time;
 	++mProfiles[idx].iCall;
@@ -262,7 +337,7 @@ void CProfiler::InitProfiler(int num)
 
 	for (int i = 0; i < num; ++i)
 	{
-		s_profilers[i] = new CProfiler(L"settings.csv");
+		s_profilers[i] = new CProfiler(L"MultiProf.cnf");
 	}
 }
 
@@ -297,6 +372,13 @@ void CProfiler::End(const WCHAR* szName)
 	CProfiler* profiler = (CProfiler*)TlsGetValue(s_MultiProfiler);
 
 	profiler->ProfileEnd(szName);
+}
+
+void CProfiler::SetRecord(const WCHAR* szName, LONGLONG time)
+{
+	CProfiler* profiler = (CProfiler*)TlsGetValue(s_MultiProfiler);
+
+	profiler->ProfileSetRecord(szName, time);
 }
 
 void CProfiler::Print()

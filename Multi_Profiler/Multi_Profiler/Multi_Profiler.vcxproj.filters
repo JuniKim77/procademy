@@ -21,7 +21,7 @@
     <ClCompile Include="CProfiler.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CSVReader\CSVReader\CSVReader.cpp">
+    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -29,7 +29,7 @@
     <ClInclude Include="CProfiler.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h">
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

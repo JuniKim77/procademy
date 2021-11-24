@@ -1,9 +1,9 @@
 #pragma once
 
 #define PROFILE_MAX (50)
-#define NAME_MAX (20)
+#define NAME_MAX (32)
 #define FILE_NAME_MAX (80)
-#define COLUMN_SIZE (6)
+#define MAX_PARSER_LENGTH (256)
 
 #include <wtypes.h>
 
@@ -12,6 +12,8 @@ class CProfiler
 public:
 	CProfiler(const WCHAR* szSettingFileName);
 	~CProfiler();
+
+private:
 	/// <summary>
 	/// Profile Init
 	/// CSV File Load
@@ -28,6 +30,7 @@ public:
 	/// </summary>
 	/// <param name="szName">Profiling Name</param>
 	void ProfileEnd(const WCHAR* szName);
+	void ProfileSetRecord(const WCHAR* szName, LONGLONG time);
 	/// <summary>
 	/// Profiling Data Text Out
 	/// </summary>
@@ -44,11 +47,13 @@ public:
 
 	void SetThreadId();
 
+public:
 	static void SetProfileFileName(WCHAR* szFileName);
 	static void InitProfiler(int num);
 	static void DestroyProfiler();
 	static void Begin(const WCHAR* szName);
 	static void End(const WCHAR* szName);
+	static void SetRecord(const WCHAR* szName, LONGLONG time);
 	static void Print();
 
 private:
@@ -78,8 +83,8 @@ private:
 
 	struct Setting
 	{
-		WCHAR colNames[COLUMN_SIZE][32];
-		int colSize[COLUMN_SIZE];
+		WCHAR** colNames;
+		int* colSize;
 		int totalSize;
 	};
 
@@ -91,4 +96,5 @@ private:
 	PROFILE_SAMPLE mProfiles[PROFILE_MAX];
 	Setting mSetting;
 	DWORD mThreadId = 0;
+	int mColumnSize = 0;
 };

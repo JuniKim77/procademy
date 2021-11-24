@@ -77,6 +77,8 @@ int main()
 unsigned int __stdcall workerThread(LPVOID arg)
 {
 	DWORD dwError;
+	LARGE_INTEGER begin;
+	LARGE_INTEGER end;
 
 	while (1)
 	{
@@ -87,9 +89,15 @@ unsigned int __stdcall workerThread(LPVOID arg)
 			break;
 		}
 
+		QueryPerformanceCounter(&begin);
+
 		test1();
 
 		test2();
+
+		QueryPerformanceCounter(&end);
+
+		CProfiler::SetRecord(L"Test3", end.QuadPart - begin.QuadPart);
 	}
 
 	return 0;
