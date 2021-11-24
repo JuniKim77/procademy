@@ -156,14 +156,14 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h" />
+    <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue.h" />
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="..\..\TextParser\TextParser\TextParser.h" />
     <ClInclude Include="CDBConnector.h" />
     <ClInclude Include="CDBConnector_TLS.h" />
     <ClInclude Include="DB_protocol.h" />
-    <ClInclude Include="TC_LFObjectPool.h" />
-    <ClInclude Include="TC_LFQueue.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
