@@ -53,7 +53,7 @@ namespace procademy
 		/// 전 플레이어를 돌면서 플레이어 체크
 		/// </summary>
 		/// <returns></returns>
-		bool			CheckHeart();
+		bool			CheckHeartProc();
 		bool			MonitoringProc();
 		bool			CompleteMessage(SESSION_ID sessionNo, CNetPacket* packet);
 		bool			JoinProc(SESSION_ID sessionNo);
@@ -86,9 +86,9 @@ namespace procademy
 	/// <summary>
 	/// Make Packet Funcs
 	/// </summary>
-		CNetPacket*		MakeCSResLogin(BYTE status, SESSION_ID accountNo);
-		CNetPacket*		MakeCSResSectorMove(SESSION_ID accountNo, WORD sectorX, WORD sectorY);
-		CNetPacket*		MakeCSResMessage(SESSION_ID accountNo, WCHAR* ID, WCHAR* nickname, WORD meesageLen, WCHAR* message);
+		CNetPacket*		MakeCSResLogin(BYTE status, INT64 accountNo);
+		CNetPacket*		MakeCSResSectorMove(INT64 accountNo, WORD sectorX, WORD sectorY);
+		CNetPacket*		MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD meesageLen, WCHAR* message);
 
 	public:
 		enum {

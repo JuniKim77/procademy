@@ -95,10 +95,7 @@ unsigned int __stdcall procademy::CChatServerSingle::HeartbeatFunc(LPVOID arg)
 {
     CChatServerSingle* chatServer = (CChatServerSingle*)arg;
 
-    while (!chatServer->mbExit)
-    {
-        chatServer->CheckHeart();
-    }
+    chatServer->CheckHeartProc();
 
     CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"HeartBeat Thread End\n");
 
@@ -215,11 +212,11 @@ void procademy::CChatServerSingle::GQCSProcEx()
     delete[] overlappedArray;
 }
 
-bool procademy::CChatServerSingle::CheckHeart()
+bool procademy::CChatServerSingle::CheckHeartProc()
 {
     HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
 
-    while (mbBegin)
+    while (!mbExit)
     {
         DWORD retval = WaitForSingleObject(dummyevent, 1000);
 
@@ -597,23 +594,9 @@ bool procademy::CChatServerSingle::CheckTimeOutProc()
 
     for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end(); ++iter)
     {
-        SESSION_ID sessionNo = iter->second->sessionNo;
-
         if (curTime - iter->second->lastRecvTime > mTimeOut) // 40000ms
         {
-            /*if (iter->second->curSectorX != -1 && iter->second->curSectorY != -1)
-            {
-                Sector_RemovePlayer(iter->second->curSectorX, iter->second->curSectorY, iter->second);
-            }
-
-            if (iter->second->bLogin)
-            {
-                mLoginCount--;
-            }
-
-            FreePlayer(iter->second);
-
-            iter = mPlayerMap.erase(iter);*/
+            SESSION_ID sessionNo = iter->second->sessionNo;
 
             Disconnect(sessionNo);
         }
@@ -833,11 +816,11 @@ void procademy::CChatServerSingle::ClearTPS()
     }
 }
 
-procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status, SESSION_ID accountNo)
+procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status, INT64 accountNo)
 {
     CNetPacket* packet = CNetPacket::AllocAddRef();
 
-    *packet << (WORD)en_PACKET_CS_CHAT_RES_LOGIN << status << (__int64)accountNo;
+    *packet << (WORD)en_PACKET_CS_CHAT_RES_LOGIN << status << accountNo;
 
     packet->SetHeader(false);
     packet->Encode();
@@ -845,11 +828,11 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status,
     return packet;
 }
 
-procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResSectorMove(SESSION_ID accountNo, WORD sectorX, WORD sectorY)
+procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResSectorMove(INT64 accountNo, WORD sectorX, WORD sectorY)
 {
     CNetPacket* packet = CNetPacket::AllocAddRef();
 
-    *packet << (WORD)en_PACKET_CS_CHAT_RES_SECTOR_MOVE << (__int64)accountNo << sectorX << sectorY;
+    *packet << (WORD)en_PACKET_CS_CHAT_RES_SECTOR_MOVE << accountNo << sectorX << sectorY;
 
     packet->SetHeader(false);
     packet->Encode();
@@ -857,11 +840,11 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResSectorMove(SESSION
     return packet;
 }
 
-procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(SESSION_ID accountNo, WCHAR* ID, WCHAR* nickname, WORD meesageLen, WCHAR* message)
+procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD meesageLen, WCHAR* message)
 {
     CNetPacket* packet = CNetPacket::AllocAddRef();
 
-    *packet << (WORD)en_PACKET_CS_CHAT_RES_MESSAGE << (__int64)accountNo;
+    *packet << (WORD)en_PACKET_CS_CHAT_RES_MESSAGE << accountNo;
 
     packet->PutData(ID, 20);
     packet->PutData(nickname, 20);

@@ -18,6 +18,7 @@ namespace procademy
 	{
 		friend class CNetServerNoLock;
 		friend class CEchoServerNoLock;
+		friend class CNetLoginServer;
 		friend class CChatServerSingle;
 		template<typename DATA>
 		friend class TC_LFObjectPool;
