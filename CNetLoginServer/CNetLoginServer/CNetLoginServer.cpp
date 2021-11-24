@@ -24,23 +24,37 @@ bool procademy::CNetLoginServer::OnConnectionRequest(u_long IP, u_short Port)
 void procademy::CNetLoginServer::OnClientJoin(SESSION_ID SessionID)
 {
     JoinUserProc(SessionID);
+
+    /*AcquireSRWLockExclusive(&mUserMapLock);
+    {
+        
+    }
+    ReleaseSRWLockExclusive(&mUserMapLock);*/
 }
 
 void procademy::CNetLoginServer::OnClientLeave(SESSION_ID SessionID)
 {
     LeaveUserProc(SessionID);
+
+    /*AcquireSRWLockExclusive(&mUserMapLock);
+    {
+        
+    }
+    ReleaseSRWLockExclusive(&mUserMapLock);*/
 }
 
 void procademy::CNetLoginServer::OnRecv(SESSION_ID SessionID, CNetPacket* packet)
 {
     WORD type;
+    WCHAR errMsg[ERR_MSG_MAX];
+    bool ret;
 
     *packet >> type;
 
     switch (type)
     {
     case en_PACKET_CS_LOGIN_REQ_LOGIN:
-        LoginProc(SessionID, packet);
+        ret = LoginProc(SessionID, packet, errMsg);
         break;
     default:
         break;
@@ -84,40 +98,24 @@ unsigned int __stdcall procademy::CNetLoginServer::HeartbeatFunc(LPVOID arg)
 
 procademy::st_User* procademy::CNetLoginServer::FindUser(SESSION_ID sessionNo)
 {
-    std::unordered_map<SESSION_ID, st_User*>::iterator iter;
-    st_User* user;
+    std::unordered_map<SESSION_ID, st_User*>::iterator iter = mUserMap.find(sessionNo);
 
-    AcquireSRWLockShared(&mUserMapLock);
+    if (iter == mUserMap.end())
     {
-        iter = mUserMap.find(sessionNo);
-        user = nullptr;
-
-        if (iter != mUserMap.end())
-        {
-            user = iter->second;
-        }
+        return nullptr;
     }
-    ReleaseSRWLockShared(&mUserMapLock);
 
-    return user;
+    return iter->second;
 }
 
 void procademy::CNetLoginServer::InsertUser(SESSION_ID sessionNo, st_User* user)
 {
-    AcquireSRWLockExclusive(&mUserMapLock);
-    {
-        mUserMap[sessionNo] = user;
-    }
-    ReleaseSRWLockExclusive(&mUserMapLock);
+    mUserMap[sessionNo] = user;
 }
 
 void procademy::CNetLoginServer::DeleteUser(SESSION_ID sessionNo)
 {
-    AcquireSRWLockExclusive(&mUserMapLock);
-    {
-        mUserMap.erase(sessionNo);
-    }
-    ReleaseSRWLockExclusive(&mUserMapLock);
+    mUserMap.erase(sessionNo);
 }
 
 void procademy::CNetLoginServer::BeginThreads()
@@ -171,56 +169,54 @@ void procademy::CNetLoginServer::FreeUser(st_User* user)
 
 bool procademy::CNetLoginServer::JoinUserProc(SESSION_ID sessionNo)
 {
-    st_User* user = FindUser(sessionNo);
+	st_User* user = FindUser(sessionNo);
 
-    if (user != nullptr)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent User[%llu]\n", sessionNo);
-        CRASH();
+	if (user != nullptr)
+	{
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent User[%llu]\n", sessionNo);
+		CRASH();
 
-        return false;
-    }
+		return false;
+	}
 
-    user = mUserPool.Alloc();
-    user->sessionNo = sessionNo;
-    user->lastRecvTime = GetTickCount64();
+	user = mUserPool.Alloc();
+	user->sessionNo = sessionNo;
+	user->lastRecvTime = GetTickCount64();
 
-    InsertUser(sessionNo, user);
+	InsertUser(sessionNo, user);
 
     return true;
 }
 
 bool procademy::CNetLoginServer::LeaveUserProc(SESSION_ID sessionNo)
 {
-    st_User* user = FindUser(sessionNo);
+	st_User* user = FindUser(sessionNo);
 
-    if (user == nullptr)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
-            sessionNo);
+	if (user == nullptr)
+	{
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
+			sessionNo);
+		CRASH();
 
-        CRASH();
+		return false;
+	}
 
-        return false;
-    }
+	if (user->sessionNo != sessionNo)
+	{
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [SessionID %llu]- [User %llu] Not Match\n", sessionNo, user->sessionNo);
+		CRASH();
 
-    if (user->sessionNo != sessionNo)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [SessionID %llu]- [User %llu] Not Match\n", sessionNo, user->sessionNo);
+		return false;
+	}
 
-        CRASH();
+	DeleteUser(user->sessionNo);
 
-        return false;
-    }
-
-    DeleteUser(user->sessionNo);
-
-    FreeUser(user);
+	FreeUser(user);
 
     return true;
 }
 
-bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* packet)
+bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* packet, WCHAR* msg)
 {
     INT64	    AccountNo;
     char	    SessionKey[64];		// 인증토큰

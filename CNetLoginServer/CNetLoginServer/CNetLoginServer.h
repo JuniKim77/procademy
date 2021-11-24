@@ -35,7 +35,7 @@ namespace procademy
 		void			FreeUser(st_User* user);
 		bool			JoinUserProc(SESSION_ID sessionNo);
 		bool			LeaveUserProc(SESSION_ID sessionNo);
-		bool			LoginProc(SESSION_ID sessionNo, CNetPacket* packet);
+		bool			LoginProc(SESSION_ID sessionNo, CNetPacket* packet, WCHAR* msg);
 		bool			CheckHeartProc();
 		bool			MonitoringProc();
 		void			MakeMonitorStr(WCHAR* s, int size);
@@ -43,6 +43,11 @@ namespace procademy
 		bool			ReqAccountDB(INT64 accountNo, st_User* output);
 
 		CNetPacket*		MakeCSResLogin(BYTE status, INT64 accountNo);
+
+	private:
+		enum {
+			ERR_MSG_MAX = 256
+		};
 
 	private:
 		std::unordered_map<SESSION_ID, st_User*>	mUserMap;
