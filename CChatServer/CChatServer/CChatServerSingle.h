@@ -116,5 +116,7 @@ namespace procademy
 		CCpuUsage								mCpuUsage;
 		bool									mSendToWorker = true;
 		bool									mGQCSEx;
+		bool									mbMonitoring;
+		bool									mbPrint;
 };
 }

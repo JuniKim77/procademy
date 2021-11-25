@@ -10,6 +10,7 @@
 #include "CProfiler.h"
 
 #define MAX_STR (30000)
+WCHAR str[MAX_STR];
 
 struct msgDebug
 {
@@ -27,7 +28,6 @@ struct info
     INT64 sessionNo;
 };
 
-WCHAR str[MAX_STR];
 USHORT g_msgIdx;
 msgDebug g_msgDebugs[USHRT_MAX + 1];
 //std::unordered_map<INT64, std::vector<info>> g_msgSort;
@@ -378,13 +378,13 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     //msgDebugLog(2000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
     response = MakeCSResLogin(1, player->accountNo);
-
+    {
 #ifdef SEND_TO_WORKER
-    SendPacketToWorker(player->sessionNo, response);
+        SendPacketToWorker(player->sessionNo, response);
 #else
-    SendPacket(player->sessionNo, response);
+        SendPacket(player->sessionNo, response);
 #endif // SEND_TO_WORKER
-    
+    }
     response->SubRef();
 
     return true;
@@ -493,13 +493,13 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
     //msgDebugLog(4000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
     CNetPacket* response = MakeCSResSectorMove(player->accountNo, player->curSectorX, player->curSectorY);
-
+    {
 #ifdef SEND_TO_WORKER
-    SendPacketToWorker(player->sessionNo, response);
+        SendPacketToWorker(player->sessionNo, response);
 #else
-    SendPacket(player->sessionNo, response);
+        SendPacket(player->sessionNo, response);
 #endif // SEND_TO_WORKER
-
+    }
     response->SubRef();
 
     return true;
@@ -552,9 +552,9 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
     mSector[player->curSectorY][player->curSectorX].recvCount++;
 
     CNetPacket* response = MakeCSResMessage(player->accountNo, player->ID, player->nickName, messageLen, (WCHAR*)packet->GetFrontPtr());
-
-    mSector[player->curSectorY][player->curSectorX].sendCount += SendMessageSectorAround(response, &sectorAround);
-
+    {
+        mSector[player->curSectorY][player->curSectorX].sendCount += SendMessageSectorAround(response, &sectorAround);
+    }
     response->SubRef();
 
     return true;
