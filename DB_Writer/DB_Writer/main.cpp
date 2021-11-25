@@ -29,5 +29,7 @@ int main()
 
 	db.Disconnect();
 
+	Sleep(10000);
+
 	return 0;
 }

@@ -26,6 +26,7 @@ void procademy::CDBConnector_TLS::DestroyDBConnector_TLS()
 {
 	for (int i = 0; i < s_connectorNum; ++i)
 	{
+		s_connectors[i]->Disconnect();
 		delete s_connectors[i];
 	}
 
