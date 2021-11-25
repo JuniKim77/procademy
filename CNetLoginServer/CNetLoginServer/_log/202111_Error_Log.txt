@@ -4,3 +4,21 @@
 [ERROR] [8] [11/25/21 17:00:09] Listen Socket [Error: 10004]
 
 
+[ERROR] [3] [11/25/21 23:03:13] Socket Bind [Error: 10048]
+
+
+[ERROR] [4] [11/25/21 23:03:13] Begin Server Error
+
+
+[ERROR] [3] [11/25/21 23:03:31] Socket Bind [Error: 10048]
+
+
+[ERROR] [4] [11/25/21 23:03:31] Begin Server Error
+
+
+[ERROR] [3] [11/25/21 23:08:38] Socket Bind [Error: 10048]
+
+
+[ERROR] [4] [11/25/21 23:08:38] Begin Server Error
+
+
