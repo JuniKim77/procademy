@@ -6,6 +6,10 @@
 #include "TC_LFObjectPool.h"
 #include "ChatServerDTO.h"
 #include "CCpuUsage.h"
+#include <cpp_redis/cpp_redis>
+
+#pragma comment (lib, "cpp_redis.lib")
+#pragma comment (lib, "tacopie.lib")
 
 namespace procademy
 {
@@ -63,6 +67,7 @@ namespace procademy
 		bool			SendMessageProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool			HeartUpdateProc(SESSION_ID sessionNo);
 		bool			CheckTimeOutProc();
+		bool			TokenVerificationProc();
 		void			BeginThreads();
 		void			LoadInitFile(const WCHAR* fileName);
 		void			FreePlayer(st_Player* player);
@@ -101,6 +106,9 @@ namespace procademy
 		HANDLE									mMonitoringThread;
 		HANDLE									mHeartbeatThread;
 		HANDLE									mIOCP;
+		cpp_redis::client						mRedis;
+		WCHAR									mTokenDBIP[16];
+		USHORT									mTokenDBPort;
 
 		TC_LFObjectPool<st_MSG>					mMsgPool;
 

@@ -454,6 +454,7 @@ void procademy::CNetLoginServer::MakeMonitorStr(WCHAR* s, int size)
     WCHAR bigNumber[18];
 
     idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"[Status : %s]\n", mbBegin ? L"RUN" : L"STOP");
     idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d]\n", mbZeroCopy, mbNagle);
     idx += swprintf_s(s + idx, size - idx, L"[WorkerTh: %d] [ActiveTh: %d]\n", mWorkerThreadNum, mActiveThreadNum);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");

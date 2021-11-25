@@ -495,7 +495,7 @@ namespace procademy
 		{
 			int err = WSAGetLastError();
 
-			if (err == WSAENOTSOCK)
+			if (err == WSAENOTSOCK || err == WSAEINTR)
 			{
 				CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Listen Socket Close [Error: %d]\n", err);
 

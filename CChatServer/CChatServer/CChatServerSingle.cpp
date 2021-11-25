@@ -368,6 +368,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     // token verification
 
+
     player->accountNo = AccountNo;
     wcscpy_s(player->ID, NAME_MAX, ID);
     wcscpy_s(player->nickName, NAME_MAX, Nickname);
@@ -712,6 +713,7 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     WCHAR bigNumber[18];
 
     idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"[Status : %s]\n", mbBegin ? L"RUN" : L"STOP");
     idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d] [SendToWorker: %d]\n", mbZeroCopy, mbNagle, mSendToWorker);
     idx += swprintf_s(s + idx, size - idx, L"[GQCS_EX: %d] [WorkerTh: %d] [ActiveTh: %d]\n", mGQCSEx, mWorkerThreadNum, mActiveThreadNum);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
@@ -859,7 +861,7 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(INT64 acco
 
 procademy::CChatServerSingle::CChatServerSingle()
 {
-    LoadInitFile(L"ChatServer.cnf");
+    LoadInitFile(L"Server.cnf");
     BeginThreads();
 }
 
@@ -1048,6 +1050,10 @@ void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
     tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
 
     tp.GetValue(L"IOCP_ACTIVE_THREAD", &num);
+
+    tp.GetValue(L"TOKEN_DB_IP", mTokenDBIP);
+    tp.GetValue(L"TOKEN_DB_PORT", &num);
+    mTokenDBPort = (USHORT)num;
 
     mIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, (DWORD)num);
 }
