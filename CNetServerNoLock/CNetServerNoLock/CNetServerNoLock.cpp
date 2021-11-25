@@ -823,7 +823,7 @@ namespace procademy
 		{
 			DWORD retval = WaitForSingleObject(dummyEvent, 1000);
 
-			if (retval == WAIT_TIMEOUT && mbMonitoring == true)
+			if (retval == WAIT_TIMEOUT)
 			{
 				mMonitor.prevRecvTPS = recvTPS;
 				mMonitor.prevSendTPS = sendTPS;
@@ -869,7 +869,11 @@ namespace procademy
 
 	CNetServerNoLock::CNetServerNoLock()
 	{
-		LoadInitFile(L"ChatServer.cnf");
+		WORD version = MAKEWORD(2, 2);
+		WSADATA data;
+		WSAStartup(version, &data);
+
+		LoadInitFile(L"Server.cnf");
 
 		mhThreads = new HANDLE[(long long)mWorkerThreadNum + 2];
 		mSessionArray = (Session*)_aligned_malloc(sizeof(Session) * mMaxClient, 64);

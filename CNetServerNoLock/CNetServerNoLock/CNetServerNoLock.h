@@ -148,11 +148,9 @@ namespace procademy
 
 	protected:
 		bool				mbNagle = true;
-		bool				mbMonitoring = true;
 		bool				mbZeroCopy = true;
 		bool				mbExit = false;
 		bool				mbBegin = false;
-		bool				mbPrint = false;
 		BYTE				mActiveThreadNum = 0;
 		BYTE				mWorkerThreadNum = 0;
 
