@@ -21,7 +21,9 @@ namespace procademy
 			MSG_TYPE_RECV,
 			MSG_TYPE_JOIN,
 			MSG_TYPE_LEAVE,
-			MSG_TYPE_TIMEOUT
+			MSG_TYPE_TIMEOUT,
+			MSG_TYPE_VERIFICATION_SUCCESS,
+			MSG_TYPE_VERIFICATION_FAIL
 		};
 
 	public:
@@ -39,6 +41,7 @@ namespace procademy
 		static unsigned int WINAPI UpdateFunc(LPVOID arg);
 		static unsigned int WINAPI MonitorFunc(LPVOID arg);
 		static unsigned int WINAPI HeartbeatFunc(LPVOID arg);
+		static unsigned int WINAPI RedisFunc(LPVOID arg);
 
 		/// <summary>
 		/// OnRecv가 MsgQ에 넣을 때, 호출할 함수
@@ -67,6 +70,7 @@ namespace procademy
 		bool			SendMessageProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool			HeartUpdateProc(SESSION_ID sessionNo);
 		bool			CheckTimeOutProc();
+		bool			CompleteLoginProc(SESSION_ID sessionNo, CNetPacket* packet, bool success);
 		bool			TokenVerificationProc();
 		void			BeginThreads();
 		void			LoadInitFile(const WCHAR* fileName);
@@ -94,6 +98,7 @@ namespace procademy
 		CNetPacket*		MakeCSResLogin(BYTE status, INT64 accountNo);
 		CNetPacket*		MakeCSResSectorMove(INT64 accountNo, WORD sectorX, WORD sectorY);
 		CNetPacket*		MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD meesageLen, WCHAR* message);
+		CNetPacket*		MakeResultLogin(INT64 accountNo, WCHAR* ID, WCHAR* nickname);
 
 	public:
 		enum {
@@ -105,7 +110,9 @@ namespace procademy
 		HANDLE									mUpdateThread;
 		HANDLE									mMonitoringThread;
 		HANDLE									mHeartbeatThread;
+		HANDLE									mRedisThread;
 		HANDLE									mIOCP;
+		HANDLE									mRedisIOCP;
 		cpp_redis::client						mRedis;
 		WCHAR									mTokenDBIP[16];
 		USHORT									mTokenDBPort;
@@ -116,6 +123,7 @@ namespace procademy
 		TC_LFObjectPool<st_Player>				mPlayerPool;
 		DWORD									mLoginCount = 0;
 		DWORD									mUpdateTPS = 0;
+		DWORD									mRedisTPS = 0;
 		DWORD									mGQCSCount = 0;
 		DWORD									mGQCSCExNum = 0;
 
