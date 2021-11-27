@@ -22,6 +22,12 @@
     <Filter Include="헤더 파일\Network">
       <UniqueIdentifier>{bd8c343e-c902-4ff8-9004-847c5d6c8b55}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\DB">
+      <UniqueIdentifier>{5d321af6-a87b-4ae8-9f81-085363a68731}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\DB">
+      <UniqueIdentifier>{ecc79de6-43fc-4aba-9f89-4e578a9f5a45}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -62,6 +68,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp">
       <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Query.cpp">
+      <Filter>소스 파일\DB</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +121,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h">
       <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Query.h">
+      <Filter>헤더 파일\DB</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

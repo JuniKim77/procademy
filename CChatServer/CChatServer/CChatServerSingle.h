@@ -49,6 +49,7 @@ namespace procademy
 		/// </summary>
 		/// <param name="packet">넣을 패킷</param>
 		void			EnqueueMessage(st_MSG* packet);
+		void			EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet);
 		/// <summary>
 		/// GQCS를 기준으로 반복적으로 메세지를 처리할 함수
 		/// waittime을 둬서 주기적으로 Heartbeat 체크
@@ -71,7 +72,7 @@ namespace procademy
 		bool			HeartUpdateProc(SESSION_ID sessionNo);
 		bool			CheckTimeOutProc();
 		bool			CompleteLoginProc(SESSION_ID sessionNo, CNetPacket* packet, bool success);
-		bool			TokenVerificationProc();
+		bool			RedisProc();
 		void			BeginThreads();
 		void			LoadInitFile(const WCHAR* fileName);
 		void			FreePlayer(st_Player* player);
@@ -91,6 +92,7 @@ namespace procademy
 		void			MakeMonitorStr(WCHAR* s, int size);
 		void			PrintRecvSendRatio();
 		void			ClearTPS();
+		void			Init();
 
 	/// <summary>
 	/// Make Packet Funcs

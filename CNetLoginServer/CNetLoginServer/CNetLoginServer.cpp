@@ -6,6 +6,7 @@
 #include "CommonProtocol.h"
 #include "CProfiler.h"
 #include <conio.h>
+#include "Query.h"
 
 procademy::CNetLoginServer::CNetLoginServer()
 {
@@ -18,7 +19,6 @@ procademy::CNetLoginServer::~CNetLoginServer()
 {
     if (mDBConnector != nullptr)
     {
-        mDBConnector->Disconnect();
         delete mDBConnector;
     }
 
@@ -368,7 +368,8 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
     player->accountNo = AccountNo;
 
     // token verification
-    bool retval = TokenVerificationProc(AccountNo, SessionKey, player);
+    bool retval = true;
+    // retval = TokenVerificationProc(AccountNo, SessionKey, player);
 
     if (retval == false)
     {
@@ -471,7 +472,7 @@ void procademy::CNetLoginServer::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
-    idx += swprintf_s(s + idx, size - idx, L"CPU usage [T:%.1f U:%.1f K:%.1f] [Chat:%.1f U:%.1f K%.1f]\n",
+    idx += swprintf_s(s + idx, size - idx, L"CPU usage [T:%.1f U:%.1f K:%.1f] [Login T:%.1f U:%.1f K:%.1f]\n",
         mCpuUsage.ProcessorTotal(), mCpuUsage.ProcessorUser(), mCpuUsage.ProcessorKernel(),
         mCpuUsage.ProcessTotal(), mCpuUsage.ProcessUser(), mCpuUsage.ProcessKernel());
     mCpuUsage.GetBigNumberStr(mCpuUsage.ProcessUserMemory(), bigNumber, 18);
@@ -498,30 +499,36 @@ void procademy::CNetLoginServer::ClearTPS()
 bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* sessionKey, st_Player* output)
 {
     MYSQL_ROW   sql_row = NULL;
-    char        szAccountNumber[65];
+    char        szAccountNumber[20];
+    INT64       num;
+    bool        ret = true;
 
     AcquireSRWLockExclusive(&mDBConnectorLock);
+    do
+	{
+        SelectAccountInfo(mDBConnector, accountNo);
+		sql_row = mDBConnector->FetchRow();
+
+		if (sql_row == NULL)
+		{
+            ret = false;
+            break;
+		}
+
+		output->accountNo = accountNo;
+        strcpy_s(szAccountNumber, 20, sql_row[0]);
+		MultiByteToWideChar(CP_ACP, 0, sql_row[1], -1, output->ID, en_NAME_MAX);
+		MultiByteToWideChar(CP_ACP, 0, sql_row[2], -1, output->nickName, en_NAME_MAX);
+		mDBConnector->FreeResult();
+    } while (0);
+	ReleaseSRWLockExclusive(&mDBConnectorLock);
+
+    if (ret)
     {
-        mDBConnector->Query(L"SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = %lld;", accountNo);
-        sql_row = mDBConnector->FetchRow();
-        mDBConnector->FreeResult();
-    }
-    ReleaseSRWLockExclusive(&mDBConnectorLock);
-
-    if (sql_row == NULL)
-    {
-        return false;
+        mRedis.set(szAccountNumber, sessionKey);
     }
 
-    output->accountNo = atoi(sql_row[0]);
-    MultiByteToWideChar(CP_ACP, 0, sql_row[1], -1, output->ID, en_NAME_MAX);
-    MultiByteToWideChar(CP_ACP, 0, sql_row[2], -1, output->nickName, en_NAME_MAX);
-
-    _i64toa_s(accountNo, szAccountNumber, sizeof(szAccountNumber), 10);
-
-    mRedis.set(szAccountNumber, sessionKey);
-
-    return true;
+    return ret;
 }
 
 procademy::CNetPacket* procademy::CNetLoginServer::MakeCSResLogin(BYTE status, INT64 accountNo, const WCHAR* id, const WCHAR* nickName)

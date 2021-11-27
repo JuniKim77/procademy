@@ -160,6 +160,7 @@
     <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
     <ClCompile Include="CNetLoginServer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Query.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.h" />
@@ -178,6 +179,7 @@
     <ClInclude Include="CNetLoginServer.h" />
     <ClInclude Include="CommonProtocol.h" />
     <ClInclude Include="LoginServerDTO.h" />
+    <ClInclude Include="Query.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -106,7 +106,7 @@ unsigned int __stdcall procademy::CChatServerSingle::RedisFunc(LPVOID arg)
 {
     CChatServerSingle* chatServer = (CChatServerSingle*)arg;
 
-    chatServer->TokenVerificationProc();
+    chatServer->RedisProc();
 
     CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Redis Thread End\n");
 
@@ -116,6 +116,11 @@ unsigned int __stdcall procademy::CChatServerSingle::RedisFunc(LPVOID arg)
 void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
 {
     PostQueuedCompletionStatus(mIOCP, 1, (ULONG_PTR)msg, 0);
+}
+
+void procademy::CChatServerSingle::EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet)
+{
+    PostQueuedCompletionStatus(mRedisIOCP, 1, (ULONG_PTR)sessionNo, (LPOVERLAPPED)packet);
 }
 
 void procademy::CChatServerSingle::GQCSProc()
@@ -386,7 +391,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     // token verification
     packet->AddRef();
 
-    PostQueuedCompletionStatus(mRedisIOCP, 1, (ULONG_PTR)sessionNo, (LPOVERLAPPED)packet);
+    EnqueueRedisQ(sessionNo, packet);
 
 //    *packet >> AccountNo;
 //
@@ -634,8 +639,8 @@ bool procademy::CChatServerSingle::CheckTimeOutProc()
 bool procademy::CChatServerSingle::CompleteLoginProc(SESSION_ID sessionNo, CNetPacket* packet, bool success)
 {
     INT64	    AccountNo;
-    WCHAR	    ID[20];				// null 포함
-    WCHAR	    Nickname[20];		// null 포함
+    WCHAR	    ID[en_NAME_MAX];			// null 포함
+    WCHAR	    Nickname[en_NAME_MAX];		// null 포함
     CNetPacket* response;
     st_Player* player = FindPlayer(sessionNo);
 
@@ -668,12 +673,12 @@ bool procademy::CChatServerSingle::CompleteLoginProc(SESSION_ID sessionNo, CNetP
 
     if (success)
     {
-        packet->GetData(ID, 20);
-        packet->GetData(Nickname, 20);
+        packet->GetData(ID, en_NAME_MAX);
+        packet->GetData(Nickname, en_NAME_MAX);
 
         player->accountNo = AccountNo;
-        wcscpy_s(player->ID, NAME_MAX, ID);
-        wcscpy_s(player->nickName, NAME_MAX, Nickname);
+        wcscpy_s(player->ID, en_NAME_MAX, ID);
+        wcscpy_s(player->nickName, en_NAME_MAX, Nickname);
         player->bLogin = true;
         player->lastRecvTime = GetTickCount64();
         mLoginCount++;
@@ -708,7 +713,7 @@ bool procademy::CChatServerSingle::CompleteLoginProc(SESSION_ID sessionNo, CNetP
     return true;
 }
 
-bool procademy::CChatServerSingle::TokenVerificationProc()
+bool procademy::CChatServerSingle::RedisProc()
 {
     while (1)
     {
@@ -721,7 +726,7 @@ bool procademy::CChatServerSingle::TokenVerificationProc()
         WCHAR	        ID[20];				// null 포함
         WCHAR	        Nickname[20];		// null 포함
         char	        SessionKey[64];		// 인증토큰
-        const char*     pToken;
+        char            pToken[64];
         st_MSG*         msg;
 
         BOOL gqcsRet = GetQueuedCompletionStatus(mRedisIOCP, &transferredSize, (PULONG_PTR)&sessionNo, (LPOVERLAPPED*)&packet, INFINITE);
@@ -738,18 +743,24 @@ bool procademy::CChatServerSingle::TokenVerificationProc()
 
         st_Player* player = FindPlayer(sessionNo);
 
+        if (player == nullptr)
+        {
+            return false;
+        }
+
         *packet >> AccountNo;
 
         packet->GetData(ID, 20);
         packet->GetData(Nickname, 20);
         packet->GetData(SessionKey, 64);
+        packet->SubRef();
         
-        _i64toa_s(AccountNo, buffer, 10, 10);
+        /*_i64toa_s(AccountNo, buffer, 10, 10);
         mRedis.get(buffer, [&pToken](cpp_redis::reply& reply) {
-            pToken = reply.as_string().c_str();
+            strcpy_s(pToken, 64, reply.as_string().c_str());
             });
 
-        mRedis.sync_commit();
+        mRedis.sync_commit();*/
 
         result = MakeResultLogin(AccountNo, ID, Nickname);
         {
@@ -759,19 +770,20 @@ bool procademy::CChatServerSingle::TokenVerificationProc()
 
             result->AddRef();
             msg->packet = result;
+            msg->type = MSG_TYPE_VERIFICATION_SUCCESS;
 
-            if (strcmp(SessionKey, pToken) == 0)
+            /*if (strcmp(SessionKey, pToken) == 0)
             {
                 msg->type = MSG_TYPE_VERIFICATION_SUCCESS;
             }
             else
             {
                 msg->type = MSG_TYPE_VERIFICATION_FAIL;
-            }
+            }*/
 
             EnqueueMessage(msg);
         }
-        packet->SubRef();
+        result->SubRef();
         
         mRedisTPS++;
 
@@ -912,7 +924,7 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     if (mGQCSEx)
         idx += swprintf_s(s + idx, size - idx, L"%22s%.1f\n", L"GQCS_EX Avg : ", mUpdateTPS / (double)mGQCSCount);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
-    idx += swprintf_s(s + idx, size - idx, L"CPU usage [T:%.1f U:%.1f K:%.1f] [Chat:%.1f U:%.1f K%.1f]\n",
+    idx += swprintf_s(s + idx, size - idx, L"CPU usage [T:%.1f U:%.1f K:%.1f] [Chat T:%.1f U:%.1f K:%.1f]\n",
         mCpuUsage.ProcessorTotal(), mCpuUsage.ProcessorUser(), mCpuUsage.ProcessorKernel(),
         mCpuUsage.ProcessTotal(), mCpuUsage.ProcessUser(), mCpuUsage.ProcessKernel());
     mCpuUsage.GetBigNumberStr(mCpuUsage.ProcessUserMemory(), bigNumber, 18);
@@ -997,6 +1009,17 @@ void procademy::CChatServerSingle::ClearTPS()
     }
 }
 
+void procademy::CChatServerSingle::Init()
+{
+    char IP[64];
+
+    WideCharToMultiByte(CP_ACP, 0, mTokenDBIP, -1, IP, sizeof(IP), nullptr, nullptr);
+
+    mRedis.connect(IP, mTokenDBPort);
+    mIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
+    mRedisIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
+}
+
 procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status, INT64 accountNo)
 {
     CNetPacket* packet = CNetPacket::AllocAddRef();
@@ -1054,6 +1077,7 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeResultLogin(INT64 accou
 procademy::CChatServerSingle::CChatServerSingle()
 {
     LoadInitFile(L"Server.cnf");
+    Init();
     BeginThreads();
 }
 
@@ -1242,14 +1266,9 @@ void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
 
     tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
 
-    tp.GetValue(L"IOCP_ACTIVE_THREAD", &num);
-
     tp.GetValue(L"TOKEN_DB_IP", mTokenDBIP);
     tp.GetValue(L"TOKEN_DB_PORT", &num);
     mTokenDBPort = (USHORT)num;
-
-    mIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, (DWORD)num);
-    mRedisIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
 }
 
 void procademy::CChatServerSingle::FreePlayer(st_Player* player)

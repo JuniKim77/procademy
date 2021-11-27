@@ -26,7 +26,7 @@ namespace procademy
 	};
 
 	enum {
-		NAME_MAX = 20
+		en_NAME_MAX = 20
 	};
 
 	struct st_Player
@@ -34,8 +34,8 @@ namespace procademy
 		ULONGLONG	lastRecvTime = 0;
 		INT64		accountNo = 0;
 		SESSION_ID	sessionNo = 0;
-		WCHAR		ID[NAME_MAX];
-		WCHAR		nickName[NAME_MAX];
+		WCHAR		ID[en_NAME_MAX];
+		WCHAR		nickName[en_NAME_MAX];
 		short		curSectorX = -1;
 		short		curSectorY = -1;
 		bool		bLogin = false;
