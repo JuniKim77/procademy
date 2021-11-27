@@ -20,6 +20,15 @@ int main()
 	//	}
 	//}
 
+	db.Query(L"SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = 1000000;");
+
+	while ((sql_row = db.FetchRow()) != NULL)
+	{
+		printf("%3s %10s %10s\n", sql_row[0], sql_row[1], sql_row[2]);
+	}
+
+	db.FreeResult();
+
 	db.Query(L"SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` LIMIT 10;");
 
 	while ((sql_row = db.FetchRow()) != NULL)
