@@ -74,6 +74,7 @@ namespace procademy
 		SRWLOCK									mSectorLock;
 		int										mTimeOut;
 		CCpuUsage								mCpuUsage;
-
+		bool									mbMonitoring = true;
+		bool									mbPrint = false;
 	};
 }

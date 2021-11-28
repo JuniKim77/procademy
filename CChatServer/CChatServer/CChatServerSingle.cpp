@@ -782,6 +782,7 @@ bool procademy::CChatServerSingle::RedisProc()
 
             result->AddRef();
             msg->packet = result;
+            msg->type = MSG_TYPE_VERIFICATION_SUCCESS;
 
             if (cmpRet)
             {
