@@ -301,29 +301,35 @@ bool procademy::CChatServerSingle::MonitoringProc()
 bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPacket* packet)
 {
     WORD type;
+    bool ret = false;
 
     *packet >> type;
 
     switch (type)
     {
     case en_PACKET_CS_CHAT_REQ_LOGIN:
-        LoginProc(sessionNo, packet);
+        ret = LoginProc(sessionNo, packet);
         break;
     case en_PACKET_CS_CHAT_REQ_SECTOR_MOVE:
-        MoveSectorProc(sessionNo, packet);
+        ret = MoveSectorProc(sessionNo, packet);
         break;
     case en_PACKET_CS_CHAT_REQ_MESSAGE:
-        SendMessageProc(sessionNo, packet);
+        ret = SendMessageProc(sessionNo, packet);
         break;
     case en_PACKET_CS_CHAT_REQ_HEARTBEAT:
-        HeartUpdateProc(sessionNo);
+        ret = HeartUpdateProc(sessionNo);
         break;
     default:
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Undefined Message\n", sessionNo);
+        //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Undefined Message\n", sessionNo);
         break;
     }
 
     packet->SubRef();
+
+    if (ret == false)
+    {
+        Disconnect(sessionNo);
+    }
 
     return true;
 }
@@ -493,20 +499,20 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     if (player->accountNo != AccountNo)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
-            sessionNo, player->accountNo, AccountNo);
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
+            sessionNo, player->accountNo, AccountNo);*/
 
-        CRASH();
+        //CRASH();
 
         return false;
     }
 
     if (SectorX < 0 || SectorY < 0 || SectorX >= SECTOR_MAX_X || SectorY >= SECTOR_MAX_Y)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [AccountNo %lld] Out of Boundary\n",
-            sessionNo, AccountNo);
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [AccountNo %lld] Out of Boundary\n",
+            sessionNo, AccountNo);*/
 
-        CRASH();
+        //CRASH();
 
         return false;
     }
@@ -566,12 +572,17 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     if (player->accountNo != AccountNo)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
-            sessionNo, player->accountNo, AccountNo);
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
+            sessionNo, player->accountNo, AccountNo);*/
 
-        CRASH();
+        //CRASH();
 
         return false;
+    }
+
+    if (packet->GetSize() != messageLen)
+    {
+        int test = 0;
     }
 
     player->lastRecvTime = GetTickCount64();
@@ -1044,7 +1055,7 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResSectorMove(INT64 a
     return packet;
 }
 
-procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD meesageLen, WCHAR* message)
+procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD messageLen, WCHAR* message)
 {
     CNetPacket* packet = CNetPacket::AllocAddRef();
 
@@ -1052,8 +1063,8 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(INT64 acco
 
     packet->PutData(ID, 20);
     packet->PutData(nickname, 20);
-    *packet << meesageLen;
-    packet->PutData(message, meesageLen / 2);
+    *packet << messageLen;
+    packet->PutData(message, messageLen / 2);
 
     packet->SetHeader(false);
     packet->Encode();

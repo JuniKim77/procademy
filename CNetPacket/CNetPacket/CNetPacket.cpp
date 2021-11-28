@@ -516,7 +516,7 @@ namespace procademy
 		}
 	}
 
-	void CNetPacket::Decode()
+	bool CNetPacket::Decode()
 	{
 		char* pFront = mFront - 1;
 		BYTE curP;
@@ -550,10 +550,7 @@ namespace procademy
 
 		header = *((st_Header*)mZero);
 
-		if (sum != header.checkSum)
-		{
-			CRASH();
-		}
+		return sum != header.checkSum;
 	}
 
 	int CNetPacket::GetPoolCapacity()

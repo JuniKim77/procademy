@@ -99,7 +99,7 @@ namespace procademy
 	/// </summary>
 		CNetPacket*		MakeCSResLogin(BYTE status, INT64 accountNo);
 		CNetPacket*		MakeCSResSectorMove(INT64 accountNo, WORD sectorX, WORD sectorY);
-		CNetPacket*		MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD meesageLen, WCHAR* message);
+		CNetPacket*		MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD messageLen, WCHAR* message);
 		CNetPacket*		MakeResultLogin(INT64 accountNo, WCHAR* ID, WCHAR* nickname);
 
 	public:

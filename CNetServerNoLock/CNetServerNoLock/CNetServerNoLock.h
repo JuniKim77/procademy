@@ -36,7 +36,6 @@ namespace procademy
 		int							numSendingPacket = 0;
 		alignas(64) SessionIoCount	ioBlock;
 		alignas(64) bool			isSending;
-		bool						bIsAlive = false;
 		SOCKET						socket = INVALID_SOCKET;
 		u_short						port;
 		ULONG						ip;
@@ -45,7 +44,6 @@ namespace procademy
 		Session()
 			: isSending(false)
 			, sessionID(0)
-			, bIsAlive(false)
 		{
 			ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
 			ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
@@ -57,7 +55,6 @@ namespace procademy
 			, port(_port)
 			, isSending(false)
 			, sessionID(0)
-			, bIsAlive(false)
 		{
 			ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
 			ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));

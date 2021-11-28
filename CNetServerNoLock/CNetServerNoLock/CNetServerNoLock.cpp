@@ -423,11 +423,10 @@ namespace procademy
 
 		if (ret.releaseCount.count < 0)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [isAlive: %d] [recv: %d] [Send: %d]\n\n",
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [recv: %d] [Send: %d]\n\n",
 				session->sessionID & 0xffffffffff,
 				session->ioBlock.ioCount,
 				session->isSending,
-				session->bIsAlive,
 				session->recvQ.GetUseSize(),
 				session->sendQ.GetSize());
 
@@ -456,7 +455,6 @@ namespace procademy
 		u_int64 id = session->sessionID;
 		session->sessionID = 0;
 		InterlockedIncrement((LONG*)&disconnectCount);
-		session->bIsAlive = false;
 
 		OnClientLeave(id);
 
@@ -537,7 +535,6 @@ namespace procademy
 
 		/*ioDebug(10020, GetCurrentThreadId(), session->sessionID & 0xffffffff,
 			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
-		session->bIsAlive = true;
 		OnClientJoin(session->sessionID);
 #ifdef PROFILE
 		CProfiler::Begin(L"RecvPost");
@@ -562,7 +559,6 @@ namespace procademy
 		session->ip = clientAddr.sin_addr.S_un.S_addr;
 		session->port = clientAddr.sin_port;
 		session->sessionID = id;
-		session->bIsAlive = true;
 
 		HANDLE hResult = CreateIoCompletionPort((HANDLE)client, mHcp, (ULONG_PTR)session, 0);
 
@@ -661,18 +657,20 @@ namespace procademy
 		session->recvQ.MoveRear(transferredSize);
 		CNetPacket::st_Header header;
 		DWORD count = 0;
+		bool status = true;
 
 		while (count < transferredSize)
 		{
-			if (session->bIsAlive == false)
-			{
-				return;
-			}
-
 			if (session->recvQ.GetUseSize() <= CNetPacket::HEADER_MAX_SIZE)
 				break;
 
 			session->recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
+
+			if (header.code != CNetPacket::sCode)
+			{
+				status = false;
+				break;
+			}
 
 			if (session->recvQ.GetUseSize() < (CNetPacket::HEADER_MAX_SIZE + header.len))
 				break;
@@ -682,6 +680,11 @@ namespace procademy
 			//CProfiler::End(L"ALLOC");
 
 			memcpy_s(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE, (char*)&header, CNetPacket::HEADER_MAX_SIZE);
+
+			if (header.len > 1000)
+			{
+				int test = 0;
+			}
 
 			InterlockedIncrement(&recvTPS);
 
@@ -698,10 +701,16 @@ namespace procademy
 		}
 #ifdef PROFILE
 		CProfiler::Begin(L"RecvPost");
-		RecvPost(session);
+		if (status)
+		{
+			RecvPost(session);
+		}
 		CProfiler::End(L"RecvPost");
 #else
-		RecvPost(session);
+		if (status)
+		{
+			RecvPost(session);
+		}
 #endif // PROFILE
 	}
 
