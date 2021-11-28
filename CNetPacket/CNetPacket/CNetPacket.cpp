@@ -550,7 +550,7 @@ namespace procademy
 
 		header = *((st_Header*)mZero);
 
-		return sum != header.checkSum;
+		return sum == header.checkSum;
 	}
 
 	int CNetPacket::GetPoolCapacity()

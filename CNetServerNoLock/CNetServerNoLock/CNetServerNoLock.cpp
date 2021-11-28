@@ -681,11 +681,6 @@ namespace procademy
 
 			memcpy_s(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE, (char*)&header, CNetPacket::HEADER_MAX_SIZE);
 
-			if (header.len > 1000)
-			{
-				int test = 0;
-			}
-
 			InterlockedIncrement(&recvTPS);
 
 			session->recvQ.MoveFront(CNetPacket::HEADER_MAX_SIZE);
@@ -693,7 +688,12 @@ namespace procademy
 			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)header.len);
 
 			packet->MoveRear(ret);
-			packet->Decode();
+			if (packet->Decode() == false)
+			{
+				status = false;
+				packet->SubRef();
+				break;
+			}
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
 			count += (ret + sizeof(SHORT));

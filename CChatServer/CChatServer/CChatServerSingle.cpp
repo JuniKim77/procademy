@@ -580,9 +580,9 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
         return false;
     }
 
-    if (packet->GetSize() != messageLen)
+    if (messageLen != packet->GetUseSize())
     {
-        int test = 0;
+        return false;
     }
 
     player->lastRecvTime = GetTickCount64();

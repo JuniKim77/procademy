@@ -74,6 +74,7 @@ namespace procademy
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mPacketSize + mHeaderSize; }
+		int		GetUseSize() { return mPacketSize; }
 		USHORT	GetPacketSize() { return mPacketSize; }
 
 		//////////////////////////////////////////////////////////////////////////
@@ -159,7 +160,7 @@ namespace procademy
 		void				SubRef();
 		void				SetHeader(bool isLengthOnly);
 		void				Encode();
-		void				Decode();
+		bool				Decode();
 
 		static int			GetPoolCapacity();
 		static DWORD		GetPoolSize();
