@@ -329,7 +329,7 @@ bool procademy::CNetLoginServer::LeaveProc(SESSION_ID sessionNo)
 bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* packet, WCHAR* msg)
 {
     INT64	    AccountNo;
-    char	    SessionKey[64];		// 인증토큰
+    char	    SessionKey[65];		// 인증토큰
     CNetPacket* response;
     st_Player*    player = FindPlayer(sessionNo);
 
@@ -364,6 +364,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
     *packet >> AccountNo;
 
     packet->GetData(SessionKey, 64);
+    SessionKey[64] = '\0';
 
     player->accountNo = AccountNo;
 
@@ -454,7 +455,7 @@ void procademy::CNetLoginServer::MakeMonitorStr(WCHAR* s, int size)
     WCHAR bigNumber[18];
 
     idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
-    idx += swprintf_s(s + idx, size - idx, L"[Status : %s]\n", mbBegin ? L"RUN" : L"STOP");
+    idx += swprintf_s(s + idx, size - idx, L"[Login Server Status: %s]\n", mbBegin ? L"RUN" : L"STOP");
     idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d]\n", mbZeroCopy, mbNagle);
     idx += swprintf_s(s + idx, size - idx, L"[WorkerTh: %d] [ActiveTh: %d]\n", mWorkerThreadNum, mActiveThreadNum);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
@@ -525,6 +526,7 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
     if (ret)
     {
         mRedis.set(szAccountNumber, sessionKey);
+        mRedis.sync_commit();
     }
 
     return ret;

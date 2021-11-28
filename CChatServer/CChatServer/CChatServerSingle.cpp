@@ -736,9 +736,9 @@ bool procademy::CChatServerSingle::RedisProc()
         INT64	        AccountNo;
         WCHAR	        ID[20];				// null 포함
         WCHAR	        Nickname[20];		// null 포함
-        char	        SessionKey[64];		// 인증토큰
+        char	        SessionKey[65];		// 인증토큰
         st_MSG*         msg;
-        bool            cmpRet;
+        bool            cmpRet = true;
 
         BOOL gqcsRet = GetQueuedCompletionStatus(mRedisIOCP, &transferredSize, (PULONG_PTR)&sessionNo, (LPOVERLAPPED*)&packet, INFINITE);
 
@@ -764,6 +764,7 @@ bool procademy::CChatServerSingle::RedisProc()
         packet->GetData(ID, 20);
         packet->GetData(Nickname, 20);
         packet->GetData(SessionKey, 64);
+        SessionKey[64] = '\0';
         packet->SubRef();
         
         _i64toa_s(AccountNo, buffer, 10, 10);
@@ -781,7 +782,6 @@ bool procademy::CChatServerSingle::RedisProc()
 
             result->AddRef();
             msg->packet = result;
-            msg->type = MSG_TYPE_VERIFICATION_SUCCESS;
 
             if (cmpRet)
             {
@@ -914,7 +914,7 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     WCHAR bigNumber[18];
 
     idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
-    idx += swprintf_s(s + idx, size - idx, L"[Status : %s]\n", mbBegin ? L"RUN" : L"STOP");
+    idx += swprintf_s(s + idx, size - idx, L"[Chat Server Status: %s]\n", mbBegin ? L"RUN" : L"STOP");
     idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d] [SendToWorker: %d]\n", mbZeroCopy, mbNagle, mSendToWorker);
     idx += swprintf_s(s + idx, size - idx, L"[GQCS_EX: %d] [WorkerTh: %d] [ActiveTh: %d]\n", mGQCSEx, mWorkerThreadNum, mActiveThreadNum);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
