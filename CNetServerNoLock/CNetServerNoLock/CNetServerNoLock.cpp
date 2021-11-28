@@ -135,7 +135,7 @@ namespace procademy
 
 		if (mHcp == NULL)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]\n", WSAGetLastError());
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]", WSAGetLastError());
 			closesocket(mListenSocket);
 			return false;
 		}
@@ -151,18 +151,18 @@ namespace procademy
 
 		if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"WSAStartup [Error: %d]\n", WSAGetLastError());
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"WSAStartup [Error: %d]", WSAGetLastError());
 			return false;
 		}
 
 		mListenSocket = socket(AF_INET, SOCK_STREAM, 0);
 		if (mListenSocket == INVALID_SOCKET)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Create socket [Error: %d]\n", WSAGetLastError());
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Create socket [Error: %d]", WSAGetLastError());
 			return false;
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Create\n");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Create");
 
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(mPort);
@@ -172,24 +172,24 @@ namespace procademy
 
 		if (bindRet == SOCKET_ERROR)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Bind [Error: %d]\n", WSAGetLastError());
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Bind [Error: %d]", WSAGetLastError());
 			closesocket(mListenSocket);
 			return false;
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Bind\n");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Bind");
 
 		// 백로그 길이
 		int listenRet = listen(mListenSocket, mMaxClient);
 
 		if (listenRet == SOCKET_ERROR)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Listen [Error: %d]\n", WSAGetLastError());
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Listen [Error: %d]", WSAGetLastError());
 			closesocket(mListenSocket);
 			return false;
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Set Listening\n");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Set Listening");
 
 		// TimeWait Zero
 		optval.l_onoff = 1;
@@ -198,12 +198,12 @@ namespace procademy
 		int timeOutnRet = setsockopt(mListenSocket, SOL_SOCKET, SO_LINGER, (char*)&optval, sizeof(optval));
 		if (timeOutnRet == SOCKET_ERROR)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Listen Socket Linger [Error: %d]\n", WSAGetLastError());
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Listen Socket Linger [Error: %d]", WSAGetLastError());
 			closesocket(mListenSocket);
 			return false;
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Option : TimeOut Zero\n");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Option : TimeOut Zero");
 
 		SetZeroCopy(mbZeroCopy);
 		SetNagle(mbNagle);
@@ -423,7 +423,7 @@ namespace procademy
 
 		if (ret.releaseCount.count < 0)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [recv: %d] [Send: %d]\n\n",
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"[SessionID: %llu] [ioCount: %d] [isSending: %d] [recv: %d] [Send: %d]",
 				session->sessionID & 0xffffffffff,
 				session->ioBlock.ioCount,
 				session->isSending,
@@ -495,12 +495,12 @@ namespace procademy
 
 			if (err == WSAENOTSOCK || err == WSAEINTR)
 			{
-				CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Listen Socket Close [Error: %d]\n", err);
+				CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Listen Socket Close [Error: %d]", err);
 
 				return;
 			}
 
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Listen Socket [Error: %d]\n", err);
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Listen Socket [Error: %d]", err);
 
 			return;
 		}
@@ -511,7 +511,7 @@ namespace procademy
 
 			InetNtop(AF_INET, &clientAddr.sin_addr.S_un.S_addr, IP, 16);
 
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Accept Denied [IP: %s] [Port: %u]\n",
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Accept Denied [IP: %s] [Port: %u]",
 				IP, ntohs(clientAddr.sin_port));
 
 			closesocket(client);
@@ -523,11 +523,11 @@ namespace procademy
 
 		if (session == nullptr)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Create Session Fail\n");
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Create Session Fail");
 			return;
 		}
 
-		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Socket Accept [IP: %s] [Port: %u]\n",
+		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Socket Accept [IP: %s] [Port: %u]",
 		//    IP, ntohs(clientAddr.sin_port));
 
 		IncrementIOProc(session, 30000);
@@ -564,7 +564,7 @@ namespace procademy
 
 		if (hResult == NULL)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]\n", WSAGetLastError());
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]", WSAGetLastError());
 			closesocket(mListenSocket);
 
 			return nullptr;
@@ -786,7 +786,7 @@ namespace procademy
 
 		if (setsockopt(mListenSocket, SOL_SOCKET, SO_SNDBUF, (char*)&optNum, sizeof(optNum)) == SOCKET_ERROR)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Zero Copy [Error: %d]\n", WSAGetLastError());
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Zero Copy [Error: %d]", WSAGetLastError());
 			closesocket(mListenSocket);
 
 			return;
@@ -794,11 +794,11 @@ namespace procademy
 
 		if (on)
 		{
-			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Zero Copy On\n");
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Zero Copy On");
 		}
 		else
 		{
-			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Zero Copy Off\n");
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Zero Copy Off");
 		}
 	}
 
@@ -808,7 +808,7 @@ namespace procademy
 
 		if (setsockopt(mListenSocket, IPPROTO_TCP, TCP_NODELAY, (char*)&optval, sizeof(optval)) == SOCKET_ERROR)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Nagle [Error: %d]\n", WSAGetLastError());
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socketopt Nagle [Error: %d]", WSAGetLastError());
 			closesocket(mListenSocket);
 
 			return;
@@ -816,11 +816,11 @@ namespace procademy
 
 		if (on)
 		{
-			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Nagle On\n");
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Nagle On");
 		}
 		else
 		{
-			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Nagle Off\n");
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Nagle Off");
 		}
 	}
 
@@ -856,17 +856,17 @@ namespace procademy
 
 		mbExit = true;
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CNetServer\n");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CNetServer");
 
 		DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
 
 		switch (waitResult)
 		{
 		case WAIT_FAILED:
-			wprintf_s(L"Main Thread Handle Error\n");
+			wprintf_s(L"Main Thread Handle Error");
 			break;
 		case WAIT_TIMEOUT:
-			wprintf_s(L"Main Thread Timeout Error\n");
+			wprintf_s(L"Main Thread Timeout Error");
 			break;
 		case WAIT_OBJECT_0:
 			wprintf_s(L"None Error\n");
@@ -908,18 +908,18 @@ namespace procademy
 		{
 			_aligned_free(mSessionArray);
 		}
-		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Lib End\n");
+		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Lib End");
 	}
 
 	bool CNetServerNoLock::Start()
 	{
 		if (mbBegin == true)
 		{
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Network is already running\n");
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Network is already running");
 			return false;
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServer Begin\n");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServer Begin");
 
 		if (!CreateListenSocket())
 		{
@@ -941,10 +941,10 @@ namespace procademy
 		for (USHORT i = 0; i < mMaxClient; ++i)
 		{
 			ret = CancelIoEx((HANDLE)mSessionArray[i].socket, nullptr);
-			//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d\n", ret, GetLastError());
+			//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d", ret, GetLastError());
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CNetServer\n");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CNetServer");
 	}
 
 	bool CNetServerNoLock::Disconnect(SESSION_ID SessionID)

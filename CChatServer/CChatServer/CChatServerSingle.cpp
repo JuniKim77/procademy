@@ -75,7 +75,7 @@ unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
             chatServer->GQCSProc();
     }
 
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Update Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Update Thread End");
 
     return 0;
 }
@@ -86,7 +86,7 @@ unsigned int __stdcall procademy::CChatServerSingle::MonitorFunc(LPVOID arg)
 
     chatServer->MonitoringProc();
 
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Monitoring Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Monitoring Thread End");
 
     return 0;
 }
@@ -97,7 +97,7 @@ unsigned int __stdcall procademy::CChatServerSingle::HeartbeatFunc(LPVOID arg)
 
     chatServer->CheckHeartProc();
 
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"HeartBeat Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"HeartBeat Thread End");
 
     return 0;
 }
@@ -108,7 +108,7 @@ unsigned int __stdcall procademy::CChatServerSingle::RedisFunc(LPVOID arg)
 
     chatServer->RedisProc();
 
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Redis Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Redis Thread End");
 
     return 0;
 }
@@ -166,7 +166,7 @@ void procademy::CChatServerSingle::GQCSProc()
             CompleteLoginProc(msg->sessionNo, msg->packet, false);
             break;
         default:
-            CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message\n");
+            CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message");
             break;
         }
 
@@ -226,7 +226,7 @@ void procademy::CChatServerSingle::GQCSProcEx()
                 CompleteLoginProc(msg->sessionNo, msg->packet, false);
                 break;
             default:
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message\n");
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message");
                 break;
             }
 
@@ -320,7 +320,7 @@ bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPac
         ret = HeartUpdateProc(sessionNo);
         break;
     default:
-        //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Undefined Message\n", sessionNo);
+        //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Undefined Message", sessionNo);
         break;
     }
 
@@ -340,7 +340,7 @@ bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
 
     if (player != nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Player[%llu]\n", sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Player[%llu]", sessionNo);
         CRASH();
 
         return false;
@@ -368,7 +368,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     if (player == nullptr)
     {
-         CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found\n", sessionNo);
+         CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
 
          CRASH();
 
@@ -377,7 +377,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     if (player->sessionNo != sessionNo)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
 
         CRASH();
 
@@ -386,7 +386,7 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     if (player->accountNo != 0 || player->bLogin)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login",
             sessionNo, player->accountNo);
 
         CRASH();
@@ -433,7 +433,7 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found",
             sessionNo);
 
         CRASH();
@@ -443,7 +443,7 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
 
     if (player->sessionNo != sessionNo)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
 
         CRASH();
 
@@ -478,7 +478,7 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found",
             sessionNo);
 
         CRASH();
@@ -488,7 +488,7 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     if (player->sessionNo != sessionNo)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
 
         CRASH();
 
@@ -499,7 +499,7 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     if (player->accountNo != AccountNo)
     {
-        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched",
             sessionNo, player->accountNo, AccountNo);*/
 
         //CRASH();
@@ -509,7 +509,7 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 
     if (SectorX < 0 || SectorY < 0 || SectorX >= SECTOR_MAX_X || SectorY >= SECTOR_MAX_Y)
     {
-        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [AccountNo %lld] Out of Boundary\n",
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [AccountNo %lld] Out of Boundary",
             sessionNo, AccountNo);*/
 
         //CRASH();
@@ -551,7 +551,7 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found",
             sessionNo);
 
         CRASH();
@@ -561,7 +561,7 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     if (player->sessionNo != sessionNo)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
 
         CRASH();
 
@@ -572,7 +572,7 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     if (player->accountNo != AccountNo)
     {
-        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched\n",
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched",
             sessionNo, player->accountNo, AccountNo);*/
 
         //CRASH();
@@ -608,7 +608,7 @@ bool procademy::CChatServerSingle::HeartUpdateProc(SESSION_ID sessionNo)
 
     if (player == nullptr)
     {
-       CLogger::_Log(dfLOG_LEVEL_ERROR, L"HeartUpdateProc - [Session %llu] Not Found\n",
+       CLogger::_Log(dfLOG_LEVEL_ERROR, L"HeartUpdateProc - [Session %llu] Not Found",
             sessionNo);
 
         CRASH();
@@ -618,7 +618,7 @@ bool procademy::CChatServerSingle::HeartUpdateProc(SESSION_ID sessionNo)
 
     if (player->sessionNo != sessionNo)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"HeartUpdateProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"HeartUpdateProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
 
         CRASH();
 
@@ -663,7 +663,7 @@ bool procademy::CChatServerSingle::CompleteLoginProc(SESSION_ID sessionNo, CNetP
 
     if (player->sessionNo != sessionNo)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"CompleteLoginProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"CompleteLoginProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
 
         CRASH();
 
@@ -672,7 +672,7 @@ bool procademy::CChatServerSingle::CompleteLoginProc(SESSION_ID sessionNo, CNetP
 
     if (player->accountNo != 0 || player->bLogin)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"CompleteLoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"CompleteLoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login",
             sessionNo, player->accountNo);
 
         CRASH();
@@ -737,8 +737,8 @@ bool procademy::CChatServerSingle::RedisProc()
         WCHAR	        ID[20];				// null 포함
         WCHAR	        Nickname[20];		// null 포함
         char	        SessionKey[64];		// 인증토큰
-        char            pToken[64];
         st_MSG*         msg;
+        bool            cmpRet;
 
         BOOL gqcsRet = GetQueuedCompletionStatus(mRedisIOCP, &transferredSize, (PULONG_PTR)&sessionNo, (LPOVERLAPPED*)&packet, INFINITE);
 
@@ -766,12 +766,12 @@ bool procademy::CChatServerSingle::RedisProc()
         packet->GetData(SessionKey, 64);
         packet->SubRef();
         
-        /*_i64toa_s(AccountNo, buffer, 10, 10);
-        mRedis.get(buffer, [&pToken](cpp_redis::reply& reply) {
-            strcpy_s(pToken, 64, reply.as_string().c_str());
+        _i64toa_s(AccountNo, buffer, 10, 10);
+        mRedis.get(buffer, [&cmpRet, SessionKey](cpp_redis::reply& reply) {
+            cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
             });
 
-        mRedis.sync_commit();*/
+        mRedis.sync_commit();
 
         result = MakeResultLogin(AccountNo, ID, Nickname);
         {
@@ -783,14 +783,14 @@ bool procademy::CChatServerSingle::RedisProc()
             msg->packet = result;
             msg->type = MSG_TYPE_VERIFICATION_SUCCESS;
 
-            /*if (strcmp(SessionKey, pToken) == 0)
+            if (cmpRet)
             {
                 msg->type = MSG_TYPE_VERIFICATION_SUCCESS;
             }
             else
             {
                 msg->type = MSG_TYPE_VERIFICATION_FAIL;
-            }*/
+            }
 
             EnqueueMessage(msg);
         }
@@ -1151,7 +1151,7 @@ bool procademy::CChatServerSingle::BeginServer()
 
     if (Start() == false)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error\n");
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error");
 
         return false;
     }
@@ -1166,13 +1166,13 @@ bool procademy::CChatServerSingle::BeginServer()
     switch (ret)
     {
     case WAIT_FAILED:
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error\n");
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error");
         break;
     case WAIT_TIMEOUT:
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error\n");
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error");
         break;
     case WAIT_OBJECT_0:
-        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End\n");
+        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End");
         break;
     default:
         break;
@@ -1230,7 +1230,7 @@ void procademy::CChatServerSingle::WaitForThreadsFin()
             wprintf(L"Set Print Ratio\n");
             break;
         case 'd':
-            CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer Intended Crash\n");
+            CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer Intended Crash");
             CRASH();
         case 'q':
             QuitServer();

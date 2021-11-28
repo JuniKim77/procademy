@@ -76,7 +76,7 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
 
     if (logLevel >= mLogLevel)
     {
-        wprintf_s(log);
+        wprintf_s(L"%s\n", log);
     }
 
     if (logLevel == dfLOG_LEVEL_DEBUG)
@@ -93,7 +93,7 @@ void CLogger::_Log(int logLevel, const WCHAR* format, ...)
             _wfopen_s(&fout, fileName, L"a+");
         } while (fout == nullptr);
 
-        fwprintf_s(fout, L"%s\n\n", log);
+        fwprintf_s(fout, L"%s\n", log);
 
         fclose(fout);
     }

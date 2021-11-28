@@ -90,7 +90,7 @@ bool procademy::CDBConnector::Query(const WCHAR* szStringFormat, ...)
 
 	if (dif > 5000)
 	{
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"[Query: %s - %dms Too Long Time]\n", query, dif);
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"[Query: %s - %dms Too Long Time]", query, dif);
 	}
 
 	mSqlResult = mysql_use_result(mpMySQL);

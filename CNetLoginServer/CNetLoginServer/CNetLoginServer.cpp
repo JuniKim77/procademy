@@ -65,7 +65,7 @@ bool procademy::CNetLoginServer::BeginServer()
 {
     if (Start() == false)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error\n");
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error");
 
         return false;
     }
@@ -77,13 +77,13 @@ bool procademy::CNetLoginServer::BeginServer()
     switch (ret)
     {
     case WAIT_FAILED:
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error\n");
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error");
         break;
     case WAIT_TIMEOUT:
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error\n");
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error");
         break;
     case WAIT_OBJECT_0:
-        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End\n");
+        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End");
         break;
     default:
         break;
@@ -137,7 +137,7 @@ void procademy::CNetLoginServer::WaitForThreadsFin()
             CProfiler::Print();
             break;
         case 'd':
-            CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer Intended Crash\n");
+            CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer Intended Crash");
             CRASH();
         case 'q':
             QuitServer();
@@ -154,7 +154,7 @@ unsigned int __stdcall procademy::CNetLoginServer::MonitorFunc(LPVOID arg)
 
     server->MonitoringProc();
 
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Monitoring Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Monitoring Thread End");
 
     return 0;
 }
@@ -165,7 +165,7 @@ unsigned int __stdcall procademy::CNetLoginServer::HeartbeatFunc(LPVOID arg)
 
     server->CheckHeartProc();
 
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"HeartBeat Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"HeartBeat Thread End");
 
     return 0;
 }
@@ -283,7 +283,7 @@ bool procademy::CNetLoginServer::JoinProc(SESSION_ID sessionNo)
 
 	if (player != nullptr)
 	{
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Player[SessionNo : %llu]\n", sessionNo);
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Player[SessionNo : %llu]", sessionNo);
 		CRASH();
 
 		return false;
@@ -304,7 +304,7 @@ bool procademy::CNetLoginServer::LeaveProc(SESSION_ID sessionNo)
 
 	if (player == nullptr)
 	{
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found\n",
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found",
 			sessionNo);
 		CRASH();
 
@@ -313,7 +313,7 @@ bool procademy::CNetLoginServer::LeaveProc(SESSION_ID sessionNo)
 
 	if (player->sessionNo != sessionNo)
 	{
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
 		CRASH();
 
 		return false;
@@ -335,7 +335,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Player %llu] Not Found\n", sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Player %llu] Not Found", sessionNo);
 
         CRASH();
 
@@ -344,7 +344,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
 
     if (player->sessionNo != sessionNo)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [SessionID %llu]- [Player %llu] Not Match\n", sessionNo, player->sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
 
         CRASH();
 
@@ -353,7 +353,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
 
     if (player->accountNo != 0)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login",
             sessionNo, player->accountNo);
 
         CRASH();
@@ -368,12 +368,11 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
     player->accountNo = AccountNo;
 
     // token verification
-    bool retval = true;
-    // retval = TokenVerificationProc(AccountNo, SessionKey, player);
+    bool retval = TokenVerificationProc(AccountNo, SessionKey, player);
 
     if (retval == false)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Not Found in DB\n",
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Not Found in DB",
             sessionNo, AccountNo);
 
         CRASH();
