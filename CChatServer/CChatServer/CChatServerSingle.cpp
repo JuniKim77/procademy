@@ -63,6 +63,163 @@ void msgDebugLog(
  //   g_pointerSort[(INT64)address].push_back({ logicId, SessionNo });
 }
 
+
+procademy::CChatServerSingle::CChatServerSingle()
+{
+    LoadInitFile(L"Server.cnf");
+    Init();
+    BeginThreads();
+}
+
+procademy::CChatServerSingle::~CChatServerSingle()
+{
+}
+
+bool procademy::CChatServerSingle::OnConnectionRequest(u_long IP, u_short Port)
+{
+    return true;
+}
+
+void procademy::CChatServerSingle::OnClientJoin(SESSION_ID SessionID)
+{
+    st_MSG* msg;
+
+    msg = mMsgPool.Alloc();
+
+    msg->type = MSG_TYPE_JOIN;
+    msg->sessionNo = SessionID;
+    msg->packet = nullptr;
+
+    EnqueueMessage(msg);
+}
+
+void procademy::CChatServerSingle::OnClientLeave(SESSION_ID SessionID)
+{
+    st_MSG* msg;
+
+    msg = mMsgPool.Alloc();
+
+    msg->type = MSG_TYPE_LEAVE;
+    msg->sessionNo = SessionID;
+    msg->packet = nullptr;
+
+    EnqueueMessage(msg);
+}
+
+void procademy::CChatServerSingle::OnRecv(SESSION_ID SessionID, CNetPacket* packet)
+{
+    st_MSG* msg;
+
+    msg = mMsgPool.Alloc();
+
+    msg->type = MSG_TYPE_RECV;
+    msg->sessionNo = SessionID;
+    msg->packet = packet;
+    packet->AddRef();
+
+    EnqueueMessage(msg);
+}
+
+void procademy::CChatServerSingle::OnError(int errorcode, const WCHAR* log)
+{
+}
+
+bool procademy::CChatServerSingle::BeginServer()
+{
+    HANDLE handles[4] = { mUpdateThread, mMonitoringThread, mHeartbeatThread, mRedisThread };
+
+    if (Start() == false)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error");
+
+        return false;
+    }
+
+    WaitForThreadsFin();
+
+    PostQueuedCompletionStatus(mIOCP, 0, 0, 0);
+    PostQueuedCompletionStatus(mRedisIOCP, 0, 0, 0);
+
+    DWORD ret = WaitForMultipleObjects(4, handles, true, INFINITE);
+
+    switch (ret)
+    {
+    case WAIT_FAILED:
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error");
+        break;
+    case WAIT_TIMEOUT:
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error");
+        break;
+    case WAIT_OBJECT_0:
+        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End");
+        break;
+    default:
+        break;
+    }
+
+    return true;
+}
+
+void procademy::CChatServerSingle::WaitForThreadsFin()
+{
+    while (1)
+    {
+        char ch = _getch();
+
+        switch (ch)
+        {
+        case 'g':
+            mbNagle = !mbNagle;
+            SetNagle(mbNagle);
+            break;
+        case 'z':
+            mbZeroCopy = !mbZeroCopy;
+            SetZeroCopy(mbZeroCopy);
+            break;
+        case 'm':
+            if (mbMonitoring)
+            {
+                wprintf(L"Unset Monitoring\n");
+                mbMonitoring = false;
+            }
+            else
+            {
+                wprintf(L"Set Monitoring\n");
+                mbMonitoring = true;
+            }
+            break;
+        case 's':
+            if (mbBegin)
+            {
+                Stop();
+                wprintf(L"STOP\n");
+            }
+            else
+            {
+                Start();
+                wprintf(L"RUN\n");
+            }
+            break;
+        case 'p':
+            wprintf(L"Print Profiler\n");
+            CProfiler::Print();
+            break;
+        case 'r':
+            mbPrint = true;
+            wprintf(L"Set Print Ratio\n");
+            break;
+        case 'd':
+            CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer Intended Crash");
+            CRASH();
+        case 'q':
+            QuitServer();
+            return;
+        default:
+            break;
+        }
+    }
+}
+
 unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
 {
     CChatServerSingle* chatServer = (CChatServerSingle*)arg;
@@ -462,9 +619,9 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
         mLoginCount--;
     }
 
-    DeletePlayer(player->sessionNo);
-
     FreePlayer(player);
+
+    DeletePlayer(sessionNo);
 
     return true;
 }
@@ -756,7 +913,8 @@ bool procademy::CChatServerSingle::RedisProc()
 
         if (player == nullptr)
         {
-            return false;
+            // 로그인 요청하고 바로 끊을 수 있다.
+            continue;
         }
 
         *packet >> AccountNo;
@@ -1085,163 +1243,6 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeResultLogin(INT64 accou
 
     return packet;
 }
-
-procademy::CChatServerSingle::CChatServerSingle()
-{
-    LoadInitFile(L"Server.cnf");
-    Init();
-    BeginThreads();
-}
-
-procademy::CChatServerSingle::~CChatServerSingle()
-{
-}
-
-bool procademy::CChatServerSingle::OnConnectionRequest(u_long IP, u_short Port)
-{
-    return true;
-}
-
-void procademy::CChatServerSingle::OnClientJoin(SESSION_ID SessionID)
-{
-    st_MSG* msg;
-
-    msg = mMsgPool.Alloc();
-
-    msg->type = MSG_TYPE_JOIN;
-    msg->sessionNo = SessionID;
-    msg->packet = nullptr;
-
-    EnqueueMessage(msg);
-}
-
-void procademy::CChatServerSingle::OnClientLeave(SESSION_ID SessionID)
-{
-    st_MSG* msg;
-
-    msg = mMsgPool.Alloc();
-
-    msg->type = MSG_TYPE_LEAVE;
-    msg->sessionNo = SessionID;
-    msg->packet = nullptr;
-
-    EnqueueMessage(msg);
-}
-
-void procademy::CChatServerSingle::OnRecv(SESSION_ID SessionID, CNetPacket* packet)
-{
-    st_MSG* msg;
-
-    msg = mMsgPool.Alloc();
-
-    msg->type = MSG_TYPE_RECV;
-    msg->sessionNo = SessionID;
-    msg->packet = packet;
-    packet->AddRef();
-
-    EnqueueMessage(msg);
-}
-
-void procademy::CChatServerSingle::OnError(int errorcode, const WCHAR* log)
-{
-}
-
-bool procademy::CChatServerSingle::BeginServer()
-{
-    HANDLE handles[4] = { mUpdateThread, mMonitoringThread, mHeartbeatThread, mRedisThread };
-
-    if (Start() == false)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error");
-
-        return false;
-    }
-
-    WaitForThreadsFin();
-
-    PostQueuedCompletionStatus(mIOCP, 0, 0, 0);
-    PostQueuedCompletionStatus(mRedisIOCP, 0, 0, 0);
-
-    DWORD ret = WaitForMultipleObjects(4, handles, true, INFINITE);
-
-    switch (ret)
-    {
-    case WAIT_FAILED:
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error");
-        break;
-    case WAIT_TIMEOUT:
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error");
-        break;
-    case WAIT_OBJECT_0:
-        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End");
-        break;
-    default:
-        break;
-    }
-
-    return true;
-}
-
-void procademy::CChatServerSingle::WaitForThreadsFin()
-{
-    while (1)
-    {
-        char ch = _getch();
-
-        switch (ch)
-        {
-        case 'g':
-            mbNagle = !mbNagle;
-            SetNagle(mbNagle);
-            break;
-        case 'z':
-            mbZeroCopy = !mbZeroCopy;
-            SetZeroCopy(mbZeroCopy);
-            break;
-        case 'm':
-            if (mbMonitoring)
-            {
-                wprintf(L"Unset Monitoring\n");
-                mbMonitoring = false;
-            }
-            else
-            {
-                wprintf(L"Set Monitoring\n");
-                mbMonitoring = true;
-            }
-            break;
-        case 's':
-            if (mbBegin)
-            {
-                Stop();
-                wprintf(L"STOP\n");
-            }
-            else
-            {
-                Start();
-                wprintf(L"RUN\n");
-            }
-            break;
-        case 'p':
-            wprintf(L"Print Profiler\n");
-            CProfiler::Print();
-            break;
-        case 'r':
-            mbPrint = true;
-            wprintf(L"Set Print Ratio\n");
-            break;
-        case 'd':
-            CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer Intended Crash");
-            CRASH();
-        case 'q':
-            QuitServer();
-            return;
-        default:
-            break;
-        }
-    }
-}
-
 
 void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
 {

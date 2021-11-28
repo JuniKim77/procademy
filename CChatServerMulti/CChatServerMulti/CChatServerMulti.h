@@ -6,6 +6,10 @@
 #include "TC_LFObjectPool.h"
 #include "ChatServerDTO.h"
 #include "CCpuUsage.h"
+#include <cpp_redis/cpp_redis>
+
+#pragma comment (lib, "cpp_redis.lib")
+#pragma comment (lib, "tacopie.lib")
 
 namespace procademy
 {
@@ -25,7 +29,7 @@ namespace procademy
 
 	private:
 		void						Init();
-		bool						CheckHeart();
+		bool						CheckHeartProc();
 		bool						MonitoringProc();
 		bool						JoinProc(SESSION_ID sessionNo);
 		bool						LoginProc(SESSION_ID sessionNo, CNetPacket* packet);
@@ -34,6 +38,7 @@ namespace procademy
 		bool						SendMessageProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						HeartUpdateProc(SESSION_ID sessionNo);
 		bool						CheckTimeOutProc();
+		bool						RedisProc();
 		void						BeginThreads();
 		void						LoadInitFile(const WCHAR* fileName);
 		void						FreePlayer(st_Player* player);
@@ -47,6 +52,7 @@ namespace procademy
 		void						MakeMonitorStr(WCHAR* s, int size);
 		void						PrintRecvSendRatio();
 		void						ClearTPS();
+		void						EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet);
 
 		CNetPacket*					MakeCSResLogin(BYTE status, SESSION_ID accountNo);
 		CNetPacket*					MakeCSResSectorMove(SESSION_ID accountNo, WORD sectorX, WORD sectorY);
@@ -54,16 +60,22 @@ namespace procademy
 
 		static unsigned int WINAPI	MonitorFunc(LPVOID arg);
 		static unsigned int WINAPI	HeartbeatFunc(LPVOID arg);
+		static unsigned int WINAPI	RedisFunc(LPVOID arg);
 
 	public:
 		enum {
-			SECTOR_MAX_Y = 100,
-			SECTOR_MAX_X = 100
+			SECTOR_MAX_Y = 50,
+			SECTOR_MAX_X = 50
 		};
 
 	private:
 		HANDLE									mMonitoringThread;
 		HANDLE									mHeartbeatThread;
+		HANDLE									mRedisThread;
+		HANDLE									mRedisIOCP;
+		cpp_redis::client						mRedis;
+		WCHAR									mTokenDBIP[16];
+		USHORT									mTokenDBPort;
 
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;
 		SRWLOCK									mPlayerMapLock;
@@ -71,7 +83,11 @@ namespace procademy
 		DWORD									mLoginCount = 0;
 		DWORD									mUpdateTPS = 0;
 		st_Sector								mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
-		SRWLOCK									mSectorLock;
+		/// <summary>
+		/// N X N 개의 섹터 동기화 객체
+		/// </summary>
+		SRWLOCK**								mpSectorLock;
+		int										mSectorLockColNum;
 		int										mTimeOut;
 		CCpuUsage								mCpuUsage;
 		bool									mbMonitoring = true;

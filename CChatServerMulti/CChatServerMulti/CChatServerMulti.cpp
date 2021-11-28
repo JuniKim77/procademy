@@ -13,13 +13,19 @@ WCHAR str[MAX_STR];
 
 procademy::CChatServerMulti::CChatServerMulti()
 {
-    Init();
-	LoadInitFile(L"ChatServer.cnf");
+    LoadInitFile(L"ChatServer.cnf");
+    Init();	
 	BeginThreads();
 }
 
 procademy::CChatServerMulti::~CChatServerMulti()
 {
+    for (int i = 0; i < mSectorLockColNum; ++i)
+    {
+        delete[] mpSectorLock[i];
+    }
+
+    delete[] mpSectorLock;
 }
 
 bool procademy::CChatServerMulti::OnConnectionRequest(u_long IP, u_short Port)
@@ -48,29 +54,31 @@ void procademy::CChatServerMulti::OnError(int errorcode, const WCHAR* log)
 
 bool procademy::CChatServerMulti::BeginServer()
 {
-	HANDLE handles[2] = { mMonitoringThread, mHeartbeatThread };
+	HANDLE handles[3] = { mMonitoringThread, mHeartbeatThread, mRedisThread };
 
 	if (Start() == false)
 	{
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error\n");
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error");
 
 		return false;
 	}
 
 	WaitForThreadsFin();
 
-	DWORD ret = WaitForMultipleObjects(2, handles, true, INFINITE);
+    PostQueuedCompletionStatus(mRedisIOCP, 0, 0, 0);
+
+	DWORD ret = WaitForMultipleObjects(3, handles, true, INFINITE);
 
 	switch (ret)
 	{
 	case WAIT_FAILED:
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error\n");
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error");
 		break;
 	case WAIT_TIMEOUT:
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error\n");
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error");
 		break;
 	case WAIT_OBJECT_0:
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End\n");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End");
 		break;
 	default:
 		break;
@@ -141,38 +149,289 @@ void procademy::CChatServerMulti::WaitForThreadsFin()
 
 void procademy::CChatServerMulti::Init()
 {
+    char IP[64];
+
+    WideCharToMultiByte(CP_ACP, 0, mTokenDBIP, -1, IP, sizeof(IP), nullptr, nullptr);
+
+    mRedis.connect(IP, mTokenDBPort);
+
     InitializeSRWLock(&mPlayerMapLock);
-    InitializeSRWLock(&mSectorLock);
+
+    mpSectorLock = new SRWLOCK*[mSectorLockColNum];
+    for (int i = 0; i < mSectorLockColNum; ++i)
+    {
+        mpSectorLock[i] = new SRWLOCK[mSectorLockColNum];
+        for (int j = 0; j < mSectorLockColNum; ++j)
+        {
+            InitializeSRWLock(&mpSectorLock[i][j]);            
+        }
+    }
 }
 
-bool procademy::CChatServerMulti::CheckHeart()
+bool procademy::CChatServerMulti::CheckHeartProc()
 {
-	return false;
+    HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
+
+    while (!mbExit)
+    {
+        DWORD retval = WaitForSingleObject(dummyevent, 1000);
+
+        if (retval == WAIT_TIMEOUT)
+        {
+            ULONGLONG curTime = GetTickCount64();
+            AcquireSRWLockShared(&mPlayerMapLock);
+            {
+                for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end(); ++iter)
+                {
+                    if (curTime - iter->second->lastRecvTime > mTimeOut) // 40000ms
+                    {
+                        SESSION_ID sessionNo = iter->second->sessionNo;
+
+                        Disconnect(sessionNo);
+                    }
+                }
+            }
+            ReleaseSRWLockShared(&mPlayerMapLock);
+        }
+    }
+
+    CloseHandle(dummyevent);
+
+    return true;
 }
 
 bool procademy::CChatServerMulti::MonitoringProc()
 {
-	return false;
+    HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
+    WCHAR str[2048];
+
+    while (!mbExit)
+    {
+        DWORD retval = WaitForSingleObject(dummyevent, 1000);
+
+        if (retval == WAIT_TIMEOUT)
+        {
+            mCpuUsage.UpdateCpuTime();
+            // 출력
+            MakeMonitorStr(str, 2048);
+
+            wprintf(str);
+
+            ClearTPS();
+        }
+    }
+
+    CloseHandle(dummyevent);
+
+    return true;
 }
 
 bool procademy::CChatServerMulti::JoinProc(SESSION_ID sessionNo)
 {
-	return false;
+    st_Player* player = FindPlayer(sessionNo);
+
+    if (player != nullptr)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Player[%llu]", sessionNo);
+        CRASH();
+
+        return false;
+    }
+
+    player = mPlayerPool.Alloc();
+    player->sessionNo = sessionNo;
+    player->lastRecvTime = GetTickCount64();
+
+    //msgDebugLog(1000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
+
+    InsertPlayer(sessionNo, player);
+
+    return true;
 }
 
 bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* packet)
 {
-	return false;
+    //INT64	    AccountNo;
+    //WCHAR	    ID[20];				// null 포함
+    //WCHAR	    Nickname[20];		// null 포함
+    //char	    SessionKey[64];		// 인증토큰
+    //CNetPacket* response;
+    st_Player* player = FindPlayer(sessionNo);
+
+    if (player == nullptr)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
+
+        CRASH();
+
+        return false;
+    }
+
+    if (player->sessionNo != sessionNo)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
+
+        CRASH();
+
+        return false;
+    }
+
+    if (player->accountNo != 0 || player->bLogin)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login",
+            sessionNo, player->accountNo);
+
+        CRASH();
+
+        return false;
+    }
+
+    // token verification
+    packet->AddRef();
+
+    EnqueueRedisQ(sessionNo, packet);
+
+    //    *packet >> AccountNo;
+    //
+    //    packet->GetData(ID, 20);
+    //    packet->GetData(Nickname, 20);
+    //    packet->GetData(SessionKey, 64);
+    //
+    //    player->accountNo = AccountNo;
+    //    wcscpy_s(player->ID, NAME_MAX, ID);
+    //    wcscpy_s(player->nickName, NAME_MAX, Nickname);
+    //    player->bLogin = true;
+    //    player->lastRecvTime = GetTickCount64();
+    //    mLoginCount++;
+    //
+    //    //msgDebugLog(2000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
+    //
+    //    response = MakeCSResLogin(1, player->accountNo);
+    //    {
+    //#ifdef SEND_TO_WORKER
+    //        SendPacketToWorker(player->sessionNo, response);
+    //#else
+    //        SendPacket(player->sessionNo, response);
+    //#endif // SEND_TO_WORKER
+    //    }
+    //    response->SubRef();
+
+    return true;
 }
 
 bool procademy::CChatServerMulti::LeaveProc(SESSION_ID sessionNo)
 {
-	return false;
+    st_Player* player = FindPlayer(sessionNo);
+
+    if (player == nullptr)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found",
+            sessionNo);
+
+        CRASH();
+
+        return false;
+    }
+
+    if (player->sessionNo != sessionNo)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
+
+        CRASH();
+
+        return false;
+    }
+
+    //msgDebugLog(3000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
+
+    if (player->curSectorX != -1 && player->curSectorY != -1)
+    {
+        Sector_RemovePlayer(player->curSectorX, player->curSectorY, player);
+    }
+
+    if (player->bLogin)
+    {
+        mLoginCount--;
+    }
+
+    FreePlayer(player);
+
+    DeletePlayer(sessionNo);
+
+    return true;
 }
 
 bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacket* packet)
 {
-	return false;
+    INT64	AccountNo;
+    WORD	SectorX;
+    WORD	SectorY;
+    st_Player* player = FindPlayer(sessionNo);
+
+    if (player == nullptr)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found",
+            sessionNo);
+
+        CRASH();
+
+        return false;
+    }
+
+    if (player->sessionNo != sessionNo)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
+
+        CRASH();
+
+        return false;
+    }
+
+    *packet >> AccountNo >> SectorX >> SectorY;
+
+    if (player->accountNo != AccountNo)
+    {
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched",
+            sessionNo, player->accountNo, AccountNo);*/
+
+            //CRASH();
+
+        return false;
+    }
+
+    if (SectorX < 0 || SectorY < 0 || SectorX >= SECTOR_MAX_X || SectorY >= SECTOR_MAX_Y)
+    {
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"Move Sector - [Session %llu] [AccountNo %lld] Out of Boundary",
+            sessionNo, AccountNo);*/
+
+            //CRASH();
+
+        return false;
+    }
+
+    if (player->curSectorX != -1 && player->curSectorY != -1)
+    {
+        Sector_RemovePlayer(player->curSectorX, player->curSectorY, player);
+    }
+
+    player->curSectorX = SectorX;
+    player->curSectorY = SectorY;
+    Sector_AddPlayer(SectorX, SectorY, player);
+    player->lastRecvTime = GetTickCount64();
+
+    //msgDebugLog(4000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
+
+    CNetPacket* response = MakeCSResSectorMove(player->accountNo, player->curSectorX, player->curSectorY);
+    {
+#ifdef SEND_TO_WORKER
+        SendPacketToWorker(player->sessionNo, response);
+#else
+        SendPacket(player->sessionNo, response);
+#endif // SEND_TO_WORKER
+    }
+    response->SubRef();
+
+    return true;
 }
 
 bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPacket* packet)
@@ -190,8 +449,48 @@ bool procademy::CChatServerMulti::CheckTimeOutProc()
 	return false;
 }
 
+bool procademy::CChatServerMulti::RedisProc()
+{
+    while (1)
+    {
+        DWORD           transferredSize = 0;
+        SESSION_ID      sessionNo;
+        CNetPacket*     packet = nullptr;
+        CNetPacket*     result = nullptr;
+
+        BOOL gqcsRet = GetQueuedCompletionStatus(mRedisIOCP, &transferredSize, (PULONG_PTR)&sessionNo, (LPOVERLAPPED*)&packet, INFINITE);
+
+#ifdef PROFILE
+        CProfiler::Begin(L"TokenProc");
+#endif // PROFILE
+
+        // Redis Thread End
+        if (transferredSize == 0)
+        {
+            return true;
+        }
+
+        st_Player* player = FindPlayer(sessionNo);
+
+        if (player == nullptr)
+        {
+            // 로그인 요청하고 바로 끊을 수 있다.
+            continue;
+        }
+
+#ifdef PROFILE
+        CProfiler::End(L"TokenProc");
+#endif // PROFILE
+    }
+
+    return true;
+}
+
 void procademy::CChatServerMulti::BeginThreads()
 {
+    mMonitoringThread = (HANDLE)_beginthreadex(nullptr, 0, MonitorFunc, this, 0, nullptr);
+    mHeartbeatThread = (HANDLE)_beginthreadex(nullptr, 0, HeartbeatFunc, this, 0, nullptr);
+    mRedisThread = (HANDLE)_beginthreadex(nullptr, 0, RedisFunc, this, 0, nullptr);
 }
 
 void procademy::CChatServerMulti::LoadInitFile(const WCHAR* fileName)
@@ -220,12 +519,16 @@ void procademy::CChatServerMulti::LoadInitFile(const WCHAR* fileName)
 
     tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
 
-    tp.GetValue(L"IOCP_ACTIVE_THREAD", &num);
+    tp.GetValue(L"TOKEN_DB_IP", mTokenDBIP);
+    tp.GetValue(L"TOKEN_DB_PORT", &num);
+    mTokenDBPort = (USHORT)num;
+
+    tp.GetValue(L"SECTOR_LOCK_NUM", &mSectorLockColNum);
+
 }
 
 void procademy::CChatServerMulti::FreePlayer(st_Player* player)
 {
-    //AcquireSRWLockExclusive(&mPlayerMapLock);
     player->accountNo = 0;
     player->lastRecvTime = 0;
     player->curSectorX = -1;
@@ -241,19 +544,29 @@ procademy::st_Player* procademy::CChatServerMulti::FindPlayer(SESSION_ID session
     std::unordered_map<u_int64, st_Player*>::iterator iter = mPlayerMap.find(sessionNo);
 
     if (iter == mPlayerMap.end())
+    {
         return nullptr;
+    }
 
     return iter->second;
 }
 
 void procademy::CChatServerMulti::InsertPlayer(SESSION_ID sessionNo, st_Player* player)
 {
-    mPlayerMap[sessionNo] = player;
+    AcquireSRWLockExclusive(&mPlayerMapLock);
+    {
+        mPlayerMap[sessionNo] = player;
+    }
+    ReleaseSRWLockExclusive(&mPlayerMapLock);
 }
 
 void procademy::CChatServerMulti::DeletePlayer(SESSION_ID sessionNo)
 {
-    mPlayerMap.erase(sessionNo);
+    AcquireSRWLockExclusive(&mPlayerMapLock);
+    {
+        mPlayerMap.erase(sessionNo);
+    }
+    ReleaseSRWLockExclusive(&mPlayerMapLock);
 }
 
 void procademy::CChatServerMulti::Sector_AddPlayer(WORD x, WORD y, st_Player* player)
@@ -437,6 +750,11 @@ void procademy::CChatServerMulti::ClearTPS()
     }
 }
 
+void procademy::CChatServerMulti::EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet)
+{
+    PostQueuedCompletionStatus(mRedisIOCP, 1, (ULONG_PTR)sessionNo, (LPOVERLAPPED)packet);
+}
+
 procademy::CNetPacket* procademy::CChatServerMulti::MakeCSResLogin(BYTE status, SESSION_ID accountNo)
 {
     CNetPacket* packet = CNetPacket::AllocAddRef();
@@ -484,7 +802,7 @@ unsigned int __stdcall procademy::CChatServerMulti::MonitorFunc(LPVOID arg)
 
     chatServer->MonitoringProc();
 
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Monitoring Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Monitoring Thread End");
 
     return 0;
 }
@@ -495,10 +813,21 @@ unsigned int __stdcall procademy::CChatServerMulti::HeartbeatFunc(LPVOID arg)
 
     while (!chatServer->mbExit)
     {
-        chatServer->CheckHeart();
+        chatServer->CheckHeartProc();
     }
 
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"HeartBeat Thread End\n");
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"HeartBeat Thread End");
+
+    return 0;
+}
+
+unsigned int __stdcall procademy::CChatServerMulti::RedisFunc(LPVOID arg)
+{
+    CChatServerMulti* chatServer = (CChatServerMulti*)arg;
+
+    chatServer->RedisProc();
+
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Redis Thread End");
 
     return 0;
 }
