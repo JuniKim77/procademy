@@ -909,14 +909,6 @@ bool procademy::CChatServerSingle::RedisProc()
             return true;
         }
 
-        st_Player* player = FindPlayer(sessionNo);
-
-        if (player == nullptr)
-        {
-            // 로그인 요청하고 바로 끊을 수 있다.
-            continue;
-        }
-
         *packet >> AccountNo;
 
         packet->GetData(ID, 20);

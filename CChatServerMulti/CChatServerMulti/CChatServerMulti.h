@@ -32,12 +32,13 @@ namespace procademy
 		bool						CheckHeartProc();
 		bool						MonitoringProc();
 		bool						JoinProc(SESSION_ID sessionNo);
+		bool						RecvProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						LoginProc(SESSION_ID sessionNo, CNetPacket* packet);
+		bool						LoginCompleteProc();
 		bool						LeaveProc(SESSION_ID sessionNo);
 		bool						MoveSectorProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						SendMessageProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						HeartUpdateProc(SESSION_ID sessionNo);
-		bool						CheckTimeOutProc();
 		bool						RedisProc();
 		void						BeginThreads();
 		void						LoadInitFile(const WCHAR* fileName);
@@ -53,6 +54,10 @@ namespace procademy
 		void						PrintRecvSendRatio();
 		void						ClearTPS();
 		void						EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet);
+		void						LockSector(WORD x, WORD y, bool exclusive = true);
+		void						UnlockSector(WORD x, WORD y, bool exclusive = true);
+		void						LockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive = true);
+		void						UnlockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive = true);
 
 		CNetPacket*					MakeCSResLogin(BYTE status, SESSION_ID accountNo);
 		CNetPacket*					MakeCSResSectorMove(SESSION_ID accountNo, WORD sectorX, WORD sectorY);
@@ -86,7 +91,8 @@ namespace procademy
 		/// <summary>
 		/// N X N 개의 섹터 동기화 객체
 		/// </summary>
-		SRWLOCK**								mpSectorLock;
+		SRWLOCK*								mpSectorLock;
+		int										mSectorLockIndex[SECTOR_MAX_Y][SECTOR_MAX_X];
 		int										mSectorLockColNum;
 		int										mTimeOut;
 		CCpuUsage								mCpuUsage;
