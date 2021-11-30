@@ -892,8 +892,8 @@ namespace procademy
 		}
 
 		InitializeEmptyIndex();
-		BeginThreads();
 		CreateIOCP();
+		BeginThreads();
 		CLogger::SetDirectory(L"_log");
 	}
 

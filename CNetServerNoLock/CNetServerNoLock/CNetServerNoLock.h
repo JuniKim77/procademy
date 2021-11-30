@@ -76,7 +76,7 @@ namespace procademy
 
 		virtual void OnClientJoin(SESSION_ID SessionID) = 0; //< Accept 후 접속처리 완료 후 호출.
 		virtual void OnClientLeave(SESSION_ID SessionID) = 0; //< Release 후 호출
-		virtual void LoadInitFile(const WCHAR* fileName);
+		void LoadInitFile(const WCHAR* fileName);
 
 		virtual void OnRecv(SESSION_ID SessionID, CNetPacket* packet) = 0; //< 패킷 수신 완료 후
 		//	virtual void OnSend(SessionID, int sendsize) = 0;           < 패킷 송신 완료 후

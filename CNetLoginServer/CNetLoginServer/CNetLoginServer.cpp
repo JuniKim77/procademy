@@ -525,8 +525,9 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
 
     if (ret)
     {
-        mRedis.set(szAccountNumber, sessionKey);
-        //mRedis.sync_commit();
+        mRedis.setex(szAccountNumber, 10, sessionKey);
+        //mRedis.set(szAccountNumber, sessionKey);
+        mRedis.sync_commit();
     }
 
     return ret;
