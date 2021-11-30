@@ -499,7 +499,7 @@ void procademy::CNetLoginServer::ClearTPS()
 bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* sessionKey, st_Player* output)
 {
     MYSQL_ROW   sql_row = NULL;
-    char        szAccountNumber[20];
+    char        szAccountNumber[20] = { 0, };
     INT64       num;
     bool        ret = true;
 
@@ -526,7 +526,7 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
     if (ret)
     {
         mRedis.set(szAccountNumber, sessionKey);
-        mRedis.sync_commit();
+        //mRedis.sync_commit();
     }
 
     return ret;

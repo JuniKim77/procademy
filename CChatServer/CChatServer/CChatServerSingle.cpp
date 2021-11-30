@@ -1,4 +1,5 @@
 #define SEND_TO_WORKER
+#define REDIS_MODE
 
 #include "CChatServerSingle.h"
 #include "CNetPacket.h"
@@ -516,11 +517,13 @@ bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
 
 bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* packet)
 {
-	//INT64	    AccountNo;
-	//WCHAR	    ID[20];				// null 포함
-	//WCHAR	    Nickname[20];		// null 포함
-	//char	    SessionKey[64];		// 인증토큰
-    //CNetPacket* response;
+#ifndef REDIS_MODE
+    INT64	    AccountNo;
+    WCHAR	    ID[20];				// null 포함
+    WCHAR	    Nickname[20];		// null 포함
+    char	    SessionKey[64];		// 인증토큰
+    CNetPacket* response;
+#endif // REDIS_MODE
     st_Player* player = FindPlayer(sessionNo);
 
     if (player == nullptr)
@@ -552,34 +555,37 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
     }
 
     // token verification
+#ifdef REDIS_MODE
     packet->AddRef();
 
     EnqueueRedisQ(sessionNo, packet);
+#else
+	* packet >> AccountNo;
 
-//    *packet >> AccountNo;
-//
-//    packet->GetData(ID, 20);
-//    packet->GetData(Nickname, 20);
-//    packet->GetData(SessionKey, 64);
-//
-//    player->accountNo = AccountNo;
-//    wcscpy_s(player->ID, NAME_MAX, ID);
-//    wcscpy_s(player->nickName, NAME_MAX, Nickname);
-//    player->bLogin = true;
-//    player->lastRecvTime = GetTickCount64();
-//    mLoginCount++;
-//
-//    //msgDebugLog(2000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
-//
-//    response = MakeCSResLogin(1, player->accountNo);
-//    {
-//#ifdef SEND_TO_WORKER
-//        SendPacketToWorker(player->sessionNo, response);
-//#else
-//        SendPacket(player->sessionNo, response);
-//#endif // SEND_TO_WORKER
-//    }
-//    response->SubRef();
+    packet->GetData(ID, 20);
+    packet->GetData(Nickname, 20);
+    packet->GetData(SessionKey, 64);
+
+    player->accountNo = AccountNo;
+    wcscpy_s(player->ID, NAME_MAX, ID);
+    wcscpy_s(player->nickName, NAME_MAX, Nickname);
+    player->bLogin = true;
+    player->lastRecvTime = GetTickCount64();
+    mLoginCount++;
+
+    //msgDebugLog(2000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
+
+    response = MakeCSResLogin(1, player->accountNo);
+    {
+#ifdef SEND_TO_WORKER
+        SendPacketToWorker(player->sessionNo, response);
+#else
+        SendPacket(player->sessionNo, response);
+#endif // SEND_TO_WORKER
+    }
+    response->SubRef();
+
+#endif // REDIS_MODE
 
     return true;
 }
@@ -889,7 +895,7 @@ bool procademy::CChatServerSingle::RedisProc()
         SESSION_ID      sessionNo;
         CNetPacket*     packet = nullptr;
         CNetPacket*     result = nullptr;
-        char            buffer[10];
+        char            buffer[12] = { 0, };
         INT64	        AccountNo;
         WCHAR	        ID[20];				// null 포함
         WCHAR	        Nickname[20];		// null 포함
@@ -917,7 +923,7 @@ bool procademy::CChatServerSingle::RedisProc()
         SessionKey[64] = '\0';
         packet->SubRef();
         
-        _i64toa_s(AccountNo, buffer, 10, 10);
+        _i64toa_s(AccountNo, buffer, 12, 10);
         mRedis.get(buffer, [&cmpRet, SessionKey](cpp_redis::reply& reply) {
             cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
             });
@@ -932,7 +938,6 @@ bool procademy::CChatServerSingle::RedisProc()
 
             result->AddRef();
             msg->packet = result;
-            msg->type = MSG_TYPE_VERIFICATION_SUCCESS;
 
             if (cmpRet)
             {
