@@ -33,6 +33,78 @@ void procademy::CDBConnector_TLS::DestroyDBConnector_TLS()
 	delete[] s_connectors;
 }
 
+bool procademy::CDBConnector_TLS::Connect(void)
+{
+	CDBConnector* conn = GetDBConnector();
+
+	return conn->Connect();
+}
+
+bool procademy::CDBConnector_TLS::Disconnect(void)
+{
+	CDBConnector* conn = GetDBConnector();
+
+	return conn->Disconnect();
+}
+
+bool procademy::CDBConnector_TLS::Query(const WCHAR* szStringFormat, ...)
+{
+	CDBConnector*	conn = GetDBConnector();
+	va_list			ap;
+	bool			ret;
+
+	va_start(ap, szStringFormat);
+	{
+		ret = conn->Query(szStringFormat, ap);
+	}
+	va_end(ap);
+
+	return ret;
+}
+
+bool procademy::CDBConnector_TLS::Query_Save(const WCHAR* szStringFormat, ...)
+{
+	CDBConnector*	conn = GetDBConnector();
+	va_list			ap;
+	bool			ret;
+
+	va_start(ap, szStringFormat);
+	{
+		ret = conn->Query_Save(szStringFormat, ap);
+	}
+	va_end(ap);
+
+	return ret;
+}
+
+MYSQL_ROW procademy::CDBConnector_TLS::FetchRow(void)
+{
+	CDBConnector* conn = GetDBConnector();
+
+	return conn->FetchRow();
+}
+
+void procademy::CDBConnector_TLS::FreeResult(void)
+{
+	CDBConnector* conn = GetDBConnector();
+
+	conn->FreeResult();
+}
+
+int procademy::CDBConnector_TLS::GetLastError(void)
+{
+	CDBConnector* conn = GetDBConnector();
+
+	return conn->GetLastError();
+}
+
+WCHAR* procademy::CDBConnector_TLS::GetLastErrorMsg(void)
+{
+	CDBConnector* conn = GetDBConnector();
+
+	return conn->GetLastErrorMsg();
+}
+
 procademy::CDBConnector* procademy::CDBConnector_TLS::GetDBConnector()
 {
 	CDBConnector* conn = (CDBConnector*)TlsGetValue(s_connectorTls);
