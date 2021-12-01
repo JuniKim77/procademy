@@ -237,17 +237,15 @@ namespace procademy
 		BYTE i = 0;
 
 		mhThreads[i++] = (HANDLE)_beginthreadex(nullptr, 0, AcceptThread, this, 0, nullptr);
-		mNumThreads++;
 
 		for (; i <= mWorkerThreadNum; ++i)
 		{
 			mhThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, this, 0, nullptr);
 		}
 
-		mNumThreads += mWorkerThreadNum;
-
-		mhThreads[i++] = (HANDLE)_beginthreadex(nullptr, 0, MonitoringThread, this, 0, nullptr);
-		mNumThreads++;
+		mhThreads[i++] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, this, 0, nullptr);
+		
+		mNumThreads = i;
 
 		return true;
 	}
@@ -258,7 +256,7 @@ namespace procademy
 
 		while (!server->mbExit)
 		{
-			server->CompleteMessage();
+			server->GQCS();
 		}
 
 		return 0;
@@ -284,11 +282,11 @@ namespace procademy
 		return 0;
 	}
 
-	unsigned int __stdcall CNetServerNoLock::MonitoringThread(LPVOID arg)
+	unsigned int __stdcall CNetServerNoLock::MonitorThread(LPVOID arg)
 	{
 		CNetServerNoLock* server = (CNetServerNoLock*)arg;
 
-		server->NetworkMonitorProc();
+		server->MonitorProc();
 
 		return 0;
 	}
@@ -603,7 +601,7 @@ namespace procademy
 		return session;
 	}
 
-	void CNetServerNoLock::CompleteMessage()
+	void CNetServerNoLock::GQCS()
 	{
 		while (1)
 		{
@@ -850,7 +848,7 @@ namespace procademy
 		}
 	}
 
-	void CNetServerNoLock::NetworkMonitorProc()
+	void CNetServerNoLock::MonitorProc()
 	{
 		HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
 

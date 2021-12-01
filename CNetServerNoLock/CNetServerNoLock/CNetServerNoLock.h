@@ -100,8 +100,8 @@ namespace procademy
 		bool BeginThreads();
 		static unsigned int WINAPI WorkerThread(LPVOID arg);
 		static unsigned int WINAPI AcceptThread(LPVOID arg);
-		static unsigned int WINAPI MonitoringThread(LPVOID arg);
-		void NetworkMonitorProc();
+		static unsigned int WINAPI MonitorThread(LPVOID arg);
+		void MonitorProc();
 		bool RecvPost(Session* session, bool isAccepted = false);
 		bool SendPost(Session* session);
 		void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
@@ -110,7 +110,7 @@ namespace procademy
 		void ReleaseProc(Session* session);
 		void AcceptProc();
 		Session* CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
-		void CompleteMessage();
+		void GQCS();
 		void CompleteRecv(Session* session, DWORD transferredSize);
 		void CompleteSend(Session* session, DWORD transferredSize);
 		void CloseSessions();
