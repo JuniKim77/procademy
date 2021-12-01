@@ -134,6 +134,7 @@ namespace procademy
 		u_short				mPort = 0;
 		WCHAR				mBindIP[32];
 		u_short				mMaxClient = 0;
+		HANDLE				mBeginEvent = INVALID_HANDLE_VALUE;
 
 		/// <summary>
 		/// 모니터링 변수들

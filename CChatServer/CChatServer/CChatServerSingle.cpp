@@ -1,5 +1,5 @@
 #define SEND_TO_WORKER
-#define REDIS_MODE
+//#define REDIS_MODE
 
 #include "CChatServerSingle.h"
 #include "CNetPacket.h"

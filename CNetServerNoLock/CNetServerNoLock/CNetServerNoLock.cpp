@@ -103,6 +103,8 @@ namespace procademy
 		WSAStartup(version, &data);
 		CLogger::SetDirectory(L"_log");
 
+		mBeginEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
+
 		mhThreads = new HANDLE[(long long)mWorkerThreadNum + 2];
 		mSessionArray = (Session*)_aligned_malloc(sizeof(Session) * mMaxClient, 64);
 		for (int i = 0; i < mMaxClient; ++i)
@@ -271,6 +273,11 @@ namespace procademy
 			if (server->mbBegin)
 			{
 				server->AcceptProc();
+			}
+			else
+			{
+				WaitForSingleObject(server->mBeginEvent, INFINITE);
+				server->mbBegin = true;
 			}
 		}
 
@@ -875,6 +882,8 @@ namespace procademy
 
 		mbExit = true;
 
+		SetEvent(mBeginEvent);
+
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CNetServer");
 
 		DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
@@ -913,7 +922,7 @@ namespace procademy
 		{
 			_aligned_free(mSessionArray);
 		}
-		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Network Lib End");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServerNoLock End");
 	}
 
 	bool CNetServerNoLock::Start()
@@ -931,7 +940,7 @@ namespace procademy
 			return false;
 		}
 
-		mbBegin = true;
+		SetEvent(mBeginEvent);
 
 		return true;
 	}
