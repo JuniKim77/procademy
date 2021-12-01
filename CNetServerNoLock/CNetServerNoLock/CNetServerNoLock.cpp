@@ -95,6 +95,25 @@ namespace procademy
 		g_debugs[index].packetNum = packetNum;
 	}
 
+	void CNetServerNoLock::Init()
+	{
+		WORD		version = MAKEWORD(2, 2);
+		WSADATA		data;
+
+		WSAStartup(version, &data);
+		CLogger::SetDirectory(L"_log");
+
+		mhThreads = new HANDLE[(long long)mWorkerThreadNum + 2];
+		mSessionArray = (Session*)_aligned_malloc(sizeof(Session) * mMaxClient, 64);
+		for (int i = 0; i < mMaxClient; ++i)
+		{
+			new (&mSessionArray[i]) (Session);
+		}
+
+		InitializeEmptyIndex();
+		CreateIOCP();
+	}
+
 	Session* CNetServerNoLock::FindSession(SESSION_ID sessionNo)
 	{
 		u_short index = GetIndexFromSessionNo(sessionNo);
@@ -878,23 +897,9 @@ namespace procademy
 
 	CNetServerNoLock::CNetServerNoLock()
 	{
-		WORD version = MAKEWORD(2, 2);
-		WSADATA data;
-		WSAStartup(version, &data);
-
 		LoadInitFile(L"Server.cnf");
-
-		mhThreads = new HANDLE[(long long)mWorkerThreadNum + 2];
-		mSessionArray = (Session*)_aligned_malloc(sizeof(Session) * mMaxClient, 64);
-		for (int i = 0; i < mMaxClient; ++i)
-		{
-			new (&mSessionArray[i]) (Session);
-		}
-
-		InitializeEmptyIndex();
-		CreateIOCP();
+		Init();
 		BeginThreads();
-		CLogger::SetDirectory(L"_log");
 	}
 
 	CNetServerNoLock::~CNetServerNoLock()

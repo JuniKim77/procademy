@@ -90,6 +90,7 @@ namespace procademy
 		void SetNagle(bool on);
 
 	private:
+		void	Init();
 		Session* FindSession(SESSION_ID sessionNo);
 		void InsertSessionData(Session* session);
 		void DeleteSessionData(SESSION_ID sessionNo);
