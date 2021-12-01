@@ -54,6 +54,9 @@
     <ClCompile Include="CSession.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="CMMOServer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CMMOServer.h">
