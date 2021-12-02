@@ -88,6 +88,7 @@ namespace procademy
 		void QuitServer();
 		void SetZeroCopy(bool on);
 		void SetNagle(bool on);
+		ULONG GetSessionIP(SESSION_ID sessionNo);
 
 	private:
 		void	Init();

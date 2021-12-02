@@ -248,13 +248,21 @@ void procademy::CNetLoginServer::LoadInitFile(const WCHAR* fileName)
 
     tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
 
-    tp.GetValue(L"GAME_SERVER_IP", mGameServerIP);
-    tp.GetValue(L"GAME_SERVER_PORT", &num);
-    mGameServerPort = (USHORT)num;
+    tp.GetValue(L"1U_1_IP", mDummyServers[0].IP);
+    tp.GetValue(L"1U_1_GAME_SERVER_IP", mDummyServers[0].GameServerIP);
+    tp.GetValue(L"1U_1_GAME_SERVER_PORT", &num);
+    mDummyServers[0].GameServerPort = (USHORT)num;
+    tp.GetValue(L"1U_1_CHAT_SERVER_IP", mDummyServers[0].ChatServerIP);
+    tp.GetValue(L"1U_1_CHAT_SERVER_PORT", &num);
+    mDummyServers[0].ChatServerPort = (USHORT)num;
 
-    tp.GetValue(L"CHAT_SERVER_IP", mChatServerIP);
-    tp.GetValue(L"CHAT_SERVER_PORT", &num);
-    mChatServerPort = (USHORT)num;
+    tp.GetValue(L"1U_2_IP", mDummyServers[1].IP);
+    tp.GetValue(L"1U_2_GAME_SERVER_IP", mDummyServers[1].GameServerIP);
+    tp.GetValue(L"1U_2_GAME_SERVER_PORT", &num);
+    mDummyServers[1].GameServerPort = (USHORT)num;
+    tp.GetValue(L"1U_2_CHAT_SERVER_IP", mDummyServers[1].ChatServerIP);
+    tp.GetValue(L"1U_2_CHAT_SERVER_PORT", &num);
+    mDummyServers[1].ChatServerPort = (USHORT)num;
 
     tp.GetValue(L"TOKEN_DB_IP", mTokenDBIP);
     tp.GetValue(L"TOKEN_DB_PORT", &num);
@@ -281,6 +289,7 @@ void procademy::CNetLoginServer::FreePlayer(st_Player* player)
 bool procademy::CNetLoginServer::JoinProc(SESSION_ID sessionNo)
 {
 	st_Player* player = FindPlayer(sessionNo);
+    WCHAR IP[16] = { 0, };
 
 	if (player != nullptr)
 	{
@@ -293,6 +302,18 @@ bool procademy::CNetLoginServer::JoinProc(SESSION_ID sessionNo)
 	player = mPlayerPool.Alloc();
 	player->sessionNo = sessionNo;
 	player->lastRecvTime = GetTickCount64();
+    ULONG sessionIP = GetSessionIP(sessionNo);
+
+    InetNtop(AF_INET, &sessionIP, IP, 16);
+
+    if (wcscmp(IP, mDummyServers[0].IP) == 0)
+    {
+        player->dummyIndex = 0;
+    }
+    else
+    {
+        player->dummyIndex = 1;
+    }
 
 	InsertPlayer(sessionNo, player);
 
@@ -382,7 +403,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
         return false;
     }
 
-    response = MakeCSResLogin(1, player->accountNo, player->ID, player->nickName);
+    response = MakeCSResLogin(1, player->accountNo, player->ID, player->nickName, player->dummyIndex);
     {
         SendPacket(sessionNo, response);
     }
@@ -543,7 +564,7 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
     return ret;
 }
 
-procademy::CNetPacket* procademy::CNetLoginServer::MakeCSResLogin(BYTE status, INT64 accountNo, const WCHAR* id, const WCHAR* nickName)
+procademy::CNetPacket* procademy::CNetLoginServer::MakeCSResLogin(BYTE status, INT64 accountNo, const WCHAR* id, const WCHAR* nickName, BYTE index)
 {
     CNetPacket* packet = CNetPacket::AllocAddRef();
 
@@ -551,10 +572,10 @@ procademy::CNetPacket* procademy::CNetLoginServer::MakeCSResLogin(BYTE status, I
 
     packet->PutData(id, 20);
     packet->PutData(nickName, 20);
-    packet->PutData(mGameServerIP, 16);
-    *packet << mGameServerPort;
-    packet->PutData(mChatServerIP, 16);
-    *packet << mChatServerPort;
+    packet->PutData(mDummyServers[index].GameServerIP, 16);
+    *packet << mDummyServers[index].GameServerPort;
+    packet->PutData(mDummyServers[index].ChatServerIP, 16);
+    *packet << mDummyServers[index].ChatServerPort;
 
     packet->SetHeader(false);
     packet->Encode();

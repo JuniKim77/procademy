@@ -72,6 +72,9 @@
     <ClCompile Include="Query.cpp">
       <Filter>소스 파일\DB</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CRedis_TLS\CRedis_TLS\CRedis_TLS.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
@@ -124,6 +127,9 @@
     </ClInclude>
     <ClInclude Include="Query.h">
       <Filter>헤더 파일\DB</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CRedis_TLS\CRedis_TLS\CRedis_TLS.h">
+      <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

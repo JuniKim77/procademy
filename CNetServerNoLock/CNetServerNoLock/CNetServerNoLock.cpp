@@ -808,6 +808,13 @@ namespace procademy
 		return sessionNo & 0xffffffffffff;
 	}
 
+	ULONG CNetServerNoLock::GetSessionIP(SESSION_ID sessionNo)
+	{
+		u_short index = GetIndexFromSessionNo(sessionNo);
+
+		return mSessionArray[index].ip;
+	}
+
 	void CNetServerNoLock::SetZeroCopy(bool on)
 	{
 		int optNum = on ? 0 : SEND_BUF_SIZE;

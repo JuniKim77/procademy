@@ -47,7 +47,7 @@ namespace procademy
 		void			ClearTPS();
 		bool			TokenVerificationProc(INT64 accountNo, char* sessionKey, st_Player* output);
 
-		CNetPacket*		MakeCSResLogin(BYTE status, INT64 accountNo, const WCHAR* id, const WCHAR* nickName);
+		CNetPacket*		MakeCSResLogin(BYTE status, INT64 accountNo, const WCHAR* id, const WCHAR* nickName, BYTE index);
 
 	private:
 		enum {
@@ -64,10 +64,7 @@ namespace procademy
 		int											mTimeOut;
 		HANDLE										mhThreads[2];
 		CCpuUsage									mCpuUsage;
-		WCHAR										mGameServerIP[16];
-		USHORT										mGameServerPort;
-		WCHAR										mChatServerIP[16];
-		USHORT										mChatServerPort;
+		st_DummyServerInfo							mDummyServers[2];
 		WCHAR										mTokenDBIP[16];
 		USHORT										mTokenDBPort;
 		WCHAR										mAccountDBIP[16];

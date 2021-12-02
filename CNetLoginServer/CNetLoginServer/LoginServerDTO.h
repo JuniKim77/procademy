@@ -14,5 +14,15 @@ namespace procademy
 		char		SessionKey[64];
 		WCHAR		ID[en_NAME_MAX];
 		WCHAR		nickName[en_NAME_MAX];
+		BYTE		dummyIndex = 0;
+	};
+
+	struct st_DummyServerInfo
+	{
+		WCHAR		IP[16];
+		WCHAR		GameServerIP[16];
+		USHORT		GameServerPort;
+		WCHAR		ChatServerIP[16];
+		USHORT		ChatServerPort;
 	};
 }
