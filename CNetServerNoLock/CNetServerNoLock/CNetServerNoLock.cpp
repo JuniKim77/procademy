@@ -874,11 +874,11 @@ namespace procademy
 
 	void CNetServerNoLock::QuitServer()
 	{
+		mbExit = true;
+
 		Stop();
 
 		PostQueuedCompletionStatus(mHcp, 0, 0, 0);
-
-		mbExit = true;
 
 		SetEvent(mBeginEvent);
 
