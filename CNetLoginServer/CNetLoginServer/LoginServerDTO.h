@@ -8,11 +8,7 @@ namespace procademy
 
 	struct st_Player
 	{
-		ULONGLONG	lastRecvTime = 0;
-		ULONGLONG	BeginLoginTime = 0;
-		ULONGLONG	BeginDBTime = 0;
-		ULONGLONG	BeginRedisTime = 0;
-		ULONGLONG	EndLoginTime = 0;
+		DWORD		lastRecvTime = 0;
 		INT64		accountNo = 0;
 		SESSION_ID	sessionNo = 0;
 		char		SessionKey[64];

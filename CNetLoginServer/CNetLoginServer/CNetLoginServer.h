@@ -45,8 +45,10 @@ namespace procademy
 		bool			CheckHeartProc();
 		bool			MonitoringProc();
 		void			MakeMonitorStr(WCHAR* s, int size);
+		void			MakeTimeInfoStr(WCHAR* s, int size);
 		void			ClearTPS();
-		bool			TokenVerificationProc(INT64 accountNo, char* sessionKey, st_Player* output);
+		bool			TokenVerificationProc(INT64 accountNo, char* sessionKey, st_Player* output, ULONGLONG loginBeginTime);
+		void			UpdateTimeInfo(ULONGLONG loginBegin, ULONGLONG dbTime, ULONGLONG redisTime, ULONGLONG endtime);
 
 		CNetPacket*		MakeCSResLogin(BYTE status, INT64 accountNo, const WCHAR* id, const WCHAR* nickName, BYTE index);
 
@@ -75,9 +77,22 @@ namespace procademy
 		WCHAR										mAccountDBPassword[32];
 		WCHAR										mAccountDBSchema[32];
 		bool										mbMonitoring;
+
 		alignas(64) DWORD							mLoginWaitCount = 0;
-		alignas(64) DWORD							mLoginCount = 0;
-		alignas(64) DWORD							mLoginTotal = 0;
+
+		DWORD										mLoginCount = 0;
+		DWORD										mLoginTotal = 0;
+
+		SRWLOCK										mTimeInfoLock;
+		DWORD										mLoginTimeSum = 0;
+		DWORD										mLoginTimeMax = 0;
+		DWORD										mLoginTimeMin = -1;
+		DWORD										mDBTimeSum = 0;
+		DWORD										mDBTimeMax = 0;
+		DWORD										mDBTimeMin = -1;
+		DWORD										mRedisTimeSum = 0;
+		DWORD										mRedisTimeMax = 0;
+		DWORD										mRedisTimeMin = -1;
 	};
 }
 
