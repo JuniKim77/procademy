@@ -1,5 +1,5 @@
 #define SEND_TO_WORKER
-//#define REDIS_MODE
+#define REDIS_MODE
 
 #include "CChatServerSingle.h"
 #include "CNetPacket.h"
@@ -901,7 +901,7 @@ bool procademy::CChatServerSingle::RedisProc()
         WCHAR	        Nickname[20];		// null 포함
         char	        SessionKey[65];		// 인증토큰
         st_MSG*         msg;
-        bool            cmpRet = true;
+        bool            cmpRet = false;
 
         BOOL gqcsRet = GetQueuedCompletionStatus(mRedisIOCP, &transferredSize, (PULONG_PTR)&sessionNo, (LPOVERLAPPED*)&packet, INFINITE);
 
@@ -924,8 +924,11 @@ bool procademy::CChatServerSingle::RedisProc()
         packet->SubRef();
         
         _i64toa_s(AccountNo, buffer, 12, 10);
-        mRedis.get(buffer, [&cmpRet, SessionKey](cpp_redis::reply& reply) {
-            cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
+        mRedis.get(buffer, [SessionKey, &cmpRet](cpp_redis::reply& reply) {
+            if (reply.is_string())
+            {
+                cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
+            }
             });
 
         mRedis.sync_commit();

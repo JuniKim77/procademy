@@ -279,6 +279,8 @@ namespace procademy
 			}
 		}
 
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServer Accept Thread End");
+
 		return 0;
 	}
 
@@ -287,6 +289,8 @@ namespace procademy
 		CNetServerNoLock* server = (CNetServerNoLock*)arg;
 
 		server->MonitorProc();
+
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServer Monitor Thread End");
 
 		return 0;
 	}
@@ -882,8 +886,6 @@ namespace procademy
 
 		SetEvent(mBeginEvent);
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CNetServer");
-
 		DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
 
 		switch (waitResult)
@@ -900,6 +902,8 @@ namespace procademy
 		default:
 			break;
 		}
+
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CNetServer");
 	}
 
 	CNetServerNoLock::CNetServerNoLock()

@@ -7,6 +7,7 @@
 #include "CProfiler.h"
 #include <conio.h>
 #include "Query.h"
+#include <stack>
 
 procademy::CNetLoginServer::CNetLoginServer()
 {
@@ -328,10 +329,10 @@ bool procademy::CNetLoginServer::LeaveProc(SESSION_ID sessionNo)
 
 bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* packet, WCHAR* msg)
 {
-    INT64	    AccountNo;
-    char	    SessionKey[65];		// 인증토큰
-    CNetPacket* response;
-    st_Player*    player = FindPlayer(sessionNo);
+    INT64	        AccountNo;
+    char	        SessionKey[65];		// 인증토큰
+    CNetPacket*     response;
+    st_Player*      player = FindPlayer(sessionNo);
 
     if (player == nullptr)
     {
@@ -393,6 +394,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
 bool procademy::CNetLoginServer::CheckHeartProc()
 {
     HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
+    std::stack<SESSION_ID> releaseSessions;
 
     while (!mbExit)
     {
@@ -407,13 +409,21 @@ bool procademy::CNetLoginServer::CheckHeartProc()
                 {
                     if (curTime - iter->second->lastRecvTime > mTimeOut) // 40000ms
                     {
-                        SESSION_ID sessionNo = iter->second->sessionNo;
+                        //Disconnect(iter->second->sessionNo);
 
-                        Disconnect(sessionNo);
+                        releaseSessions.push(iter->second->sessionNo);
                     }
                 }
             }
             ReleaseSRWLockShared(&mPlayerMapLock);
+
+            while (!releaseSessions.empty())
+            {
+                SESSION_ID sessionNo = releaseSessions.top();
+                releaseSessions.pop();
+
+                Disconnect(sessionNo);
+            }
         }
     }
 
@@ -520,15 +530,15 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
 		MultiByteToWideChar(CP_ACP, 0, sql_row[1], -1, output->ID, en_NAME_MAX);
 		MultiByteToWideChar(CP_ACP, 0, sql_row[2], -1, output->nickName, en_NAME_MAX);
 		mDBConnector->FreeResult();
+
+        if (ret)
+        {
+            mRedis.setex(szAccountNumber, 10, sessionKey);
+            //mRedis.set(szAccountNumber, sessionKey);
+            mRedis.sync_commit();
+        }
     } while (0);
 	ReleaseSRWLockExclusive(&mDBConnectorLock);
-
-    if (ret)
-    {
-        mRedis.setex(szAccountNumber, 10, sessionKey);
-        //mRedis.set(szAccountNumber, sessionKey);
-        mRedis.sync_commit();
-    }
 
     return ret;
 }
