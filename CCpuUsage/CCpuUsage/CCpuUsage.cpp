@@ -40,10 +40,10 @@ procademy::CCpuUsage::CCpuUsage(HANDLE mhProcess)
 
 	GetEthernetCounters();
 
-	UpdateCpuTime();
+	UpdateProcessorCpuTime();
 }
 
-void procademy::CCpuUsage::UpdateCpuTime()
+void procademy::CCpuUsage::UpdateProcessorCpuTime()
 {
 	ULARGE_INTEGER Idle;
 	ULARGE_INTEGER Kernel;
@@ -135,6 +135,10 @@ void procademy::CCpuUsage::UpdateCpuTime()
 			mPdhValueNetwork_SendBytes += (DWORD)CounterValue.longValue;
 		}
 	}
+}
+
+void procademy::CCpuUsage::UpdateProcessCpuTime()
+{
 }
 
 void procademy::CCpuUsage::GetBigNumberStr(LONGLONG value, WCHAR* s, int size)

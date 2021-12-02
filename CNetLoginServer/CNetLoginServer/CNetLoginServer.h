@@ -2,6 +2,7 @@
 #include "CNetServerNoLock.h"
 #include <unordered_map>
 #include "CDBConnector_TLS.h"
+#include "CRedis_TLS.h"
 #include "LoginServerDTO.h"
 #include "CCpuUsage.h"
 #include "TC_LFObjectPool.h"
@@ -61,6 +62,7 @@ namespace procademy
 		CDBConnector*								mDBConnector;
 		SRWLOCK										mDBConnectorLock;
 		cpp_redis::client							mRedis;
+		SRWLOCK										mRedisLock;
 		int											mTimeOut;
 		HANDLE										mhThreads[2];
 		CCpuUsage									mCpuUsage;
@@ -73,7 +75,9 @@ namespace procademy
 		WCHAR										mAccountDBPassword[32];
 		WCHAR										mAccountDBSchema[32];
 		bool										mbMonitoring;
-		DWORD										mLoginCount = 0;
+		alignas(64) DWORD							mLoginWaitCount = 0;
+		alignas(64) DWORD							mLoginCount = 0;
+		alignas(64) DWORD							mLoginTotal = 0;
 	};
 }
 

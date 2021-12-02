@@ -1,3 +1,5 @@
+#define TLS_VERSION
+
 #include "CNetLoginServer.h"
 #include "LoginServerDTO.h"
 #include "TextParser.h"
@@ -214,12 +216,17 @@ void procademy::CNetLoginServer::Init()
 
     InitializeSRWLock(&mPlayerMapLock);
     InitializeSRWLock(&mDBConnectorLock);
+    InitializeSRWLock(&mRedisLock);
 
     mDBConnector = new CDBConnector(mAccountDBIP, mAccountDBUser, mAccountDBPassword, mAccountDBSchema, mAccountDBPort);
     
+    CDBConnector_TLS::InitDBConnector_TLS(mAccountDBIP, mAccountDBUser, mAccountDBPassword, mAccountDBSchema, mAccountDBPort, mWorkerThreadNum);
+
     WideCharToMultiByte(CP_ACP, 0, mTokenDBIP, -1, IP, sizeof(IP), nullptr, nullptr);
     
     mRedis.connect(IP, mTokenDBPort);
+
+    CRedis_TLS::InitRedis_TLS(mTokenDBIP, mTokenDBPort, mWorkerThreadNum);
 }
 
 void procademy::CNetLoginServer::LoadInitFile(const WCHAR* fileName)
@@ -354,6 +361,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
     char	        SessionKey[65];		// 인증토큰
     CNetPacket*     response;
     st_Player*      player = FindPlayer(sessionNo);
+    ULONGLONG       now;
 
     if (player == nullptr)
     {
@@ -383,12 +391,20 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
         return false;
     }
 
+    InterlockedIncrement(&mLoginWaitCount);
+
+    now = GetTickCount64();
+    player->lastRecvTime = now;
+    player->BeginLoginTime = now;
+
     *packet >> AccountNo;
 
     packet->GetData(SessionKey, 64);
     SessionKey[64] = '\0';
 
     player->accountNo = AccountNo;
+    
+    
 
     // token verification
     bool retval = TokenVerificationProc(AccountNo, SessionKey, player);
@@ -464,7 +480,7 @@ bool procademy::CNetLoginServer::MonitoringProc()
 
         if (retval == WAIT_TIMEOUT)
         {
-            mCpuUsage.UpdateCpuTime();
+            mCpuUsage.UpdateProcessorCpuTime();
             // 출력
             MakeMonitorStr(str, 2048);
 
@@ -525,6 +541,7 @@ void procademy::CNetLoginServer::MakeMonitorStr(WCHAR* s, int size)
 
 void procademy::CNetLoginServer::ClearTPS()
 {
+    mLoginCount = 0;
 }
 
 bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* sessionKey, st_Player* output)
@@ -534,24 +551,54 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
     INT64       num;
     bool        ret = true;
 
+#ifdef TLS_VERSION
+    CDBConnector_TLS::Query(L"SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = %lld;", accountNo);
+
+	sql_row = CDBConnector_TLS::FetchRow();
+
+	if (sql_row == NULL)
+	{
+		ret = false;
+	}
+
+	output->accountNo = accountNo;
+	strcpy_s(szAccountNumber, 20, sql_row[0]);
+	MultiByteToWideChar(CP_ACP, 0, sql_row[1], -1, output->ID, en_NAME_MAX);
+	MultiByteToWideChar(CP_ACP, 0, sql_row[2], -1, output->nickName, en_NAME_MAX);
+	CDBConnector_TLS::FreeResult();
+
+	if (ret)
+	{
+		cpp_redis::client* redis = CRedis_TLS::GetRedis();
+
+		redis->setex(szAccountNumber, 10, sessionKey);
+		redis->sync_commit();
+	}
+#else
     AcquireSRWLockExclusive(&mDBConnectorLock);
     do
-	{
-        SelectAccountInfo(mDBConnector, accountNo);
-		sql_row = mDBConnector->FetchRow();
+    {
+        mDBConnector->Query(L"SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = %lld;", accountNo);
 
-		if (sql_row == NULL)
-		{
+        sql_row = mDBConnector->FetchRow();
+
+        if (sql_row == NULL)
+        {
             ret = false;
             break;
-		}
+        }
 
-		output->accountNo = accountNo;
+        output->accountNo = accountNo;
         strcpy_s(szAccountNumber, 20, sql_row[0]);
-		MultiByteToWideChar(CP_ACP, 0, sql_row[1], -1, output->ID, en_NAME_MAX);
-		MultiByteToWideChar(CP_ACP, 0, sql_row[2], -1, output->nickName, en_NAME_MAX);
-		mDBConnector->FreeResult();
+        MultiByteToWideChar(CP_ACP, 0, sql_row[1], -1, output->ID, en_NAME_MAX);
+        MultiByteToWideChar(CP_ACP, 0, sql_row[2], -1, output->nickName, en_NAME_MAX);
+        mDBConnector->FreeResult();
+    } while (0);
+    ReleaseSRWLockExclusive(&mDBConnectorLock);
 
+    AcquireSRWLockExclusive(&mRedisLock);
+    do
+    {
         if (ret)
         {
             mRedis.setex(szAccountNumber, 10, sessionKey);
@@ -559,7 +606,16 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
             mRedis.sync_commit();
         }
     } while (0);
-	ReleaseSRWLockExclusive(&mDBConnectorLock);
+    ReleaseSRWLockExclusive(&mRedisLock);
+#endif
+
+    InterlockedDecrement(&mLoginWaitCount);
+
+    if (ret)
+    {
+        InterlockedIncrement(&mLoginCount);
+        InterlockedIncrement(&mLoginTotal);
+    }
 
     return ret;
 }
