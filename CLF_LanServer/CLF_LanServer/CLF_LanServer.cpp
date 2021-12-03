@@ -712,6 +712,7 @@ namespace procademy
 			//CProfiler::Begin(L"ALLOC");
 			CNetPacket* packet = CNetPacket::AllocAddRef();
 			//CProfiler::End(L"ALLOC");
+			packet->SetHeader(true);
 
 			memcpy_s(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE, (char*)&header, CNetPacket::HEADER_MAX_SIZE);
 

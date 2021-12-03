@@ -157,7 +157,7 @@ namespace procademy
 		if (mHcp == NULL)
 		{
 			CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateIoCompletionPort [Error: %d]", WSAGetLastError());
-			closesocket(mListenSocket);
+
 			return false;
 		}
 
