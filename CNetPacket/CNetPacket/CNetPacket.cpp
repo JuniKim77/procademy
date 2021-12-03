@@ -8,7 +8,6 @@
 
 #define NET_VERSION
 //#define TEST
-//#define PROFILE
 
 namespace procademy
 {

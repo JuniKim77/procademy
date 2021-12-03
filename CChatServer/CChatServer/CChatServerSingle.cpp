@@ -1,5 +1,5 @@
 #define SEND_TO_WORKER
-#define REDIS_MODE
+//#define REDIS_MODE
 
 #include "CChatServerSingle.h"
 #include "CNetPacket.h"
@@ -273,7 +273,14 @@ unsigned int __stdcall procademy::CChatServerSingle::RedisFunc(LPVOID arg)
 
 void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
 {
+#ifdef PROFILE
+    CProfiler::Begin(L"MsgEnqueue");
+#endif // PROFILE
     PostQueuedCompletionStatus(mIOCP, 1, (ULONG_PTR)msg, 0);
+#ifdef PROFILE
+    CProfiler::End(L"MsgEnqueue");
+#endif // PROFILE
+    
 }
 
 void procademy::CChatServerSingle::EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet)
@@ -369,10 +376,23 @@ void procademy::CChatServerSingle::GQCSProcEx()
                 CompleteMessage(msg->sessionNo, msg->packet);
                 break;
             case MSG_TYPE_JOIN:
+#ifdef PROFILE
+                CProfiler::Begin(L"JoinProc");
+#endif // PROFILE                
                 JoinProc(msg->sessionNo);
+#ifdef PROFILE
+                CProfiler::End(L"JoinProc");
+#endif // PROFILE
+                
                 break;
             case MSG_TYPE_LEAVE:
+#ifdef PROFILE
+                CProfiler::Begin(L"LeaveProc");
+#endif // PROFILE
                 LeaveProc(msg->sessionNo);
+#ifdef PROFILE
+                CProfiler::End(L"LeaveProc");
+#endif // PROFILE
                 break;
             case MSG_TYPE_TIMEOUT:
                 CheckTimeOutProc();
@@ -466,13 +486,31 @@ bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPac
     switch (type)
     {
     case en_PACKET_CS_CHAT_REQ_LOGIN:
+#ifdef PROFILE
+        CProfiler::Begin(L"LoginProc");
+#endif // PROFILE    
         ret = LoginProc(sessionNo, packet);
+#ifdef PROFILE
+        CProfiler::End(L"LoginProc");
+#endif // PROFILE    
         break;
     case en_PACKET_CS_CHAT_REQ_SECTOR_MOVE:
+#ifdef PROFILE
+        CProfiler::Begin(L"MoveSectorProc");
+#endif // PROFILE    
         ret = MoveSectorProc(sessionNo, packet);
+#ifdef PROFILE
+        CProfiler::End(L"MoveSectorProc");
+#endif // PROFILE    
         break;
     case en_PACKET_CS_CHAT_REQ_MESSAGE:
+#ifdef PROFILE
+        CProfiler::Begin(L"SendMessageProc");
+#endif // PROFILE    
         ret = SendMessageProc(sessionNo, packet);
+#ifdef PROFILE
+        CProfiler::End(L"SendMessageProc");
+#endif // PROFILE    
         break;
     case en_PACKET_CS_CHAT_REQ_HEARTBEAT:
         ret = HeartUpdateProc(sessionNo);

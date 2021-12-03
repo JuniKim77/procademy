@@ -307,9 +307,6 @@ namespace procademy
 
 		SetWSABuf(buffers, session, true);
 
-#ifdef PROFILE
-		CProfiler::Begin(L"WSARecv");
-#endif // PROFILE
 		int recvRet = WSARecv(session->socket, buffers, 2, nullptr, &flags, &session->recvOverlapped, nullptr);
 
 		if (recvRet == SOCKET_ERROR)
@@ -359,9 +356,6 @@ namespace procademy
 
 			IncrementIOProc(session, 30000);
 
-#ifdef PROFILE
-			CProfiler::Begin(L"WSASend");
-#endif // PROFILE
 			int sendRet = WSASend(session->socket, buffers, session->numSendingPacket, nullptr, 0, &session->sendOverlapped, nullptr);
 
 			if (sendRet == SOCKET_ERROR)
@@ -385,11 +379,7 @@ namespace procademy
 	}
 
 	void CLF_NetServer::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
-	{
-#ifdef PROFILE
-		CProfiler::Begin(L"SetWSABuf");
-#endif // PROFILE
-		
+	{	
 		if (isRecv)
 		{
 			char* pRear = session->recvQ.GetRearBufferPtr();
@@ -431,9 +421,6 @@ namespace procademy
 
 			session->numSendingPacket = snapSize;
 		}
-#ifdef PROFILE
-		CProfiler::End(L"SetWSABuf");
-#endif // PROFILE
 	}
 
 	void CLF_NetServer::IncrementIOProc(Session* session, int logic)
@@ -641,10 +628,9 @@ namespace procademy
 				if (pOverlapped == &session->recvOverlapped) // Recv
 				{
 #ifdef PROFILE
-					CProfiler::End(L"WSARecv");
-					CProfiler::Begin(L"CompleteRecv");
+					//CProfiler::Begin(L"CompleteRecv");
 					CompleteRecv(session, transferredSize);
-					CProfiler::End(L"CompleteRecv");
+					//CProfiler::End(L"CompleteRecv");
 #else
 					CompleteRecv(session, transferredSize);
 #endif // PROFILE
@@ -652,10 +638,9 @@ namespace procademy
 				else // Send
 				{
 #ifdef PROFILE
-					CProfiler::End(L"WSASend");
-					CProfiler::Begin(L"CompleteSend");
+					//CProfiler::Begin(L"CompleteSend");
 					CompleteSend(session, transferredSize);
-					CProfiler::End(L"CompleteSend");
+					//CProfiler::End(L"CompleteSend");
 #else
 					CompleteSend(session, transferredSize);
 #endif // PROFILE
@@ -709,9 +694,7 @@ namespace procademy
 			if (session->recvQ.GetUseSize() < (CNetPacket::HEADER_MAX_SIZE + header.len))
 				break;
 
-			//CProfiler::Begin(L"ALLOC");
 			CNetPacket* packet = CNetPacket::AllocAddRef();
-			//CProfiler::End(L"ALLOC");
 
 			memcpy_s(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE, (char*)&header, CNetPacket::HEADER_MAX_SIZE);
 
@@ -722,12 +705,18 @@ namespace procademy
 			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)header.len);
 
 			packet->MoveRear(ret);
+#ifdef PROFILE
+			CProfiler::Begin(L"Decode");
+#endif			
 			if (packet->Decode() == false)
 			{
 				status = false;
 				packet->SubRef();
 				break;
 			}
+#ifdef PROFILE
+			CProfiler::End(L"Decode");
+#endif			
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
 			count += (ret + sizeof(SHORT));
