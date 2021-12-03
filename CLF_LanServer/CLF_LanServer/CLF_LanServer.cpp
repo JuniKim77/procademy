@@ -1,4 +1,4 @@
-#include "CNetServerNoLock.h"
+#include "CLF_LanServer.h"
 #include "CLogger.h"
 #include "CNetPacket.h"
 #include "CCrashDump.h"
@@ -95,7 +95,7 @@ namespace procademy
 		g_debugs[index].packetNum = packetNum;
 	}
 
-	void CLF_NetServer::Init()
+	void CLF_LanServer::Init()
 	{
 		WORD		version = MAKEWORD(2, 2);
 		WSADATA		data;
@@ -116,32 +116,32 @@ namespace procademy
 		CreateIOCP();
 	}
 
-	Session* CLF_NetServer::FindSession(SESSION_ID sessionNo)
+	Session* CLF_LanServer::FindSession(SESSION_ID sessionNo)
 	{
 		u_short index = GetIndexFromSessionNo(sessionNo);
 
 		return mSessionArray + index;
 	}
 
-	void CLF_NetServer::InsertSessionData(Session* session)
+	void CLF_LanServer::InsertSessionData(Session* session)
 	{
 		u_short index = GetIndexFromSessionNo(session->sessionID);
 
 		mSessionArray[index] = *session;
 	}
 
-	void CLF_NetServer::DeleteSessionData(SESSION_ID sessionNo)
+	void CLF_LanServer::DeleteSessionData(SESSION_ID sessionNo)
 	{
 		u_short index = GetIndexFromSessionNo(sessionNo);
 
 		mEmptyIndexes.Push(index);
 	}
 
-	void CLF_NetServer::UpdateSessionData(SESSION_ID sessionNo, Session* session)
+	void CLF_LanServer::UpdateSessionData(SESSION_ID sessionNo, Session* session)
 	{
 	}
 
-	bool CLF_NetServer::CreateIOCP()
+	bool CLF_LanServer::CreateIOCP()
 	{
 		// 논리 코어 개수 확인 로직
 		SYSTEM_INFO si;
@@ -164,7 +164,7 @@ namespace procademy
 		return true;
 	}
 
-	bool CLF_NetServer::CreateListenSocket()
+	bool CLF_LanServer::CreateListenSocket()
 	{
 		WSADATA			wsa;
 		SOCKADDR_IN		addr;
@@ -232,7 +232,7 @@ namespace procademy
 		return true;
 	}
 
-	bool CLF_NetServer::BeginThreads()
+	bool CLF_LanServer::BeginThreads()
 	{
 		BYTE i = 0;
 
@@ -244,15 +244,15 @@ namespace procademy
 		}
 
 		mhThreads[i++] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, this, 0, nullptr);
-		
+
 		mNumThreads = i;
 
 		return true;
 	}
 
-	unsigned int __stdcall CLF_NetServer::WorkerThread(LPVOID arg)
+	unsigned int __stdcall CLF_LanServer::WorkerThread(LPVOID arg)
 	{
-		CLF_NetServer* server = (CLF_NetServer*)arg;
+		CLF_LanServer* server = (CLF_LanServer*)arg;
 
 		while (!server->mbExit)
 		{
@@ -262,9 +262,9 @@ namespace procademy
 		return 0;
 	}
 
-	unsigned int __stdcall CLF_NetServer::AcceptThread(LPVOID arg)
+	unsigned int __stdcall CLF_LanServer::AcceptThread(LPVOID arg)
 	{
-		CLF_NetServer* server = (CLF_NetServer*)arg;
+		CLF_LanServer* server = (CLF_LanServer*)arg;
 
 		while (!server->mbExit)
 		{
@@ -284,9 +284,9 @@ namespace procademy
 		return 0;
 	}
 
-	unsigned int __stdcall CLF_NetServer::MonitorThread(LPVOID arg)
+	unsigned int __stdcall CLF_LanServer::MonitorThread(LPVOID arg)
 	{
-		CLF_NetServer* server = (CLF_NetServer*)arg;
+		CLF_LanServer* server = (CLF_LanServer*)arg;
 
 		server->MonitorProc();
 
@@ -295,7 +295,7 @@ namespace procademy
 		return 0;
 	}
 
-	bool CLF_NetServer::RecvPost(Session* session, bool isAccepted)
+	bool CLF_LanServer::RecvPost(Session* session, bool isAccepted)
 	{
 		if (!isAccepted)
 		{
@@ -329,7 +329,7 @@ namespace procademy
 		return true;
 	}
 
-	bool CLF_NetServer::SendPost(Session* session)
+	bool CLF_LanServer::SendPost(Session* session)
 	{
 		WSABUF buffers[100];
 		bool ret = true;
@@ -384,12 +384,12 @@ namespace procademy
 		return ret;
 	}
 
-	void CLF_NetServer::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
+	void CLF_LanServer::SetWSABuf(WSABUF* bufs, Session* session, bool isRecv)
 	{
 #ifdef PROFILE
 		CProfiler::Begin(L"SetWSABuf");
 #endif // PROFILE
-		
+
 		if (isRecv)
 		{
 			char* pRear = session->recvQ.GetRearBufferPtr();
@@ -436,14 +436,14 @@ namespace procademy
 #endif // PROFILE
 	}
 
-	void CLF_NetServer::IncrementIOProc(Session* session, int logic)
+	void CLF_LanServer::IncrementIOProc(Session* session, int logic)
 	{
 		InterlockedIncrement(&session->ioBlock.ioCount);
 		/*ioDebugLog(logic, GetCurrentThreadId(), session->sessionID & 0xffffffff,
 			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
 	}
 
-	void CLF_NetServer::DecrementIOProc(Session* session, int logic)
+	void CLF_LanServer::DecrementIOProc(Session* session, int logic)
 	{
 		SessionIoCount ret;
 
@@ -467,7 +467,7 @@ namespace procademy
 		}
 	}
 
-	void CLF_NetServer::ReleaseProc(Session* session)
+	void CLF_LanServer::ReleaseProc(Session* session)
 	{
 		SessionIoCount released;
 		CNetPacket* dummy;
@@ -497,7 +497,7 @@ namespace procademy
 			{
 				break;
 			}
-			
+
 			/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket2);
 			g_sessionDebugs2[ret] = dummy;*/
 			dummy->SubRef();
@@ -510,7 +510,7 @@ namespace procademy
 		DeleteSessionData(id);
 	}
 
-	void CLF_NetServer::AcceptProc()
+	void CLF_LanServer::AcceptProc()
 	{
 		SOCKADDR_IN clientAddr;
 		int addrLen = sizeof(clientAddr);
@@ -573,7 +573,7 @@ namespace procademy
 #endif // PROFILE
 	}
 
-	Session* CLF_NetServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
+	Session* CLF_LanServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 	{
 		u_int64 id = GenerateSessionID();
 
@@ -605,7 +605,7 @@ namespace procademy
 		return session;
 	}
 
-	void CLF_NetServer::GQCS()
+	void CLF_LanServer::GQCS()
 	{
 		while (1)
 		{
@@ -613,7 +613,7 @@ namespace procademy
 			Session* completionKey = nullptr;
 			WSAOVERLAPPED* pOverlapped = nullptr;
 			Session* session = nullptr;
-			
+
 			BOOL gqcsRet = GetQueuedCompletionStatus(mHcp, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
 #ifdef PROFILE
 			CProfiler::Begin(L"GQCS_Net");
@@ -680,7 +680,7 @@ namespace procademy
 		}
 	}
 
-	void CLF_NetServer::CompleteRecv(Session* session, DWORD transferredSize)
+	void CLF_LanServer::CompleteRecv(Session* session, DWORD transferredSize)
 	{
 		session->recvQ.MoveRear(transferredSize);
 		CNetPacket::st_Header header;
@@ -722,12 +722,6 @@ namespace procademy
 			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)header.len);
 
 			packet->MoveRear(ret);
-			if (packet->Decode() == false)
-			{
-				status = false;
-				packet->SubRef();
-				break;
-			}
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
 			count += (ret + sizeof(SHORT));
@@ -748,7 +742,7 @@ namespace procademy
 #endif // PROFILE
 	}
 
-	void CLF_NetServer::CompleteSend(Session* session, DWORD transferredSize)
+	void CLF_LanServer::CompleteSend(Session* session, DWORD transferredSize)
 	{
 		CNetPacket* packet;
 		InterlockedAdd((LONG*)&sendTPS, session->numSendingPacket);
@@ -771,11 +765,11 @@ namespace procademy
 #endif // PROFILE		
 	}
 
-	void CLF_NetServer::CloseSessions()
+	void CLF_LanServer::CloseSessions()
 	{
 	}
 
-	void CLF_NetServer::InitializeEmptyIndex()
+	void CLF_LanServer::InitializeEmptyIndex()
 	{
 		for (u_short i = mMaxClient; i > 0; --i)
 		{
@@ -785,7 +779,7 @@ namespace procademy
 		//InitializeSRWLock(&mStackLock);
 	}
 
-	SESSION_ID CLF_NetServer::GenerateSessionID()
+	SESSION_ID CLF_LanServer::GenerateSessionID()
 	{
 		if (mEmptyIndexes.IsEmpty())
 		{
@@ -804,24 +798,24 @@ namespace procademy
 		return id;
 	}
 
-	u_short CLF_NetServer::GetIndexFromSessionNo(SESSION_ID sessionNo)
+	u_short CLF_LanServer::GetIndexFromSessionNo(SESSION_ID sessionNo)
 	{
 		return (u_short)(sessionNo >> (8 * 6));
 	}
 
-	u_int64 CLF_NetServer::GetLowNumFromSessionNo(SESSION_ID sessionNo)
+	u_int64 CLF_LanServer::GetLowNumFromSessionNo(SESSION_ID sessionNo)
 	{
 		return sessionNo & 0xffffffffffff;
 	}
 
-	ULONG CLF_NetServer::GetSessionIP(SESSION_ID sessionNo)
+	ULONG CLF_LanServer::GetSessionIP(SESSION_ID sessionNo)
 	{
 		u_short index = GetIndexFromSessionNo(sessionNo);
 
 		return mSessionArray[index].ip;
 	}
 
-	void CLF_NetServer::SetZeroCopy(bool on)
+	void CLF_LanServer::SetZeroCopy(bool on)
 	{
 		int optNum = on ? 0 : SEND_BUF_SIZE;
 
@@ -843,7 +837,7 @@ namespace procademy
 		}
 	}
 
-	void CLF_NetServer::SetNagle(bool on)
+	void CLF_LanServer::SetNagle(bool on)
 	{
 		BOOL optval = on;
 
@@ -865,7 +859,7 @@ namespace procademy
 		}
 	}
 
-	void CLF_NetServer::MonitorProc()
+	void CLF_LanServer::MonitorProc()
 	{
 		HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
 
@@ -889,7 +883,7 @@ namespace procademy
 		CloseHandle(dummyEvent);
 	}
 
-	void CLF_NetServer::QuitServer()
+	void CLF_LanServer::QuitServer()
 	{
 		mbExit = true;
 
@@ -919,14 +913,14 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CNetServer");
 	}
 
-	CLF_NetServer::CLF_NetServer()
+	CLF_LanServer::CLF_LanServer()
 	{
 		LoadInitFile(L"Server.cnf");
 		Init();
 		BeginThreads();
 	}
 
-	CLF_NetServer::~CLF_NetServer()
+	CLF_LanServer::~CLF_LanServer()
 	{
 		closesocket(mListenSocket);
 		if (mhThreads != nullptr)
@@ -940,7 +934,7 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServerNoLock End");
 	}
 
-	bool CLF_NetServer::Start()
+	bool CLF_LanServer::Start()
 	{
 		if (mbBegin == true)
 		{
@@ -960,7 +954,7 @@ namespace procademy
 		return true;
 	}
 
-	void CLF_NetServer::Stop()
+	void CLF_LanServer::Stop()
 	{
 		mbBegin = false;
 		BOOL ret;
@@ -976,7 +970,7 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CNetServer");
 	}
 
-	bool CLF_NetServer::Disconnect(SESSION_ID SessionID)
+	bool CLF_LanServer::Disconnect(SESSION_ID SessionID)
 	{
 		Session* session = FindSession(SessionID);
 		BOOL ret;
@@ -997,7 +991,7 @@ namespace procademy
 		return ret;
 	}
 
-	void CLF_NetServer::SendPacket(SESSION_ID SessionID, CNetPacket* packet)
+	void CLF_LanServer::SendPacket(SESSION_ID SessionID, CNetPacket* packet)
 	{
 		Session* session = FindSession(SessionID);
 		//
@@ -1026,7 +1020,7 @@ namespace procademy
 		DecrementIOProc(session, 20020);
 	}
 
-	void CLF_NetServer::SendPacketToWorker(SESSION_ID SessionID, CNetPacket* packet)
+	void CLF_LanServer::SendPacketToWorker(SESSION_ID SessionID, CNetPacket* packet)
 	{
 		Session* session = FindSession(SessionID);
 		//
@@ -1050,7 +1044,7 @@ namespace procademy
 		DecrementIOProc(session, 20020);
 	}
 
-	void CLF_NetServer::LoadInitFile(const WCHAR* fileName)
+	void CLF_LanServer::LoadInitFile(const WCHAR* fileName)
 	{
 		TextParser  tp;
 		int         num;
