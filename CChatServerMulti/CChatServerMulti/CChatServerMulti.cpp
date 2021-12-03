@@ -260,7 +260,7 @@ bool procademy::CChatServerMulti::MonitoringProc()
 
         if (retval == WAIT_TIMEOUT)
         {
-            mCpuUsage.UpdateCpuTime();
+            mCpuUsage.UpdateProcessorCpuTime();
             // Ãâ·Â
             MakeMonitorStr(str, 2048);
 

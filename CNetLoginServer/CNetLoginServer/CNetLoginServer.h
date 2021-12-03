@@ -15,7 +15,7 @@ namespace procademy
 {
 	struct st_Player;
 
-	class CNetLoginServer : public CNetServerNoLock
+	class CNetLoginServer : public CLF_NetServer
 	{
 	public:
 		CNetLoginServer();

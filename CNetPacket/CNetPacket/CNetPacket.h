@@ -200,6 +200,7 @@ namespace procademy
 		char*		mFront;
 		char*		mRear;
 		char*		mZero;
+	public:
 		static BYTE	sCode;
 		static BYTE	sPacketKey;
 

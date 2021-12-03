@@ -61,11 +61,11 @@ namespace procademy
 		}
 	};
 
-	class CNetServerNoLock
+	class CLF_NetServer
 	{
 	protected:
-		CNetServerNoLock();
-		virtual ~CNetServerNoLock();
+		CLF_NetServer();
+		virtual ~CLF_NetServer();
 		bool Start();
 		void Stop();
 

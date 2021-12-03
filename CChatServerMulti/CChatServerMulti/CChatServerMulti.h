@@ -13,7 +13,7 @@
 
 namespace procademy
 {
-	class CChatServerMulti : public CNetServerNoLock
+	class CChatServerMulti : public CLF_NetServer
 	{
 	public:
 		CChatServerMulti();

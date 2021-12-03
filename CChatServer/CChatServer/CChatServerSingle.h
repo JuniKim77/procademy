@@ -13,7 +13,7 @@
 
 namespace procademy
 {
-	class CChatServerSingle : public CNetServerNoLock
+	class CChatServerSingle : public CLF_NetServer
 	{
 	private:
 		enum en_MSG_TYPE
