@@ -8,7 +8,7 @@ namespace procademy
 	{
 	private:
 		enum {
-			DEFAULT_SIZE = 500
+			DEFAULT_SIZE = 5000
 		};
 
 	public:

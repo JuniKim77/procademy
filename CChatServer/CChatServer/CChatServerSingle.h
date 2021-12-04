@@ -7,6 +7,7 @@
 #include "ChatServerDTO.h"
 #include "CCpuUsage.h"
 #include <cpp_redis/cpp_redis>
+#include "CSafeQueue.h"
 
 #pragma comment (lib, "cpp_redis.lib")
 #pragma comment (lib, "tacopie.lib")
@@ -123,6 +124,8 @@ namespace procademy
 
 		TC_LFObjectPool<st_MSG>					mMsgPool;
 		TC_LFQueue<st_MSG*>						mMsgQ;
+		CSafeQueue<st_MSG*>						mMsgLQ;
+		SRWLOCK									mMsgLock;
 		HANDLE									mUpdateEvent = INVALID_HANDLE_VALUE;
 
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;

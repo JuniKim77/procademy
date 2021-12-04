@@ -110,5 +110,8 @@
     <ClInclude Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

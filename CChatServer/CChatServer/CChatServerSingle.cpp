@@ -284,7 +284,18 @@ void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
     }
     else
     {
-        mMsgQ.Enqueue(msg);
+        //mMsgQ.Enqueue(msg);
+        AcquireSRWLockExclusive(&mMsgLock);
+        while (1)
+        {
+            if (mMsgLQ.Enqueue(msg))
+            {
+                break;
+            }
+        }
+        
+        ReleaseSRWLockExclusive(&mMsgLock);
+
         SetEvent(mUpdateEvent);
     }    
 #ifdef PROFILE
@@ -442,9 +453,10 @@ void procademy::CChatServerSingle::EventProc()
 #endif // PROFILE
         mLoopCount++;
 
-        while (mMsgQ.IsEmpty() == false)
+        while (mMsgLQ.IsEmpty() == false)
         {
-            mMsgQ.Dequeue(&msg);
+            //mMsgQ.Dequeue(&msg);
+            msg = mMsgLQ.Dequeue();
 
             mUpdateTPS++;
 
@@ -1304,6 +1316,7 @@ void procademy::CChatServerSingle::Init()
     char IP[64];
 
     WideCharToMultiByte(CP_ACP, 0, mTokenDBIP, -1, IP, sizeof(IP), nullptr, nullptr);
+    InitializeSRWLock(&mMsgLock);
 
     mUpdateEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
     mRedis.connect(IP, mTokenDBPort);
