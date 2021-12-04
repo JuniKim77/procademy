@@ -53,11 +53,14 @@ namespace procademy
 		void						MakeMonitorStr(WCHAR* s, int size);
 		void						PrintRecvSendRatio();
 		void						ClearTPS();
+		void						RecordPerformentce();
 		void						EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet);
 		void						LockSector(WORD x, WORD y, bool exclusive = true);
 		void						UnlockSector(WORD x, WORD y, bool exclusive = true);
 		void						LockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive = true);
 		void						UnlockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive = true);
+		void						LockPlayerMap(bool exclusive = true);
+		void						UnlockPlayerMap(bool exclusive = true);
 
 		CNetPacket*					MakeCSResLogin(BYTE status, SESSION_ID accountNo);
 		CNetPacket*					MakeCSResSectorMove(SESSION_ID accountNo, WORD sectorX, WORD sectorY);

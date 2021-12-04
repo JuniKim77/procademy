@@ -1,3 +1,5 @@
+//#define REDIS_MODE
+
 #include "CChatServerMulti.h"
 #include "CNetPacket.h"
 #include "CommonProtocol.h"
@@ -21,7 +23,7 @@ procademy::CChatServerMulti::CChatServerMulti()
 
 procademy::CChatServerMulti::~CChatServerMulti()
 {
-    delete[] mpSectorLock;
+    //delete[] mpSectorLock;
 }
 
 bool procademy::CChatServerMulti::OnConnectionRequest(u_long IP, u_short Port)
@@ -293,7 +295,9 @@ bool procademy::CChatServerMulti::JoinProc(SESSION_ID sessionNo)
 
     //msgDebugLog(1000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
+    LockPlayerMap();
     InsertPlayer(sessionNo, player);
+    UnlockPlayerMap();
 
     return true;
 }
@@ -336,20 +340,33 @@ bool procademy::CChatServerMulti::RecvProc(SESSION_ID sessionNo, CNetPacket* pac
 
 bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* packet)
 {
-    //INT64	    AccountNo;
-    //WCHAR	    ID[20];				// null 포함
-    //WCHAR	    Nickname[20];		// null 포함
-    //char	    SessionKey[64];		// 인증토큰
-    //CNetPacket* response;
+#ifndef REDIS_MODE
+    INT64	    AccountNo;
+    WCHAR	    ID[20];				// null 포함
+    WCHAR	    Nickname[20];		// null 포함
+    char	    SessionKey[64];		// 인증토큰
+    CNetPacket* response;
+#endif // REDIS_MODE
+
+    *packet >> AccountNo;
+
+    packet->GetData(ID, 20);
+    packet->GetData(Nickname, 20);
+    packet->GetData(SessionKey, 64);
+
+    LockPlayerMap();
+
     st_Player* player = FindPlayer(sessionNo);
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
+        //CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
 
-        CRASH();
+        //CRASH();
 
-        return false;
+        UnlockPlayerMap();
+
+        return true;
     }
 
     if (player->sessionNo != sessionNo)
@@ -372,34 +389,35 @@ bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* pa
     }
 
     // token verification
+#ifdef REDIS_MODE
     packet->AddRef();
 
     EnqueueRedisQ(sessionNo, packet);
+#else
 
-    //    *packet >> AccountNo;
-    //
-    //    packet->GetData(ID, 20);
-    //    packet->GetData(Nickname, 20);
-    //    packet->GetData(SessionKey, 64);
-    //
-    //    player->accountNo = AccountNo;
-    //    wcscpy_s(player->ID, NAME_MAX, ID);
-    //    wcscpy_s(player->nickName, NAME_MAX, Nickname);
-    //    player->bLogin = true;
-    //    player->lastRecvTime = GetTickCount64();
-    //    mLoginCount++;
-    //
-    //    //msgDebugLog(2000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
-    //
-    //    response = MakeCSResLogin(1, player->accountNo);
-    //    {
-    //#ifdef SEND_TO_WORKER
-    //        SendPacketToWorker(player->sessionNo, response);
-    //#else
-    //        SendPacket(player->sessionNo, response);
-    //#endif // SEND_TO_WORKER
-    //    }
-    //    response->SubRef();
+    player->accountNo = AccountNo;
+    wcscpy_s(player->ID, NAME_MAX, ID);
+    wcscpy_s(player->nickName, NAME_MAX, Nickname);
+    player->bLogin = true;
+    player->lastRecvTime = GetTickCount64();
+
+    UnlockPlayerMap();
+
+    mLoginCount++;
+
+    //msgDebugLog(2000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
+
+    response = MakeCSResLogin(1, AccountNo);
+    {
+#ifdef SEND_TO_WORKER
+        SendPacketToWorker(sessionNo, response);
+#else
+        SendPacket(sessionNo, response);
+#endif // SEND_TO_WORKER
+    }
+    response->SubRef();
+
+#endif // REDIS_MODE
 
     return true;
 }
@@ -434,6 +452,8 @@ bool procademy::CChatServerMulti::LeaveProc(SESSION_ID sessionNo)
 
     //msgDebugLog(3000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
+    LockPlayerMap();
+
     if (player->curSectorX != -1 && player->curSectorY != -1)
     {
         LockSector(player->curSectorX, player->curSectorY);
@@ -452,6 +472,8 @@ bool procademy::CChatServerMulti::LeaveProc(SESSION_ID sessionNo)
 
     DeletePlayer(sessionNo);
 
+    UnlockPlayerMap();
+
     return true;
 }
 
@@ -460,16 +482,22 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
     INT64	AccountNo;
     WORD	SectorX;
     WORD	SectorY;
+
+    *packet >> AccountNo >> SectorX >> SectorY;
+
+    LockPlayerMap();
+
     st_Player* player = FindPlayer(sessionNo);
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found",
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [Session %llu] Not Found",
             sessionNo);
 
-        CRASH();
+        CRASH();*/
+        UnlockPlayerMap();
 
-        return false;
+        return true;
     }
 
     if (player->sessionNo != sessionNo)
@@ -480,8 +508,6 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
 
         return false;
     }
-
-    *packet >> AccountNo >> SectorX >> SectorY;
 
     if (player->accountNo != AccountNo)
     {
@@ -525,14 +551,16 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
     player->curSectorY = SectorY;
     player->lastRecvTime = GetTickCount64();
 
+    UnlockPlayerMap();
+
     //msgDebugLog(4000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
-    CNetPacket* response = MakeCSResSectorMove(player->accountNo, player->curSectorX, player->curSectorY);
+    CNetPacket* response = MakeCSResSectorMove(AccountNo, SectorX, SectorY);
     {
 #ifdef SEND_TO_WORKER
-        SendPacketToWorker(player->sessionNo, response);
+        SendPacketToWorker(sessionNo, response);
 #else
-        SendPacket(player->sessionNo, response);
+        SendPacket(sessionNo, response);
 #endif // SEND_TO_WORKER
     }
     response->SubRef();
@@ -544,17 +572,24 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
 {
     INT64	            AccountNo;
     WORD                messageLen;
-    st_Player*          player = FindPlayer(sessionNo);
+    st_Player*          player;
     st_Sector_Around    sectorAround;
+
+    *packet >> AccountNo >> messageLen;
+
+    LockPlayerMap(false);
+
+    player = FindPlayer(sessionNo);
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found",
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] Not Found",
             sessionNo);
 
-        CRASH();
+        CRASH();*/
+        UnlockPlayerMap(false);
 
-        return false;
+        return true;
     }
 
     if (player->sessionNo != sessionNo)
@@ -565,8 +600,6 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
 
         return false;
     }
-
-    *packet >> AccountNo >> messageLen;
 
     if (player->accountNo != AccountNo)
     {
@@ -586,6 +619,7 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
     player->lastRecvTime = GetTickCount64();
 
     //msgDebugLog(5000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
+    
     mSector[player->curSectorY][player->curSectorX].recvCount++;
 
     GetSectorAround(player->curSectorX, player->curSectorY, &sectorAround);
@@ -594,6 +628,9 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
     {
         mSector[player->curSectorY][player->curSectorX].sendCount += SendMessageSectorAround(response, &sectorAround);
     }
+
+    UnlockPlayerMap(false);
+
     response->SubRef();
 
     return true;
@@ -601,16 +638,18 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
 
 bool procademy::CChatServerMulti::HeartUpdateProc(SESSION_ID sessionNo)
 {
+    LockPlayerMap(false);
+
     st_Player* player = FindPlayer(sessionNo);
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"HeartUpdateProc - [Session %llu] Not Found",
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"HeartUpdateProc - [Session %llu] Not Found",
             sessionNo);
 
-        CRASH();
+        CRASH();*/
 
-        return false;
+        return true;
     }
 
     if (player->sessionNo != sessionNo)
@@ -623,6 +662,8 @@ bool procademy::CChatServerMulti::HeartUpdateProc(SESSION_ID sessionNo)
     }
 
     player->lastRecvTime = GetTickCount64();
+
+    UnlockPlayerMap(false);
 
     return true;
 }
@@ -654,14 +695,6 @@ bool procademy::CChatServerMulti::RedisProc()
             return true;
         }
 
-        st_Player* player = FindPlayer(sessionNo);
-
-        if (player == nullptr)
-        {
-            // 로그인 요청하고 바로 끊을 수 있다.
-            continue;
-        }
-
         *packet >> AccountNo;
 
         packet->GetData(ID, 20);
@@ -672,10 +705,19 @@ bool procademy::CChatServerMulti::RedisProc()
 
         _i64toa_s(AccountNo, buffer, 10, 10);
         mRedis.get(buffer, [&cmpRet, SessionKey](cpp_redis::reply& reply) {
-            cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
+            if (reply.is_string())
+            {
+                cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
+            }
             });
 
         mRedis.sync_commit();
+
+        if (cmpRet)
+        {
+
+
+        }
 
 #ifdef PROFILE
         CProfiler::End(L"RedisProc");
@@ -687,6 +729,8 @@ bool procademy::CChatServerMulti::RedisProc()
 
 void procademy::CChatServerMulti::BeginThreads()
 {
+    CProfiler::InitProfiler(30);
+
     mMonitoringThread = (HANDLE)_beginthreadex(nullptr, 0, MonitorFunc, this, 0, nullptr);
     mHeartbeatThread = (HANDLE)_beginthreadex(nullptr, 0, HeartbeatFunc, this, 0, nullptr);
     mRedisThread = (HANDLE)_beginthreadex(nullptr, 0, RedisFunc, this, 0, nullptr);
@@ -740,7 +784,12 @@ void procademy::CChatServerMulti::FreePlayer(st_Player* player)
 
 procademy::st_Player* procademy::CChatServerMulti::FindPlayer(SESSION_ID sessionNo)
 {
+    //LockPlayerMap(false);
+
     std::unordered_map<u_int64, st_Player*>::iterator iter = mPlayerMap.find(sessionNo);
+
+    //UnlockPlayerMap(false);
+    
 
     if (iter == mPlayerMap.end())
     {
@@ -752,20 +801,24 @@ procademy::st_Player* procademy::CChatServerMulti::FindPlayer(SESSION_ID session
 
 void procademy::CChatServerMulti::InsertPlayer(SESSION_ID sessionNo, st_Player* player)
 {
-    AcquireSRWLockExclusive(&mPlayerMapLock);
+    /*LockPlayerMap();
     {
         mPlayerMap[sessionNo] = player;
     }
-    ReleaseSRWLockExclusive(&mPlayerMapLock);
+    UnlockPlayerMap();*/
+
+    mPlayerMap[sessionNo] = player;
 }
 
 void procademy::CChatServerMulti::DeletePlayer(SESSION_ID sessionNo)
 {
-    AcquireSRWLockExclusive(&mPlayerMapLock);
+    /*LockPlayerMap();
     {
         mPlayerMap.erase(sessionNo);
     }
-    ReleaseSRWLockExclusive(&mPlayerMapLock);
+    UnlockPlayerMap();*/
+
+    mPlayerMap.erase(sessionNo);
 }
 
 void procademy::CChatServerMulti::Sector_AddPlayer(WORD x, WORD y, st_Player* player)
@@ -864,6 +917,7 @@ void procademy::CChatServerMulti::MakeMonitorStr(WCHAR* s, int size)
     WCHAR bigNumber[18];
 
     idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"[Chat Multi Server Status: %s]\n", mbBegin ? L"RUN" : L"STOP");
     idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d]\n", mbZeroCopy, mbNagle);
     idx += swprintf_s(s + idx, size - idx, L"[WorkerTh: %d] [ActiveTh: %d]\n", mWorkerThreadNum, mActiveThreadNum);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
@@ -965,6 +1019,16 @@ void procademy::CChatServerMulti::ClearTPS()
     }
 }
 
+void procademy::CChatServerMulti::RecordPerformentce()
+{
+    CProfiler::SetRecord(L"Accept_TPS", mMonitor.acceptTPS * 10);
+    CProfiler::SetRecord(L"Update_TPS", mUpdateTPS * 10);
+    CProfiler::SetRecord(L"Recv_TPS", mMonitor.prevRecvTPS * 10);
+    CProfiler::SetRecord(L"Send_TPS", mMonitor.prevSendTPS * 10);
+    CProfiler::SetRecord(L"CPU_TOTAL", mCpuUsage.ProcessorTotal() * 10.0);
+    CProfiler::SetRecord(L"PROCESS_TOTAL", mCpuUsage.ProcessTotal() * 10.0);
+}
+
 void procademy::CChatServerMulti::EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet)
 {
     PostQueuedCompletionStatus(mRedisIOCP, 1, (ULONG_PTR)sessionNo, (LPOVERLAPPED)packet);
@@ -996,6 +1060,8 @@ void procademy::CChatServerMulti::UnlockSector(WORD x, WORD y, bool exclusive)
 
 void procademy::CChatServerMulti::LockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive)
 {
+    return;
+
     if (exclusive)
     {
         int index1 = mSectorLockIndex[y1][x1];
@@ -1040,6 +1106,8 @@ void procademy::CChatServerMulti::LockSectors(WORD x1, WORD y1, WORD x2, WORD y2
 
 void procademy::CChatServerMulti::UnlockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive)
 {
+    return;
+
     if (exclusive)
     {
         int index1 = mSectorLockIndex[y1][x1];
@@ -1070,6 +1138,35 @@ void procademy::CChatServerMulti::UnlockSectors(WORD x1, WORD y1, WORD x2, WORD 
             ReleaseSRWLockShared(&mpSectorLock[index2]);
         }
     }
+}
+
+void procademy::CChatServerMulti::LockPlayerMap(bool exclusive)
+{
+    return;
+
+    if (exclusive)
+    {
+        AcquireSRWLockExclusive(&mPlayerMapLock);
+    }
+    else
+    {
+        AcquireSRWLockShared(&mPlayerMapLock);
+    }
+}
+
+void procademy::CChatServerMulti::UnlockPlayerMap(bool exclusive)
+{
+    return;
+
+    if (exclusive)
+    {
+        ReleaseSRWLockExclusive(&mPlayerMapLock);
+    }
+    else
+    {
+        ReleaseSRWLockShared(&mPlayerMapLock);
+    }
+
 }
 
 procademy::CNetPacket* procademy::CChatServerMulti::MakeCSResLogin(BYTE status, SESSION_ID accountNo)
