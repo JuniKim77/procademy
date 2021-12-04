@@ -93,6 +93,7 @@ namespace procademy
 		void			PrintRecvSendRatio();
 		void			ClearTPS();
 		void			Init();
+		void			RecordPerformentce();
 
 	/// <summary>
 	/// Make Packet Funcs

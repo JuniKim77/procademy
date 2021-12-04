@@ -4,7 +4,7 @@
 //#define NEW_DELETE_VER
 //#define MEMORY_POOL_VER
 #define TLS_MEMORY_POOL_VER
-//#define PROFILE
+#//define PROFILE
 
 #ifdef MEMORY_POOL_VER
 #include "TC_LFObjectPool.h"
@@ -34,7 +34,7 @@ namespace procademy
 		enum en_PACKET
 		{
 			HEADER_MAX_SIZE = 5,
-			eBUFFER_DEFAULT = 3000		// 패킷의 기본 버퍼 사이즈.
+			eBUFFER_DEFAULT = 1000		// 패킷의 기본 버퍼 사이즈.
 		};
 
 		//////////////////////////////////////////////////////////////////////////

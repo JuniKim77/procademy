@@ -457,6 +457,7 @@ bool procademy::CChatServerSingle::MonitoringProc()
         if (retval == WAIT_TIMEOUT)
         {
             mCpuUsage.UpdateProcessorCpuTime();
+            RecordPerformentce();
             // Ãâ·Â
             MakeMonitorStr(str, 2048);
             
@@ -1005,6 +1006,8 @@ bool procademy::CChatServerSingle::RedisProc()
 
 void procademy::CChatServerSingle::BeginThreads()
 {
+    CProfiler::InitProfiler(30);
+
     mUpdateThread = (HANDLE)_beginthreadex(nullptr, 0, UpdateFunc, this, 0, nullptr);
     mMonitoringThread = (HANDLE)_beginthreadex(nullptr, 0, MonitorFunc, this, 0, nullptr);
     mHeartbeatThread = (HANDLE)_beginthreadex(nullptr, 0, HeartbeatFunc, this, 0, nullptr);
@@ -1226,6 +1229,17 @@ void procademy::CChatServerSingle::Init()
     mRedis.connect(IP, mTokenDBPort);
     mIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
     mRedisIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
+}
+
+void procademy::CChatServerSingle::RecordPerformentce()
+{
+    CProfiler::SetRecord(L"Accept_TPS", mMonitor.acceptTPS * 10);
+    CProfiler::SetRecord(L"Update_TPS", mUpdateTPS * 10);
+    CProfiler::SetRecord(L"Recv_TPS", mMonitor.prevRecvTPS * 10);
+    CProfiler::SetRecord(L"Send_TPS", mMonitor.prevSendTPS * 10);
+    CProfiler::SetRecord(L"GQCS_EX_RATIO", mUpdateTPS * 10.0 / (double)mGQCSCount);
+    CProfiler::SetRecord(L"CPU_TOTAL", mCpuUsage.ProcessorTotal() * 10.0);
+    CProfiler::SetRecord(L"PROCESS_TOTAL", mCpuUsage.ProcessTotal() * 10.0);
 }
 
 procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status, INT64 accountNo)
