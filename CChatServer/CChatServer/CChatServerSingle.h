@@ -57,6 +57,7 @@ namespace procademy
 		/// <returns></returns>
 		void			GQCSProc();
 		void			GQCSProcEx();
+		void			EventProc();
 		/// <summary>
 		/// 전 플레이어를 돌면서 플레이어 체크
 		/// </summary>
@@ -121,13 +122,15 @@ namespace procademy
 		USHORT									mTokenDBPort;
 
 		TC_LFObjectPool<st_MSG>					mMsgPool;
+		TC_LFQueue<st_MSG*>						mMsgQ;
+		HANDLE									mUpdateEvent = INVALID_HANDLE_VALUE;
 
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;
 		TC_LFObjectPool<st_Player>				mPlayerPool;
 		DWORD									mLoginCount = 0;
 		DWORD									mUpdateTPS = 0;
 		DWORD									mRedisTPS = 0;
-		DWORD									mGQCSCount = 0;
+		DWORD									mLoopCount = 0;
 		DWORD									mGQCSCExNum = 0;
 
 		st_Sector								mSector[SECTOR_MAX_Y][SECTOR_MAX_X];

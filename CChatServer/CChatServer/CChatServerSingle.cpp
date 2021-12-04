@@ -74,6 +74,7 @@ procademy::CChatServerSingle::CChatServerSingle()
 
 procademy::CChatServerSingle::~CChatServerSingle()
 {
+    CloseHandle(mUpdateEvent);
 }
 
 bool procademy::CChatServerSingle::OnConnectionRequest(u_long IP, u_short Port)
@@ -230,7 +231,8 @@ unsigned int __stdcall procademy::CChatServerSingle::UpdateFunc(LPVOID arg)
         if (chatServer->mGQCSEx)
             chatServer->GQCSProcEx();
         else
-            chatServer->GQCSProc();
+            //chatServer->GQCSProc();
+            chatServer->EventProc();
     }
 
     CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Update Thread End");
@@ -276,7 +278,15 @@ void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
 #ifdef PROFILE
     CProfiler::Begin(L"MsgEnqueue");
 #endif // PROFILE
-    PostQueuedCompletionStatus(mIOCP, 1, (ULONG_PTR)msg, 0);
+    if (mGQCSEx)
+    {
+        PostQueuedCompletionStatus(mIOCP, 1, (ULONG_PTR)msg, 0);
+    }
+    else
+    {
+        mMsgQ.Enqueue(msg);
+        SetEvent(mUpdateEvent);
+    }    
 #ifdef PROFILE
     CProfiler::End(L"MsgEnqueue");
 #endif // PROFILE
@@ -356,7 +366,7 @@ void procademy::CChatServerSingle::GQCSProcEx()
 #ifdef PROFILE
         CProfiler::Begin(L"GQCSProcEx_Chat");
 #endif // PROFILE
-        mGQCSCount++;
+        mLoopCount++;
 
         for (ULONG i = 0; i < dequeueSize; ++i)
         {
@@ -416,6 +426,74 @@ void procademy::CChatServerSingle::GQCSProcEx()
     }
 
     delete[] overlappedArray;
+}
+
+void procademy::CChatServerSingle::EventProc()
+{
+
+    while (!mbExit)
+    {
+        st_MSG*             msg = nullptr;
+
+        DWORD retval = WaitForSingleObject(mUpdateEvent, INFINITE);
+
+#ifdef PROFILE
+        CProfiler::Begin(L"EventProc");
+#endif // PROFILE
+        mLoopCount++;
+
+        while (mMsgQ.IsEmpty() == false)
+        {
+            mMsgQ.Dequeue(&msg);
+
+            mUpdateTPS++;
+
+            switch (msg->type)
+            {
+            case MSG_TYPE_RECV:
+                CompleteMessage(msg->sessionNo, msg->packet);
+                break;
+            case MSG_TYPE_JOIN:
+#ifdef PROFILE
+                CProfiler::Begin(L"JoinProc");
+#endif // PROFILE                
+                JoinProc(msg->sessionNo);
+#ifdef PROFILE
+                CProfiler::End(L"JoinProc");
+#endif // PROFILE
+
+                break;
+            case MSG_TYPE_LEAVE:
+#ifdef PROFILE
+                CProfiler::Begin(L"LeaveProc");
+#endif // PROFILE
+                LeaveProc(msg->sessionNo);
+#ifdef PROFILE
+                CProfiler::End(L"LeaveProc");
+#endif // PROFILE
+                break;
+            case MSG_TYPE_TIMEOUT:
+                CheckTimeOutProc();
+                break;
+            case MSG_TYPE_VERIFICATION_SUCCESS:
+                CompleteLoginProc(msg->sessionNo, msg->packet, true);
+                break;
+            case MSG_TYPE_VERIFICATION_FAIL:
+                CompleteLoginProc(msg->sessionNo, msg->packet, false);
+                break;
+            default:
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message");
+                break;
+            }
+
+            mMsgPool.Free(msg);
+
+            msg = nullptr;
+        }
+#ifdef PROFILE
+        CProfiler::End(L"EventProc");
+#endif // PROFILE
+    }
 }
 
 bool procademy::CChatServerSingle::CheckHeartProc()
@@ -1121,6 +1199,8 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"%22s%lld\n", L"Session Num : ", mPlayerMap.size());
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+    if (mGQCSEx == false)
+        idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"MsgQ : ", mMsgQ.GetPoolCapacity(), mMsgQ.GetSize());
 #ifdef TLS_MEMORY_POOL_VER
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
 #endif // TLS_MEMORY_POOL_VER
@@ -1132,8 +1212,7 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Update TPS : ", mUpdateTPS);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
-    if (mGQCSEx)
-        idx += swprintf_s(s + idx, size - idx, L"%22s%.1f\n", L"GQCS_EX Avg : ", mUpdateTPS / (double)mGQCSCount);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%.1f\n", L"GQCS_EX Avg : ", mUpdateTPS / (double)mLoopCount);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
     idx += swprintf_s(s + idx, size - idx, L"CPU usage [T:%.1f U:%.1f K:%.1f] [Chat T:%.1f U:%.1f K:%.1f]\n",
         mCpuUsage.ProcessorTotal(), mCpuUsage.ProcessorUser(), mCpuUsage.ProcessorKernel(),
@@ -1207,7 +1286,7 @@ void procademy::CChatServerSingle::ClearTPS()
 {
     mUpdateTPS = 0;
     mRedisTPS = 0;
-    mGQCSCount = 0;
+    mLoopCount = 0;
     for (int i = 0; i < 50; ++i)
     {
         for (int j = 0; j < 50; ++j)
@@ -1226,6 +1305,7 @@ void procademy::CChatServerSingle::Init()
 
     WideCharToMultiByte(CP_ACP, 0, mTokenDBIP, -1, IP, sizeof(IP), nullptr, nullptr);
 
+    mUpdateEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
     mRedis.connect(IP, mTokenDBPort);
     mIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
     mRedisIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
@@ -1237,7 +1317,7 @@ void procademy::CChatServerSingle::RecordPerformentce()
     CProfiler::SetRecord(L"Update_TPS", mUpdateTPS * 10);
     CProfiler::SetRecord(L"Recv_TPS", mMonitor.prevRecvTPS * 10);
     CProfiler::SetRecord(L"Send_TPS", mMonitor.prevSendTPS * 10);
-    CProfiler::SetRecord(L"GQCS_EX_RATIO", mUpdateTPS * 10.0 / (double)mGQCSCount);
+    CProfiler::SetRecord(L"Loop_RATIO", mUpdateTPS * 10.0 / (double)mLoopCount);
     CProfiler::SetRecord(L"CPU_TOTAL", mCpuUsage.ProcessorTotal() * 10.0);
     CProfiler::SetRecord(L"PROCESS_TOTAL", mCpuUsage.ProcessTotal() * 10.0);
 }
