@@ -378,6 +378,15 @@ void CProfiler::SetRecord(const WCHAR* szName, LONGLONG time)
 {
 	CProfiler* profiler = (CProfiler*)TlsGetValue(s_MultiProfiler);
 
+	if (profiler == nullptr)
+	{
+		AcquireSRWLockExclusive(&s_lock);
+		profiler = s_profilers[s_ProfilerIndex++];
+		TlsSetValue(s_MultiProfiler, profiler);
+		profiler->SetThreadId();
+		ReleaseSRWLockExclusive(&s_lock);
+	}
+
 	profiler->ProfileSetRecord(szName, time);
 }
 
