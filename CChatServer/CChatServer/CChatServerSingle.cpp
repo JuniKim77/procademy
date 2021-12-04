@@ -535,7 +535,7 @@ bool procademy::CChatServerSingle::MonitoringProc()
         if (retval == WAIT_TIMEOUT)
         {
             mCpuUsage.UpdateProcessorCpuTime();
-            RecordPerformentce();
+            //RecordPerformentce();
             // Ãâ·Â
             MakeMonitorStr(str, 2048);
             
@@ -1212,7 +1212,7 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Update TPS : ", mUpdateTPS);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
-    idx += swprintf_s(s + idx, size - idx, L"%22s%.1f\n", L"GQCS_EX Avg : ", mUpdateTPS / (double)mLoopCount);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%.1f\n", L"GQCS_EX Avg : ", mUpdateTPS / (double)(mLoopCount == 0? 1 : mLoopCount));
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
     idx += swprintf_s(s + idx, size - idx, L"CPU usage [T:%.1f U:%.1f K:%.1f] [Chat T:%.1f U:%.1f K:%.1f]\n",
         mCpuUsage.ProcessorTotal(), mCpuUsage.ProcessorUser(), mCpuUsage.ProcessorKernel(),
