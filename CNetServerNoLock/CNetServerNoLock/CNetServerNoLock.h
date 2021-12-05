@@ -148,7 +148,7 @@ namespace procademy
 
 	protected:
 		bool				mbNagle = true;
-		bool				mbZeroCopy = true;
+		bool				mbZeroCopy = false;
 		bool				mbExit = false;
 		bool				mbBegin = false;
 		BYTE				mActiveThreadNum = 0;

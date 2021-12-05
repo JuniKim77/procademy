@@ -547,7 +547,7 @@ bool procademy::CChatServerSingle::MonitoringProc()
         if (retval == WAIT_TIMEOUT)
         {
             mCpuUsage.UpdateProcessorCpuTime();
-            //RecordPerformentce();
+            RecordPerformentce();
             // Ãâ·Â
             MakeMonitorStr(str, 2048);
             
