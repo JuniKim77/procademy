@@ -485,7 +485,7 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
 
     *packet >> AccountNo >> SectorX >> SectorY;
 
-    LockPlayerMap();
+    LockPlayerMap(false);
 
     st_Player* player = FindPlayer(sessionNo);
 
@@ -495,7 +495,7 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
             sessionNo);
 
         CRASH();*/
-        UnlockPlayerMap();
+        UnlockPlayerMap(false);
 
         return true;
     }
@@ -551,7 +551,7 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
     player->curSectorY = SectorY;
     player->lastRecvTime = GetTickCount64();
 
-    UnlockPlayerMap();
+    UnlockPlayerMap(false);
 
     //msgDebugLog(4000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
