@@ -16,6 +16,7 @@ namespace procademy
 		void SetZeroCopy(bool on);
 		void SetNagle(bool on);
 
+		virtual void AllocSessions(int num) = 0;
 		virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept 직후
 		virtual void OnError(int errorcode, const WCHAR* log) = 0;
 
@@ -44,11 +45,26 @@ namespace procademy
 		void DecrementIOProc(CSession* session, int logic);
 		void CompleteRecv(CSession* session, DWORD transferredSize);
 		void CompleteSend(CSession* session, DWORD transferredSize);
-		bool RecvPost(CSession* session);
+		bool RecvPost(CSession* session, bool isFirst = false);
 		bool SendPost(CSession* session);
 		void SendPacket(CSession* session, CNetPacket* packet); // SESSION_ID / HOST_ID
 		void SetWSABuf(WSABUF* bufs, CSession* session, bool isRecv);
 		void ReleaseProc(CSession* session);
+
+		void AuthLoopProc();
+		void AuthReadySessionProc(CSession* session);
+		void AuthCompleteRecvProc(CSession* session);
+		void AuthSessionToReleaseProc(CSession* session);
+		void AuthReleaseProc(CSession* session);
+
+		void SendLoopProc();
+		void SendPacketProc(CSession* session);
+
+		void GameLoopProc();
+		void GameReadySessionProc(CSession* session);
+		void GameCompleteRecvProc(CSession* session);
+		void GameSessionToReleaseProc(CSession* session);
+		void GameReleaseProc(CSession* session);
 
 	private:
 		enum {
@@ -66,6 +82,9 @@ namespace procademy
 		u_short					mPort = 0;
 		WCHAR					mBindIP[32];
 		HANDLE					mBeginEvent = INVALID_HANDLE_VALUE;
+		int						mAuthPacketLoopNum = 1;
+		int						mSendPacketLoopNum = 1;
+		int						mGamePacketLoopNum = 1;
 
 		/// <summary>
 		/// 모니터링 변수들

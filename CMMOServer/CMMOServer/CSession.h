@@ -63,11 +63,12 @@ namespace procademy
 		TC_LFQueue<CNetPacket*>		sendQ;
 		int							numSendingPacket = 0;
 		alignas(64) SessionIoCount	ioBlock;
-		alignas(64) bool			isSending = false;
+		bool						isSending = false;
 		SOCKET						socket = INVALID_SOCKET;
 		u_short						port;
 		ULONG						ip;
 		u_int64						sessionID;
+		bool						sessionEnd = false;
 		SESSION_STATUS				status;
 	};
 }
