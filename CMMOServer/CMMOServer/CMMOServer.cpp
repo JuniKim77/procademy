@@ -1,6 +1,8 @@
 #include "CMMOServer.h"
 #include "CLogger.h"
 #include "TextParser.h"
+#include "CNetPacket.h"
+#include "CFrameSkipper.h"
 
 procademy::CMMOServer::CMMOServer()
 {
@@ -37,7 +39,7 @@ bool procademy::CMMOServer::Start()
 		return false;
 	}
 
-	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServer Begin");
+	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CMMOServer Begin");
 
 	if (!CreateListenSocket())
 	{
@@ -51,6 +53,18 @@ bool procademy::CMMOServer::Start()
 
 void procademy::CMMOServer::Stop()
 {
+	mbBegin = false;
+	BOOL ret;
+
+	closesocket(mListenSocket);
+
+	for (USHORT i = 0; i < mMaxClient; ++i)
+	{
+		ret = CancelIoEx((HANDLE)mSessionArray[i]->socket, nullptr);
+		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d", ret, GetLastError());
+	}
+
+	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CMMOServer");
 }
 
 void procademy::CMMOServer::LoadInitFile(const WCHAR* fileName)
@@ -92,6 +106,32 @@ void procademy::CMMOServer::LoadInitFile(const WCHAR* fileName)
 
 void procademy::CMMOServer::QuitServer()
 {
+	mbExit = true;
+
+	Stop();
+
+	PostQueuedCompletionStatus(mIOCP, 0, 0, 0);
+
+	SetEvent(mBeginEvent);
+
+	DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
+
+	switch (waitResult)
+	{
+	case WAIT_FAILED:
+		wprintf_s(L"Main Thread Handle Error");
+		break;
+	case WAIT_TIMEOUT:
+		wprintf_s(L"Main Thread Timeout Error");
+		break;
+	case WAIT_OBJECT_0:
+		wprintf_s(L"None Error\n");
+		break;
+	default:
+		break;
+	}
+
+	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CMMOServer");
 }
 
 void procademy::CMMOServer::SetZeroCopy(bool on)
@@ -215,7 +255,7 @@ void procademy::CMMOServer::Init()
 	CLogger::SetDirectory(L"_log");
 	mBeginEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
 
-	mhThreads = new HANDLE[(long long)mWorkerThreadNum + 2];
+	mhThreads = new HANDLE[(long long)mWorkerThreadNum + 5];
 	mSessionArray = (CSession**)(new (CSession*)[mMaxClient]);
 
 	InitializeEmptyIndex();
@@ -344,6 +384,44 @@ void procademy::CMMOServer::InitializeEmptyIndex()
 
 void procademy::CMMOServer::AcceptProc()
 {
+	SOCKADDR_IN clientAddr;
+	int addrLen = sizeof(clientAddr);
+
+	SOCKET client = accept(mListenSocket, (SOCKADDR*)&clientAddr, &addrLen);
+
+	if (client == INVALID_SOCKET)
+	{
+		int err = WSAGetLastError();
+
+		if (err == WSAENOTSOCK || err == WSAEINTR)
+		{
+			CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Listen Socket Close [Error: %d]", err);
+
+			return;
+		}
+
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Listen Socket [Error: %d]", err);
+
+		return;
+	}
+
+	if (OnConnectionRequest(clientAddr.sin_addr.S_un.S_addr, clientAddr.sin_port) == false)
+	{
+		WCHAR IP[16] = { 0, };
+
+		InetNtop(AF_INET, &clientAddr.sin_addr.S_un.S_addr, IP, 16);
+
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Accept Denied [IP: %s] [Port: %u]",
+			IP, ntohs(clientAddr.sin_port));
+
+		closesocket(client);
+
+		return;
+	}
+
+	CreateSession(client, clientAddr);
+
+
 }
 
 void procademy::CMMOServer::MonitorProc()
@@ -352,6 +430,64 @@ void procademy::CMMOServer::MonitorProc()
 
 void procademy::CMMOServer::GQCSProc()
 {
+	while (1)
+	{
+		DWORD transferredSize = 0;
+		CSession* completionKey = nullptr;
+		WSAOVERLAPPED* pOverlapped = nullptr;
+		CSession* session = nullptr;
+
+		BOOL gqcsRet = GetQueuedCompletionStatus(mIOCP, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
+#ifdef PROFILE
+		CProfiler::Begin(L"GQCS_Net");
+#endif // PROFILE
+
+		// ECHO Server End
+		if (transferredSize == 0 && (PULONG_PTR)completionKey == nullptr && pOverlapped == nullptr)
+		{
+			PostQueuedCompletionStatus(mIOCP, 0, 0, 0);
+
+			return;
+		}
+
+		if (pOverlapped == nullptr) // I/O Fail
+		{
+			OnError(10000, L"IOCP Error");
+
+			return;
+		}
+
+		session = (CSession*)completionKey;
+
+		if (transferredSize != 0)
+		{
+			if (pOverlapped == &session->recvOverlapped) // Recv
+			{
+#ifdef PROFILE
+				//CProfiler::Begin(L"CompleteRecv");
+				CompleteRecv(session, transferredSize);
+				//CProfiler::End(L"CompleteRecv");
+#else
+				CompleteRecv(session, transferredSize);
+#endif // PROFILE
+			}
+			else // Send
+			{
+#ifdef PROFILE
+				//CProfiler::Begin(L"CompleteSend");
+				CompleteSend(session, transferredSize);
+				//CProfiler::End(L"CompleteSend");
+#else
+				CompleteSend(session, transferredSize);
+#endif // PROFILE
+			}
+		}
+
+		DecrementIOProc(session, 10000);
+#ifdef PROFILE
+		CProfiler::End(L"GQCS_Net");
+#endif // PROFILE
+	}
 }
 
 void procademy::CMMOServer::GameThreadProc()
@@ -360,8 +496,301 @@ void procademy::CMMOServer::GameThreadProc()
 
 void procademy::CMMOServer::AuthThreadProc()
 {
+	CFrameSkipper skipper;
+
+	while (mbBegin)
+	{
+		skipper.CheckTime();
+
+
+	}
 }
 
 void procademy::CMMOServer::SendThreadProc()
 {
 }
+
+void procademy::CMMOServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
+{
+	if (mEmptyIndexes.IsEmpty())
+	{
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Session Index Full\n");
+
+		CRASH();
+	}
+
+	u_short index = 0;
+	mEmptyIndexes.Pop(&index);
+
+	CSession* session = mSessionArray[index];
+
+	session->socket = client;
+	session->ip = clientAddr.sin_addr.S_un.S_addr;
+	session->port = clientAddr.sin_port;
+	session->status = CSession::en_AUTH_READY;
+	session->isSending = false;
+	session->sessionID = mSessionIDCounter++;
+
+	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
+	ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
+}
+
+void procademy::CMMOServer::IncrementIOProc(CSession* session, int logic)
+{
+	InterlockedIncrement(&session->ioBlock.ioCount);
+}
+
+void procademy::CMMOServer::DecrementIOProc(CSession* session, int logic)
+{
+	InterlockedDecrement(&session->ioBlock.ioCount);
+}
+
+void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSize)
+{
+	session->recvQ.MoveRear(transferredSize);
+	CNetPacket::st_Header header;
+	DWORD count = 0;
+	bool status = true;
+
+	while (count < transferredSize)
+	{
+		if (session->recvQ.GetUseSize() <= CNetPacket::HEADER_MAX_SIZE)
+			break;
+
+		session->recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
+
+		if (header.code != CNetPacket::sCode)
+		{
+			status = false;
+			break;
+		}
+
+		if (header.len > CNetPacket::eBUFFER_DEFAULT)
+		{
+			status = false;
+			break;
+		}
+
+		if (session->recvQ.GetUseSize() < (CNetPacket::HEADER_MAX_SIZE + header.len))
+			break;
+
+		CNetPacket* packet = CNetPacket::AllocAddRef();
+
+		memcpy_s(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE, (char*)&header, CNetPacket::HEADER_MAX_SIZE);
+
+		InterlockedIncrement(&recvTPS);
+
+		session->recvQ.MoveFront(CNetPacket::HEADER_MAX_SIZE);
+
+		int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)header.len);
+
+		packet->MoveRear(ret);
+#ifdef PROFILE
+		CProfiler::Begin(L"Decode");
+#endif			
+		if (packet->Decode() == false)
+		{
+			status = false;
+			packet->SubRef();
+			break;
+		}
+#ifdef PROFILE
+		CProfiler::End(L"Decode");
+#endif
+		packet->AddRef();
+		if (session->recvCompleteQ.Enqueue(packet) == false)
+		{
+			CRASH();
+		}
+
+		count += (ret + sizeof(SHORT));
+		packet->SubRef();
+	}
+}
+
+void procademy::CMMOServer::CompleteSend(CSession* session, DWORD transferredSize)
+{
+	CNetPacket* packet;
+	InterlockedAdd((LONG*)&sendTPS, session->numSendingPacket);
+	for (int i = 0; i < session->numSendingPacket; ++i)
+	{
+		session->sendQ.Dequeue(&packet);
+
+		packet->SubRef();
+		packet = nullptr;
+	}
+
+	session->numSendingPacket = 0;
+	session->isSending = false;
+}
+
+bool procademy::CMMOServer::RecvPost(CSession* session)
+{
+	if (session->status != CSession::en_AUTH_READY)
+	{
+		IncrementIOProc(session, 30000);
+	}
+
+	WSABUF buffers[2];
+	DWORD flags = 0;
+
+	SetWSABuf(buffers, session, true);
+
+	int recvRet = WSARecv(session->socket, buffers, 2, nullptr, &flags, &session->recvOverlapped, nullptr);
+
+	if (recvRet == SOCKET_ERROR)
+	{
+		int err = WSAGetLastError();
+
+		if (err == WSA_IO_PENDING)
+		{
+			return true;
+		}
+
+		DecrementIOProc(session, 10050);
+
+		return false;
+	}
+
+	return true;
+}
+
+bool procademy::CMMOServer::SendPost(CSession* session)
+{
+	WSABUF buffers[100];
+
+	if (session->isSending)
+	{
+		return false;
+	}
+
+	session->isSending = true;
+
+	SetWSABuf(buffers, session, false);
+
+	ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
+
+	IncrementIOProc(session, 30000);
+
+	int sendRet = WSASend(session->socket, buffers, session->numSendingPacket, nullptr, 0, &session->sendOverlapped, nullptr);
+
+	if (sendRet == SOCKET_ERROR)
+	{
+		int err = WSAGetLastError();
+
+		if (err == WSA_IO_PENDING)
+		{
+			return true;
+		}
+
+		DecrementIOProc(session, 20050);
+
+		return false;
+	}
+
+	return true;
+}
+
+void procademy::CMMOServer::SendPacket(CSession* session, CNetPacket* packet)
+{
+	u_int64 sessionID = session->sessionID;
+
+	IncrementIOProc(session, 20000);
+
+	if (session->ioBlock.releaseCount.isReleased == 1 || session->sessionID != sessionID)
+	{
+		DecrementIOProc(session, 20020);
+		/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket);
+		g_sessionDebugs[ret] = packet;*/
+		return;
+	}
+	/*ioDebugLog(20010, GetCurrentThreadId(), session->sessionID & 0xffffffff,
+		session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
+	packet->AddRef();
+	session->sendQ.Enqueue(packet);
+
+	DecrementIOProc(session, 20020);
+}
+
+void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRecv)
+{
+	if (isRecv)
+	{
+		char* pRear = session->recvQ.GetRearBufferPtr();
+		char* pFront = session->recvQ.GetFrontBufferPtr();
+		char* pBuf = session->recvQ.GetBuffer();
+		int capa = session->recvQ.GetCapacity();
+
+		if (pRear < pFront)
+		{
+			bufs[0].buf = pRear;
+			bufs[0].len = (ULONG)(pRear - pFront);
+			bufs[1].buf = pRear;
+			bufs[1].len = 0;
+		}
+		else
+		{
+			bufs[0].buf = pRear;
+			bufs[0].len = (ULONG)(capa + 1 - (pRear - pBuf));
+			bufs[1].buf = pBuf;
+			bufs[1].len = (ULONG)(pFront - pBuf);
+		}
+	}
+	else
+	{
+		CNetPacket* packetBufs[100];
+		DWORD snapSize = session->sendQ.GetSize();
+
+		if (snapSize > 100)
+			snapSize = 100;
+
+		if (session->sendQ.Peek(packetBufs, snapSize) != snapSize)
+			CRASH();
+
+		for (DWORD i = 0; i < snapSize; ++i)
+		{
+			bufs[i].buf = packetBufs[i]->GetZeroPtr();
+			bufs[i].len = packetBufs[i]->GetSize();
+		}
+
+		session->numSendingPacket = snapSize;
+	}
+}
+
+void procademy::CMMOServer::ReleaseProc(CSession* session)
+{
+	SessionIoCount released;
+	CNetPacket* dummy;
+
+	released.ioCount = 0;
+	released.releaseCount.isReleased = 1;
+
+	if (InterlockedCompareExchange(&session->ioBlock.ioCount, released.ioCount, 0) != 0)
+	{
+		return;
+	}
+	//
+	InterlockedIncrement((LONG*)&disconnectCount);
+
+	closesocket(session->socket);
+
+	session->isSending = false;
+
+
+	while (1)
+	{
+		if (session->sendQ.Dequeue(&dummy) == false)
+		{
+			break;
+		}
+
+		/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket2);
+		g_sessionDebugs2[ret] = dummy;*/
+		dummy->SubRef();
+	}
+	session->recvQ.ClearBuffer();
+
+	ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
+	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
+}
+

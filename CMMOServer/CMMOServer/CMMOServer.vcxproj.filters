@@ -51,11 +51,14 @@
     <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CSession.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="CMMOServer.cpp">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CSession.cpp">
+      <Filter>소스 파일\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CFrameSkipper\CFrameSkipper\CFrameSkipper.cpp">
+      <Filter>소스 파일\Tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -102,6 +105,12 @@
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CFrameSkipper\CFrameSkipper\CFrameSkipper.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
   </ItemGroup>

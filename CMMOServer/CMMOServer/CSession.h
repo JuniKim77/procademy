@@ -6,6 +6,7 @@
 #include "RingBuffer.h"
 #include "TC_LFQueue.h"
 #include "TC_LFStack.h"
+#include "CSafeQueue.h"
 
 namespace procademy
 {
@@ -26,7 +27,19 @@ namespace procademy
 
 	class CSession
 	{
+		friend class CMMOServer;
 	public:
+		enum SESSION_STATUS
+		{
+			en_NONE_USE,
+			en_AUTH_READY,
+			en_AUTH_RUN,
+			en_GAME_READY,
+			en_GAME_RUN,
+			en_AUTH_RELEASE,
+			en_GAME_RELEASE
+		};
+
 		CSession();
 		virtual ~CSession();
 
@@ -46,6 +59,7 @@ namespace procademy
 		WSAOVERLAPPED				recvOverlapped;
 		WSAOVERLAPPED				sendOverlapped;
 		RingBuffer					recvQ;
+		CSafeQueue<CNetPacket*>		recvCompleteQ;
 		TC_LFQueue<CNetPacket*>		sendQ;
 		int							numSendingPacket = 0;
 		alignas(64) SessionIoCount	ioBlock;
@@ -53,5 +67,7 @@ namespace procademy
 		SOCKET						socket = INVALID_SOCKET;
 		u_short						port;
 		ULONG						ip;
+		u_int64						sessionID;
+		SESSION_STATUS				status;
 	};
 }

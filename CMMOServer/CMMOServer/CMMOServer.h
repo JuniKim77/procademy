@@ -16,6 +16,9 @@ namespace procademy
 		void SetZeroCopy(bool on);
 		void SetNagle(bool on);
 
+		virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept Á÷ÈÄ
+		virtual void OnError(int errorcode, const WCHAR* log) = 0;
+
 	private:
 
 		static unsigned int WINAPI MonitorThread(LPVOID arg);
@@ -36,6 +39,16 @@ namespace procademy
 		void GameThreadProc();
 		void AuthThreadProc();
 		void SendThreadProc();
+		void CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
+		void IncrementIOProc(CSession* session, int logic);
+		void DecrementIOProc(CSession* session, int logic);
+		void CompleteRecv(CSession* session, DWORD transferredSize);
+		void CompleteSend(CSession* session, DWORD transferredSize);
+		bool RecvPost(CSession* session);
+		bool SendPost(CSession* session);
+		void SendPacket(CSession* session, CNetPacket* packet); // SESSION_ID / HOST_ID
+		void SetWSABuf(WSABUF* bufs, CSession* session, bool isRecv);
+		void ReleaseProc(CSession* session);
 
 	private:
 		enum {
@@ -48,6 +61,7 @@ namespace procademy
 		HANDLE*					mhThreads = nullptr;
 		CSession**				mSessionArray = nullptr;
 		TC_LFStack<u_short>		mEmptyIndexes;
+		u_int64					mSessionIDCounter = 1;
 		u_short					mMaxClient = 0;
 		u_short					mPort = 0;
 		WCHAR					mBindIP[32];
