@@ -337,9 +337,11 @@ void procademy::CChatServerSingle::GQCSProc()
             CompleteMessage(msg->sessionNo, msg->packet);
             break;
         case MSG_TYPE_JOIN:
+            mRatioMonitor.joinCount++;
             JoinProc(msg->sessionNo);
             break;
         case MSG_TYPE_LEAVE:
+            InterlockedIncrement(&mRatioMonitor.leaveCount);
             LeaveProc(msg->sessionNo);
             break;
         case MSG_TYPE_TIMEOUT:
@@ -400,6 +402,7 @@ void procademy::CChatServerSingle::GQCSProcEx()
 #ifdef PROFILE
                 CProfiler::Begin(L"JoinProc");
 #endif // PROFILE                
+                mRatioMonitor.joinCount++;
                 JoinProc(msg->sessionNo);
 #ifdef PROFILE
                 CProfiler::End(L"JoinProc");
@@ -410,6 +413,7 @@ void procademy::CChatServerSingle::GQCSProcEx()
 #ifdef PROFILE
                 CProfiler::Begin(L"LeaveProc");
 #endif // PROFILE
+                InterlockedIncrement(&mRatioMonitor.leaveCount);
                 LeaveProc(msg->sessionNo);
 #ifdef PROFILE
                 CProfiler::End(L"LeaveProc");
@@ -553,6 +557,10 @@ bool procademy::CChatServerSingle::MonitoringProc()
             
             wprintf(str);
 
+            MakeRatioMonitorStr(str, 2048);
+
+            wprintf(str);
+
             if (mbPrint)
             {
                 PrintRecvSendRatio();
@@ -580,6 +588,7 @@ bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPac
 #ifdef PROFILE
         CProfiler::Begin(L"LoginProc");
 #endif // PROFILE    
+        InterlockedIncrement(&mRatioMonitor.loginCount);
         ret = LoginProc(sessionNo, packet);
 #ifdef PROFILE
         CProfiler::End(L"LoginProc");
@@ -589,6 +598,7 @@ bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPac
 #ifdef PROFILE
         CProfiler::Begin(L"MoveSectorProc");
 #endif // PROFILE    
+        InterlockedIncrement(&mRatioMonitor.moveSectorCount);
         ret = MoveSectorProc(sessionNo, packet);
 #ifdef PROFILE
         CProfiler::End(L"MoveSectorProc");
@@ -598,6 +608,7 @@ bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPac
 #ifdef PROFILE
         CProfiler::Begin(L"SendMessageProc");
 #endif // PROFILE    
+        InterlockedIncrement(&mRatioMonitor.sendMsgInCount);
         ret = SendMessageProc(sessionNo, packet);
 #ifdef PROFILE
         CProfiler::End(L"SendMessageProc");
@@ -887,7 +898,9 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
     CNetPacket* response = MakeCSResMessage(player->accountNo, player->ID, player->nickName, messageLen, (WCHAR*)packet->GetFrontPtr());
     {
-        mSector[player->curSectorY][player->curSectorX].sendCount += SendMessageSectorAround(response, &sectorAround);
+        DWORD count = SendMessageSectorAround(response, &sectorAround);
+        mSector[player->curSectorY][player->curSectorX].sendCount += count;
+        InterlockedAdd(&mRatioMonitor.sendMsgOutCount, count);
     }
     response->SubRef();
 
@@ -1200,7 +1213,6 @@ DWORD procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, 
 void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
 {
     LONGLONG idx = 0;
-    int len;
     WCHAR bigNumber[18];
 
     idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
@@ -1243,6 +1255,20 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"NetworkRecvBytes : ", bigNumber);
     mCpuUsage.GetBigNumberStr(mCpuUsage.NetworkSendBytes(), bigNumber, 18);
     idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"NetworkSendBytes : ", bigNumber);
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+}
+
+void procademy::CChatServerSingle::MakeRatioMonitorStr(WCHAR* s, int size)
+{
+    LONGLONG idx = 0;
+    long total = mRatioMonitor.joinCount + mRatioMonitor.leaveCount + mRatioMonitor.loginCount
+        + mRatioMonitor.moveSectorCount + mRatioMonitor.sendMsgInCount;
+    idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Join Ratio", mRatioMonitor.joinCount, total, mRatioMonitor.joinCount / (float)total);
+    idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Leave Ratio", mRatioMonitor.leaveCount, total, mRatioMonitor.leaveCount / (float)total);
+    idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Login Ratio", mRatioMonitor.loginCount, total, mRatioMonitor.loginCount / (float)total);
+    idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"MoveSector Ratio", mRatioMonitor.moveSectorCount, total, mRatioMonitor.moveSectorCount / (float)total);
+    idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"SendReq Ratio", mRatioMonitor.sendMsgInCount, total, mRatioMonitor.sendMsgInCount / (float)total);
+    idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"SendMsg Ratio", mRatioMonitor.sendMsgInCount, mRatioMonitor.sendMsgOutCount, mRatioMonitor.sendMsgInCount / (float)mRatioMonitor.sendMsgOutCount);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
 }
 
@@ -1309,6 +1335,13 @@ void procademy::CChatServerSingle::ClearTPS()
             mSector[i][j].playerCount = 0;
         }
     }
+
+    mRatioMonitor.joinCount = 0;
+    mRatioMonitor.loginCount = 0;
+    mRatioMonitor.leaveCount = 0;
+    mRatioMonitor.moveSectorCount = 0;
+    mRatioMonitor.sendMsgInCount = 0;
+    mRatioMonitor.sendMsgOutCount = 0;
 }
 
 void procademy::CChatServerSingle::Init()

@@ -16,6 +16,16 @@ namespace procademy
 {
 	class CChatServerSingle : public CLF_NetServer
 	{
+		struct RatioMonitor
+		{
+			long			 joinCount;
+			alignas(64) long loginCount;
+			alignas(64) long leaveCount;
+			alignas(64) long moveSectorCount;
+			alignas(64) long sendMsgInCount;
+			alignas(64) long sendMsgOutCount;
+		};
+
 	private:
 		enum en_MSG_TYPE
 		{
@@ -92,6 +102,7 @@ namespace procademy
 		void			GetSectorAround(WORD x, WORD y, st_Sector_Around* output);
 		DWORD			SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input);
 		void			MakeMonitorStr(WCHAR* s, int size);
+		void			MakeRatioMonitorStr(WCHAR* s, int size);
 		void			PrintRecvSendRatio();
 		void			ClearTPS();
 		void			Init();
@@ -143,5 +154,6 @@ namespace procademy
 		bool									mGQCSEx;
 		bool									mbMonitoring;
 		bool									mbPrint;
+		alignas(64) RatioMonitor				mRatioMonitor;
 };
 }

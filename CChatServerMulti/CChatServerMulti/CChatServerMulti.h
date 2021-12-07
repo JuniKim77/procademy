@@ -15,6 +15,15 @@ namespace procademy
 {
 	class CChatServerMulti : public CLF_NetServer
 	{
+		struct RatioMonitor
+		{
+			long			 joinCount;
+			alignas(64) long loginCount;
+			alignas(64) long leaveCount;
+			alignas(64) long moveSectorCount;
+			alignas(64) long sendMsgInCount;
+			alignas(64) long sendMsgOutCount;
+		};
 	public:
 		CChatServerMulti();
 		virtual ~CChatServerMulti();
@@ -51,6 +60,7 @@ namespace procademy
 		void						GetSectorAround(WORD x, WORD y, st_Sector_Around* output);
 		DWORD						SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input);
 		void						MakeMonitorStr(WCHAR* s, int size);
+		void						MakeRatioMonitorStr(WCHAR* s, int size);
 		void						PrintRecvSendRatio();
 		void						ClearTPS();
 		void						RecordPerformentce();
@@ -88,18 +98,16 @@ namespace procademy
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;
 		SRWLOCK									mPlayerMapLock;
 		TC_LFObjectPool<st_Player>				mPlayerPool;
-		alignas(64)DWORD						mLoginCount = 0;
 		alignas(64) DWORD						mUpdateTPS = 0;
 		st_Sector								mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
 		/// <summary>
 		/// N X N 개의 섹터 동기화 객체
 		/// </summary>
-		SRWLOCK*								mpSectorLock;
 		int										mSectorLockIndex[SECTOR_MAX_Y][SECTOR_MAX_X];
-		int										mSectorLockColNum;
 		int										mTimeOut;
 		CCpuUsage								mCpuUsage;
 		bool									mbMonitoring = true;
 		bool									mbPrint = false;
+		alignas(64) RatioMonitor				mRatioMonitor;
 	};
 }

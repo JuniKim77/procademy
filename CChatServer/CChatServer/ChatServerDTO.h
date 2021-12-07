@@ -11,6 +11,8 @@ namespace procademy
 		DWORD					sendCount;
 		DWORD					playerCount;
 		DWORD					updateCount;
+		SRWLOCK					sectorLock;
+		int						lockIndex;
 	};
 
 	struct st_Coordinate
