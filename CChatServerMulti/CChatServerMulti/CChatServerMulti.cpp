@@ -1,4 +1,5 @@
 //#define REDIS_MODE
+#define SEND_TO_WORKER
 
 #include "CChatServerMulti.h"
 #include "CNetPacket.h"
@@ -33,16 +34,19 @@ bool procademy::CChatServerMulti::OnConnectionRequest(u_long IP, u_short Port)
 
 void procademy::CChatServerMulti::OnClientJoin(SESSION_ID SessionID)
 {
+    InterlockedIncrement(&mUpdateTPS);
 	JoinProc(SessionID);
 }
 
 void procademy::CChatServerMulti::OnClientLeave(SESSION_ID SessionID)
 {
+    InterlockedIncrement(&mUpdateTPS);
 	LeaveProc(SessionID);
 }
 
 void procademy::CChatServerMulti::OnRecv(SESSION_ID SessionID, CNetPacket* packet)
 {
+    InterlockedIncrement(&mUpdateTPS);
     RecvProc(SessionID, packet);
 }
 
@@ -209,10 +213,14 @@ void procademy::CChatServerMulti::Init()
 bool procademy::CChatServerMulti::CheckHeartProc()
 {
     std::stack<SESSION_ID>  stk;
+    std::stack<ULONGLONG>  stkTime;
+    std::stack<INT64>  stkAccount;
     ULONGLONG               curTime;
     HANDLE                  dummyevent = CreateEvent(nullptr, false, false, nullptr);
     DWORD                   retval;
     SESSION_ID              sessionNo;
+    ULONGLONG               time;
+    INT64                   account;
 
     while (!mbExit)
     {
@@ -222,22 +230,30 @@ bool procademy::CChatServerMulti::CheckHeartProc()
         {
             curTime = GetTickCount64();
 
-            AcquireSRWLockShared(&mPlayerMapLock);
+            LockPlayerMap(true);
             {
                 for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end(); ++iter)
                 {
                     if (curTime - iter->second->lastRecvTime > mTimeOut) // 40000ms
                     {
                         stk.push(iter->second->sessionNo);
+                        stkAccount.push(iter->second->accountNo);
+                        stkTime.push(curTime - iter->second->lastRecvTime);
                     }
                 }
             }
-            ReleaseSRWLockShared(&mPlayerMapLock);
+            UnlockPlayerMap(true);
 
             while (!stk.empty())
             {
                 sessionNo = stk.top();
                 stk.pop();
+                time = stkTime.top();
+                stkTime.pop();
+                account = stkAccount.top();
+                stkAccount.pop();
+
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"[Account: %lld][Time: %llu]", account, time);
 
                 Disconnect(sessionNo);
             }
@@ -393,6 +409,8 @@ bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* pa
     packet->AddRef();
 
     EnqueueRedisQ(sessionNo, packet);
+
+    UnlockPlayerMap();
 #else
 
     player->accountNo = AccountNo;
@@ -401,9 +419,10 @@ bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* pa
     player->bLogin = true;
     player->lastRecvTime = GetTickCount64();
 
-    UnlockPlayerMap();
+    
 
-    mLoginCount++;
+    //mLoginCount++;
+    InterlockedIncrement(&mLoginCount);
 
     //msgDebugLog(2000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
@@ -415,6 +434,8 @@ bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* pa
         SendPacket(sessionNo, response);
 #endif // SEND_TO_WORKER
     }
+
+    UnlockPlayerMap();
     response->SubRef();
 
 #endif // REDIS_MODE
@@ -429,6 +450,8 @@ bool procademy::CChatServerMulti::LoginCompleteProc()
 
 bool procademy::CChatServerMulti::LeaveProc(SESSION_ID sessionNo)
 {
+    LockPlayerMap();
+
     st_Player* player = FindPlayer(sessionNo);
 
     if (player == nullptr)
@@ -451,8 +474,6 @@ bool procademy::CChatServerMulti::LeaveProc(SESSION_ID sessionNo)
     }
 
     //msgDebugLog(3000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
-
-    LockPlayerMap();
 
     if (player->curSectorX != -1 && player->curSectorY != -1)
     {
@@ -551,8 +572,6 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
     player->curSectorY = SectorY;
     player->lastRecvTime = GetTickCount64();
 
-    UnlockPlayerMap(false);
-
     //msgDebugLog(4000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
     CNetPacket* response = MakeCSResSectorMove(AccountNo, SectorX, SectorY);
@@ -563,6 +582,8 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
         SendPacket(sessionNo, response);
 #endif // SEND_TO_WORKER
     }
+
+    UnlockPlayerMap(false);
     response->SubRef();
 
     return true;
@@ -625,9 +646,8 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
     GetSectorAround(player->curSectorX, player->curSectorY, &sectorAround);
     
     CNetPacket* response = MakeCSResMessage(player->accountNo, player->ID, player->nickName, messageLen, (WCHAR*)packet->GetFrontPtr());
-    {
-        mSector[player->curSectorY][player->curSectorX].sendCount += SendMessageSectorAround(response, &sectorAround);
-    }
+    
+    mSector[player->curSectorY][player->curSectorX].sendCount += SendMessageSectorAround(response, &sectorAround);
 
     UnlockPlayerMap(false);
 
@@ -1060,8 +1080,6 @@ void procademy::CChatServerMulti::UnlockSector(WORD x, WORD y, bool exclusive)
 
 void procademy::CChatServerMulti::LockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive)
 {
-    return;
-
     if (exclusive)
     {
         int index1 = mSectorLockIndex[y1][x1];
@@ -1106,8 +1124,6 @@ void procademy::CChatServerMulti::LockSectors(WORD x1, WORD y1, WORD x2, WORD y2
 
 void procademy::CChatServerMulti::UnlockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive)
 {
-    return;
-
     if (exclusive)
     {
         int index1 = mSectorLockIndex[y1][x1];
@@ -1142,8 +1158,6 @@ void procademy::CChatServerMulti::UnlockSectors(WORD x1, WORD y1, WORD x2, WORD 
 
 void procademy::CChatServerMulti::LockPlayerMap(bool exclusive)
 {
-    return;
-
     if (exclusive)
     {
         AcquireSRWLockExclusive(&mPlayerMapLock);
@@ -1156,8 +1170,6 @@ void procademy::CChatServerMulti::LockPlayerMap(bool exclusive)
 
 void procademy::CChatServerMulti::UnlockPlayerMap(bool exclusive)
 {
-    return;
-
     if (exclusive)
     {
         ReleaseSRWLockExclusive(&mPlayerMapLock);

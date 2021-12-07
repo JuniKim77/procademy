@@ -88,8 +88,8 @@ namespace procademy
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;
 		SRWLOCK									mPlayerMapLock;
 		TC_LFObjectPool<st_Player>				mPlayerPool;
-		DWORD									mLoginCount = 0;
-		DWORD									mUpdateTPS = 0;
+		alignas(64)DWORD						mLoginCount = 0;
+		alignas(64) DWORD						mUpdateTPS = 0;
 		st_Sector								mSector[SECTOR_MAX_Y][SECTOR_MAX_X];
 		/// <summary>
 		/// N X N 개의 섹터 동기화 객체
