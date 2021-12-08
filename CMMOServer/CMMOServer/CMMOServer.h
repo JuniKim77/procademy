@@ -55,6 +55,7 @@ namespace procademy
 		void AuthReadySessionProc(CSession* session);
 		void AuthCompleteRecvProc(CSession* session);
 		void AuthSessionToReleaseProc(CSession* session);
+		void AuthSessionToGameProc(CSession* session);
 		void AuthReleaseProc(CSession* session);
 
 		void SendLoopProc();
