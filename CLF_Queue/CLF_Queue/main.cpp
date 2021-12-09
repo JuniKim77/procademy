@@ -1,13 +1,14 @@
 #define TEMPLE
 
 #include "TC_LFQueue.h"
+#include "TC_LFQueue64.h"
 #include "CLogger.h"
 #include "CCrashDump.h"
 #include <process.h>
 #include <wchar.h>
 
-#define THREAD_SIZE (6)
-#define MAX_ALLOC (12)
+#define THREAD_SIZE (4)
+#define MAX_ALLOC (8)
 #define THREAD_ALLOC (2)
 
 struct st_DATA
@@ -24,7 +25,7 @@ unsigned int WINAPI WorkerThread(LPVOID lpParam);
 unsigned int WINAPI MonitorThread(LPVOID lpParam);
 void Init();
 
-TC_LFQueue<st_DATA*> g_q;
+procademy::TC_LFQueue64<st_DATA*> g_q;
 
 long PushTPS = 0;
 long DequeueTPS = 0;

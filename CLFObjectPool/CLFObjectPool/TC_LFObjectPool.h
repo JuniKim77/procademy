@@ -1,5 +1,4 @@
 #pragma once
-#define VER_CASH_LINE
 
 #include <new.h>
 #include <stdlib.h>
@@ -22,10 +21,10 @@ namespace procademy
 				stpNextBlock = NULL;
 			}
 
-			void* code;
-			alignas(64) DATA data;			
-			st_BLOCK_NODE* stpNextBlock;
-			unsigned int checkSum_over = CHECKSUM_OVER;
+			void*							code;
+			alignas(64) DATA				data;			
+			alignas(64) st_BLOCK_NODE*		stpNextBlock;
+			unsigned int					checkSum_over = CHECKSUM_OVER;
 		};
 	public:
 		TC_LFObjectPool();
@@ -70,30 +69,22 @@ namespace procademy
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mSize; }
+		DWORD	GetMallocCount() { return mMallocCount; }
 
 	private:
 		void AllocMemory(int size);
 
 	private:
-#ifdef VER_CASH_LINE
 		struct alignas(64) t_Top
 		{
-			st_BLOCK_NODE* ptr_node = nullptr;
-			LONG64 counter = 0;
+			st_BLOCK_NODE*	ptr_node = nullptr;
+			LONG64			counter = 0;
 		};
 
 		alignas(64) DWORD mSize;
-#else
-		struct t_Top
-		{
-			st_BLOCK_NODE* ptr_node = nullptr;
-			LONG64 counter = 0;
-		};
-
-		DWORD mSize;
-#endif // VER_CASH_LINE
 
 		DWORD mCapacity;
+		alignas(64) DWORD mMallocCount = 0;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		t_Top _pFreeTop;
@@ -122,12 +113,7 @@ namespace procademy
 		{
 			st_BLOCK_NODE* pNext = node->stpNextBlock;
 
-#ifdef VER_CASH_LINE
 			_aligned_free(node);
-#else
-			free(node);
-#endif // VER_CASH_LINE
-
 
 			node = pNext;
 		}
@@ -202,11 +188,8 @@ namespace procademy
 		for (int i = 0; i < size; ++i)
 		{
 			// prerequisite
-#ifdef VER_CASH_LINE
 			node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
-#else
-			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
-#endif // VER_CASH_LINE
+			InterlockedIncrement(&mMallocCount);
 			node->code = this;
 			new (&node->data) (DATA);
 			node->checkSum_over = CHECKSUM_OVER;

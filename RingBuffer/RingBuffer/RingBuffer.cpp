@@ -2,6 +2,7 @@
 #include <cstring>
 #include <stdio.h>
 #include "CLogger.h"
+#include "CProfiler.h"
 
 RingBuffer::RingBuffer()
 	: RingBuffer(DEFAULT_SIZE)
