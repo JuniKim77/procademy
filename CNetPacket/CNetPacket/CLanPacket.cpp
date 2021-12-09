@@ -1,4 +1,4 @@
-#include "CNetPacket.h"
+#include "CLanPacket.h"
 #include <malloc.h>
 #include <string.h>
 #include <Windows.h>
@@ -6,27 +6,26 @@
 #include "CLogger.h"
 #include "CCrashDump.h"
 
-#define NET_VERSION
 //#define TEST
 
 namespace procademy
 {
-	BYTE	CNetPacket::sCode = 0;
-	BYTE	CNetPacket::sPacketKey = 0;
+	BYTE	CLanPacket::sCode = 0;
+	BYTE	CLanPacket::sPacketKey = 0;
 
 	//#define DEBUG
 #ifdef MEMORY_POOL_VER
-	alignas(64) TC_LFObjectPool<CNetPacket> CNetPacket::sPacketPool;
+	alignas(64) TC_LFObjectPool<CLanPacket> CLanPacket::sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)
-	alignas(64) ObjectPool_TLS<CNetPacket> CNetPacket::sPacketPool;
+	alignas(64) ObjectPool_TLS<CLanPacket> CLanPacket::sPacketPool;
 #endif // MEMORY_POOL_VER
 
-	CNetPacket::CNetPacket()
-		: CNetPacket(eBUFFER_DEFAULT)
+	CLanPacket::CLanPacket()
+		: CLanPacket(eBUFFER_DEFAULT)
 	{
 	}
 
-	CNetPacket::CNetPacket(int iBufferSize)
+	CLanPacket::CLanPacket(int iBufferSize)
 		: mCapacity(iBufferSize)
 		, mPacketSize(0)
 		, mHeaderSize(HEADER_MAX_SIZE)
@@ -34,21 +33,22 @@ namespace procademy
 		mBuffer = (char*)malloc(mCapacity);
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mBuffer + HEADER_MAX_SIZE;
-		mZero = mBuffer;
+
+		mZero = mBuffer + (HEADER_MAX_SIZE - sizeof(SHORT));
 	}
 
-	CNetPacket::~CNetPacket()
+	CLanPacket::~CLanPacket()
 	{
 		Release();
 	}
 
-	void CNetPacket::Release(void)
+	void CLanPacket::Release(void)
 	{
 		if (mBuffer != nullptr)
 			free(mBuffer);
 	}
 
-	void CNetPacket::Clear(void)
+	void CLanPacket::Clear(void)
 	{
 		mPacketSize = 0;
 		mFront = mBuffer + HEADER_MAX_SIZE;
@@ -56,7 +56,7 @@ namespace procademy
 		mZero = mBuffer;
 	}
 
-	int CNetPacket::MoveFront(int iSize)
+	int CLanPacket::MoveFront(int iSize)
 	{
 		if (iSize <= 0)
 			return 0;
@@ -69,7 +69,7 @@ namespace procademy
 		return size;
 	}
 
-	int CNetPacket::MoveRear(int iSize)
+	int CLanPacket::MoveRear(int iSize)
 	{
 		if (iSize <= 0)
 			return 0;
@@ -82,7 +82,7 @@ namespace procademy
 		return size;
 	}
 
-	CNetPacket& CNetPacket::operator<<(unsigned char byValue)
+	CLanPacket& CLanPacket::operator<<(unsigned char byValue)
 	{
 		if (sizeof(unsigned char) > GetFreeSize())
 		{
@@ -96,7 +96,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(char chValue)
+	CLanPacket& CLanPacket::operator<<(char chValue)
 	{
 		if (sizeof(char) > GetFreeSize())
 		{
@@ -110,7 +110,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(short shValue)
+	CLanPacket& CLanPacket::operator<<(short shValue)
 	{
 		if (sizeof(short) > GetFreeSize())
 		{
@@ -124,7 +124,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(unsigned short wValue)
+	CLanPacket& CLanPacket::operator<<(unsigned short wValue)
 	{
 		if (sizeof(unsigned short) > GetFreeSize())
 		{
@@ -138,7 +138,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(int iValue)
+	CLanPacket& CLanPacket::operator<<(int iValue)
 	{
 		if (sizeof(int) > GetFreeSize())
 		{
@@ -152,7 +152,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(unsigned int iValue)
+	CLanPacket& CLanPacket::operator<<(unsigned int iValue)
 	{
 		if (sizeof(unsigned int) > GetFreeSize())
 		{
@@ -166,7 +166,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(long lValue)
+	CLanPacket& CLanPacket::operator<<(long lValue)
 	{
 		if (sizeof(long) > GetFreeSize())
 		{
@@ -180,7 +180,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(unsigned long lValue)
+	CLanPacket& CLanPacket::operator<<(unsigned long lValue)
 	{
 		if (sizeof(unsigned long) > GetFreeSize())
 		{
@@ -194,7 +194,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(float fValue)
+	CLanPacket& CLanPacket::operator<<(float fValue)
 	{
 		if (sizeof(float) > GetFreeSize())
 		{
@@ -208,7 +208,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(__int64 iValue)
+	CLanPacket& CLanPacket::operator<<(__int64 iValue)
 	{
 		if (sizeof(__int64) > GetFreeSize())
 		{
@@ -222,7 +222,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(double dValue)
+	CLanPacket& CLanPacket::operator<<(double dValue)
 	{
 		if (sizeof(double) > GetFreeSize())
 		{
@@ -236,7 +236,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(unsigned char& byValue)
+	CLanPacket& CLanPacket::operator>>(unsigned char& byValue)
 	{
 		unsigned char* pBuf = (unsigned char*)mFront;
 
@@ -246,7 +246,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(char& chValue)
+	CLanPacket& CLanPacket::operator>>(char& chValue)
 	{
 		char* pBuf = mFront;
 
@@ -256,7 +256,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(short& shValue)
+	CLanPacket& CLanPacket::operator>>(short& shValue)
 	{
 		short* pBuf = (short*)mFront;
 
@@ -266,7 +266,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(unsigned short& wValue)
+	CLanPacket& CLanPacket::operator>>(unsigned short& wValue)
 	{
 		unsigned short* pBuf = (unsigned short*)mFront;
 
@@ -276,7 +276,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(int& iValue)
+	CLanPacket& CLanPacket::operator>>(int& iValue)
 	{
 		int* pBuf = (int*)mFront;
 
@@ -286,7 +286,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(unsigned int& iValue)
+	CLanPacket& CLanPacket::operator>>(unsigned int& iValue)
 	{
 		unsigned int* pBuf = (unsigned int*)mFront;
 
@@ -296,7 +296,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(long& dwValue)
+	CLanPacket& CLanPacket::operator>>(long& dwValue)
 	{
 		long* pBuf = (long*)mFront;
 
@@ -306,7 +306,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(unsigned long& dwValue)
+	CLanPacket& CLanPacket::operator>>(unsigned long& dwValue)
 	{
 		unsigned long* pBuf = (unsigned long*)mFront;
 
@@ -316,7 +316,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(float& fValue)
+	CLanPacket& CLanPacket::operator>>(float& fValue)
 	{
 		float* pBuf = (float*)mFront;
 
@@ -326,7 +326,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(__int64& iValue)
+	CLanPacket& CLanPacket::operator>>(__int64& iValue)
 	{
 		__int64* pBuf = (__int64*)mFront;
 
@@ -336,7 +336,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator>>(double& dValue)
+	CLanPacket& CLanPacket::operator>>(double& dValue)
 	{
 		double* pBuf = (double*)mFront;
 
@@ -346,7 +346,7 @@ namespace procademy
 		return *this;
 	}
 
-	int CNetPacket::GetData(char* chpDest, int iLength)
+	int CLanPacket::GetData(char* chpDest, int iLength)
 	{
 		int size = iLength >= mPacketSize ? mPacketSize : iLength;
 
@@ -356,12 +356,12 @@ namespace procademy
 		return size;
 	}
 
-	int CNetPacket::GetData(wchar_t* chpDest, int iLength)
+	int CLanPacket::GetData(wchar_t* chpDest, int iLength)
 	{
 		return GetData((char*)chpDest, iLength * 2);
 	}
 
-	int CNetPacket::PutData(const char* chpSrc, int iLength)
+	int CLanPacket::PutData(const char* chpSrc, int iLength)
 	{
 		if (iLength > GetFreeSize())
 		{
@@ -376,12 +376,12 @@ namespace procademy
 		return iLength;
 	}
 
-	int CNetPacket::PutData(const wchar_t* chpSrc, int iLength)
+	int CLanPacket::PutData(const wchar_t* chpSrc, int iLength)
 	{
 		return PutData((const char*)chpSrc, iLength * 2);
 	}
 
-	CNetPacket& CNetPacket::operator<<(const char* s)
+	CLanPacket& CLanPacket::operator<<(const char* s)
 	{
 		int len = (int)strlen(s);
 
@@ -390,7 +390,7 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket& CNetPacket::operator<<(const wchar_t* s)
+	CLanPacket& CLanPacket::operator<<(const wchar_t* s)
 	{
 		int len = (int)wcslen(s);
 
@@ -399,15 +399,15 @@ namespace procademy
 		return *this;
 	}
 
-	CNetPacket* CNetPacket::AllocAddRef()
+	CLanPacket* CLanPacket::AllocAddRef()
 	{
 #ifdef PROFILE
 		CProfiler::Begin(L"AllocAddRef");
 #endif
 
-		CNetPacket* ret;
+		CLanPacket* ret;
 #ifdef NEW_DELETE_VER
-		ret = new CNetPacket;
+		ret = new CLanPacket;
 #elif defined(MEMORY_POOL_VER)
 		ret = sPacketPool.Alloc();
 #elif defined(TLS_MEMORY_POOL_VER)
@@ -423,12 +423,12 @@ namespace procademy
 		return ret;
 	}
 
-	void CNetPacket::AddRef()
+	void CLanPacket::AddRef()
 	{
 		InterlockedIncrement16((SHORT*)&mRefCount);
 	}
 
-	void CNetPacket::SubRef()
+	void CLanPacket::SubRef()
 	{
 		int ret = InterlockedDecrement16((SHORT*)&mRefCount);
 
@@ -454,123 +454,29 @@ namespace procademy
 		}
 	}
 
-	void CNetPacket::SetHeader(bool isLengthOnly)
-	{
-		if (isLengthOnly)
-		{
-			mZero = mBuffer + (HEADER_MAX_SIZE - 2);
-			mHeaderSize = 2;
-			*((USHORT*)mZero) = (USHORT)mPacketSize;
-		}
-		else
-		{
-			st_Header header;
-
-			header.code = sCode;
-			header.len = (USHORT)mPacketSize;
-#ifdef TEST
-			header.randKey = 0x31;
-#else
-			header.randKey = (BYTE)rand();
-#endif // TEST
-
-			char* pFront = mFront;
-			BYTE sum = 0;
-
-			for (int i = 0; i < mPacketSize; ++i)
-			{
-				sum += (BYTE)*pFront;
-				pFront++;
-			}
-
-			header.checkSum = sum;
-
-			mZero = mBuffer;
-			mHeaderSize = HEADER_MAX_SIZE;
-			memcpy(mZero, (char*)&header, HEADER_MAX_SIZE);
-		}
-	}
-
-	void CNetPacket::Encode()
-	{
-		char* pFront = mFront - 1;
-		BYTE P = 0;
-		BYTE E = 0;
-		BYTE D;
-		st_Header header = *((st_Header*)mZero);
-
-		for (BYTE i = 1; i <= (BYTE)(mPacketSize + 1); ++i)
-		{
-			D = (BYTE)*pFront;
-			P = D ^ (P + header.randKey + i);
-			E = P ^ (E + sPacketKey + i);
-
-			*pFront = (char)E;
-
-			pFront++;
-		}
-	}
-
-	bool CNetPacket::Decode()
-	{
-		char* pFront = mFront - 1;
-		BYTE curP;
-		BYTE prevP = 0;
-		BYTE curE;
-		BYTE prevE = 0;
-		BYTE D;
-		st_Header header = *((st_Header*)mZero);
-
-		for (BYTE i = 1; i <= (BYTE)(mPacketSize + 1); ++i)
-		{
-			curE = (BYTE)*pFront;
-			curP = curE ^ (prevE + sPacketKey + i);
-			D = curP ^ (prevP + header.randKey + i);
-
-			*pFront = (char)D;
-			prevE = curE;
-			prevP = curP;
-
-			pFront++;
-		}
-
-		BYTE sum = 0;
-		pFront = mFront;
-
-		for (int i = 0; i < mPacketSize; ++i)
-		{
-			sum += (BYTE)*pFront;
-			pFront++;
-		}
-
-		header = *((st_Header*)mZero);
-
-		return sum == header.checkSum;
-	}
-
-	int CNetPacket::GetPoolCapacity()
+	int CLanPacket::GetPoolCapacity()
 	{
 #ifdef MEMORY_POOL_VER
-		return CNetPacket::sPacketPool.GetCapacity();
+		return CLanPacket::sPacketPool.GetCapacity();
 #elif defined(TLS_MEMORY_POOL_VER)
-		return CNetPacket::sPacketPool.GetCapacity();
+		return CLanPacket::sPacketPool.GetCapacity();
 #else
 		return 0;
 #endif // MEMORY_POOL_VER
 	}
 
-	DWORD CNetPacket::GetPoolSize()
+	DWORD CLanPacket::GetPoolSize()
 	{
 #ifdef MEMORY_POOL_VER
-		return CNetPacket::sPacketPool.GetSize();
+		return CLanPacket::sPacketPool.GetSize();
 #elif defined(TLS_MEMORY_POOL_VER)
-		return CNetPacket::sPacketPool.GetSize();
+		return CLanPacket::sPacketPool.GetSize();
 #else
 		return 0;
 #endif // MEMORY_POOL_VER
 	}
 
-	void CNetPacket::resize()
+	void CLanPacket::resize()
 	{
 		char* pBuffer = (char*)malloc((long long)mCapacity + eBUFFER_DEFAULT);
 
@@ -590,7 +496,7 @@ namespace procademy
 		mCapacity += eBUFFER_DEFAULT;
 	}
 
-	void CNetPacket::writeBuffer(const char* src, int size)
+	void CLanPacket::writeBuffer(const char* src, int size)
 	{
 		memcpy(mRear, src, size);
 		MoveRear(size);

@@ -15,7 +15,7 @@
 
 namespace procademy
 {
-	class CNetPacket
+	class CLanPacket
 	{
 		template<typename DATA>
 		friend class TC_LFObjectPool;
@@ -38,7 +38,7 @@ namespace procademy
 		// Return:
 		//////////////////////////////////////////////////////////////////////////
 
-		virtual ~CNetPacket();
+		virtual ~CLanPacket();
 
 		//////////////////////////////////////////////////////////////////////////
 		// 패킷  파괴.
@@ -100,36 +100,36 @@ namespace procademy
 		int		GetFreeSize() const { return mCapacity - mPacketSize - HEADER_MAX_SIZE; }
 
 		// 연산자 오버로딩 넣기
-		CNetPacket& operator << (unsigned char byValue);
-		CNetPacket& operator << (char chValue);
+		CLanPacket& operator << (unsigned char byValue);
+		CLanPacket& operator << (char chValue);
 
-		CNetPacket& operator << (short shValue);
-		CNetPacket& operator << (unsigned short wValue);
+		CLanPacket& operator << (short shValue);
+		CLanPacket& operator << (unsigned short wValue);
 
-		CNetPacket& operator << (int iValue);
-		CNetPacket& operator << (unsigned int iValue);
-		CNetPacket& operator << (long lValue);
-		CNetPacket& operator << (unsigned long lValue);
-		CNetPacket& operator << (float fValue);
+		CLanPacket& operator << (int iValue);
+		CLanPacket& operator << (unsigned int iValue);
+		CLanPacket& operator << (long lValue);
+		CLanPacket& operator << (unsigned long lValue);
+		CLanPacket& operator << (float fValue);
 
-		CNetPacket& operator << (__int64 iValue);
-		CNetPacket& operator << (double dValue);
+		CLanPacket& operator << (__int64 iValue);
+		CLanPacket& operator << (double dValue);
 
 		// 연산자 오버로딩 빼기
-		CNetPacket& operator >> (unsigned char& byValue);
-		CNetPacket& operator >> (char& chValue);
+		CLanPacket& operator >> (unsigned char& byValue);
+		CLanPacket& operator >> (char& chValue);
 
-		CNetPacket& operator >> (short& shValue);
-		CNetPacket& operator >> (unsigned short& wValue);
+		CLanPacket& operator >> (short& shValue);
+		CLanPacket& operator >> (unsigned short& wValue);
 
-		CNetPacket& operator >> (int& iValue);
-		CNetPacket& operator >> (unsigned int& iValue);
-		CNetPacket& operator >> (long& dwValue);
-		CNetPacket& operator >> (unsigned long& dwValue);
-		CNetPacket& operator >> (float& fValue);
+		CLanPacket& operator >> (int& iValue);
+		CLanPacket& operator >> (unsigned int& iValue);
+		CLanPacket& operator >> (long& dwValue);
+		CLanPacket& operator >> (unsigned long& dwValue);
+		CLanPacket& operator >> (float& fValue);
 
-		CNetPacket& operator >> (__int64& iValue);
-		CNetPacket& operator >> (double& dValue);
+		CLanPacket& operator >> (__int64& iValue);
+		CLanPacket& operator >> (double& dValue);
 
 		//////////////////////////////////////////////////////////////////////////
 		// 데이타 얻기.
@@ -149,15 +149,12 @@ namespace procademy
 		int			PutData(const char* chpSrc, int iLength);
 		int			PutData(const wchar_t* chpSrc, int iLength);
 
-		CNetPacket& operator << (const char* s);
-		CNetPacket& operator << (const wchar_t* s);
+		CLanPacket& operator << (const char* s);
+		CLanPacket& operator << (const wchar_t* s);
 
-		static CNetPacket*	AllocAddRef();
+		static CLanPacket* AllocAddRef();
 		void				AddRef();
 		void				SubRef();
-		void				SetHeader(bool isLengthOnly);
-		void				Encode();
-		bool				Decode();
 
 		static int			GetPoolCapacity();
 		static DWORD		GetPoolSize();
@@ -173,8 +170,8 @@ namespace procademy
 		void		writeBuffer(const char* src, int size);
 
 	private:
-		CNetPacket();
-		CNetPacket(int iBufferSize);
+		CLanPacket();
+		CLanPacket(int iBufferSize);
 
 	public:
 #pragma pack(push, 1)
@@ -189,21 +186,21 @@ namespace procademy
 	private:
 
 		SHORT		mRefCount = 0;
-		char*		mBuffer;
+		char* mBuffer;
 		int			mCapacity;
 		int			mPacketSize;
 		int			mHeaderSize;
-		char*		mFront;
-		char*		mRear;
-		char*		mZero;
+		char* mFront;
+		char* mRear;
+		char* mZero;
 	public:
 		static BYTE	sCode;
 		static BYTE	sPacketKey;
 
 #ifdef MEMORY_POOL_VER
-		alignas(64) static TC_LFObjectPool<CNetPacket> sPacketPool;
+		alignas(64) static TC_LFObjectPool<CLanPacket> sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)
-		alignas(64) static ObjectPool_TLS<CNetPacket> sPacketPool;
+		alignas(64) static ObjectPool_TLS<CLanPacket> sPacketPool;
 #endif // MEMORY_POOL_VER
 	};
 #endif
