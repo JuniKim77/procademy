@@ -4,6 +4,7 @@
 #include <random>
 #include <conio.h>
 #include "CCrashDump.h"
+#include "CProfiler.h"
 
 #define STR_SIZE (120)
 #define TIME_PERIOD (50)
@@ -21,6 +22,7 @@ int post = 0;
 
 int main()
 {
+	CProfiler::InitProfiler(5);
 	procademy::CCrashDump::CCrashDump();
 
 	system(" mode  con lines=30   cols=120 ");
@@ -56,6 +58,8 @@ int main()
 		CloseHandle(hArray[i]);
 	}
 
+	CProfiler::Print();
+
 	return 0;
 }
 
@@ -66,16 +70,21 @@ int dequeueProcess()
 
 	int ran = rand() % (STR_SIZE + 1);
 
+	CProfiler::Begin(L"GetUseSize");
 	if (ringBuffer.GetUseSize() == 0)
 	{
+		CProfiler::End(L"GetUseSize");
 		return 0;
 	}
+	CProfiler::End(L"GetUseSize");
 
+	CProfiler::Begin(L"Dequeue");
 	int size = ringBuffer.Dequeue(buffer, ran);
+	CProfiler::End(L"Dequeue");
 
 	buffer[size] = '\0';
 
-	printf(buffer);
+	//printf(buffer);
 
 	//if (size != 0 && szTest[post] != buffer[0])
 	//{
@@ -109,7 +118,9 @@ int enqueueProcess()
 
 	buffer[ran] = '\0';
 
+	CProfiler::Begin(L"Enqueue");
 	int size = ringBuffer.Enqueue(buffer, ran);
+	CProfiler::End(L"Enqueue");
 
 	cur = (cur + size) % STR_SIZE;
 
