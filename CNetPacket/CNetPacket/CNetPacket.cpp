@@ -434,7 +434,12 @@ namespace procademy
 
 	void CNetPacket::SubRef()
 	{
-		int ret = InterlockedDecrement16((SHORT*)&mRefCount);
+		int ret = (int)InterlockedDecrement16((SHORT*)&mRefCount);
+
+		if (ret < 0)
+		{
+			CRASH();
+		}
 
 		if (ret == 0)
 		{

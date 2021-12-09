@@ -410,7 +410,9 @@ namespace procademy
 			if (snapSize > 100)
 				snapSize = 100;
 
-			if (session->sendQ.Peek(packetBufs, snapSize) != snapSize)
+			DWORD retval = session->sendQ.Peek(packetBufs, snapSize);
+
+			if (retval != snapSize)
 				CRASH();
 
 			for (DWORD i = 0; i < snapSize; ++i)

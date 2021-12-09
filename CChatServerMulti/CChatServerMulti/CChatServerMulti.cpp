@@ -301,7 +301,7 @@ bool procademy::CChatServerMulti::RecvProc(SESSION_ID sessionNo, CNetPacket* pac
         break;
     }
 
-    packet->SubRef();
+    //packet->SubRef();
 
     if (ret == false)
     {

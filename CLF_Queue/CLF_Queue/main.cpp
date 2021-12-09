@@ -6,9 +6,9 @@
 #include <process.h>
 #include <wchar.h>
 
-#define THREAD_SIZE (3)
-#define MAX_ALLOC (30)
-#define THREAD_ALLOC (10)
+#define THREAD_SIZE (6)
+#define MAX_ALLOC (12)
+#define THREAD_ALLOC (2)
 
 struct st_DATA
 {

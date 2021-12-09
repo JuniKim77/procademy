@@ -57,7 +57,7 @@ namespace procademy
 		DATA*	Alloc(void);
 		bool	Free(DATA* pData);
 		int		GetCapacity(void);
-		DWORD	GetSize(void) { return mSize; }
+		DWORD	GetSize(void);
 		void	OnOffCounting() { mbSizeCheck = !mbSizeCheck; }
 
 	private:
@@ -103,8 +103,8 @@ namespace procademy
 			chunk->mFreeCount = 0;
 			TlsSetValue(mIndex, chunk);
 
-			//USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
-			//chunkTrack[ret] = chunk;
+			USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
+			chunkTrack[ret] = chunk;
 		}
 
 		if (mbSizeCheck)
@@ -132,6 +132,16 @@ namespace procademy
 	inline int ObjectPool_TLS<DATA>::GetCapacity(void)
 	{
 		return mMemoryPool->GetCapacity() * CChunk::MAX_SIZE;
+	}
+	template<typename DATA>
+	inline DWORD ObjectPool_TLS<DATA>::GetSize(void)
+	{
+		if (mbSizeCheck)
+		{
+			return mSize;
+		}
+		
+		return mMemoryPool->GetSize();
 	}
 	template<typename DATA>
 	inline DATA* ObjectPool_TLS<DATA>::CChunk::Alloc(void)
