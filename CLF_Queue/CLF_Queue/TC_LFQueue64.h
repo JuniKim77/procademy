@@ -46,6 +46,11 @@ namespace procademy
 		DWORD		GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
 		DWORD		GetPoolSize() { return mMemoryPool.GetSize(); }
 		void		linkCheck(int size);
+
+	private:
+		Node*		GetNodeAddress(Node* address);
+		INT64		GetNodeCounter(Node* address);
+		Node*		SetNodeCounter(Node* address, INT64 counter);
 	};
 
 	template<typename DATA>
@@ -61,13 +66,13 @@ namespace procademy
 	template<typename DATA>
 	inline TC_LFQueue64<DATA>::~TC_LFQueue64()
 	{
-		Node* node = (Node*)(VIRTUAL_ADDRESS & (INT64)mHead);
+		Node* node = GetNodeAddress(mHead);
 		int count = 0;
 		while (node != nullptr)
 		{
-			Node* temp = (Node*)(VIRTUAL_ADDRESS & (INT64)node);
+			Node* temp = GetNodeAddress(node);
 
-			node = (Node*)(VIRTUAL_ADDRESS & (INT64)(node->next));
+			node = GetNodeAddress(node)->next;
 			count++;
 			mMemoryPool.Free(temp);
 		}
@@ -76,7 +81,7 @@ namespace procademy
 	template<typename DATA>
 	inline void TC_LFQueue64<DATA>::Enqueue(DATA data)
 	{
-		Node* top;
+		Node* tail;
 		Node* node = mMemoryPool.Alloc();
 		Node* next;
 		INT64 nextCounter;
@@ -91,14 +96,13 @@ namespace procademy
 			//top.counter = mTail.counter;
 			//top.ptr_node = mTail.ptr_node;
 			//next = top.ptr_node->next;
-			top = mTail;
-			next = ((Node*)((INT64)top & VIRTUAL_ADDRESS))->next;
-			nextCounter = (COUNTER_BIT & (INT64)top >> COUNTER_BEGIN_BIT) + 1;
-			node = (Node*)((INT64)node | (nextCounter << COUNTER_BEGIN_BIT));
+			tail = mTail;
+			next = GetNodeAddress(tail)->next;
 
 			if (next == nullptr)
 			{
-				if (InterlockedCompareExchange64((LONG64*)&((Node*)((INT64)mTail & VIRTUAL_ADDRESS))->next, (LONG64)node, 0) == 0)
+				//InterlockedCompareExchangePointer((PVOID*)&top.ptr_node->next, node, nullptr) == nullptr)
+				if (InterlockedCompareExchange64((LONG64*)&GetNodeAddress(tail)->next, (LONG64)node, NULL) == NULL)
 				{
 					InterlockedIncrement((long*)&mSize);
 					//Log(LOGIC_ENQUEUE + 50, top, next);
@@ -107,8 +111,9 @@ namespace procademy
 					{
 						InterlockedCompareExchange128((LONG64*)&mTail, top.counter + 1, (LONG64)next, (LONG64*)&top);
 					}*/
+					next = SetNodeCounter(tail, GetNodeCounter(tail) + 1);
 
-					InterlockedCompareExchange64((LONG64*)&mTail, (LONG64)node, (LONG64)top);
+					InterlockedCompareExchange64((LONG64*)&mTail, (LONG64)next, (LONG64)tail);
 
 					break;
 				}
@@ -120,7 +125,9 @@ namespace procademy
 					InterlockedCompareExchange128((LONG64*)&mTail, top.counter + 1, (LONG64)next, (LONG64*)&top);
 				}*/
 
-				InterlockedCompareExchangePointer((PVOID*)&mTail, next, (PVOID*)&top);
+				next = SetNodeCounter(tail, GetNodeCounter(tail) + 1);
+
+				InterlockedCompareExchange64((LONG64*)&mTail, (LONG64)next, (LONG64)tail);
 			}
 		}
 	}
@@ -131,6 +138,7 @@ namespace procademy
 		Node* top;
 		Node* tail;
 		INT64 temp;
+		Node* next;
 
 		if (InterlockedDecrement((long*)&mSize) < 0)
 		{
@@ -138,8 +146,6 @@ namespace procademy
 
 			return false;
 		}
-
-		Node* next;
 
 		while (1)
 		{
@@ -150,7 +156,7 @@ namespace procademy
 			tail.ptr_node = mTail.ptr_node;*/
 
 			top = mHead;
-			next = top->next;
+			next = GetNodeAddress(top)->next;
 
 			tail = mTail;
 
@@ -160,26 +166,28 @@ namespace procademy
 				{
 					InterlockedCompareExchange128((LONG64*)&mTail, tail.counter + 1, (LONG64)tailNext, (LONG64*)&tail);
 				}*/
-				InterlockedCompareExchangePointer((PVOID*)&mTail, next, (PVOID*)&tail);
+				next = SetNodeCounter(next, GetNodeCounter(top) + 1);
+
+				InterlockedCompareExchange64((LONG64*)&mTail, (LONG64)next, (LONG64)tail);
 			}
 			else
 			{
-				*data = next->data;
+				*data = GetNodeAddress(next)->data;
 				//if (InterlockedCompareExchange128((LONG64*)&mHead, top.counter + 1, (LONG64)next, (LONG64*)&top))
 				//{
 				//	//Log(LOGIC_DEQUEUE + 50, top, next, true);
 				//	break;
 				//}
-				if (InterlockedCompareExchangePointer((PVOID*)&mHead, next, (PVOID*)&top) == top)
+				next = SetNodeCounter(next, GetNodeCounter(top) + 1);
+
+				if (InterlockedCompareExchange64((LONG64*)&mHead, (LONG64)next, (LONG64)top) == (LONG64)top)
 				{
 					break;
 				}
 			}
 		}
 
-		temp = VIRTUAL_ADDRESS & (INT64)top;
-
-		mMemoryPool.Free((Node*)temp);
+		mMemoryPool.Free(GetNodeAddress(top));
 
 		return true;
 	}
@@ -207,19 +215,36 @@ namespace procademy
 	template<typename DATA>
 	inline void TC_LFQueue64<DATA>::linkCheck(int size)
 	{
-		Node* node = mHead->next;
+		Node* node = GetNodeAddress(mHead)->next;
 
 		int count = 0;
 
 		while (node != nullptr)
 		{
 			count++;
-			node = node->next;
+			node = GetNodeAddress(node)->next;
 		}
 
 		if (count == size)
 		{
 			wprintf_s(L"Enqueued Successfully\n=====================\n");
 		}
+	}
+	template<typename DATA>
+	inline typename TC_LFQueue64<DATA>::Node* TC_LFQueue64<DATA>::GetNodeAddress(TC_LFQueue64<DATA>::Node* address)
+	{
+		return (Node*)(VIRTUAL_ADDRESS & (INT64)address);
+	}
+	template<typename DATA>
+	inline typename INT64 TC_LFQueue64<DATA>::GetNodeCounter(TC_LFQueue64<DATA>::Node* address)
+	{
+		return ((COUNTER_BIT & (INT64)address) >> COUNTER_BEGIN_BIT);
+	}
+	template<typename DATA>
+	inline typename TC_LFQueue64<DATA>::Node* TC_LFQueue64<DATA>::SetNodeCounter(TC_LFQueue64<DATA>::Node* address, INT64 counter)
+	{
+		counter <<= COUNTER_BEGIN_BIT;
+
+		return (Node*)((INT64)address | counter);
 	}
 }
