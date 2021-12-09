@@ -151,6 +151,7 @@
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="TC_LFQueue.h" />
+    <ClInclude Include="TC_LFQueue64.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
