@@ -97,16 +97,12 @@ namespace procademy
 
 		while (1)
 		{
-			//top.counter = mTail.counter;
-			//top.ptr_node = mTail.ptr_node;
-			//next = top.ptr_node->next;
 			tail = mTail;
 			pTail = GetNodeAddress(tail);
 			pNext = pTail->next;
 
 			if (pNext == nullptr)
 			{
-				//InterlockedCompareExchangePointer((PVOID*)&top.ptr_node->next, node, nullptr) == nullptr)
 				if (InterlockedCompareExchangePointer((PVOID*)&pTail->next, pNode, nullptr) == nullptr)
 				{
 					InterlockedIncrement((long*)&mSize);
@@ -146,12 +142,6 @@ namespace procademy
 
 		while (1)
 		{
-			/*top.ptr_node = mHead.ptr_node;
-			next = top.ptr_node->next;
-
-			tail.counter = mTail.counter;
-			tail.ptr_node = mTail.ptr_node;*/
-
 			head = mHead;
 			pHead = GetNodeAddress(head);
 
@@ -174,11 +164,7 @@ namespace procademy
 			else
 			{
 				*data = pNext->data;
-				//if (InterlockedCompareExchange128((LONG64*)&mHead, top.counter + 1, (LONG64)next, (LONG64*)&top))
-				//{
-				//	//Log(LOGIC_DEQUEUE + 50, top, next, true);
-				//	break;
-				//}
+
 				nextHead = ((head & COUNTER_BIT) + COUNTER_BIT_INCREMENT) | (LONG64)(pHead->next);
 
 				if (InterlockedCompareExchange64(&mHead, nextHead, head) == head)
@@ -197,7 +183,7 @@ namespace procademy
 	inline DWORD TC_LFQueue64<DATA>::Peek(DATA arr[], DWORD size)
 	{
 		DWORD i;
-		Node* pHead = mHead.ptr_node->next;
+		Node* pHead = GetNodeAddress(mHead)->next;
 
 		for (i = 0; i < size; ++i)
 		{

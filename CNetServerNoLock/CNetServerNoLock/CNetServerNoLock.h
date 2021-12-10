@@ -5,7 +5,7 @@
 #include <WinSock2.h>
 #include "RingBuffer.h"
 #include "TC_LFStack.h"
-#include "TC_LFQueue.h"
+#include "TC_LFQueue64.h"
 
 //#define PROFILE
 
@@ -29,17 +29,17 @@ namespace procademy
 
 	struct Session
 	{
-		WSAOVERLAPPED				recvOverlapped;
-		WSAOVERLAPPED				sendOverlapped;
-		RingBuffer					recvQ;
-		TC_LFQueue<CNetPacket*>		sendQ;
-		int							numSendingPacket = 0;
-		alignas(64) SessionIoCount	ioBlock;
-		alignas(64) bool			isSending;
-		SOCKET						socket = INVALID_SOCKET;
-		u_short						port;
-		ULONG						ip;
-		u_int64						sessionID;
+		WSAOVERLAPPED							recvOverlapped;
+		WSAOVERLAPPED							sendOverlapped;
+		RingBuffer								recvQ;
+		alignas(64) TC_LFQueue64<CNetPacket*>	sendQ;
+		alignas(64) SessionIoCount				ioBlock;
+		alignas(64) bool						isSending;
+		int										numSendingPacket = 0;
+		SOCKET									socket = INVALID_SOCKET;
+		u_short									port;
+		ULONG									ip;
+		u_int64									sessionID;
 
 		Session()
 			: isSending(false)

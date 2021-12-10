@@ -133,8 +133,8 @@ namespace procademy
 		WCHAR									mTokenDBIP[16];
 		USHORT									mTokenDBPort;
 
-		TC_LFObjectPool<st_MSG>					mMsgPool;
-		TC_LFQueue<st_MSG*>						mMsgQ;
+		alignas(64) TC_LFObjectPool<st_MSG>		mMsgPool;
+		alignas(64) TC_LFQueue64<st_MSG*>		mMsgQ;
 		CSafeQueue<st_MSG*>						mMsgLQ;
 		SRWLOCK									mMsgLock;
 		HANDLE									mUpdateEvent = INVALID_HANDLE_VALUE;

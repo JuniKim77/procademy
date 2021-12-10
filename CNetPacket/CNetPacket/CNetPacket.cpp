@@ -28,13 +28,12 @@ namespace procademy
 
 	CNetPacket::CNetPacket(int iBufferSize)
 		: mCapacity(iBufferSize)
-		, mPacketSize(0)
-		, mHeaderSize(HEADER_MAX_SIZE)
 	{
-		mBuffer = (char*)malloc(mCapacity);
+		mBuffer = (char*)malloc(mCapacity + HEADER_MAX_SIZE);
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mBuffer + HEADER_MAX_SIZE;
 		mZero = mBuffer;
+		mEnd = mFront + mCapacity;
 	}
 
 	CNetPacket::~CNetPacket()
@@ -50,310 +49,280 @@ namespace procademy
 
 	void CNetPacket::Clear(void)
 	{
-		mPacketSize = 0;
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mFront;
-		mZero = mBuffer;
 	}
 
-	int CNetPacket::MoveFront(int iSize)
+	int CNetPacket::MoveFront(DWORD iSize)
 	{
-		if (iSize <= 0)
-			return 0;
+		if (mFront + iSize > mRear)
+		{
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"MoveFront - front is over rear");
 
-		int size = iSize <= mPacketSize ? iSize : mPacketSize;
+			iSize = mRear - mFront;
+		}
 
-		mFront += size;
-		mPacketSize -= size;
+		mFront += iSize;
 
-		return size;
+		return iSize;
 	}
 
-	int CNetPacket::MoveRear(int iSize)
+	int CNetPacket::MoveRear(DWORD iSize)
 	{
-		if (iSize <= 0)
-			return 0;
+		if (mRear + iSize >= mEnd)
+		{
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"MoveFront - front is over rear");
 
-		int size = iSize <= GetFreeSize() ? iSize : GetFreeSize();
+			iSize = mEnd - mRear;
+		}
 
-		mRear += size;
-		mPacketSize += size;
+		mRear += iSize;
 
-		return size;
+		return iSize;
 	}
 
 	CNetPacket& CNetPacket::operator<<(unsigned char byValue)
 	{
-		if (sizeof(unsigned char) > GetFreeSize())
+		if (sizeof(unsigned char) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&byValue, sizeof(unsigned char));
+		*mRear = byValue;
+		mRear++;
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(char chValue)
 	{
-		if (sizeof(char) > GetFreeSize())
+		if (sizeof(char) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer(&chValue, sizeof(char));
+		*mRear = chValue;
+		mRear++;
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(short shValue)
 	{
-		if (sizeof(short) > GetFreeSize())
+		if (sizeof(short) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&shValue, sizeof(short));
+		*((short*)mRear) = shValue;
+		mRear += sizeof(short);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(unsigned short wValue)
 	{
-		if (sizeof(unsigned short) > GetFreeSize())
+		if (sizeof(unsigned short) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&wValue, sizeof(unsigned short));
+		*((unsigned short*)mRear) = wValue;
+		mRear += sizeof(unsigned short);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(int iValue)
 	{
-		if (sizeof(int) > GetFreeSize())
+		if (sizeof(int) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&iValue, sizeof(int));
+		*((int*)mRear) = iValue;
+		mRear += sizeof(int);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(unsigned int iValue)
 	{
-		if (sizeof(unsigned int) > GetFreeSize())
+		if (sizeof(unsigned int) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&iValue, sizeof(unsigned int));
+		*((unsigned int*)mRear) = iValue;
+		mRear += sizeof(unsigned int);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(long lValue)
 	{
-		if (sizeof(long) > GetFreeSize())
+		if (sizeof(long) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&lValue, sizeof(long));
+		*((long*)mRear) = lValue;
+		mRear += sizeof(long);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(unsigned long lValue)
 	{
-		if (sizeof(unsigned long) > GetFreeSize())
+		if (sizeof(unsigned long) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&lValue, sizeof(unsigned long));
+		*((unsigned long*)mRear) = lValue;
+		mRear += sizeof(unsigned long);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(float fValue)
 	{
-		if (sizeof(float) > GetFreeSize())
+		if (sizeof(float) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&fValue, sizeof(float));
+		*((float*)mRear) = fValue;
+		mRear += sizeof(float);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(__int64 iValue)
 	{
-		if (sizeof(__int64) > GetFreeSize())
+		if (sizeof(__int64) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&iValue, sizeof(__int64));
+		*((__int64*)mRear) = iValue;
+		mRear += sizeof(__int64);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(double dValue)
 	{
-		if (sizeof(double) > GetFreeSize())
+		if (sizeof(double) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&dValue, sizeof(double));
+		*((double*)mRear) = dValue;
+		mRear += sizeof(double);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(unsigned char& byValue)
 	{
-		unsigned char* pBuf = (unsigned char*)mFront;
-
-		byValue = *pBuf;
-		MoveFront(sizeof(unsigned char));
+		byValue = *((unsigned char*)mFront);
+		mFront += sizeof(unsigned char);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(char& chValue)
 	{
-		char* pBuf = mFront;
-
-		chValue = *pBuf;
-		MoveFront(sizeof(char));
+		chValue = *((char*)mFront);
+		mFront += sizeof(char);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(short& shValue)
 	{
-		short* pBuf = (short*)mFront;
-
-		shValue = *pBuf;
-		MoveFront(sizeof(short));
+		shValue = *((short*)mFront);
+		mFront += sizeof(short);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(unsigned short& wValue)
 	{
-		unsigned short* pBuf = (unsigned short*)mFront;
-
-		wValue = *pBuf;
-		MoveFront(sizeof(unsigned short));
+		wValue = *((unsigned short*)mFront);
+		mFront += sizeof(unsigned short);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(int& iValue)
 	{
-		int* pBuf = (int*)mFront;
-
-		iValue = *pBuf;
-		MoveFront(sizeof(int));
+		iValue = *((int*)mFront);
+		mFront += sizeof(int);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(unsigned int& iValue)
 	{
-		unsigned int* pBuf = (unsigned int*)mFront;
-
-		iValue = *pBuf;
-		MoveFront(sizeof(unsigned int));
+		iValue = *((unsigned int*)mFront);
+		mFront += sizeof(unsigned int);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(long& dwValue)
 	{
-		long* pBuf = (long*)mFront;
-
-		dwValue = *pBuf;
-		MoveFront(sizeof(long));
+		dwValue = *((long*)mFront);
+		mFront += sizeof(long);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(unsigned long& dwValue)
 	{
-		unsigned long* pBuf = (unsigned long*)mFront;
-
-		dwValue = *pBuf;
-		MoveFront(sizeof(unsigned long));
+		dwValue = *((unsigned long*)mFront);
+		mFront += sizeof(unsigned long);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(float& fValue)
 	{
-		float* pBuf = (float*)mFront;
-
-		fValue = *pBuf;
-		MoveFront(sizeof(float));
+		fValue = *((float*)mFront);
+		mFront += sizeof(float);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(__int64& iValue)
 	{
-		__int64* pBuf = (__int64*)mFront;
-
-		iValue = *pBuf;
-		MoveFront(sizeof(__int64));
+		iValue = *((__int64*)mFront);
+		mFront += sizeof(__int64);
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator>>(double& dValue)
 	{
-		double* pBuf = (double*)mFront;
-
-		dValue = *pBuf;
-		MoveFront(sizeof(double));
+		dValue = *((double*)mFront);
+		mFront += sizeof(double);
 
 		return *this;
 	}
 
 	int CNetPacket::GetData(char* chpDest, int iLength)
 	{
-		int size = iLength >= mPacketSize ? mPacketSize : iLength;
+		if (mFront + iLength > mRear)
+		{
+			iLength = mRear - mFront;
+		}
 
-		memcpy(chpDest, mFront, size);
-		MoveFront(size);
+		memcpy(chpDest, mFront, iLength);
+		mFront += iLength;
 
-		return size;
+		return iLength;
 	}
 
 	int CNetPacket::GetData(wchar_t* chpDest, int iLength)
@@ -363,15 +332,13 @@ namespace procademy
 
 	int CNetPacket::PutData(const char* chpSrc, int iLength)
 	{
-		if (iLength > GetFreeSize())
+		if (iLength + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
 		memcpy(mRear, chpSrc, iLength);
-		MoveRear(iLength);
+		mRear += iLength;
 
 		return iLength;
 	}
@@ -383,18 +350,14 @@ namespace procademy
 
 	CNetPacket& CNetPacket::operator<<(const char* s)
 	{
-		int len = (int)strlen(s);
-
-		PutData(s, len);
+		PutData(s, strlen(s));
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(const wchar_t* s)
 	{
-		int len = (int)wcslen(s);
-
-		PutData(s, len);
+		PutData(s, wcslen(s));
 
 		return *this;
 	}
@@ -464,15 +427,14 @@ namespace procademy
 		if (isLengthOnly)
 		{
 			mZero = mBuffer + (HEADER_MAX_SIZE - 2);
-			mHeaderSize = 2;
-			*((USHORT*)mZero) = (USHORT)mPacketSize;
+			*((USHORT*)mZero) = (USHORT)(mRear - mFront);
 		}
 		else
 		{
 			st_Header header;
 
 			header.code = sCode;
-			header.len = (USHORT)mPacketSize;
+			header.len = (USHORT)(mRear - mFront);
 #ifdef TEST
 			header.randKey = 0x31;
 #else
@@ -482,7 +444,7 @@ namespace procademy
 			char* pFront = mFront;
 			BYTE sum = 0;
 
-			for (int i = 0; i < mPacketSize; ++i)
+			for (int i = 0; i < header.len; ++i)
 			{
 				sum += (BYTE)*pFront;
 				pFront++;
@@ -491,7 +453,6 @@ namespace procademy
 			header.checkSum = sum;
 
 			mZero = mBuffer;
-			mHeaderSize = HEADER_MAX_SIZE;
 			memcpy(mZero, (char*)&header, HEADER_MAX_SIZE);
 		}
 	}
@@ -504,7 +465,9 @@ namespace procademy
 		BYTE D;
 		st_Header header = *((st_Header*)mZero);
 
-		for (BYTE i = 1; i <= (BYTE)(mPacketSize + 1); ++i)
+		BYTE len = mRear - mFront + 1;
+
+		for (BYTE i = 1; i <= len; ++i)
 		{
 			D = (BYTE)*pFront;
 			P = D ^ (P + header.randKey + i);
@@ -526,7 +489,9 @@ namespace procademy
 		BYTE D;
 		st_Header header = *((st_Header*)mZero);
 
-		for (BYTE i = 1; i <= (BYTE)(mPacketSize + 1); ++i)
+		BYTE len = mRear - mFront + 1;
+
+		for (BYTE i = 1; i <= len; ++i)
 		{
 			curE = (BYTE)*pFront;
 			curP = curE ^ (prevE + sPacketKey + i);
@@ -542,7 +507,7 @@ namespace procademy
 		BYTE sum = 0;
 		pFront = mFront;
 
-		for (int i = 0; i < mPacketSize; ++i)
+		for (int i = 1; i < len; ++i)
 		{
 			sum += (BYTE)*pFront;
 			pFront++;
@@ -577,10 +542,10 @@ namespace procademy
 
 	void CNetPacket::resize()
 	{
-		char* pBuffer = (char*)malloc((long long)mCapacity + eBUFFER_DEFAULT);
+		char* pBuffer = (char*)malloc((long long)mCapacity + HEADER_MAX_SIZE + eBUFFER_DEFAULT);
 
 		if (pBuffer != 0)
-			memcpy(pBuffer, mBuffer, mPacketSize);
+			memcpy(pBuffer, mBuffer, mCapacity + HEADER_MAX_SIZE);
 
 		int frontIndex = (int)(mFront - mBuffer);
 		int rearIndex = (int)(mRear - mBuffer);
@@ -593,6 +558,8 @@ namespace procademy
 		mRear = mBuffer + rearIndex;
 
 		mCapacity += eBUFFER_DEFAULT;
+
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Resize");
 	}
 
 	void CNetPacket::writeBuffer(const char* src, int size)

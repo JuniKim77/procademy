@@ -70,9 +70,8 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
-		int		GetSize(void) { return mPacketSize + mHeaderSize; }
-		int		GetUseSize() { return mPacketSize; }
-		USHORT	GetPacketSize() { return mPacketSize; }
+		int		GetSize(void) { return mRear - mZero; }
+		int		GetUseSize() { return mRear - mFront; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 포인터 얻기.
@@ -91,13 +90,13 @@ namespace procademy
 		// Parameters: (int) 이동 사이즈.
 		// Return: (int) 이동된 사이즈.
 		//////////////////////////////////////////////////////////////////////////
-		int		MoveFront(int iSize);
-		int		MoveRear(int iSize);
+		int		MoveFront(DWORD iSize);
+		int		MoveRear(DWORD iSize);
 		/// <summary>
 		/// 현재 버퍼의 사용 가능 사이즈 반환
 		/// </summary>
 		/// <returns>사용 가능 사이즈</returns>
-		int		GetFreeSize() const { return mCapacity - mPacketSize - HEADER_MAX_SIZE; }
+		int		GetFreeSize() const { return mEnd - mRear; }
 
 		// 연산자 오버로딩 넣기
 		CNetPacket& operator << (unsigned char byValue);
@@ -187,12 +186,10 @@ namespace procademy
 		};
 #pragma pack(pop)
 	private:
-
 		SHORT		mRefCount = 0;
 		char*		mBuffer;
+		char*		mEnd;
 		int			mCapacity;
-		int			mPacketSize;
-		int			mHeaderSize;
 		char*		mFront;
 		char*		mRear;
 		char*		mZero;

@@ -160,6 +160,7 @@
     <ClInclude Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.h" />
     <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h" />
     <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue.h" />
+    <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue64.h" />
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
     <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h" />
     <ClInclude Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.h" />

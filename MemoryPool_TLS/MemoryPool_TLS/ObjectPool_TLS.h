@@ -2,7 +2,7 @@
 #include "TC_LFObjectPool.h"
 #include <wtypes.h>
 
-//#define ALLOC_CHECK_VER
+#define ALLOC_CHECK_VER
 
 struct packetDebug;
 

@@ -113,5 +113,8 @@
     <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue64.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
