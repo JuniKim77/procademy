@@ -2,6 +2,8 @@
 #include "TC_LFObjectPool.h"
 #include <wtypes.h>
 
+//#define ALLOC_CHECK_VER
+
 struct packetDebug;
 
 extern USHORT g_debugIdx;
@@ -29,7 +31,7 @@ namespace procademy
 		class CChunk
 		{
 		public:
-			DATA* Alloc(void);
+			DATA*	Alloc(void);
 			bool	Free(DATA* pData);
 
 			enum {
@@ -37,10 +39,10 @@ namespace procademy
 			};
 
 			st_Chunk_Block				mArray[MAX_SIZE];
-			ObjectPool_TLS*				pObjPool = nullptr;
 			int							mAllocCount = 0;
+			alignas(64) DWORD			threadID;
+			ObjectPool_TLS*				pObjPool = nullptr;			
 			alignas(64) LONG			mFreeCount;
-			DWORD						threadID;
 		};
 
 		struct st_Chunk_Block
@@ -55,14 +57,14 @@ namespace procademy
 		ObjectPool_TLS(bool bPlacementNew = false, bool sizeCheck = false);
 		virtual	~ObjectPool_TLS();
 		DATA*	Alloc(void);
-		bool	Free(DATA* pData);
+		void	Free(DATA* pData);
 		int		GetCapacity(void);
 		DWORD	GetSize(void);
 		void	OnOffCounting() { mbSizeCheck = !mbSizeCheck; }
 
 	private:
 		TC_LFObjectPool<CChunk>*	mMemoryPool;
-		DWORD						mSize;
+		alignas(64) DWORD			mSize;
 		bool						mbSizeCheck;
 		DWORD						mIndex;
 		CChunk*						chunkTrack[USHRT_MAX + 1];
@@ -84,7 +86,6 @@ namespace procademy
 	{
 		if (mMemoryPool != nullptr)
 		{
-			//delete mMemoryPool;
 			_aligned_free(mMemoryPool);
 		}
 	}
@@ -103,30 +104,29 @@ namespace procademy
 			chunk->mFreeCount = 0;
 			TlsSetValue(mIndex, chunk);
 
-			USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
-			chunkTrack[ret] = chunk;
+			/*USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
+			chunkTrack[ret] = chunk;*/
 		}
-
+#ifdef ALLOC_CHECK_VER
 		if (mbSizeCheck)
 		{
 			InterlockedIncrement((LONG*)&mSize);
 		}
-
+#endif // ALLOC_CHECK_VER
 		return chunk->Alloc();
 	}
 	template<typename DATA>
-	inline bool ObjectPool_TLS<DATA>::Free(DATA* pData)
+	inline void ObjectPool_TLS<DATA>::Free(DATA* pData)
 	{
 		st_Chunk_Block* block = (st_Chunk_Block*)pData;
 
 		block->pOrigin->Free(pData);
-
+#ifdef ALLOC_CHECK_VER
 		if (mbSizeCheck)
 		{
 			InterlockedDecrement((LONG*)&mSize);
 		}
-
-		return true;
+#endif // ALLOC_CHECK_VER
 	}
 	template<typename DATA>
 	inline int ObjectPool_TLS<DATA>::GetCapacity(void)
@@ -136,11 +136,12 @@ namespace procademy
 	template<typename DATA>
 	inline DWORD ObjectPool_TLS<DATA>::GetSize(void)
 	{
+#ifdef ALLOC_CHECK_VER
 		if (mbSizeCheck)
 		{
 			return mSize;
 		}
-		
+#endif // ALLOC_CHECK_VER
 		return mMemoryPool->GetSize();
 	}
 	template<typename DATA>
@@ -167,10 +168,7 @@ namespace procademy
 			return false;
 		}
 
-		LONG ret = InterlockedIncrement(&mFreeCount);
-		//packetLog(40020, GetCurrentThreadId(), this, block, mAllocCount, ret);
-
-		if (ret == CChunk::MAX_SIZE)
+		if (InterlockedIncrement(&mFreeCount) == CChunk::MAX_SIZE)
 		{
 			//packetLog(40040, GetCurrentThreadId(), this, block, mAllocCount, ret);
 			block->pOrigin->threadID = 0;

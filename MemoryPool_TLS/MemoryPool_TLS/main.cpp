@@ -11,8 +11,7 @@
 class CTest
 {
 private:
-	alignas(64) __int64 a;
-	alignas(64) __int64 b;
+	char test[1024];
 };
 
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
@@ -69,7 +68,7 @@ int main()
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
-	int count = 1;
+	int count = 100;
 
 	TLS_ALLOC_PROC();
 	TLS_FREE_PROC();
