@@ -175,6 +175,7 @@
     <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h" />
     <ClInclude Include="..\..\TextParser\TextParser\TextParser.h" />
     <ClInclude Include="CMMOEchoServer.h" />
+    <ClInclude Include="CommonProtocol.h" />
     <ClInclude Include="CPlayer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

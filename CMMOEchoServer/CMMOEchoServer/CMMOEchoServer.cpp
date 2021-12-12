@@ -21,6 +21,7 @@ void procademy::CMMOEchoServer::AllocSessions(int num)
 
     for (int i = 0; i < num; ++i)
     {
+        mPlayers[i].SetServer(this);
         SetSession(&mPlayers[i]);
     }
 }
@@ -31,6 +32,14 @@ bool procademy::CMMOEchoServer::OnConnectionRequest(u_long IP, u_short Port)
 }
 
 void procademy::CMMOEchoServer::OnError(int errorcode, const WCHAR* log)
+{
+}
+
+void procademy::CMMOEchoServer::OnAuth_Update()
+{
+}
+
+void procademy::CMMOEchoServer::OnGame_Update()
 {
 }
 
@@ -136,6 +145,9 @@ unsigned int __stdcall procademy::CMMOEchoServer::MonitorThread(LPVOID arg)
 
 void procademy::CMMOEchoServer::BeginThreads()
 {
+    CProfiler::InitProfiler(30);
+
+    mMonitorThread = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, this, 0, nullptr);
 }
 
 void procademy::CMMOEchoServer::LoadInitFile(const WCHAR* fileName)
@@ -145,9 +157,6 @@ void procademy::CMMOEchoServer::LoadInitFile(const WCHAR* fileName)
     WCHAR       buffer[MAX_PARSER_LENGTH];
 
     tp.LoadFile(fileName);
-
-    tp.GetValue(L"CLIENT_MAX", &num);
-    mMaxClient = (u_short)num;
 }
 
 void procademy::CMMOEchoServer::Init()
@@ -167,8 +176,53 @@ void procademy::CMMOEchoServer::MonitoringProc()
         if (retval == WAIT_TIMEOUT)
         {
             mCpuUsage.UpdateProcessorCpuTime();
+
+            MakeMonitorStr(str, 2048);
+
+            wprintf(str);
         }
     }
 
     CloseHandle(dummyevent);
+}
+
+void procademy::CMMOEchoServer::MakeMonitorStr(WCHAR* s, int size)
+{
+    LONGLONG idx = 0;
+    WCHAR bigNumber[18];
+
+    idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"[MMO Echo Server Status: %s]\n", mbBegin ? L"RUN" : L"STOP");
+    idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d]\n", mbZeroCopy, mbNagle);
+    idx += swprintf_s(s + idx, size - idx, L"[WorkerTh: %d] [ActiveTh: %d]\n", mWorkerThreadNum, mActiveThreadNum);
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"%22s(%d / %d)\n", L"Session Num : ", 1, mMaxClient);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Accept Total : ", mMonitor.acceptTotal);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Accept TPS : ", mMonitor.acceptTPS);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Send Loop Count : ", mMonitor.prevSendLoopCount);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Auth Loop Count : ", mMonitor.prevAuthLoopCount);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Game Loop Count : ", mMonitor.prevGameLoopCount);
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"CPU usage [T:%.1f U:%.1f K:%.1f] [Chat T:%.1f U:%.1f K:%.1f]\n",
+        mCpuUsage.ProcessorTotal(), mCpuUsage.ProcessorUser(), mCpuUsage.ProcessorKernel(),
+        mCpuUsage.ProcessTotal(), mCpuUsage.ProcessUser(), mCpuUsage.ProcessKernel());
+    mCpuUsage.GetBigNumberStr(mCpuUsage.ProcessUserMemory(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"ProcessUserMemory : ", bigNumber);
+    mCpuUsage.GetBigNumberStr(mCpuUsage.ProcessNonPagedMemory(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"ProcessNonPagedMemory : ", bigNumber);
+    mCpuUsage.GetBigNumberStr(mCpuUsage.AvailableMemory(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"AvailableMemory : ", bigNumber);
+    mCpuUsage.GetBigNumberStr(mCpuUsage.NonPagedMemory(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"NonPagedMemory : ", bigNumber);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%d\n", L"ProcessHandleCount : ", mCpuUsage.ProcessHandleCount());
+    idx += swprintf_s(s + idx, size - idx, L"%25s%d\n", L"ProcessThreadCount : ", mCpuUsage.ProcessHandleCount());
+    mCpuUsage.GetBigNumberStr(mCpuUsage.NetworkRecvBytes(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"NetworkRecvBytes : ", bigNumber);
+    mCpuUsage.GetBigNumberStr(mCpuUsage.NetworkSendBytes(), bigNumber, 18);
+    idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"NetworkSendBytes : ", bigNumber);
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
 }

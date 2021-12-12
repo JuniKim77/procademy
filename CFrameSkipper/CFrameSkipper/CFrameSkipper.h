@@ -14,7 +14,7 @@ namespace procademy
 		/// </summary>
 		bool			IsSkip() { return mTimeRemain >= 20; }
 		bool			IsOverSecond() { return mTotalTick >= 1000; }
-		ULONGLONG		GetTotalTick() { return mTotalTick; }
+		DWORD			GetTotalTick() { return mTotalTick; }
 		/// <summary>
 		/// 시간 상태 Update
 		/// </summary>
@@ -37,13 +37,13 @@ namespace procademy
 		void			SetMaxFrame(int frame);
 
 	private:
-		ULONGLONG	mTotalTick = 0; // 
-		ULONGLONG	mOldFrameCounter = 0;
-		ULONGLONG	mTimeRemain = 0; // 
-		ULONGLONG	mOldTick = 0; // 이전 프레임 시간
-		ULONGLONG	mPrevTime = 0;
-		ULONGLONG	mMaxFrameTime = 0;
-		ULONGLONG	mMinFrameTime = LLONG_MAX;
+		DWORD		mTotalTick = 0; // 
+		DWORD		mOldFrameCounter = 0;
+		DWORD		mTimeRemain = 0; // 
+		DWORD		mOldTick = 0; // 이전 프레임 시간
+		DWORD		mPrevTime = 0;
+		DWORD		mMaxFrameTime = 0;
+		DWORD		mMinFrameTime = ULONG_MAX;
 		int			mFrameCounter = 0; // 프레임 수 카운팅
 		int			mLoopCounter = 0; // 루프를 얼마나 돌았는지 파악
 		int			mStandardTime = 20;

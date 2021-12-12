@@ -1,19 +1,23 @@
 #include "CFrameSkipper.h"
 #include <stdio.h>
+#include <windows.h>
+#pragma comment(lib, "Winmm.lib")
 
 procademy::CFrameSkipper::CFrameSkipper()
 {
+	timeBeginPeriod(1);
 }
 
 procademy::CFrameSkipper::~CFrameSkipper()
 {
+	timeEndPeriod(1);
 }
 
 void procademy::CFrameSkipper::CheckTime()
 {
-	ULONGLONG curTick = GetTickCount64();
+	DWORD curTick = timeGetTime();
 	// ∑Á«¡ µ∑ √— Ω√∞£
-	ULONGLONG timePeriod = curTick - mOldTick;
+	DWORD timePeriod = curTick - mOldTick;
 
 	mOldTick = curTick;
 

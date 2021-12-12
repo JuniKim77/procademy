@@ -33,14 +33,18 @@ namespace procademy
 		virtual void OnAuth_ClientJoin() = 0;
 		virtual void OnAuth_ClientLeave() = 0;
 		virtual void OnAuth_ClientRelease() = 0;
-		virtual void OnAuth_Update() = 0;
 		virtual void OnAuth_Packet(CNetPacket* packet) = 0;
 		virtual void OnGame_ClientJoin() = 0;
 		virtual void OnGame_ClientLeave() = 0;
 		virtual void OnGame_ClientRelease() = 0;
-		virtual void OnGame_Update() = 0;
 		virtual void OnGame_Packet(CNetPacket* packet) = 0;
 		virtual void OnError(int errorcode, const WCHAR* log) = 0;
+
+	protected:
+		void SendPacket(CNetPacket* packet);
+
+	protected:
+		bool						toGame = false;
 
 	private:
 		WSAOVERLAPPED				recvOverlapped;
@@ -56,7 +60,7 @@ namespace procademy
 		ULONG						ip;
 		u_int64						sessionID;
 		bool						sessionEnd = false;
-		bool						toGame = false;
-		SESSION_STATUS				status;
+		SESSION_STATUS				status = en_NONE_USE;
+		u_short						index = 0;
 	};
 }

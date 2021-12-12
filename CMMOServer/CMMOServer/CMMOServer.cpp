@@ -4,6 +4,44 @@
 #include "CNetPacket.h"
 #include "CFrameSkipper.h"
 
+struct statusDebug
+{
+	int										logicID;
+	procademy::CSession::SESSION_STATUS		status;
+	bool									sending;
+	bool									toGame;
+	bool									sessionEnd;
+	u_short									sessionIndex;
+	u_int64									sessionID;
+	DWORD									threadId;
+};
+
+USHORT g_debugIdx = 0;
+statusDebug g_statusDebugs[USHRT_MAX + 1] = { 0, };
+
+//void statusLog(
+//	int										logicID,
+//	procademy::CSession::SESSION_STATUS		status,
+//	bool									sending,
+//	bool									toGame,
+//	bool									sessionEnd,
+//	u_short									sessionIndex,
+//	u_int64									sessionID,
+//	DWORD									threadId
+//)
+//{
+//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
+//
+//	g_statusDebugs[index].logicID = logicID;
+//	g_statusDebugs[index].status = status;
+//	g_statusDebugs[index].sending = sending;
+//	g_statusDebugs[index].toGame = toGame;
+//	g_statusDebugs[index].sessionEnd = sessionEnd;
+//	g_statusDebugs[index].sessionIndex = sessionIndex;
+//	g_statusDebugs[index].sessionID = sessionID;
+//	g_statusDebugs[index].threadId = threadId;
+//}
+
 procademy::CMMOServer::CMMOServer()
 {
 	LoadInitFile(L"Server.cnf");
@@ -67,6 +105,8 @@ void procademy::CMMOServer::LoadInitFile(const WCHAR* fileName)
 	TextParser  tp;
 	int         num;
 	WCHAR       buffer[MAX_PARSER_LENGTH];
+	BYTE        code;
+	BYTE        key;
 
 	tp.LoadFile(fileName);
 
@@ -74,6 +114,14 @@ void procademy::CMMOServer::LoadInitFile(const WCHAR* fileName)
 
 	tp.GetValue(L"BIND_PORT", &num);
 	mPort = (u_short)num;
+
+	tp.GetValue(L"PACKET_CODE", &num);
+	code = (BYTE)num;
+	CNetPacket::SetCode(code);
+
+	tp.GetValue(L"PACKET_KEY", &num);
+	key = (BYTE)num;
+	CNetPacket::SetPacketKey(key);
 
 	tp.GetValue(L"IOCP_WORKER_THREAD", &num);
 	mWorkerThreadNum = (BYTE)num;
@@ -89,6 +137,12 @@ void procademy::CMMOServer::LoadInitFile(const WCHAR* fileName)
 		mbNagle = true;
 	else
 		mbNagle = false;
+
+	tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
+
+	tp.GetValue(L"POOL_SIZE_CHECK", buffer);
+	if (wcscmp(L"TRUE", buffer) == 0)
+		CNetPacket::sPacketPool.OnOffCounting();
 
 	tp.GetValue(L"LOG_LEVEL", buffer);
 	if (wcscmp(buffer, L"DEBUG") == 0)
@@ -461,6 +515,32 @@ void procademy::CMMOServer::AcceptProc()
 
 void procademy::CMMOServer::MonitorProc()
 {
+	HANDLE dummyEvent = CreateEvent(nullptr, false, false, nullptr);
+
+	while (!mbExit)
+	{
+		DWORD retval = WaitForSingleObject(dummyEvent, 1000);
+
+		if (retval == WAIT_TIMEOUT)
+		{
+			mMonitor.prevRecvTPS = recvTPS;
+			mMonitor.prevSendTPS = sendTPS;
+			mMonitor.acceptTotal = acceptTotal;
+			mMonitor.acceptTPS = acceptTPS;
+			mMonitor.prevSendLoopCount = sendLoopCount;
+			mMonitor.prevAuthLoopCount = authLoopCount;
+			mMonitor.prevGameLoopCount = gameLoopCount;
+
+			sendLoopCount = 0;
+			authLoopCount = 0;
+			gameLoopCount = 0;
+			recvTPS = 0;
+			sendTPS = 0;
+			acceptTPS = 0;
+		}
+	}
+
+	CloseHandle(dummyEvent);
 }
 
 void procademy::CMMOServer::GQCSProc()
@@ -536,6 +616,7 @@ void procademy::CMMOServer::GameThreadProc()
 		GameLoopProc();
 
 		skipper.CheckTime();
+		gameLoopCount++;
 
 		if (skipper.IsOverSecond())
 		{
@@ -558,6 +639,7 @@ void procademy::CMMOServer::AuthThreadProc()
 		AuthLoopProc();
 
 		skipper.CheckTime();
+		authLoopCount++;
 
 		if (skipper.IsOverSecond())
 		{
@@ -580,6 +662,7 @@ void procademy::CMMOServer::SendThreadProc()
 		SendLoopProc();
 
 		skipper.CheckTime();
+		sendLoopCount++;
 
 		if (skipper.IsOverSecond())
 		{
@@ -609,11 +692,27 @@ void procademy::CMMOServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 	session->ip = clientAddr.sin_addr.S_un.S_addr;
 	session->port = clientAddr.sin_port;
 	session->isSending = false;
+	session->sessionEnd = false;
 	session->sessionID = mSessionIDCounter++;
-	session->status = CSession::en_AUTH_READY;
-
+	session->index = index;
 	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
 	ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
+
+	HANDLE hResult = CreateIoCompletionPort((HANDLE)client, mIOCP, (ULONG_PTR)session, 0);
+
+	if (hResult == NULL)
+	{
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"CreateSession [Error: %d]", WSAGetLastError());
+		closesocket(mListenSocket);
+	}
+
+	acceptTotal++;
+	acceptTPS++;
+
+	session->status = CSession::en_AUTH_READY;
+
+	/*statusLog(10000, session->status, session->isSending, session->toGame, session->sessionEnd,
+		session->index, session->sessionID, GetCurrentThreadId());*/
 }
 
 void procademy::CMMOServer::IncrementIOProc(CSession* session, int logic)
@@ -692,6 +791,11 @@ void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSiz
 		count += (ret + sizeof(SHORT));
 		packet->SubRef();
 	}
+
+	if (status)
+	{
+		RecvPost(session);
+	}
 }
 
 void procademy::CMMOServer::CompleteSend(CSession* session, DWORD transferredSize)
@@ -705,6 +809,9 @@ void procademy::CMMOServer::CompleteSend(CSession* session, DWORD transferredSiz
 		packet->SubRef();
 		packet = nullptr;
 	}
+
+	//statusLog(30000, session->status, session->isSending, session->toGame, session->sessionEnd,
+	//	session->index, session->sessionID, GetCurrentThreadId());
 
 	session->numSendingPacket = 0;
 	session->isSending = false;
@@ -749,6 +856,14 @@ bool procademy::CMMOServer::SendPost(CSession* session)
 	{
 		return false;
 	}
+
+	//if (InterlockedExchange8((char*)&session->isSending, (char)true) == (char)true)
+	//{
+	//	return false;
+	//}
+
+	//statusLog(20000, session->status, session->isSending, session->toGame, session->sessionEnd,
+	//	session->index, session->sessionID, GetCurrentThreadId());
 
 	session->isSending = true;
 
@@ -848,15 +963,22 @@ void procademy::CMMOServer::ReleaseProc(CSession* session)
 {
 	CNetPacket* dummy;
 
-	//
 	InterlockedIncrement((LONG*)&disconnectCount);
+
+	if (session->socket == INVALID_SOCKET)
+		CRASH();
+
+	/*statusLog(40000, session->status, session->isSending, session->toGame, session->sessionEnd,
+		session->index, session->sessionID, GetCurrentThreadId());*/
 
 	closesocket(session->socket);
 
-	session->isSending = false;
+	session->socket = INVALID_SOCKET;
 	session->toGame = false;
 	session->status = CSession::en_NONE_USE;
 
+	/*statusLog(40030, session->status, session->isSending, session->toGame, session->sessionEnd,
+		session->index, session->sessionID, GetCurrentThreadId());*/
 
 	while (1)
 	{
@@ -871,8 +993,28 @@ void procademy::CMMOServer::ReleaseProc(CSession* session)
 	}
 	session->recvQ.ClearBuffer();
 
+	while (1)
+	{
+		dummy = session->recvCompleteQ.Dequeue();
+
+		if (dummy == nullptr)
+		{
+			break;
+		}
+
+		/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket2);
+		g_sessionDebugs2[ret] = dummy;*/
+		dummy->SubRef();
+	}
+
 	ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
 	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
+
+	mEmptyIndexes.Push(session->index);
+}
+
+void procademy::CMMOServer::Disconnect(CSession* session)
+{
 }
 
 void procademy::CMMOServer::AuthLoopProc()
@@ -892,8 +1034,6 @@ void procademy::CMMOServer::AuthLoopProc()
 		{
 			AuthCompleteRecvProc(session);
 			
-			session->OnAuth_Update();
-
 			AuthSessionToReleaseProc(session);
 			AuthSessionToGameProc(session);
 			break;
@@ -910,6 +1050,8 @@ void procademy::CMMOServer::AuthLoopProc()
 			break;
 		}
 	}
+
+	OnAuth_Update();
 }
 
 void procademy::CMMOServer::AuthReadySessionProc(CSession* session)
@@ -941,6 +1083,9 @@ void procademy::CMMOServer::AuthCompleteRecvProc(CSession* session)
 
 		session->OnAuth_Packet(packet);
 		count++;
+
+		/*statusLog(50000, session->status, session->isSending, session->toGame, session->sessionEnd,
+			session->index, session->sessionID, GetCurrentThreadId());*/
 	}
 }
 
@@ -956,6 +1101,7 @@ void procademy::CMMOServer::AuthSessionToGameProc(CSession* session)
 {
 	if (session->toGame)
 	{
+		session->OnAuth_ClientLeave();
 		session->status = CSession::en_GAME_READY;
 	}
 }
@@ -1014,8 +1160,6 @@ void procademy::CMMOServer::GameLoopProc()
 		{
 			GameCompleteRecvProc(session);
 
-			session->OnAuth_Update();
-
 			GameSessionToReleaseProc(session);
 			break;
 		}
@@ -1031,6 +1175,8 @@ void procademy::CMMOServer::GameLoopProc()
 			break;
 		}
 	}
+
+	OnGame_Update();
 }
 
 void procademy::CMMOServer::GameReadySessionProc(CSession* session)

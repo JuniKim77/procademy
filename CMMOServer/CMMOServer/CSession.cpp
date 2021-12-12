@@ -1,4 +1,5 @@
 #include "CSession.h"
+#include "CNetPacket.h"
 
 procademy::CSession::CSession()
 {
@@ -8,4 +9,11 @@ procademy::CSession::CSession()
 
 procademy::CSession::~CSession()
 {
+}
+
+void procademy::CSession::SendPacket(CNetPacket* packet)
+{
+	packet->AddRef();
+
+	sendQ.Enqueue(packet);
 }

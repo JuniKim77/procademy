@@ -25,6 +25,9 @@
     <Filter Include="헤더 파일\Objects">
       <UniqueIdentifier>{c310d80f-d823-4617-8931-4559d8439b4b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Network">
+      <UniqueIdentifier>{b4501fc9-863d-4dac-9bb9-fd1935dba3eb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -124,6 +127,9 @@
     </ClInclude>
     <ClInclude Include="CMMOEchoServer.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CommonProtocol.h">
+      <Filter>헤더 파일\Network</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
