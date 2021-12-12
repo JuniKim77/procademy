@@ -140,9 +140,9 @@ namespace procademy
 		/// <summary>
 		/// 모니터링 변수들
 		/// </summary>
-		alignas(64) DWORD	sendTPS;
-		alignas(64) DWORD	recvTPS;
-		alignas(64) DWORD	disconnectCount;
+		alignas(128) DWORD	sendTPS;
+		alignas(128) DWORD	recvTPS;
+		alignas(128) DWORD	disconnectCount;
 		DWORD				acceptTotal;
 		DWORD				acceptTPS;
 
