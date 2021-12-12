@@ -13,27 +13,27 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="헤더 파일\Tools">
-      <UniqueIdentifier>{f9db7dd2-0888-4162-a376-7a3353ad8073}</UniqueIdentifier>
+    <Filter Include="소스 파일\Objects">
+      <UniqueIdentifier>{da4595f5-10af-495c-8d72-4bdf9a9aaf54}</UniqueIdentifier>
     </Filter>
     <Filter Include="소스 파일\Tools">
-      <UniqueIdentifier>{fc98d764-c305-4d56-aac4-8348eda43faf}</UniqueIdentifier>
+      <UniqueIdentifier>{f4e31b1f-b1a5-451b-aa09-2d70b4558f73}</UniqueIdentifier>
     </Filter>
-    <Filter Include="소스 파일\Objects">
-      <UniqueIdentifier>{df400fec-caef-4315-8ec5-d2ae5267d3d1}</UniqueIdentifier>
+    <Filter Include="헤더 파일\Tools">
+      <UniqueIdentifier>{4aaac95c-fecf-4a6e-a0b6-5802d50003de}</UniqueIdentifier>
     </Filter>
     <Filter Include="헤더 파일\Objects">
-      <UniqueIdentifier>{ba0473b4-5b81-4636-88d2-be834ed8b75f}</UniqueIdentifier>
+      <UniqueIdentifier>{c310d80f-d823-4617-8931-4559d8439b4b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp">
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp">
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CLanPacket.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.cpp">
@@ -42,37 +42,37 @@
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
+    <ClCompile Include="..\..\CFrameSkipper\CFrameSkipper\CFrameSkipper.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CMMOServer.cpp">
+    <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CMMOServer\CMMOServer\CMMOServer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CSession.cpp">
+    <ClCompile Include="..\..\CMMOServer\CMMOServer\CSession.cpp">
       <Filter>소스 파일\Objects</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CFrameSkipper\CFrameSkipper\CFrameSkipper.cpp">
-      <Filter>소스 파일\Tools</Filter>
+    <ClCompile Include="CMMOEchoServer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CPlayer.cpp">
+      <Filter>소스 파일\Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CMMOServer.h">
+    <ClInclude Include="..\..\CMMOServer\CMMOServer\CMMOServer.h">
       <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="CSession.h">
-      <Filter>헤더 파일\Objects</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h">
-      <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.h">
       <Filter>헤더 파일\Tools</Filter>
@@ -80,7 +80,16 @@
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
+    <ClInclude Include="..\..\CFrameSkipper\CFrameSkipper\CFrameSkipper.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h">
@@ -92,23 +101,29 @@
     <ClInclude Include="..\..\MemoryPool_TLS\MemoryPool_TLS\ObjectPool_TLS.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\TC_LFQueue\TC_LFQueue\TC_LFQueue.h">
+    <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h">
+    <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue64.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
+    <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h">
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CFrameSkipper\CFrameSkipper\CFrameSkipper.h">
-      <Filter>헤더 파일\Tools</Filter>
+    <ClInclude Include="..\..\CMMOServer\CMMOServer\CSession.h">
+      <Filter>헤더 파일\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="CPlayer.h">
+      <Filter>헤더 파일\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="CMMOEchoServer.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

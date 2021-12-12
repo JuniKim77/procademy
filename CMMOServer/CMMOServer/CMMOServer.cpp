@@ -21,11 +21,6 @@ procademy::CMMOServer::~CMMOServer()
 
 	if (mSessionArray != nullptr)
 	{
-		for (int i = 0; i < mMaxClient; ++i)
-		{
-			delete mSessionArray[i];
-		}
-
 		delete[] mSessionArray;
 	}
 	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CMMOServer End");
@@ -176,6 +171,11 @@ void procademy::CMMOServer::SetNagle(bool on)
 	{
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Nagle Off");
 	}
+}
+
+void procademy::CMMOServer::SetSession(CSession* session)
+{
+	mSessionArray[mSessionCount++] = session;
 }
 
 unsigned int __stdcall procademy::CMMOServer::MonitorThread(LPVOID arg)

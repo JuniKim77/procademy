@@ -6,22 +6,25 @@ namespace procademy
 {
 	class CMMOServer
 	{
+	private:
+		enum {
+			MAX_SESSION = 20000
+		};
 	protected:
 		CMMOServer();
 		virtual ~CMMOServer();
 		bool Start();
 		void Stop();
-		void LoadInitFile(const WCHAR* fileName);
 		void QuitServer();
 		void SetZeroCopy(bool on);
 		void SetNagle(bool on);
+		void SetSession(CSession* session);
 
 		virtual void AllocSessions(int num) = 0;
 		virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept Á÷ÈÄ
 		virtual void OnError(int errorcode, const WCHAR* log) = 0;
 
 	private:
-
 		static unsigned int WINAPI MonitorThread(LPVOID arg);
 		static unsigned int WINAPI AcceptThread(LPVOID arg);
 		static unsigned int WINAPI IocpWorkerThread(LPVOID arg);
@@ -30,6 +33,7 @@ namespace procademy
 		static unsigned int WINAPI SendThread(LPVOID arg);
 	
 		void Init();
+		void LoadInitFile(const WCHAR* fileName);
 		bool CreateIOCP();
 		bool CreateListenSocket();
 		bool BeginThreads();
@@ -79,7 +83,7 @@ namespace procademy
 		CSession**				mSessionArray = nullptr;
 		TC_LFStack<u_short>		mEmptyIndexes;
 		u_int64					mSessionIDCounter = 1;
-		u_short					mMaxClient = 0;
+		u_short					mSessionCount = 0;
 		u_short					mPort = 0;
 		WCHAR					mBindIP[32];
 		HANDLE					mBeginEvent = INVALID_HANDLE_VALUE;
@@ -103,5 +107,6 @@ namespace procademy
 		bool					mbBegin = false;
 		BYTE					mActiveThreadNum = 0;
 		BYTE					mWorkerThreadNum = 0;
+		u_short					mMaxClient = 0;
 	};
 }
