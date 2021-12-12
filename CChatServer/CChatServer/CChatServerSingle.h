@@ -19,11 +19,11 @@ namespace procademy
 		struct RatioMonitor
 		{
 			long			 joinCount;
-			alignas(128) long loginCount;
-			alignas(128) long leaveCount;
-			alignas(128) long moveSectorCount;
-			alignas(128) long sendMsgInCount;
-			alignas(128) long sendMsgOutCount;
+			alignas(64) long loginCount;
+			alignas(64) long leaveCount;
+			alignas(64) long moveSectorCount;
+			alignas(64) long sendMsgInCount;
+			alignas(64) long sendMsgOutCount;
 		};
 
 	private:
@@ -133,8 +133,8 @@ namespace procademy
 		WCHAR									mTokenDBIP[16];
 		USHORT									mTokenDBPort;
 
-		alignas(128) TC_LFObjectPool<st_MSG>	mMsgPool;
-		alignas(128) TC_LFQueue64<st_MSG*>		mMsgQ;
+		alignas(64) TC_LFObjectPool<st_MSG>		mMsgPool;
+		alignas(64) TC_LFQueue64<st_MSG*>		mMsgQ;
 		CSafeQueue<st_MSG*>						mMsgLQ;
 		SRWLOCK									mMsgLock;
 		HANDLE									mUpdateEvent = INVALID_HANDLE_VALUE;
