@@ -8,6 +8,7 @@
 #include "CCpuUsage.h"
 #include <cpp_redis/cpp_redis>
 #include "CSafeQueue.h"
+#include "ObjectPool_TLS.h"
 
 #pragma comment (lib, "cpp_redis.lib")
 #pragma comment (lib, "tacopie.lib")
@@ -133,7 +134,7 @@ namespace procademy
 		WCHAR									mTokenDBIP[16];
 		USHORT									mTokenDBPort;
 
-		alignas(64) TC_LFObjectPool<st_MSG>		mMsgPool;
+		alignas(64) ObjectPool_TLS<st_MSG>		mMsgPool;
 		alignas(64) TC_LFQueue64<st_MSG*>		mMsgQ;
 		CSafeQueue<st_MSG*>						mMsgLQ;
 		SRWLOCK									mMsgLock;

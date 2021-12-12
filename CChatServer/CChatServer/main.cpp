@@ -6,7 +6,7 @@
 //#define dfTHREAD_NUM (3)
 #define dfSERVER_PORT (6000)
 
-alignas(64) procademy::CChatServerSingle server;
+procademy::CChatServerSingle server;
 
 int main()
 {
