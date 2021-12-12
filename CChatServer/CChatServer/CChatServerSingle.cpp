@@ -284,17 +284,17 @@ void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
     }
     else
     {
-        //mMsgQ.Enqueue(msg);
-        AcquireSRWLockExclusive(&mMsgLock);
-        while (1)
-        {
-            if (mMsgLQ.Enqueue(msg))
-            {
-                break;
-            }
-        }
-        
-        ReleaseSRWLockExclusive(&mMsgLock);
+        mMsgQ.Enqueue(msg);
+        //AcquireSRWLockExclusive(&mMsgLock);
+        //while (1)
+        //{
+        //    if (mMsgLQ.Enqueue(msg))
+        //    {
+        //        break;
+        //    }
+        //}
+        //
+        //ReleaseSRWLockExclusive(&mMsgLock);
 
         SetEvent(mUpdateEvent);
     }    
@@ -457,10 +457,10 @@ void procademy::CChatServerSingle::EventProc()
 #endif // PROFILE
         mLoopCount++;
 
-        while (mMsgLQ.IsEmpty() == false)
+        while (mMsgQ.IsEmpty() == false)
         {
-            //mMsgQ.Dequeue(&msg);
-            msg = mMsgLQ.Dequeue();
+            mMsgQ.Dequeue(&msg);
+            //msg = mMsgLQ.Dequeue();
 
             mUpdateTPS++;
 
