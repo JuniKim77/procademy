@@ -42,9 +42,6 @@
     <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CSVReader\CSVReader\CSVReader.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
@@ -81,9 +78,6 @@
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h">

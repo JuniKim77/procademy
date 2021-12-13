@@ -149,7 +149,6 @@
     <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp" />
     <ClCompile Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.cpp" />
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
-    <ClCompile Include="..\..\CSVReader\CSVReader\CSVReader.cpp" />
     <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp" />
     <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp" />
     <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
@@ -166,7 +165,6 @@
     <ClInclude Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h" />
-    <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h" />
     <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h" />
     <ClInclude Include="..\..\MemoryPool\MemoryPool\ObjectPool.h" />
     <ClInclude Include="..\..\MemoryPool_TLS\MemoryPool_TLS\ObjectPool_TLS.h" />
