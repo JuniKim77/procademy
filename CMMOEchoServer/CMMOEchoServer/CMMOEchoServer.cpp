@@ -196,7 +196,7 @@ void procademy::CMMOEchoServer::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d]\n", mbZeroCopy, mbNagle);
     idx += swprintf_s(s + idx, size - idx, L"[WorkerTh: %d] [ActiveTh: %d]\n", mWorkerThreadNum, mActiveThreadNum);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
-    idx += swprintf_s(s + idx, size - idx, L"%22s(%d / %d)\n", L"Session Num : ", 1, mMaxClient);
+    idx += swprintf_s(s + idx, size - idx, L"%22s(%d / %d)\n", L"Session Num : ", joinCount, mMaxClient);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Accept Total : ", mMonitor.acceptTotal);

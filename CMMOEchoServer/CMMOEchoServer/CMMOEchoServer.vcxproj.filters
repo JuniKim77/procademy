@@ -131,5 +131,8 @@
     <ClInclude Include="CommonProtocol.h">
       <Filter>헤더 파일\Network</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

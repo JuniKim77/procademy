@@ -134,7 +134,7 @@ namespace procademy
 		HANDLE					mBeginEvent = INVALID_HANDLE_VALUE;
 		int						mAuthPacketLoopNum = 1;
 		int						mSendPacketLoopNum = 1;
-		int						mGamePacketLoopNum = 1;
+		int						mGamePacketLoopNum = 10;
 		int						mTimeOut;
 
 		/// <summary>
@@ -142,7 +142,6 @@ namespace procademy
 		/// </summary>
 		alignas(64) DWORD		sendTPS;
 		alignas(64) DWORD		recvTPS;
-		alignas(64) DWORD		disconnectCount;
 		DWORD					acceptTotal;
 		DWORD					acceptTPS;
 		DWORD					sendLoopCount = 0;
@@ -150,6 +149,7 @@ namespace procademy
 		DWORD					gameLoopCount = 0;
 
 	protected:
+		alignas(64) DWORD		joinCount = 0;
 		bool					mbNagle = true;
 		bool					mbZeroCopy = true;
 		bool					mbExit = false;

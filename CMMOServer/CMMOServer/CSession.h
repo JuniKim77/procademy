@@ -24,7 +24,9 @@ namespace procademy
 			en_GAME_READY,
 			en_GAME_RUN,
 			en_AUTH_RELEASE,
-			en_GAME_RELEASE
+			en_GAME_RELEASE,
+			en_AUTH_RELEASE_REQ,
+			en_GAME_RELEASE_REQ
 		};
 
 		CSession();

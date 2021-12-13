@@ -168,6 +168,7 @@
     <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h" />
     <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
+    <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h" />
     <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h" />
     <ClInclude Include="..\..\MemoryPool\MemoryPool\ObjectPool.h" />
     <ClInclude Include="..\..\MemoryPool_TLS\MemoryPool_TLS\ObjectPool_TLS.h" />

@@ -35,15 +35,8 @@ void procademy::CPlayer::OnAuth_Packet(CNetPacket* packet)
 		ret = LoginProc(packet);
 		break;
 	default:
-	{
-		INT64		AccountoNo;
-		LONGLONG	SendTick;
-
-		*packet >> AccountoNo >> SendTick;
-
 		CRASH();
 		break;
-	}
 	}
 }
 
@@ -82,7 +75,7 @@ void procademy::CPlayer::OnGame_Packet(CNetPacket* packet)
 
 	if (ret == false)
 	{
-		
+		int test = 0;
 	}
 }
 
