@@ -3,6 +3,7 @@
 #include "TextParser.h"
 #include "CNetPacket.h"
 #include "CFrameSkipper.h"
+#include <unordered_map>
 
 struct statusDebug
 {
@@ -17,8 +18,52 @@ struct statusDebug
 	int										ioCount;
 };
 
+//char* pRear = session->recvQ.GetRearBufferPtr();
+//char* pFront = session->recvQ.GetFrontBufferPtr();
+//char* pBuf = session->recvQ.GetBuffer();
+//int capa = session->recvQ.GetCapacity();
+
+struct ringbufDebug
+{
+	char* pRear;
+	char* pFront;
+	char* pBuf;
+	int mRear;
+	int mFront;
+	int mCapa;
+	ULONG len1;
+	ULONG len2;
+};
+
 USHORT g_debugIdx = 0;
 statusDebug g_statusDebugs[USHRT_MAX + 1] = { 0, };
+
+USHORT g_ringbufIdx = 0;
+ringbufDebug g_ringbufDebugs[USHRT_MAX + 1] = { 0, };
+
+void ringbufLog(
+	char* pRear,
+	char* pFront,
+	char* pBuf,
+	int mRear,
+	int mFront,
+	int mCapa,
+	ULONG len1,
+	ULONG len2)
+{
+	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ringbufIdx);
+
+	g_ringbufDebugs[index].pRear = pRear;
+	g_ringbufDebugs[index].pFront = pFront;
+	g_ringbufDebugs[index].pBuf = pBuf;
+	g_ringbufDebugs[index].mRear = mRear;
+	g_ringbufDebugs[index].mFront = mFront;
+	g_ringbufDebugs[index].mCapa = mCapa;
+	g_ringbufDebugs[index].len1 = len1;
+	g_ringbufDebugs[index].len2 = len2;
+}
+
+std::unordered_map<int, int> g_indexs;
 
 void statusLog(
 	int										logicID,
@@ -693,6 +738,9 @@ void procademy::CMMOServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 
 	CSession* session = mSessionArray[index];
 
+	if (InterlockedIncrement((long*)&g_indexs[index]) > 1)
+		CRASH();
+
 	/*statusLog(10000, session->status, session->isSending, session->toGame, session->sessionEnd,
 		session->index, session->sessionID, GetCurrentThreadId(), session->ioCount);*/
 
@@ -719,27 +767,25 @@ void procademy::CMMOServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 	acceptTPS++;
 	InterlockedIncrement(&joinCount);
 
-	//statusLog(10050, session->status, session->isSending, session->toGame, session->sessionEnd,
-	//	session->index, session->sessionID, GetCurrentThreadId(), session->ioCount);
+	/*statusLog(10050, session->status, session->isSending, session->toGame, session->sessionEnd,
+		session->index, session->sessionID, GetCurrentThreadId(), session->ioCount);*/
 
 	session->status = CSession::en_AUTH_READY;
 }
 
 void procademy::CMMOServer::IncrementIOProc(CSession* session, int logic)
 {
-	InterlockedIncrement(&session->ioBlock.ioCount);
+	InterlockedIncrement(&session->ioCount);
 }
 
 void procademy::CMMOServer::DecrementIOProc(CSession* session, int logic)
 {
-	SessionIoCount ret;
+	long ret = InterlockedDecrement(&session->ioCount);
 
-	ret.ioCount = InterlockedDecrement(&session->ioBlock.ioCount);
-
-	if (ret.releaseCount.count < 0)
+	if (ret < 0)
 		CRASH();
 
-	if (ret.ioCount == 0)
+	if (ret == 0)
 	{
 		session->sessionEnd = true;
 		session->isSending = false;
@@ -845,6 +891,8 @@ bool procademy::CMMOServer::RecvPost(CSession* session, bool isFirst)
 
 	SetWSABuf(buffers, session, true);
 
+	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
+
 	int recvRet = WSARecv(session->socket, buffers, 2, nullptr, &flags, &session->recvOverlapped, nullptr);
 
 	if (recvRet == SOCKET_ERROR)
@@ -861,7 +909,7 @@ bool procademy::CMMOServer::RecvPost(CSession* session, bool isFirst)
 
 		if (err != WSAECONNRESET && err != WSAEINTR)
 		{
-			int test = 0;
+			CRASH();
 		}
 
 		DecrementIOProc(session, 10050);
@@ -874,7 +922,7 @@ bool procademy::CMMOServer::RecvPost(CSession* session, bool isFirst)
 
 bool procademy::CMMOServer::SendPost(CSession* session)
 {
-	WSABUF buffers[100];
+	WSABUF buffers[200];
 
 	if (session->isSending)
 	{
@@ -905,7 +953,7 @@ bool procademy::CMMOServer::SendPost(CSession* session)
 
 		if (err != WSAECONNRESET && err != WSAEINTR)
 		{
-			int test = 0;
+			CRASH();
 		}
 
 		DecrementIOProc(session, 20050);
@@ -950,7 +998,7 @@ void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRe
 		if (pRear < pFront)
 		{
 			bufs[0].buf = pRear;
-			bufs[0].len = (ULONG)(pRear - pFront);
+			bufs[0].len = (ULONG)(pFront - pRear);
 			bufs[1].buf = pRear;
 			bufs[1].len = 0;
 		}
@@ -961,14 +1009,16 @@ void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRe
 			bufs[1].buf = pBuf;
 			bufs[1].len = (ULONG)(pFront - pBuf);
 		}
+
+		//ringbufLog(pRear, pFront, pBuf, session->recvQ.mRear, session->recvQ.mFront, session->recvQ.mCapacity, bufs[0].len, bufs[1].len);
 	}
 	else
 	{
-		CNetPacket* packetBufs[100];
+		CNetPacket* packetBufs[200];
 		DWORD snapSize = session->sendQ.GetSize();
 
-		if (snapSize > 100)
-			snapSize = 100;
+		if (snapSize > 200)
+			snapSize = 200;
 
 		if (session->sendQ.Peek(packetBufs, snapSize) != snapSize)
 			CRASH();
@@ -985,18 +1035,12 @@ void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRe
 
 void procademy::CMMOServer::ReleaseProc(CSession* session)
 {
-	SessionIoCount released;
 	CNetPacket* dummy;
 
-	released.ioCount = 0;
-	released.releaseCount.isReleased = 1;
-
-	if (InterlockedCompareExchange(&session->ioBlock.ioCount, released.ioCount, 0) != 0)
-	{
-		return;
-	}
-
 	InterlockedDecrement(&joinCount);
+
+	/*statusLog(30000, session->status, session->isSending, session->toGame, session->sessionEnd,
+		session->index, session->sessionID, GetCurrentThreadId(), session->ioCount);*/
 
 	closesocket(session->socket);
 
@@ -1029,6 +1073,9 @@ void procademy::CMMOServer::ReleaseProc(CSession* session)
 
 	ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
 	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
+
+	if (InterlockedDecrement((long*)&g_indexs[session->index]) < 0)
+		CRASH();
 
 	mEmptyIndexes.Push(session->index);
 }
@@ -1075,7 +1122,7 @@ void procademy::CMMOServer::AuthReadySessionProc(CSession* session)
 {
 	// 세션 최초 recvPost 호출
 	IncrementIOProc(session, 10000);
-	session->ioBlock.releaseCount.isReleased = 0;
+
 
 	session->sessionEnd = false;
 
@@ -1251,7 +1298,6 @@ void procademy::CMMOServer::GameSessionToReleaseProc(CSession* session)
 {
 	if (session->sessionEnd)
 	{
-		session->sessionEnd = false;
 		session->status = CSession::en_GAME_RELEASE_REQ;
 	}
 }

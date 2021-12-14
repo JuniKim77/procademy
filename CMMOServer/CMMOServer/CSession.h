@@ -12,19 +12,6 @@ namespace procademy
 {
 	class CNetPacket;
 
-	struct SessionIoCount
-	{
-		union
-		{
-			LONG ioCount = 0;
-			struct
-			{
-				SHORT count;
-				SHORT isReleased;
-			} releaseCount;
-		};
-	};
-
 	class CSession
 	{
 		friend class CMMOServer;
@@ -68,7 +55,7 @@ namespace procademy
 		CSafeQueue<CNetPacket*>		recvCompleteQ;
 		TC_LFQueue<CNetPacket*>		sendQ;
 		int							numSendingPacket = 0;
-		alignas(64) SessionIoCount	ioBlock;
+		alignas(64) long			ioCount;
 		bool						isSending = false;
 		SOCKET						socket = INVALID_SOCKET;
 		u_short						port;

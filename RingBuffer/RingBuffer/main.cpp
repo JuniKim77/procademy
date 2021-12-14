@@ -84,7 +84,7 @@ int dequeueProcess()
 
 	buffer[size] = '\0';
 
-	//printf(buffer);
+	printf(buffer);
 
 	//if (size != 0 && szTest[post] != buffer[0])
 	//{

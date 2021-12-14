@@ -390,7 +390,7 @@ namespace procademy
 			if (pRear < pFront)
 			{
 				bufs[0].buf = pRear;
-				bufs[0].len = (ULONG)(pRear - pFront);
+				bufs[0].len = (ULONG)(pFront - pRear);
 				bufs[1].buf = pRear;
 				bufs[1].len = 0;
 			}

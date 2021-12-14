@@ -7,7 +7,7 @@
 class RingBuffer
 {
 	enum {
-		DEFAULT_SIZE = 3000
+		DEFAULT_SIZE = 5000
 	};
 
 public:
@@ -125,7 +125,7 @@ public:
 
 	int GetCapacity() { return mCapacity; }
 
-private:
+public:
 	int mFront;
 	int mRear;
 	char* mBuffer;

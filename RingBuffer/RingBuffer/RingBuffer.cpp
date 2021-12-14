@@ -129,7 +129,7 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 
 	if (iSize > freeSize)
 	{
-		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Enqueue size over");
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Enqueue size over");
 		iSize = freeSize;
 	}
 
@@ -172,7 +172,7 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 
 	if (iSize > useSize)
 	{
-		//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Dequeue size over");
+		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Dequeue size over");
 		iSize = useSize;
 	}
 

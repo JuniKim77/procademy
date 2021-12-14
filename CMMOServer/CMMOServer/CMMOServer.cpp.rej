@@ -1,0 +1,27 @@
+diff a/CMMOServer/CMMOServer/CMMOServer.cpp b/CMMOServer/CMMOServer/CMMOServer.cpp	(rejected hunks)
+@@ -1066,25 +1066,24 @@
+ 		default:
+ 			break;
+ 		}
+ 	}
+ 
+ 	OnAuth_Update();
+ }
+ 
+ void procademy::CMMOServer::AuthReadySessionProc(CSession* session)
+ {
+ 	// ���� ���� recvPost ȣ��
+ 	IncrementIOProc(session, 10000);
+-	session->ioBlock.releaseCount.isReleased = 0;
+ 
+ 	session->sessionEnd = false;
+ 
+ 	session->OnAuth_ClientJoin();
+ 
+ 	RecvPost(session, true);
+ 
+ 	session->status = CSession::en_AUTH_RUN;
+ }
+ 
+ void procademy::CMMOServer::AuthCompleteRecvProc(CSession* session)
+ {

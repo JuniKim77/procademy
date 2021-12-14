@@ -133,8 +133,7 @@ namespace procademy
 		WCHAR					mBindIP[32];
 		HANDLE					mBeginEvent = INVALID_HANDLE_VALUE;
 		int						mAuthPacketLoopNum = 1;
-		int						mSendPacketLoopNum = 1;
-		int						mGamePacketLoopNum = 10;
+		int						mGamePacketLoopNum = 300;
 		int						mTimeOut;
 
 		/// <summary>
