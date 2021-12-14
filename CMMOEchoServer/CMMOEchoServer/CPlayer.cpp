@@ -38,6 +38,9 @@ void procademy::CPlayer::OnAuth_Packet(CNetPacket* packet)
 		CRASH();
 		break;
 	}
+
+	if (ret == false)
+		CRASH();
 }
 
 void procademy::CPlayer::OnGame_ClientJoin()
@@ -69,14 +72,12 @@ void procademy::CPlayer::OnGame_Packet(CNetPacket* packet)
 		ret = EchoProc(packet);
 		break;
 	default:
-		CRASH();
+		
 		break;
 	}
 
 	if (ret == false)
-	{
-		int test = 0;
-	}
+		CRASH();
 }
 
 void procademy::CPlayer::OnError(int errorcode, const WCHAR* log)
