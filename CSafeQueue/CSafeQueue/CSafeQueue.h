@@ -16,17 +16,19 @@ namespace procademy
 		~CSafeQueue();
 		CSafeQueue(int iBufferSize);
 
-		int GetCapacity(void) { return mCapacity; }
+		int		GetCapacity(void) { return mCapacity; }
 
-		int GetUseSize(void);
+		int		GetUseSize(void);
 
-		bool IsEmpty() { return mFront == mRear; }
+		bool	IsEmpty() { return mFront == mRear; }
 
-		bool IsFull(void);
+		bool	IsFull(void);
 
-		bool Enqueue(DATA data);
+		bool	Enqueue(DATA data);
 
-		DATA Dequeue();
+		DATA	Dequeue();
+
+		DWORD	Peek(DATA arr[], DWORD size);
 
 	private:
 		int mFront;
@@ -89,15 +91,11 @@ namespace procademy
 			return false;
 		}
 
-		mBuffer[mRear] = data;
+		mBuffer[mRear++] = data;
 
-		if ((mRear + 1) == mCapacity)
+		if (mRear > mCapacity)
 		{
 			mRear = 0;
-		}
-		else
-		{
-			mRear++;
 		}
 
 		return true;
@@ -110,17 +108,31 @@ namespace procademy
 			return nullptr;
 		}
 
-		int front = mFront;
+		int front = mFront++;
 
-		if ((mFront + 1) == mCapacity)
+		if (mFront > mCapacity)
 		{
 			mFront = 0;
 		}
-		else
-		{
-			mFront++;
-		}
 
 		return mBuffer[front];
+	}
+	template<typename DATA>
+	inline DWORD CSafeQueue<DATA>::Peek(DATA arr[], DWORD size)
+	{
+		DWORD i;
+		int front = mFront;
+
+		for (i = 0; i < size; ++i)
+		{
+			arr[i] = mBuffer[front++];
+
+			if (front > mCapacity)
+			{
+				front = 0;
+			}
+		}
+
+		return i;
 	}
 }

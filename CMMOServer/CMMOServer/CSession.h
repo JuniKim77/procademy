@@ -4,7 +4,7 @@
 #include <WS2tcpip.h>
 #include <WinSock2.h>
 #include "RingBuffer.h"
-#include "TC_LFQueue.h"
+#include "TC_LFQueue64.h"
 #include "TC_LFStack.h"
 #include "CSafeQueue.h"
 
@@ -53,7 +53,7 @@ namespace procademy
 		WSAOVERLAPPED				sendOverlapped;
 		RingBuffer					recvQ;
 		CSafeQueue<CNetPacket*>		recvCompleteQ;
-		TC_LFQueue<CNetPacket*>		sendQ;
+		CSafeQueue<CNetPacket*>		sendQ;
 		int							numSendingPacket = 0;
 		alignas(64) long			ioCount;
 		bool						isSending = false;

@@ -3,7 +3,6 @@
 #include "TextParser.h"
 #include "CNetPacket.h"
 #include "CFrameSkipper.h"
-#include <unordered_map>
 
 struct statusDebug
 {
@@ -62,8 +61,6 @@ void ringbufLog(
 	g_ringbufDebugs[index].len1 = len1;
 	g_ringbufDebugs[index].len2 = len2;
 }
-
-std::unordered_map<int, int> g_indexs;
 
 void statusLog(
 	int										logicID,
@@ -738,9 +735,6 @@ void procademy::CMMOServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 
 	CSession* session = mSessionArray[index];
 
-	if (InterlockedIncrement((long*)&g_indexs[index]) > 1)
-		CRASH();
-
 	/*statusLog(10000, session->status, session->isSending, session->toGame, session->sessionEnd,
 		session->index, session->sessionID, GetCurrentThreadId(), session->ioCount);*/
 
@@ -866,7 +860,7 @@ void procademy::CMMOServer::CompleteSend(CSession* session, DWORD transferredSiz
 	InterlockedAdd((LONG*)&sendTPS, session->numSendingPacket);
 	for (int i = 0; i < session->numSendingPacket; ++i)
 	{
-		session->sendQ.Dequeue(&packet);
+		packet = session->sendQ.Dequeue();
 
 		packet->SubRef();
 		packet = nullptr;
@@ -1015,7 +1009,7 @@ void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRe
 	else
 	{
 		CNetPacket* packetBufs[200];
-		DWORD snapSize = session->sendQ.GetSize();
+		DWORD snapSize = session->sendQ.GetUseSize();
 
 		if (snapSize > 200)
 			snapSize = 200;
@@ -1050,7 +1044,7 @@ void procademy::CMMOServer::ReleaseProc(CSession* session)
 
 	while (1)
 	{
-		if (session->sendQ.Dequeue(&dummy) == false)
+		if ((dummy = session->sendQ.Dequeue()) == nullptr)
 		{
 			break;
 		}
@@ -1073,9 +1067,6 @@ void procademy::CMMOServer::ReleaseProc(CSession* session)
 
 	ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
 	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
-
-	if (InterlockedDecrement((long*)&g_indexs[session->index]) < 0)
-		CRASH();
 
 	mEmptyIndexes.Push(session->index);
 }
