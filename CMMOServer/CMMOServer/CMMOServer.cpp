@@ -17,11 +17,6 @@ struct statusDebug
 	int										ioCount;
 };
 
-//char* pRear = session->recvQ.GetRearBufferPtr();
-//char* pFront = session->recvQ.GetFrontBufferPtr();
-//char* pBuf = session->recvQ.GetBuffer();
-//int capa = session->recvQ.GetCapacity();
-
 struct ringbufDebug
 {
 	char* pRear;
@@ -1009,13 +1004,8 @@ void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRe
 	else
 	{
 		CNetPacket* packetBufs[200];
-		DWORD snapSize = session->sendQ.GetUseSize();
 
-		if (snapSize > 200)
-			snapSize = 200;
-
-		if (session->sendQ.Peek(packetBufs, snapSize) != snapSize)
-			CRASH();
+		DWORD snapSize = session->sendQ.Peek(packetBufs, 200);
 
 		for (DWORD i = 0; i < snapSize; ++i)
 		{
