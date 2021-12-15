@@ -405,15 +405,7 @@ namespace procademy
 		else
 		{
 			CNetPacket* packetBufs[100];
-			DWORD snapSize = session->sendQ.GetSize();
-
-			if (snapSize > 100)
-				snapSize = 100;
-
-			DWORD retval = session->sendQ.Peek(packetBufs, snapSize);
-
-			if (retval != snapSize)
-				CRASH();
+			DWORD snapSize = session->sendQ.Peek(packetBufs, 100);
 
 			for (DWORD i = 0; i < snapSize; ++i)
 			{
