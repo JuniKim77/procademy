@@ -122,10 +122,10 @@ namespace procademy
 	template<typename DATA>
 	inline DATA CSafeQueue<DATA>::Dequeue()
 	{
-		if (IsEmpty())
-		{
-			return NULL;
-		}
+		//if (IsEmpty())
+		//{
+		//	return NULL;
+		//}
 
 		int front = mFront++;
 
