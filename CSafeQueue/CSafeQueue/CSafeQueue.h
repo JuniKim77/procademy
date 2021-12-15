@@ -1,6 +1,23 @@
 #pragma once
 #include "CLogger.h"
 
+#define LOG_MODE
+
+//struct ringbufDebug
+//{
+//	char* pRear;
+//	char* pFront;
+//	char* pBuf;
+//	int mRear;
+//	int mFront;
+//	int mCapa;
+//	ULONG len1;
+//	ULONG len2;
+//};
+//
+//USHORT g_debugIdx = 0;
+//ringbufDebug g_packetDebugs[USHRT_MAX + 1] = { 0, };
+
 namespace procademy
 {
 	template <typename DATA>
@@ -86,7 +103,9 @@ namespace procademy
 	{
 		if (IsFull())
 		{
+#ifdef LOG_MODE
 			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Queue Is Full");
+#endif // LOG_MODE
 
 			return false;
 		}
@@ -105,7 +124,7 @@ namespace procademy
 	{
 		if (IsEmpty())
 		{
-			return nullptr;
+			return NULL;
 		}
 
 		int front = mFront++;
@@ -115,13 +134,16 @@ namespace procademy
 			mFront = 0;
 		}
 
-		return mBuffer[front];
+		DATA ret = mBuffer[front];
+
+		return ret;
 	}
 	template<typename DATA>
 	inline DWORD CSafeQueue<DATA>::Peek(DATA arr[], DWORD size)
 	{
 		DWORD i;
 		int front = mFront;
+		int rear = mRear;
 
 		for (i = 0; i < size; ++i)
 		{
@@ -130,6 +152,12 @@ namespace procademy
 			if (front > mCapacity)
 			{
 				front = 0;
+			}
+
+			if (rear == front)
+			{
+				i++;
+				break;
 			}
 		}
 

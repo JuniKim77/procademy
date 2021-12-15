@@ -28,7 +28,6 @@ int main()
 	system(" mode  con lines=30   cols=120 ");
 	int seed = 10;
 	int ringSize = BUFFER_SIZE;
-	RingBuffer ringBuffer(ringSize);
 
 	srand(seed);
 

@@ -25,7 +25,7 @@ unsigned int WINAPI WorkerThread(LPVOID lpParam);
 unsigned int WINAPI MonitorThread(LPVOID lpParam);
 void Init();
 
-procademy::TC_LFQueue<st_DATA*> g_q;
+procademy::TC_LFQueue64<st_DATA*> g_q;
 
 long PushTPS = 0;
 long DequeueTPS = 0;
