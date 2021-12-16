@@ -5,6 +5,7 @@
 #include <conio.h>
 #include <stdlib.h>
 #include <process.h>
+#include <ctime>
 
 #define STR_SIZE (120)
 #define TIME_PERIOD (50)
@@ -25,9 +26,10 @@ HANDLE g_event;
 int main()
 {
 	system(" mode  con lines=30   cols=120 ");
-	int seed = 10;
 
-	srand(seed);
+	g_q.SetLogMode(false);
+
+	srand(time(NULL));
 
 	HANDLE hArray[2];
 	hArray[0] = (HANDLE)_beginthreadex(nullptr, 0, enqueueProc, nullptr, 0, nullptr);
