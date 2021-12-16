@@ -52,7 +52,7 @@ namespace procademy
 		int mRear;
 		DATA* mBuffer;
 		int mCapacity;
-		bool mLogMode = true;
+		bool mLogMode = false;
 	};
 	template<typename DATA>
 	inline CSafeQueue<DATA>::CSafeQueue()
