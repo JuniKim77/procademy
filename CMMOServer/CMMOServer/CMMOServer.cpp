@@ -15,6 +15,8 @@ struct statusDebug
 	u_int64									sessionID;
 	DWORD									threadId;
 	int										ioCount;
+	int										mFront;
+	int										mRear;
 };
 
 struct ringbufDebug
@@ -29,11 +31,11 @@ struct ringbufDebug
 	ULONG len2;
 };
 
-USHORT g_debugIdx = 0;
-statusDebug g_statusDebugs[USHRT_MAX + 1] = { 0, };
+USHORT g_debugIdx;
+statusDebug g_statusDebugs[USHRT_MAX + 1];
 
-USHORT g_ringbufIdx = 0;
-ringbufDebug g_ringbufDebugs[USHRT_MAX + 1] = { 0, };
+USHORT g_ringbufIdx;
+ringbufDebug g_ringbufDebugs[USHRT_MAX + 1];
 
 void ringbufLog(
 	char* pRear,
@@ -66,7 +68,9 @@ void statusLog(
 	u_short									sessionIndex,
 	u_int64									sessionID,
 	DWORD									threadId,
-	int										ioCount
+	int										ioCount,
+	int										mFront,
+int											mRear
 )
 {
 	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
@@ -80,6 +84,8 @@ void statusLog(
 	g_statusDebugs[index].sessionID = sessionID;
 	g_statusDebugs[index].threadId = threadId;
 	g_statusDebugs[index].ioCount = ioCount;
+	g_statusDebugs[index].mFront = mFront;
+	g_statusDebugs[index].mRear = mRear;
 }
 
 procademy::CMMOServer::CMMOServer()
@@ -778,6 +784,9 @@ void procademy::CMMOServer::DecrementIOProc(CSession* session, int logic)
 	{
 		session->sessionEnd = true;
 		session->isSending = false;
+
+		statusLog(40000, session->status, session->isSending, session->toGame, session->sessionEnd,
+			session->index, session->sessionID, GetCurrentThreadId(), session->ioCount, session->sendQ.mFront, session->sendQ.mRear);
 	}
 }
 
@@ -903,6 +912,9 @@ bool procademy::CMMOServer::RecvPost(CSession* session, bool isFirst)
 
 		DecrementIOProc(session, 10050);
 
+		statusLog(20000, session->status, session->isSending, session->toGame, session->sessionEnd,
+			session->index, session->sessionID, GetCurrentThreadId(), session->ioCount, session->sendQ.mFront, session->sendQ.mRear);
+
 		return false;
 	}
 
@@ -946,6 +958,9 @@ bool procademy::CMMOServer::SendPost(CSession* session)
 		}
 
 		DecrementIOProc(session, 20050);
+
+		statusLog(10000, session->status, session->isSending, session->toGame, session->sessionEnd,
+			session->index, session->sessionID, GetCurrentThreadId(), session->ioCount, session->sendQ.mFront, session->sendQ.mRear);
 
 		session->isSending = false;
 
@@ -1007,6 +1022,9 @@ void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRe
 
 		DWORD snapSize = session->sendQ.Peek(packetBufs, 200);
 
+		statusLog(50000, session->status, session->isSending, session->toGame, session->sessionEnd,
+			session->index, session->sessionID, GetCurrentThreadId(), session->ioCount, session->sendQ.mFront, session->sendQ.mRear);
+
 		for (DWORD i = 0; i < snapSize; ++i)
 		{
 			bufs[i].buf = packetBufs[i]->GetZeroPtr();
@@ -1023,14 +1041,14 @@ void procademy::CMMOServer::ReleaseProc(CSession* session)
 
 	InterlockedDecrement(&joinCount);
 
-	/*statusLog(30000, session->status, session->isSending, session->toGame, session->sessionEnd,
-		session->index, session->sessionID, GetCurrentThreadId(), session->ioCount);*/
-
 	closesocket(session->socket);
 
 	session->toGame = false;
 	session->sessionEnd = false;
 	session->status = CSession::en_NONE_USE;
+
+	statusLog(30000, session->status, session->isSending, session->toGame, session->sessionEnd,
+		session->index, session->sessionID, GetCurrentThreadId(), session->ioCount, session->sendQ.mFront, session->sendQ.mRear);
 
 	while (1)
 	{

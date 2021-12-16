@@ -25,6 +25,8 @@ int main()
 	CProfiler::InitProfiler(5);
 	procademy::CCrashDump::CCrashDump();
 
+	ringBuffer.SetLogMode(false);
+
 	system(" mode  con lines=30   cols=120 ");
 	int seed = 10;
 	int ringSize = BUFFER_SIZE;

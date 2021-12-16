@@ -1,5 +1,3 @@
-#define LOG_MODE
-
 #include "RingBuffer.h"
 #include <cstring>
 #include <stdio.h>
@@ -131,9 +129,11 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 
 	if (iSize > freeSize)
 	{
-#ifdef LOG_MODE
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Enqueue size over");
-#endif // LOG_MODE
+		if (mLogMode)
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Enqueue size over");
+		}
+		
 		iSize = freeSize;
 	}
 
@@ -176,9 +176,11 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 
 	if (iSize > useSize)
 	{
-#ifdef LOG_MODE
-		CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Dequeue size over");
-#endif // LOG_MODE
+		if (mLogMode)
+		{
+			CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Dequeue size over");
+		}
+
 		iSize = useSize;
 	}
 

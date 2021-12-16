@@ -125,10 +125,13 @@ public:
 
 	int GetCapacity() { return mCapacity; }
 
+	void SetLogMode(bool mode) { mLogMode = mode; }
+
 public:
 	int mFront;
 	int mRear;
 	char* mBuffer;
 	int mCapacity;
 	SRWLOCK mSrwLock;
+	bool	mLogMode = true;
 };
