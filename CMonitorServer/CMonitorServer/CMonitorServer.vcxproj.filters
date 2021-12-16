@@ -21,10 +21,13 @@
     <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CLF_LanServer\CLF_LanServer\CLF_LanServer.cpp">
-      <Filter>헤더 파일</Filter>
-    </ClCompile>
     <ClCompile Include="CMonitorServer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CLF_LanServer\CLF_LanServer\CLF_LanServer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -42,6 +45,12 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="MonitorServerDTO.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

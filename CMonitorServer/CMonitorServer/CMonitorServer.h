@@ -17,7 +17,7 @@ namespace procademy
 		CMonitorServer();
 		virtual ~CMonitorServer();
 		bool	BeginServer();
-		void	WaitForThreadsFin();
+		
 		
 	private:
 		virtual bool OnConnectionRequest(u_long IP, u_short Port) override;
@@ -27,14 +27,26 @@ namespace procademy
 		virtual void OnError(int errorcode, const WCHAR* log) override;
 
 		void		Init();
+		bool		MonitorProc();
 		bool		DBProc();
+		void		LoadInitFile(const WCHAR* fileName);
+		void		BeginThreads();
+		void		WaitForThreadsFin();
+		void		MakeMonitorStr(WCHAR* s, int size);
+		void		ClearTPS();
 
-
+		static unsigned int WINAPI	MonitorThread(LPVOID arg);
 		static unsigned int WINAPI	DBThread(LPVOID arg);
 
 	private:
-		HANDLE										mDBThread;
-		std::unordered_map<u_int64, st_Player*>		mPlayerMap;
-		SRWLOCK										mPlayerMapLock;
+		HANDLE												mDBThread;
+		std::unordered_map<u_int64, st_ServerClient*>		mServerClients;
+		std::unordered_map<u_int64, st_MonitorClient*>		mMonitorClients;
+		SRWLOCK												mServerLock;
+		WCHAR												mDBIP[16];
+		USHORT												mDBPort;
+		HANDLE*												mThreads = nullptr;
+		TC_LFObjectPool<st_MonitorData>						mMonitorDataPool;
+		DWORD												mUpdateTPS = 0;
 	};
 }
