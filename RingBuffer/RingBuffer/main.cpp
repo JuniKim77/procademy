@@ -69,7 +69,7 @@ int dequeueProcess()
 	char buffer[STR_SIZE + 1];
 	WCHAR wbuffer[STR_SIZE + 1];
 
-	int ran = rand() % (STR_SIZE + 1);
+	int ran = rand() % (4);
 
 	CProfiler::Begin(L"GetUseSize");
 	if (ringBuffer.GetUseSize() == 0)
@@ -104,7 +104,7 @@ int enqueueProcess()
 	char buffer[STR_SIZE + 1];
 	WCHAR wbuffer[STR_SIZE + 1];
 
-	int ran = rand() % (STR_SIZE + 1);
+	int ran = rand() % (4);
 
 	if (cur + ran > STR_SIZE)
 	{
@@ -136,7 +136,7 @@ unsigned int __stdcall dequeueProc(void* pvParam)
 	{
 		DWORD time = rand() % TIME_PERIOD + 10;
 
-		DWORD retval = WaitForSingleObject(g_event, time);
+		DWORD retval = WaitForSingleObject(g_event, 0);
 
 		switch (retval)
 		{
@@ -166,7 +166,7 @@ unsigned int __stdcall enqueueProc(void* pvParam)
 	{
 		DWORD time = rand() % TIME_PERIOD + 10;
 
-		DWORD retval = WaitForSingleObject(g_event, time);
+		DWORD retval = WaitForSingleObject(g_event, 0);
 
 		switch (retval)
 		{
