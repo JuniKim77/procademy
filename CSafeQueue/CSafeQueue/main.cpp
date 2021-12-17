@@ -9,7 +9,7 @@
 
 #define STR_SIZE (120)
 #define TIME_PERIOD (50)
-#define BUFFER_SIZE (150)
+#define BUFFER_SIZE (120)
 
 unsigned int __stdcall dequeueProc(void* pvParam);
 unsigned int __stdcall enqueueProc(void* pvParam);
@@ -66,9 +66,7 @@ unsigned int __stdcall dequeueProc(void* pvParam)
 
 	while (1)
 	{
-		DWORD time = rand() % TIME_PERIOD + 10;
-
-		DWORD retval = WaitForSingleObject(g_event, time);
+		DWORD retval = WaitForSingleObject(g_event, 0);
 
 		switch (retval)
 		{
@@ -96,9 +94,7 @@ unsigned int __stdcall enqueueProc(void* pvParam)
 
 	while (1)
 	{
-		DWORD time = rand() % TIME_PERIOD + 10;
-
-		DWORD retval = WaitForSingleObject(g_event, time);
+		DWORD retval = WaitForSingleObject(g_event, 0);
 
 		switch (retval)
 		{

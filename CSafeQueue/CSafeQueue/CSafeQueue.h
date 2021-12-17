@@ -78,11 +78,12 @@ namespace procademy
 	inline int CSafeQueue<DATA>::GetUseSize(void)
 	{
 		int rear = mRear;
+		int front = mFront;
 
-		if (rear >= mFront)
-			return rear - mFront;
+		if (rear >= front)
+			return rear - front;
 		else // f 바로 뒤는 넣을 수 없다.
-			return mCapacity - (mFront - rear - 1);
+			return mCapacity - (front - rear - 1);
 	}
 	template<typename DATA>
 	inline bool CSafeQueue<DATA>::IsFull(void)
