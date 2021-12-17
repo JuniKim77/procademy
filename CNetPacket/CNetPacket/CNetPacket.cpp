@@ -51,6 +51,7 @@ namespace procademy
 	{
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mFront;
+		mZero = mBuffer;
 	}
 
 	int CNetPacket::MoveFront(DWORD iSize)
