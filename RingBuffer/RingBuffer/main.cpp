@@ -22,7 +22,7 @@ int post = 0;
 
 int main()
 {
-	//CProfiler::InitProfiler(5);
+	CProfiler::InitProfiler(5);
 	procademy::CCrashDump::CCrashDump();
 
 	ringBuffer.SetLogMode(false);
@@ -59,7 +59,7 @@ int main()
 		CloseHandle(hArray[i]);
 	}
 
-	//CProfiler::Print();
+	CProfiler::Print();
 
 	return 0;
 }
@@ -69,19 +69,19 @@ int dequeueProcess()
 	char buffer[STR_SIZE + 1];
 	WCHAR wbuffer[STR_SIZE + 1];
 
-	int ran = rand() % (3);
+	int ran = rand() % (4);
 
-	//CProfiler::Begin(L"GetUseSize");
+	CProfiler::Begin(L"GetUseSize");
 	if (ringBuffer.GetUseSize() == 0)
 	{
-		//CProfiler::End(L"GetUseSize");
+		CProfiler::End(L"GetUseSize");
 		return 0;
 	}
-	//CProfiler::End(L"GetUseSize");
+	CProfiler::End(L"GetUseSize");
 
-	//CProfiler::Begin(L"Dequeue");
+	CProfiler::Begin(L"Dequeue");
 	int size = ringBuffer.Dequeue(buffer, ran);
-	//CProfiler::End(L"Dequeue");
+	CProfiler::End(L"Dequeue");
 
 	buffer[size] = '\0';
 
@@ -104,7 +104,7 @@ int enqueueProcess()
 	char buffer[STR_SIZE + 1];
 	WCHAR wbuffer[STR_SIZE + 1];
 
-	int ran = rand() % (3);
+	int ran = rand() % (4);
 
 	if (cur + ran > STR_SIZE)
 	{
@@ -119,9 +119,9 @@ int enqueueProcess()
 
 	buffer[ran] = '\0';
 
-	//CProfiler::Begin(L"Enqueue");
+	CProfiler::Begin(L"Enqueue");
 	int size = ringBuffer.Enqueue(buffer, ran);
-	//CProfiler::End(L"Enqueue");
+	CProfiler::End(L"Enqueue");
 
 	cur = (cur + size) % STR_SIZE;
 
@@ -134,10 +134,9 @@ unsigned int __stdcall dequeueProc(void* pvParam)
 
 	while (1)
 	{
-		//DWORD time = rand() % TIME_PERIOD + 10;
-		DWORD time = 0;
+		DWORD time = rand() % TIME_PERIOD + 10;
 
-		DWORD retval = WaitForSingleObject(g_event, time);
+		DWORD retval = WaitForSingleObject(g_event, 0);
 
 		switch (retval)
 		{
@@ -165,10 +164,9 @@ unsigned int __stdcall enqueueProc(void* pvParam)
 
 	while (1)
 	{
-		//DWORD time = rand() % TIME_PERIOD + 10;
-		DWORD time = 0;
+		DWORD time = rand() % TIME_PERIOD + 10;
 
-		DWORD retval = WaitForSingleObject(g_event, time);
+		DWORD retval = WaitForSingleObject(g_event, 0);
 
 		switch (retval)
 		{

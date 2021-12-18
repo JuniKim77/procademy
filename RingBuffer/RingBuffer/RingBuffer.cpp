@@ -62,11 +62,12 @@ int RingBuffer::GetBufferSize(void)
 int RingBuffer::GetUseSize(void)
 {
 	int rear = mRear;
+	int front = mFront;
 
-	if (rear >= mFront)
-		return rear - mFront;
+	if (rear >= front)
+		return rear - front;
 	else // f 바로 뒤는 넣을 수 없다.
-		return mCapacity - (mFront - rear - 1);
+		return mCapacity - (front - rear - 1);
 }
 
 int RingBuffer::GetFreeSize(void)
@@ -76,34 +77,40 @@ int RingBuffer::GetFreeSize(void)
 
 int RingBuffer::DirectEnqueueSize(void)
 {
+	int rear = mRear;
+	int front = mFront;
+
 	// Rear가 움직인다...
 	// 역방향의 경우, f의 뒤는 항시 비어야 하므로, -1...
-	if (mRear < mFront)
+	if (rear < front)
 	{
-		return mFront - mRear - 1;
+		return front - rear - 1;
 	}
 	// 순방향의 경우, mFront가 0인 경우, 마지막 칸을 비워 둬야 한다...
-	if (mFront == 0)
+	if (front == 0)
 	{
-		return mCapacity - mRear;
+		return mCapacity - rear;
 	}
 	else
 	{
-		return mCapacity - mRear + 1;
+		return mCapacity - rear + 1;
 	}
 }
 
 int RingBuffer::DirectDequeueSize(void)
 {
+	int rear = mRear;
+	int front = mFront;
+
 	// Front가 움직여 나간다...
 	// 순방향 경우 인덱스 차 반환
-	if (mRear >= mFront)
+	if (rear >= front)
 	{
-		return mRear - mFront;
+		return rear - front;
 	}
 
 	// 끝까지 다 쓸 있어서 +1
-	return mCapacity - mFront + 1;
+	return mCapacity - front + 1;
 }
 
 int RingBuffer::Enqueue(char* chpData, int iSize)
@@ -113,16 +120,19 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 		return 0;
 	}
 
-	int curFront = mFront;
-	int freeSize = 0;
+	int front = mFront;
+	int freeSize;
+	int rear = mRear;
+	int capacity = mCapacity;
+	char* buf = mBuffer;
 
-	if (mRear >= curFront)
+	if (rear >= front)
 	{
-		freeSize = mCapacity - (mRear - curFront);
+		freeSize = capacity - (rear - front);
 	}
 	else
 	{
-		freeSize = (curFront - mRear - 1);
+		freeSize = (front - rear - 1);
 	}
 
 	// iSize = iSize > freeSize ? freeSize : iSize;
@@ -137,19 +147,26 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 		iSize = freeSize;
 	}
 
-	if (mRear + iSize > mCapacity + 1)
+	if (rear + iSize > capacity + 1)
 	{
-		int possibleToEnd = mCapacity - mRear + 1;
+		int possibleToEnd = capacity - rear + 1;
 
-		memcpy(mBuffer + mRear, chpData, possibleToEnd);
-		memcpy(mBuffer, chpData + possibleToEnd, (long long)iSize - possibleToEnd);
+		memcpy(buf + rear, chpData, possibleToEnd);
+		memcpy(buf, chpData + possibleToEnd, (long long)iSize - possibleToEnd);
 	}
 	else
 	{
-		memcpy(mBuffer + mRear, chpData, iSize);
+		memcpy(buf + rear, chpData, iSize);
 	}
 
-	mRear = (mRear + iSize) % (mCapacity + 1);
+	if (rear + iSize > capacity + 1)
+	{
+		mRear = (rear + iSize) - (capacity + 1);
+	}
+	else
+	{
+		mRear = (rear + iSize);
+	}
 
 	return iSize;
 }
@@ -161,15 +178,18 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 	}
 
 	int useSize;
-	int curRear = mRear;
+	int rear = mRear;
+	int front = mFront;
+	int capacity = mCapacity;
+	char* buf = mBuffer;
 
-	if (curRear >= mFront)
+	if (rear >= front)
 	{
-		useSize = curRear - mFront;
+		useSize = rear - front;
 	}
 	else
 	{
-		useSize = mCapacity - (mFront - curRear - 1);
+		useSize = capacity - (front - rear - 1);
 	}
 
 	//iSize = iSize > useSize ? useSize : iSize;
@@ -184,19 +204,26 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 		iSize = useSize;
 	}
 
-	if (mFront + iSize >= mCapacity + 1)
+	if (front + iSize >= capacity + 1)
 	{
-		int possibleToEnd = mCapacity + 1 - mFront;
+		int possibleToEnd = capacity + 1 - front;
 
-		memcpy(chpDest, mBuffer + mFront, possibleToEnd);
-		memcpy(chpDest + possibleToEnd, mBuffer, (long long)iSize - possibleToEnd);
+		memcpy(chpDest, buf + front, possibleToEnd);
+		memcpy(chpDest + possibleToEnd, buf, (long long)iSize - possibleToEnd);
 	}
 	else
 	{
-		memcpy(chpDest, mBuffer + mFront, iSize);
+		memcpy(chpDest, buf + front, iSize);
 	}
 
-	mFront = (mFront + iSize) % (mCapacity + 1);
+	if (front + iSize > capacity + 1)
+	{
+		mFront = (front + iSize) - (capacity + 1);
+	}
+	else
+	{
+		mFront = (front + iSize);
+	}
 
 	return iSize;
 }
@@ -208,29 +235,32 @@ int RingBuffer::Peek(char* chpDest, int iSize)
 	}
 
 	int useSize;
-	int curRear = mRear;
+	int rear = mRear;
+	int front = mFront;
+	int capacity = mCapacity;
+	char* buf = mBuffer;
 
-	if (curRear >= mFront)
+	if (rear >= front)
 	{
-		useSize = curRear - mFront;
+		useSize = rear - front;
 	}
 	else
 	{
-		useSize = mCapacity - (mFront - curRear - 1);
+		useSize = capacity - (front - rear - 1);
 	}
 
 	iSize = iSize > useSize ? useSize : iSize;
 
-	if (mFront + iSize >= mCapacity + 1)
+	if (front + iSize >= capacity + 1)
 	{
-		int possibleToEnd = mCapacity + 1 - mFront;
+		int possibleToEnd = capacity + 1 - front;
 
-		memcpy(chpDest, mBuffer + mFront, possibleToEnd);
-		memcpy(chpDest + possibleToEnd, mBuffer, (long long)iSize - possibleToEnd);
+		memcpy(chpDest, buf + front, possibleToEnd);
+		memcpy(chpDest + possibleToEnd, buf, (long long)iSize - possibleToEnd);
 	}
 	else
 	{
-		memcpy(chpDest, mBuffer + mFront, iSize);
+		memcpy(chpDest, buf + front, iSize);
 	}
 
 	return iSize;
@@ -243,7 +273,19 @@ bool RingBuffer::MoveRear(int iSize)
 		return false;
 	}
 
-	mRear = (mRear + iSize) % (mCapacity + 1);
+	int rear = mRear;
+	int capacity = mCapacity;
+
+	if (rear + iSize > capacity + 1)
+	{
+		mRear = (rear + iSize) - (capacity + 1);
+	}
+	else
+	{
+		mRear = (rear + iSize);
+	}
+
+	//mRear = (mRear + iSize) % (mCapacity + 1);
 
 	return true;
 }
@@ -255,7 +297,19 @@ bool RingBuffer::MoveFront(int iSize)
 		return false;
 	}
 
-	mFront = (mFront + iSize) % (mCapacity + 1);
+	int front = mFront;
+	int capacity = mCapacity;
+
+	if (front + iSize > capacity + 1)
+	{
+		mFront = (front + iSize) - (capacity + 1);
+	}
+	else
+	{
+		mFront = (front + iSize);
+	}
+
+	//mFront = (mFront + iSize) % (mCapacity + 1);
 
 	return true;
 }

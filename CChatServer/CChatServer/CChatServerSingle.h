@@ -67,7 +67,6 @@ namespace procademy
 		/// waittime을 둬서 주기적으로 Heartbeat 체크
 		/// </summary>
 		/// <returns></returns>
-		void			GQCSProc();
 		void			GQCSProcEx();
 		void			EventProc();
 		/// <summary>
@@ -135,8 +134,8 @@ namespace procademy
 		USHORT									mTokenDBPort;
 
 		alignas(64) ObjectPool_TLS<st_MSG>		mMsgPool;
-		alignas(64) TC_LFQueue64<st_MSG*>		mMsgQ;
-		CSafeQueue<st_MSG*>						mMsgLQ;
+		alignas(64) TC_LFQueue<st_MSG*>			mMsgQ;
+		//CSafeQueue<st_MSG*>						mMsgLQ;
 		SRWLOCK									mMsgLock;
 		HANDLE									mUpdateEvent = INVALID_HANDLE_VALUE;
 

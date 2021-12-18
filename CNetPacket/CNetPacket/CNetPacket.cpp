@@ -51,6 +51,7 @@ namespace procademy
 	{
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mFront;
+		mZero = mBuffer;
 	}
 
 	int CNetPacket::MoveFront(DWORD iSize)
@@ -314,12 +315,15 @@ namespace procademy
 
 	int CNetPacket::GetData(char* chpDest, int iLength)
 	{
-		if (mFront + iLength > mRear)
+		char* front = mFront;
+		char* rear = mRear;
+
+		if (front + iLength > rear)
 		{
-			iLength = mRear - mFront;
+			iLength = rear - front;
 		}
 
-		memcpy(chpDest, mFront, iLength);
+		memcpy(chpDest, front, iLength);
 		mFront += iLength;
 
 		return iLength;
@@ -432,18 +436,17 @@ namespace procademy
 		else
 		{
 			st_Header header;
+			char* pFront = mFront;
+			char* pRear = mRear;
+			BYTE sum = 0;
 
 			header.code = sCode;
-			header.len = (USHORT)(mRear - mFront);
+			header.len = (USHORT)(pRear - pFront);
 #ifdef TEST
 			header.randKey = 0x31;
 #else
 			header.randKey = (BYTE)rand();
 #endif // TEST
-
-			char* pFront = mFront;
-			BYTE sum = 0;
-
 			for (int i = 0; i < header.len; ++i)
 			{
 				sum += (BYTE)*pFront;

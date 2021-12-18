@@ -11,7 +11,6 @@
 #include "CProfiler.h"
 
 #define MAX_STR (30000)
-WCHAR str[MAX_STR];
 
 struct msgDebug
 {
@@ -309,63 +308,6 @@ void procademy::CChatServerSingle::EnqueueRedisQ(SESSION_ID sessionNo, CNetPacke
     PostQueuedCompletionStatus(mRedisIOCP, 1, (ULONG_PTR)sessionNo, (LPOVERLAPPED)packet);
 }
 
-void procademy::CChatServerSingle::GQCSProc()
-{
-    while (1)
-    {
-        DWORD           transferredSize = 0;
-        st_MSG*         msg = nullptr;
-        WSAOVERLAPPED*  pOverlapped = nullptr;
- 
-        BOOL gqcsRet = GetQueuedCompletionStatus(mIOCP, &transferredSize, (PULONG_PTR)&msg, &pOverlapped, INFINITE);
-        
-#ifdef PROFILE
-        CProfiler::Begin(L"GQCSProc_Chat");
-#endif // PROFILE
-        
-        // Update Thread End
-        if (transferredSize == 0)
-        {
-            return;
-        }
-
-        mUpdateTPS++;
-
-        switch (msg->type)
-        {
-        case MSG_TYPE_RECV:
-            CompleteMessage(msg->sessionNo, msg->packet);
-            break;
-        case MSG_TYPE_JOIN:
-            mRatioMonitor.joinCount++;
-            JoinProc(msg->sessionNo);
-            break;
-        case MSG_TYPE_LEAVE:
-            InterlockedIncrement(&mRatioMonitor.leaveCount);
-            LeaveProc(msg->sessionNo);
-            break;
-        case MSG_TYPE_TIMEOUT:
-            CheckTimeOutProc();
-            break;
-        case MSG_TYPE_VERIFICATION_SUCCESS:
-            CompleteLoginProc(msg->sessionNo, msg->packet, true);
-            break;
-        case MSG_TYPE_VERIFICATION_FAIL:
-            CompleteLoginProc(msg->sessionNo, msg->packet, false);
-            break;
-        default:
-            CLogger::_Log(dfLOG_LEVEL_ERROR, L"GQCSProc - Undefined Message");
-            break;
-        }
-
-        mMsgPool.Free(msg);
-
-#ifdef PROFILE
-        CProfiler::End(L"GQCSProc_Chat");
-#endif // PROFILE
-    }
-}
-
 void procademy::CChatServerSingle::GQCSProcEx()
 {
     OVERLAPPED_ENTRY* overlappedArray = new OVERLAPPED_ENTRY[mGQCSCExNum];
@@ -445,7 +387,6 @@ void procademy::CChatServerSingle::GQCSProcEx()
 
 void procademy::CChatServerSingle::EventProc()
 {
-
     while (!mbExit)
     {
         st_MSG*             msg = nullptr;
@@ -1274,6 +1215,7 @@ void procademy::CChatServerSingle::MakeRatioMonitorStr(WCHAR* s, int size)
 
 void procademy::CChatServerSingle::PrintRecvSendRatio()
 {
+    WCHAR* str = new WCHAR[MAX_STR];
     mbPrint = false;
 
     FILE* fout = nullptr;
@@ -1318,6 +1260,8 @@ void procademy::CChatServerSingle::PrintRecvSendRatio()
     fwprintf_s(fout, str);
 
     fclose(fout);
+
+    delete[] str;
 }
 
 void procademy::CChatServerSingle::ClearTPS()
