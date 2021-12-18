@@ -136,7 +136,7 @@ namespace procademy
 		alignas(64) ObjectPool_TLS<st_MSG>		mMsgPool;
 		alignas(64) TC_LFQueue<st_MSG*>			mMsgQ;
 		//CSafeQueue<st_MSG*>						mMsgLQ;
-		SRWLOCK									mMsgLock;
+		//SRWLOCK									mMsgLock;
 		HANDLE									mUpdateEvent = INVALID_HANDLE_VALUE;
 
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;

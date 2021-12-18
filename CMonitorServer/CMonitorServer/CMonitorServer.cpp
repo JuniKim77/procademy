@@ -2,6 +2,7 @@
 #include "TextParser.h"
 #include <conio.h>
 #include "CNetPacket.h"
+#include "CLanPacket.h"
 #include "MonitorProtocol.h"
 
 procademy::CMonitorServer::CMonitorServer()
@@ -24,6 +25,8 @@ bool procademy::CMonitorServer::BeginServer()
 
         return false;
     }
+
+    mMonitorToolServer.BeginServer();
 
     WaitForThreadsFin();
 
@@ -62,7 +65,7 @@ void procademy::CMonitorServer::OnClientLeave(SESSION_ID SessionID)
     LeaveProc(SessionID);
 }
 
-void procademy::CMonitorServer::OnRecv(SESSION_ID SessionID, CNetPacket* packet)
+void procademy::CMonitorServer::OnRecv(SESSION_ID SessionID, CLanPacket* packet)
 {
     RecvProc(SessionID, packet);
 }
@@ -132,9 +135,6 @@ void procademy::CMonitorServer::LoadInitFile(const WCHAR* fileName)
     tp.GetValue(L"TOKEN_DB_IP", mDBIP);
     tp.GetValue(L"TOKEN_DB_PORT", &num);
     mDBPort = (USHORT)num;
-
-    tp.GetValue(L"LOGIN_KEY", buffer);
-    WideCharToMultiByte(CP_ACP, 0, buffer, -1, mLoginSessionKey, sizeof(mLoginSessionKey), NULL, NULL);
 }
 
 void procademy::CMonitorServer::BeginThreads()
@@ -163,11 +163,13 @@ void procademy::CMonitorServer::WaitForThreadsFin()
             if (mbBegin)
             {
                 Stop();
+                mMonitorToolServer.StartMonitorServer();
                 wprintf(L"STOP\n");
             }
             else
             {
                 Start();
+                mMonitorToolServer.StartMonitorServer();
                 wprintf(L"RUN\n");
             }
             break;
@@ -175,6 +177,7 @@ void procademy::CMonitorServer::WaitForThreadsFin()
             CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer Intended Crash\n");
             CRASH();
         case 'q':
+            mMonitorToolServer.QuitMonitorServer();
             QuitServer();
             return;
         default:
@@ -194,12 +197,29 @@ void procademy::CMonitorServer::ClearTPS()
 
 bool procademy::CMonitorServer::JoinProc(SESSION_ID sessionID)
 {
+    st_ServerClient* server = FindServer(sessionID);
+
+    if (server != nullptr)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Concurrent Server[%llu]", sessionID);
+
+        CRASH();
+        return false;
+    }
+
+    server = new st_ServerClient;
+    server->sessionNo = sessionID;
+
+    LockServer();
+    InsertServer(sessionID, server);
+    UnlockServer();
+
     InterlockedIncrement(&mUpdateTPS);
 
     return true;
 }
 
-bool procademy::CMonitorServer::RecvProc(SESSION_ID sessionID, CNetPacket* packet)
+bool procademy::CMonitorServer::RecvProc(SESSION_ID sessionID, CLanPacket* packet)
 {
     WORD type;
     bool ret = false;
@@ -216,65 +236,65 @@ bool procademy::CMonitorServer::RecvProc(SESSION_ID sessionID, CNetPacket* packe
     case en_PACKET_SS_MONITOR_DATA_UPDATE:
         UpdateDataProc(sessionID, packet);
         break;
-    case en_PACKET_CS_MONITOR_TOOL_REQ_LOGIN:
-        MonitorLoginProc(sessionID, packet);
-        break;
     default:
+        CRASH();
         break;
     }
 
-    return false;
+    return true;
 }
 
 bool procademy::CMonitorServer::LeaveProc(SESSION_ID sessionID)
 {
     InterlockedIncrement(&mUpdateTPS);
 
-    return false;
-}
+    LockServer();
 
-bool procademy::CMonitorServer::MonitorLoginProc(SESSION_ID sessionID, CNetPacket* packet)
-{
-    char	LoginSessionKey[32];
+    st_ServerClient* server = FindServer(sessionID);
 
-    packet->GetData(LoginSessionKey, 32);
-
-    if (strcmp(LoginSessionKey, mLoginSessionKey) == 0)
+    if (server == nullptr)
     {
+        UnlockServer();
+        CRASH();
 
+        return false;
     }
 
+    DeleteServer(sessionID);
 
-    st_MonitorClient* monitor = new st_MonitorClient;
-    monitor->sessionNo = sessionID;
+    delete server;
 
-    LockServer();
-    InsertMonitorTool(sessionID, monitor);
     UnlockServer();
-
-    //CNetPacket* packet = MakeMonitorLoginRes()
 
     return true;
 }
 
-bool procademy::CMonitorServer::ServerLoginProc(SESSION_ID sessionID, CNetPacket* packet)
+bool procademy::CMonitorServer::ServerLoginProc(SESSION_ID sessionID, CLanPacket* packet)
 {
     int		ServerNo;
 
     *packet >> ServerNo;
 
-    st_ServerClient* server = new st_ServerClient;
-    server->serverNo = ServerNo;
-    server->sessionNo = sessionID;
-
     LockServer();
-    InsertServer(sessionID, server);
+
+    st_ServerClient* server = FindServer(sessionID);
+
+    if (server == nullptr)
+    {
+        UnlockServer();
+        CRASH();
+
+        return false;
+    }
+
+    server->serverNo = ServerNo;
+
     UnlockServer();
 
     return true;
 }
 
-bool procademy::CMonitorServer::UpdateDataProc(SESSION_ID sessionID, CNetPacket* packet)
+bool procademy::CMonitorServer::UpdateDataProc(SESSION_ID sessionID, CLanPacket* packet)
 {
     BYTE	DataType;
     int		DataValue;
@@ -290,11 +310,59 @@ bool procademy::CMonitorServer::UpdateDataProc(SESSION_ID sessionID, CNetPacket*
 
     LockServer();
 
+    st_ServerClient* server = FindServer(sessionID);
 
+    if (server == nullptr)
+    {
+        UnlockServer();
+        mMonitorDataPool.Free(dataSet);
+        CRASH();
+
+        return false;
+    }
+
+    CNetPacket* dataPacket = MakeMonitoringPacket(server, dataSet);
+
+    mMonitorToolServer.SendDataToAllClinet(dataPacket);
+
+    dataPacket->SubRef();
+
+    EnqueueDataProc(server, dataSet);
 
     UnlockServer();
 
     return true;
+}
+
+void procademy::CMonitorServer::EnqueueDataProc(st_ServerClient* server, st_MonitorData* data)
+{
+    int value = data->value;
+
+    server->dataSet[data->type].Enqueue(data);
+
+    if (value > server->max)
+    {
+        server->max = value;
+    }
+
+    if (value < server->min)
+    {
+        server->min = value;
+    }
+}
+
+procademy::CNetPacket* procademy::CMonitorServer::MakeMonitoringPacket(st_ServerClient* server, st_MonitorData* data)
+{
+    CNetPacket* packet = CNetPacket::AllocAddRef();
+
+    *packet << (WORD)en_PACKET_CS_MONITOR_TOOL_DATA_UPDATE << server->serverNo << data->type;
+
+    *packet << data->value << data->timeStamp;
+
+    packet->SetHeader();
+    packet->Encode();
+
+    return packet;
 }
 
 procademy::CNetPacket* procademy::CMonitorServer::MakeMonitorLoginRes(BYTE Status)
@@ -326,28 +394,6 @@ void procademy::CMonitorServer::InsertServer(SESSION_ID sessionNo, st_ServerClie
 void procademy::CMonitorServer::DeleteServer(SESSION_ID sessionNo)
 {
     mServerClients.erase(sessionNo);
-}
-
-procademy::st_MonitorClient* procademy::CMonitorServer::FindMonitorTool(SESSION_ID sessionNo)
-{
-    std::unordered_map<u_int64, st_MonitorClient*>::iterator iter = mMonitorClients.find(sessionNo);
-
-    if (iter == mMonitorClients.end())
-    {
-        return nullptr;
-    }
-
-    return iter->second;
-}
-
-void procademy::CMonitorServer::InsertMonitorTool(SESSION_ID sessionNo, st_MonitorClient* monitor)
-{
-    mMonitorClients[sessionNo] = monitor;
-}
-
-void procademy::CMonitorServer::DeleteMonitorTool(SESSION_ID sessionNo)
-{
-    mMonitorClients.erase(sessionNo);
 }
 
 unsigned int __stdcall procademy::CMonitorServer::MonitorThread(LPVOID arg)

@@ -15,55 +15,55 @@ namespace procademy
 	typedef u_int64 SESSION_ID;
 	class CNetPacket;
 
-	struct SessionIoCount
-	{
-		union
-		{
-			LONG ioCount = 0;
-			struct
-			{
-				SHORT count;
-				SHORT isReleased;
-			} releaseCount;
-		};
-	};
-
-	struct Session
-	{
-		WSAOVERLAPPED							recvOverlapped;
-		WSAOVERLAPPED							sendOverlapped;
-		RingBuffer								recvQ;
-		alignas(64) TC_LFQueue<CNetPacket*>		sendQ;
-		alignas(64) SessionIoCount				ioBlock;
-		alignas(64) bool						isSending;
-		int										numSendingPacket = 0;
-		SOCKET									socket = INVALID_SOCKET;
-		u_short									port;
-		ULONG									ip;
-		u_int64									sessionID;
-
-		Session()
-			: isSending(false)
-			, sessionID(0)
-		{
-			ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
-			ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
-		}
-
-		Session(SOCKET _socket, ULONG _ip, u_short _port)
-			: socket(_socket)
-			, ip(_ip)
-			, port(_port)
-			, isSending(false)
-			, sessionID(0)
-		{
-			ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
-			ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
-		}
-	};
-
 	class CLF_NetServer
 	{
+	public:
+		struct SessionIoCount
+		{
+			union
+			{
+				LONG ioCount = 0;
+				struct
+				{
+					SHORT count;
+					SHORT isReleased;
+				} releaseCount;
+			};
+		};
+
+		struct Session
+		{
+			WSAOVERLAPPED							recvOverlapped;
+			WSAOVERLAPPED							sendOverlapped;
+			RingBuffer								recvQ;
+			alignas(64) TC_LFQueue<CNetPacket*>		sendQ;
+			alignas(64) SessionIoCount				ioBlock;
+			alignas(64) bool						isSending;
+			int										numSendingPacket = 0;
+			SOCKET									socket = INVALID_SOCKET;
+			u_short									port;
+			ULONG									ip;
+			u_int64									sessionID;
+
+			Session()
+				: isSending(false)
+				, sessionID(0)
+			{
+				ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
+				ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
+			}
+
+			Session(SOCKET _socket, ULONG _ip, u_short _port)
+				: socket(_socket)
+				, ip(_ip)
+				, port(_port)
+				, isSending(false)
+				, sessionID(0)
+			{
+				ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
+				ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
+			}
+		};
 	protected:
 		CLF_NetServer();
 		virtual ~CLF_NetServer();

@@ -1293,7 +1293,7 @@ void procademy::CChatServerSingle::Init()
     char IP[64];
 
     WideCharToMultiByte(CP_ACP, 0, mTokenDBIP, -1, IP, sizeof(IP), nullptr, nullptr);
-    InitializeSRWLock(&mMsgLock);
+    //InitializeSRWLock(&mMsgLock);
 
     mUpdateEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
     mRedis.connect(IP, mTokenDBPort);

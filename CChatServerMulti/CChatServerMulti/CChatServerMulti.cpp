@@ -297,11 +297,9 @@ bool procademy::CChatServerMulti::RecvProc(SESSION_ID sessionNo, CNetPacket* pac
         ret = HeartUpdateProc(sessionNo);
         break;
     default:
-        //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Undefined Message", sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Undefined Message", sessionNo);
         break;
     }
-
-    //packet->SubRef();
 
     if (ret == false)
     {
@@ -1150,7 +1148,7 @@ procademy::CNetPacket* procademy::CChatServerMulti::MakeCSResLogin(BYTE status, 
 
     *packet << (WORD)en_PACKET_CS_CHAT_RES_LOGIN << status << (__int64)accountNo;
 
-    packet->SetHeader(false);
+    packet->SetHeader();
     packet->Encode();
 
     return packet;
@@ -1162,7 +1160,7 @@ procademy::CNetPacket* procademy::CChatServerMulti::MakeCSResSectorMove(SESSION_
 
     *packet << (WORD)en_PACKET_CS_CHAT_RES_SECTOR_MOVE << (__int64)accountNo << sectorX << sectorY;
 
-    packet->SetHeader(false);
+    packet->SetHeader();
     packet->Encode();
 
     return packet;
@@ -1179,7 +1177,7 @@ procademy::CNetPacket* procademy::CChatServerMulti::MakeCSResMessage(SESSION_ID 
     *packet << meesageLen;
     packet->PutData(message, meesageLen / 2);
 
-    packet->SetHeader(false);
+    packet->SetHeader();
     packet->Encode();
 
     return packet;

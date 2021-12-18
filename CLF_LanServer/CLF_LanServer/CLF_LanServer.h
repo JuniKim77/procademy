@@ -12,57 +12,58 @@
 namespace procademy
 {
 	typedef u_int64 SESSION_ID;
-	class CNetPacket;
-
-	struct SessionIoCount
-	{
-		union
-		{
-			LONG ioCount = 0;
-			struct
-			{
-				SHORT count;
-				SHORT isReleased;
-			} releaseCount;
-		};
-	};
-
-	struct Session
-	{
-		WSAOVERLAPPED				recvOverlapped;
-		WSAOVERLAPPED				sendOverlapped;
-		RingBuffer					recvQ;
-		TC_LFQueue<CNetPacket*>		sendQ;
-		int							numSendingPacket = 0;
-		alignas(64) SessionIoCount	ioBlock;
-		alignas(64) bool			isSending;
-		SOCKET						socket = INVALID_SOCKET;
-		u_short						port;
-		ULONG						ip;
-		u_int64						sessionID;
-
-		Session()
-			: isSending(false)
-			, sessionID(0)
-		{
-			ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
-			ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
-		}
-
-		Session(SOCKET _socket, ULONG _ip, u_short _port)
-			: socket(_socket)
-			, ip(_ip)
-			, port(_port)
-			, isSending(false)
-			, sessionID(0)
-		{
-			ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
-			ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
-		}
-	};
+	class CLanPacket;
 
 	class CLF_LanServer
 	{
+	public:
+		struct SessionIoCount
+		{
+			union
+			{
+				LONG ioCount = 0;
+				struct
+				{
+					SHORT count;
+					SHORT isReleased;
+				} releaseCount;
+			};
+		};
+
+		struct Session
+		{
+			WSAOVERLAPPED				recvOverlapped;
+			WSAOVERLAPPED				sendOverlapped;
+			RingBuffer					recvQ;
+			TC_LFQueue<CLanPacket*>		sendQ;
+			int							numSendingPacket = 0;
+			alignas(64) SessionIoCount	ioBlock;
+			alignas(64) bool			isSending;
+			SOCKET						socket = INVALID_SOCKET;
+			u_short						port;
+			ULONG						ip;
+			u_int64						sessionID;
+
+			Session()
+				: isSending(false)
+				, sessionID(0)
+			{
+				ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
+				ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
+			}
+
+			Session(SOCKET _socket, ULONG _ip, u_short _port)
+				: socket(_socket)
+				, ip(_ip)
+				, port(_port)
+				, isSending(false)
+				, sessionID(0)
+			{
+				ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
+				ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
+			}
+		};
+
 	protected:
 		CLF_LanServer();
 		virtual ~CLF_LanServer();
@@ -70,15 +71,15 @@ namespace procademy
 		void Stop();
 
 		bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
-		void SendPacket(SESSION_ID SessionID, CNetPacket* packet); // SESSION_ID / HOST_ID
-		void SendPacketToWorker(SESSION_ID SessionID, CNetPacket* packet);
+		void SendPacket(SESSION_ID SessionID, CLanPacket* packet); // SESSION_ID / HOST_ID
+		void SendPacketToWorker(SESSION_ID SessionID, CLanPacket* packet);
 		virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept 직후
 
 		virtual void OnClientJoin(SESSION_ID SessionID) = 0; //< Accept 후 접속처리 완료 후 호출.
 		virtual void OnClientLeave(SESSION_ID SessionID) = 0; //< Release 후 호출
 		void LoadInitFile(const WCHAR* fileName);
 
-		virtual void OnRecv(SESSION_ID SessionID, CNetPacket* packet) = 0; //< 패킷 수신 완료 후
+		virtual void OnRecv(SESSION_ID SessionID, CLanPacket* packet) = 0; //< 패킷 수신 완료 후
 		//	virtual void OnSend(SessionID, int sendsize) = 0;           < 패킷 송신 완료 후
 
 		//	virtual void OnWorkerThreadBegin() = 0;                    < 워커스레드 GQCS 바로 하단에서 호출

@@ -8,9 +8,12 @@
 #include <unordered_map>
 #include "TC_LFObjectPool.h"
 #include "MonitorServerDTO.h"
+#include "CMonitorToolServer.h"
 
 namespace procademy
 {
+	class CMonitorToolServer;
+
 	class CMonitorServer : public CLF_LanServer
 	{
 	public:
@@ -23,7 +26,7 @@ namespace procademy
 		virtual bool OnConnectionRequest(u_long IP, u_short Port) override;
 		virtual void OnClientJoin(SESSION_ID SessionID) override;
 		virtual void OnClientLeave(SESSION_ID SessionID) override;
-		virtual void OnRecv(SESSION_ID SessionID, CNetPacket* packet) override;
+		virtual void OnRecv(SESSION_ID SessionID, CLanPacket* packet) override;
 		virtual void OnError(int errorcode, const WCHAR* log) override;
 
 		void				Init();
@@ -35,18 +38,16 @@ namespace procademy
 		void				MakeMonitorStr(WCHAR* s, int size);
 		void				ClearTPS();
 		bool				JoinProc(SESSION_ID sessionID);
-		bool				RecvProc(SESSION_ID sessionID, CNetPacket* packet);
+		bool				RecvProc(SESSION_ID sessionID, CLanPacket* packet);
 		bool				LeaveProc(SESSION_ID sessionID);
-		bool				MonitorLoginProc(SESSION_ID sessionID, CNetPacket* packet);
-		bool				ServerLoginProc(SESSION_ID sessionID, CNetPacket* packet);
-		bool				UpdateDataProc(SESSION_ID sessionID, CNetPacket* packet);
-		CNetPacket*			MakeMonitorLoginRes(BYTE	Status);
+		bool				ServerLoginProc(SESSION_ID sessionID, CLanPacket* packet);
+		bool				UpdateDataProc(SESSION_ID sessionID, CLanPacket* packet);
+		void				EnqueueDataProc(st_ServerClient* server, st_MonitorData* data);
+		CNetPacket*			MakeMonitoringPacket(st_ServerClient* server, st_MonitorData* data);
+		CNetPacket*			MakeMonitorLoginRes(BYTE Status);
 		st_ServerClient*	FindServer(SESSION_ID sessionNo);
 		void				InsertServer(SESSION_ID sessionNo, st_ServerClient* server);
 		void				DeleteServer(SESSION_ID sessionNo);
-		st_MonitorClient*	FindMonitorTool(SESSION_ID sessionNo);
-		void				InsertMonitorTool(SESSION_ID sessionNo, st_MonitorClient* monitor);
-		void				DeleteMonitorTool(SESSION_ID sessionNo);
 		void				LockServer() { AcquireSRWLockExclusive(&mServerLock); }
 		void				UnlockServer() { ReleaseSRWLockExclusive(&mServerLock); }
 
@@ -54,15 +55,13 @@ namespace procademy
 		static unsigned int WINAPI	DBThread(LPVOID arg);
 
 	private:
-		HANDLE												mDBThread;
 		std::unordered_map<u_int64, st_ServerClient*>		mServerClients;
-		std::unordered_map<u_int64, st_MonitorClient*>		mMonitorClients;
 		SRWLOCK												mServerLock;
 		WCHAR												mDBIP[16];
 		USHORT												mDBPort;
 		HANDLE*												mThreads = nullptr;
 		TC_LFObjectPool<st_MonitorData>						mMonitorDataPool;
 		DWORD												mUpdateTPS = 0;
-		char												mLoginSessionKey[32];
+		CMonitorToolServer									mMonitorToolServer;
 	};
 }

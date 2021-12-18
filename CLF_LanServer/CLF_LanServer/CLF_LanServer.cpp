@@ -1,100 +1,74 @@
 #include "CLF_LanServer.h"
 #include "CLogger.h"
-#include "CNetPacket.h"
+#include "CLanPacket.h"
 #include "CCrashDump.h"
 #include "CProfiler.h"
 #include "TextParser.h"
 
-struct packetDebug
-{
-	int			logicId;
-	DWORD		threadId;
-	void*		pChunk;
-	int			allocCount;
-	void*		pPacket;
-	LONG		freeCount;
-};
-
-struct ioDebug
-{
-	int			logicId;
-	UINT64		sessionID;
-	SHORT		released;
-	SHORT		ioCount;
-	DWORD		threadId;
-};
-
-USHORT g_debugIdx = 0;
-packetDebug g_packetDebugs[USHRT_MAX + 1] = { 0, };
-USHORT g_debugPacket = 0;
-procademy::CNetPacket* g_sessionDebugs[USHRT_MAX + 1] = { 0, };
-USHORT g_ioIdx = 0;
-ioDebug g_ioDebugs[USHRT_MAX + 1] = { 0, };
-
-void ioDebugLog(
-	int			logicId,
-	DWORD		threadId,
-	UINT64		sessionID,
-	SHORT		ioCount,
-	SHORT		released
-)
-{
-	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ioIdx);
-
-	g_ioDebugs[index].logicId = logicId;
-	g_ioDebugs[index].sessionID = sessionID;
-	g_ioDebugs[index].ioCount = ioCount;
-	g_ioDebugs[index].released = released;
-	g_ioDebugs[index].threadId = threadId;
-}
-
-void packetLog(
-	int			logicId = -9999,
-	DWORD		threadId = 0,
-	void*		pChunk = nullptr,
-	void*		pPacket = nullptr,
-	int			allocCount = -9999,
-	LONG		freeCount = 9999
-)
-{
-	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
-
-	g_packetDebugs[index].logicId = logicId;
-	g_packetDebugs[index].threadId = threadId;
-	g_packetDebugs[index].pChunk = pChunk;
-	g_packetDebugs[index].pPacket = pPacket;
-	g_packetDebugs[index].allocCount = allocCount;
-	g_packetDebugs[index].freeCount = freeCount;
-}
+//struct packetDebug
+//{
+//	int			logicId;
+//	DWORD		threadId;
+//	void*		pChunk;
+//	int			allocCount;
+//	void*		pPacket;
+//	LONG		freeCount;
+//};
+//
+//struct ioDebug
+//{
+//	int			logicId;
+//	UINT64		sessionID;
+//	SHORT		released;
+//	SHORT		ioCount;
+//	DWORD		threadId;
+//};
+//
+//USHORT g_debugIdx = 0;
+//packetDebug g_packetDebugs[USHRT_MAX + 1] = { 0, };
+//USHORT g_debugPacket = 0;
+//procademy::CLanPacket* g_sessionDebugs[USHRT_MAX + 1] = { 0, };
+//USHORT g_ioIdx = 0;
+//ioDebug g_ioDebugs[USHRT_MAX + 1] = { 0, };
+//
+//void ioDebugLog(
+//	int			logicId,
+//	DWORD		threadId,
+//	UINT64		sessionID,
+//	SHORT		ioCount,
+//	SHORT		released
+//)
+//{
+//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ioIdx);
+//
+//	g_ioDebugs[index].logicId = logicId;
+//	g_ioDebugs[index].sessionID = sessionID;
+//	g_ioDebugs[index].ioCount = ioCount;
+//	g_ioDebugs[index].released = released;
+//	g_ioDebugs[index].threadId = threadId;
+//}
+//
+//void packetLog(
+//	int			logicId = -9999,
+//	DWORD		threadId = 0,
+//	void*		pChunk = nullptr,
+//	void*		pPacket = nullptr,
+//	int			allocCount = -9999,
+//	LONG		freeCount = 9999
+//)
+//{
+//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
+//
+//	g_packetDebugs[index].logicId = logicId;
+//	g_packetDebugs[index].threadId = threadId;
+//	g_packetDebugs[index].pChunk = pChunk;
+//	g_packetDebugs[index].pPacket = pPacket;
+//	g_packetDebugs[index].allocCount = allocCount;
+//	g_packetDebugs[index].freeCount = freeCount;
+//}
 
 namespace procademy
 {
-	struct packetDebug
-	{
-		DWORD packetNum;
-		u_int64 sessionID;
-		int logicId;
-		DWORD threadId;
-	};
-
-	USHORT g_debug_index = 0;
-	packetDebug g_debugs[USHRT_MAX + 1] = { 0, };
-
-	void packDebug(
-		int logicId,
-		DWORD threadId,
-		u_int64 sessionID,
-		DWORD packetNum
-	)
-	{
-		USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debug_index);
-
-		g_debugs[index].logicId = logicId;
-		g_debugs[index].threadId = threadId;
-		g_debugs[index].sessionID = sessionID;
-		g_debugs[index].packetNum = packetNum;
-	}
-
 	void CLF_LanServer::Init()
 	{
 		WORD		version = MAKEWORD(2, 2);
@@ -116,7 +90,7 @@ namespace procademy
 		CreateIOCP();
 	}
 
-	Session* CLF_LanServer::FindSession(SESSION_ID sessionNo)
+	CLF_LanServer::Session* CLF_LanServer::FindSession(SESSION_ID sessionNo)
 	{
 		u_short index = GetIndexFromSessionNo(sessionNo);
 
@@ -414,7 +388,7 @@ namespace procademy
 		}
 		else
 		{
-			CNetPacket* packetBufs[100];
+			CLanPacket* packetBufs[100];
 			DWORD snapSize = session->sendQ.GetSize();
 
 			if (snapSize > 100)
@@ -470,7 +444,7 @@ namespace procademy
 	void CLF_LanServer::ReleaseProc(Session* session)
 	{
 		SessionIoCount released;
-		CNetPacket* dummy;
+		CLanPacket* dummy;
 
 		released.ioCount = 0;
 		released.releaseCount.isReleased = 1;
@@ -573,7 +547,7 @@ namespace procademy
 #endif // PROFILE
 	}
 
-	Session* CLF_LanServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
+	CLF_LanServer::Session* CLF_LanServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 	{
 		u_int64 id = GenerateSessionID();
 
@@ -683,49 +657,43 @@ namespace procademy
 	void CLF_LanServer::CompleteRecv(Session* session, DWORD transferredSize)
 	{
 		session->recvQ.MoveRear(transferredSize);
-		CNetPacket::st_Header header;
+		USHORT len;
 		DWORD count = 0;
 		bool status = true;
 
 		while (count < transferredSize)
 		{
-			if (session->recvQ.GetUseSize() <= CNetPacket::HEADER_MAX_SIZE)
+			if (session->recvQ.GetUseSize() <= sizeof(USHORT))
 				break;
 
-			session->recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
+			session->recvQ.Peek((char*)&len, sizeof(USHORT));
 
-			if (header.code != CNetPacket::sCode)
+			if (len > CLanPacket::eBUFFER_DEFAULT)
 			{
 				status = false;
 				break;
 			}
 
-			if (header.len > CNetPacket::eBUFFER_DEFAULT)
-			{
-				status = false;
-				break;
-			}
-
-			if (session->recvQ.GetUseSize() < (CNetPacket::HEADER_MAX_SIZE + header.len))
+			if (session->recvQ.GetUseSize() < (sizeof(USHORT) + len))
 				break;
 
 			//CProfiler::Begin(L"ALLOC");
-			CNetPacket* packet = CNetPacket::AllocAddRef();
+			CLanPacket* packet = CLanPacket::AllocAddRef();
 			//CProfiler::End(L"ALLOC");
-			packet->SetHeader(true);
+			packet->SetHeader();
 
-			memcpy_s(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE, (char*)&header, CNetPacket::HEADER_MAX_SIZE);
+			memcpy_s(packet->GetZeroPtr(), sizeof(USHORT), (char*)&len, sizeof(USHORT));
 
 			InterlockedIncrement(&recvTPS);
 
-			session->recvQ.MoveFront(CNetPacket::HEADER_MAX_SIZE);
+			session->recvQ.MoveFront(sizeof(USHORT));
 
-			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)header.len);
+			int ret = session->recvQ.Dequeue(packet->GetFrontPtr(), (int)len);
 
 			packet->MoveRear(ret);
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
-			count += (ret + sizeof(SHORT));
+			count += (ret + sizeof(USHORT));
 			packet->SubRef();
 		}
 #ifdef PROFILE
@@ -745,7 +713,7 @@ namespace procademy
 
 	void CLF_LanServer::CompleteSend(Session* session, DWORD transferredSize)
 	{
-		CNetPacket* packet;
+		CLanPacket* packet;
 		InterlockedAdd((LONG*)&sendTPS, session->numSendingPacket);
 		for (int i = 0; i < session->numSendingPacket; ++i)
 		{
@@ -776,8 +744,6 @@ namespace procademy
 		{
 			mEmptyIndexes.Push(i - 1);
 		}
-
-		//InitializeSRWLock(&mStackLock);
 	}
 
 	SESSION_ID CLF_LanServer::GenerateSessionID()
@@ -992,7 +958,7 @@ namespace procademy
 		return ret;
 	}
 
-	void CLF_LanServer::SendPacket(SESSION_ID SessionID, CNetPacket* packet)
+	void CLF_LanServer::SendPacket(SESSION_ID SessionID, CLanPacket* packet)
 	{
 		Session* session = FindSession(SessionID);
 		//
@@ -1021,7 +987,7 @@ namespace procademy
 		DecrementIOProc(session, 20020);
 	}
 
-	void CLF_LanServer::SendPacketToWorker(SESSION_ID SessionID, CNetPacket* packet)
+	void CLF_LanServer::SendPacketToWorker(SESSION_ID SessionID, CLanPacket* packet)
 	{
 		Session* session = FindSession(SessionID);
 		//
@@ -1053,27 +1019,27 @@ namespace procademy
 
 		tp.LoadFile(fileName);
 
-		tp.GetValue(L"BIND_IP", mBindIP);
+		tp.GetValue(L"LAN_BIND_IP", mBindIP);
 
-		tp.GetValue(L"BIND_PORT", &num);
+		tp.GetValue(L"LAN_BIND_PORT", &num);
 		mPort = (u_short)num;
 
-		tp.GetValue(L"IOCP_WORKER_THREAD", &num);
+		tp.GetValue(L"LAN_IOCP_WORKER_THREAD", &num);
 		mWorkerThreadNum = (BYTE)num;
 
-		tp.GetValue(L"IOCP_ACTIVE_THREAD", &num);
+		tp.GetValue(L"LAN_IOCP_ACTIVE_THREAD", &num);
 		mActiveThreadNum = (BYTE)num;
 
-		tp.GetValue(L"CLIENT_MAX", &num);
+		tp.GetValue(L"LAN_CLIENT_MAX", &num);
 		mMaxClient = (u_short)num;
 
-		tp.GetValue(L"NAGLE", buffer);
+		tp.GetValue(L"LAN_NAGLE", buffer);
 		if (wcscmp(L"TRUE", buffer) == 0)
 			mbNagle = true;
 		else
 			mbNagle = false;
 
-		tp.GetValue(L"LOG_LEVEL", buffer);
+		tp.GetValue(L"LAN_LOG_LEVEL", buffer);
 		if (wcscmp(buffer, L"DEBUG") == 0)
 			CLogger::setLogLevel(dfLOG_LEVEL_DEBUG);
 		else if (wcscmp(buffer, L"WARNING") == 0)

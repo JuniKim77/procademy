@@ -5,96 +5,70 @@
 #include "CProfiler.h"
 #include "TextParser.h"
 
-struct packetDebug
-{
-	int			logicId;
-	DWORD		threadId;
-	void*		pChunk;
-	int			allocCount;
-	void*		pPacket;
-	LONG		freeCount;
-};
-
-struct ioDebug
-{
-	int			logicId;
-	UINT64		sessionID;
-	SHORT		released;
-	SHORT		ioCount;
-	DWORD		threadId;
-};
-
-USHORT g_debugIdx = 0;
-packetDebug g_packetDebugs[USHRT_MAX + 1] = { 0, };
-USHORT g_debugPacket = 0;
-procademy::CNetPacket* g_sessionDebugs[USHRT_MAX + 1] = { 0, };
-USHORT g_ioIdx = 0;
-ioDebug g_ioDebugs[USHRT_MAX + 1] = { 0, };
-
-void ioDebugLog(
-	int			logicId,
-	DWORD		threadId,
-	UINT64		sessionID,
-	SHORT		ioCount,
-	SHORT		released
-)
-{
-	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ioIdx);
-
-	g_ioDebugs[index].logicId = logicId;
-	g_ioDebugs[index].sessionID = sessionID;
-	g_ioDebugs[index].ioCount = ioCount;
-	g_ioDebugs[index].released = released;
-	g_ioDebugs[index].threadId = threadId;
-}
-
-void packetLog(
-	int			logicId = -9999,
-	DWORD		threadId = 0,
-	void*		pChunk = nullptr,
-	void*		pPacket = nullptr,
-	int			allocCount = -9999,
-	LONG		freeCount = 9999
-)
-{
-	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
-
-	g_packetDebugs[index].logicId = logicId;
-	g_packetDebugs[index].threadId = threadId;
-	g_packetDebugs[index].pChunk = pChunk;
-	g_packetDebugs[index].pPacket = pPacket;
-	g_packetDebugs[index].allocCount = allocCount;
-	g_packetDebugs[index].freeCount = freeCount;
-}
+//struct packetDebug
+//{
+//	int			logicId;
+//	DWORD		threadId;
+//	void*		pChunk;
+//	int			allocCount;
+//	void*		pPacket;
+//	LONG		freeCount;
+//};
+//
+//struct ioDebug
+//{
+//	int			logicId;
+//	UINT64		sessionID;
+//	SHORT		released;
+//	SHORT		ioCount;
+//	DWORD		threadId;
+//};
+//
+//USHORT g_debugIdx = 0;
+//packetDebug g_packetDebugs[USHRT_MAX + 1] = { 0, };
+//USHORT g_debugPacket = 0;
+//procademy::CNetPacket* g_sessionDebugs[USHRT_MAX + 1] = { 0, };
+//USHORT g_ioIdx = 0;
+//ioDebug g_ioDebugs[USHRT_MAX + 1] = { 0, };
+//
+//void ioDebugLog(
+//	int			logicId,
+//	DWORD		threadId,
+//	UINT64		sessionID,
+//	SHORT		ioCount,
+//	SHORT		released
+//)
+//{
+//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ioIdx);
+//
+//	g_ioDebugs[index].logicId = logicId;
+//	g_ioDebugs[index].sessionID = sessionID;
+//	g_ioDebugs[index].ioCount = ioCount;
+//	g_ioDebugs[index].released = released;
+//	g_ioDebugs[index].threadId = threadId;
+//}
+//
+//void packetLog(
+//	int			logicId = -9999,
+//	DWORD		threadId = 0,
+//	void*		pChunk = nullptr,
+//	void*		pPacket = nullptr,
+//	int			allocCount = -9999,
+//	LONG		freeCount = 9999
+//)
+//{
+//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
+//
+//	g_packetDebugs[index].logicId = logicId;
+//	g_packetDebugs[index].threadId = threadId;
+//	g_packetDebugs[index].pChunk = pChunk;
+//	g_packetDebugs[index].pPacket = pPacket;
+//	g_packetDebugs[index].allocCount = allocCount;
+//	g_packetDebugs[index].freeCount = freeCount;
+//}
 
 namespace procademy
 {
-	struct packetDebug
-	{
-		DWORD packetNum;
-		u_int64 sessionID;
-		int logicId;
-		DWORD threadId;
-	};
-
-	USHORT g_debug_index = 0;
-	packetDebug g_debugs[USHRT_MAX + 1] = { 0, };
-
-	void packDebug(
-		int logicId,
-		DWORD threadId,
-		u_int64 sessionID,
-		DWORD packetNum
-	)
-	{
-		USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debug_index);
-
-		g_debugs[index].logicId = logicId;
-		g_debugs[index].threadId = threadId;
-		g_debugs[index].sessionID = sessionID;
-		g_debugs[index].packetNum = packetNum;
-	}
-
 	void CLF_NetServer::Init()
 	{
 		WORD		version = MAKEWORD(2, 2);
@@ -116,7 +90,7 @@ namespace procademy
 		CreateIOCP();
 	}
 
-	Session* CLF_NetServer::FindSession(SESSION_ID sessionNo)
+	CLF_NetServer::Session* CLF_NetServer::FindSession(SESSION_ID sessionNo)
 	{
 		u_short index = GetIndexFromSessionNo(sessionNo);
 
@@ -554,7 +528,7 @@ namespace procademy
 #endif // PROFILE
 	}
 
-	Session* CLF_NetServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
+	CLF_NetServer::Session* CLF_NetServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 	{
 		u_int64 id = GenerateSessionID();
 

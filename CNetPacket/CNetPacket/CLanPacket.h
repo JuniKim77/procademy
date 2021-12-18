@@ -1,5 +1,5 @@
-#ifndef  __PACKET__
-#define  __PACKET__
+#ifndef  __CLAN_PACKET__
+#define  __CLAN_PACKET__
 
 //#define NEW_DELETE_VER
 //#define MEMORY_POOL_VER

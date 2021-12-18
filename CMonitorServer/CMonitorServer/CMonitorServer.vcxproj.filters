@@ -13,32 +13,53 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="소스 파일\Tools">
+      <UniqueIdentifier>{00225950-31d4-4aad-8d54-8721715915bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Tools">
+      <UniqueIdentifier>{6eec6c7a-c69b-4142-a71e-02756e4e9aec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Network">
+      <UniqueIdentifier>{0e12071a-b451-4579-95a0-772eaaad7311}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="CMonitorServer.cpp">
+    <ClCompile Include="..\..\CLF_LanServer\CLF_LanServer\CLF_LanServer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="CMonitorServer.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="CMonitorToolServer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CLF_LanServer\CLF_LanServer\CLF_LanServer.cpp">
+    <ClCompile Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.cpp">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CLanPacket.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
+      <Filter>소스 파일\Tools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CMonitorServer.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="MonitorProtocol.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CLF_LanServer\CLF_LanServer\CLF_LanServer.h">
@@ -47,11 +68,35 @@
     <ClInclude Include="MonitorServerDTO.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="MonitorProtocol.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h">
+      <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="CMonitorToolServer.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
+      <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -12,15 +12,12 @@ namespace procademy
 		int		timeStamp;
 	};
 
-	struct st_MonitorClient
-	{
-		SESSION_ID						sessionNo = 0;
-	};
-
 	struct st_ServerClient
 	{
 		SESSION_ID						sessionNo = 0;
 		BYTE							serverNo;
 		CSafeQueue<st_MonitorData*>		dataSet[DATA_SET_SZIE];
+		int								max = 0;
+		int								min = MAXINT32;
 	};
 }
