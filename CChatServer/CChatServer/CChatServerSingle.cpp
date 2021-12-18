@@ -1,5 +1,5 @@
 #define SEND_TO_WORKER
-//#define REDIS_MODE
+#define REDIS_MODE
 
 #include "CChatServerSingle.h"
 #include "CNetPacket.h"
@@ -1318,7 +1318,7 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status,
 
     *packet << (WORD)en_PACKET_CS_CHAT_RES_LOGIN << status << accountNo;
 
-    packet->SetHeader(false);
+    packet->SetHeader();
     packet->Encode();
 
     return packet;
@@ -1330,7 +1330,7 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResSectorMove(INT64 a
 
     *packet << (WORD)en_PACKET_CS_CHAT_RES_SECTOR_MOVE << accountNo << sectorX << sectorY;
 
-    packet->SetHeader(false);
+    packet->SetHeader();
     packet->Encode();
 
     return packet;
@@ -1347,7 +1347,7 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResMessage(INT64 acco
     *packet << messageLen;
     packet->PutData(message, messageLen / 2);
 
-    packet->SetHeader(false);
+    packet->SetHeader();
     packet->Encode();
 
     return packet;
@@ -1361,7 +1361,6 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeResultLogin(INT64 accou
 
     packet->PutData(ID, 20);
     packet->PutData(nickname, 20);
-    packet->SetHeader(true);
 
     return packet;
 }

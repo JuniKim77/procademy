@@ -154,6 +154,7 @@ namespace procademy
 		static CLanPacket*	AllocAddRef();
 		void				AddRef();
 		void				SubRef();
+		void				SetHeader();
 
 		static int			GetPoolCapacity();
 		static DWORD		GetPoolSize();

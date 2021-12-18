@@ -51,7 +51,6 @@ namespace procademy
 	{
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mFront;
-		mZero = mBuffer;
 	}
 
 	int CNetPacket::MoveFront(DWORD iSize)
@@ -426,38 +425,29 @@ namespace procademy
 		}
 	}
 
-	void CNetPacket::SetHeader(bool isLengthOnly)
+	void CNetPacket::SetHeader()
 	{
-		if (isLengthOnly)
-		{
-			mZero = mBuffer + (HEADER_MAX_SIZE - 2);
-			*((USHORT*)mZero) = (USHORT)(mRear - mFront);
-		}
-		else
-		{
-			st_Header header;
-			char* pFront = mFront;
-			char* pRear = mRear;
-			BYTE sum = 0;
+		st_Header header;
+		char* pFront = mFront;
+		char* pRear = mRear;
+		BYTE sum = 0;
 
-			header.code = sCode;
-			header.len = (USHORT)(pRear - pFront);
+		header.code = sCode;
+		header.len = (USHORT)(pRear - pFront);
 #ifdef TEST
-			header.randKey = 0x31;
+		header.randKey = 0x31;
 #else
-			header.randKey = (BYTE)rand();
+		header.randKey = (BYTE)rand();
 #endif // TEST
-			for (int i = 0; i < header.len; ++i)
-			{
-				sum += (BYTE)*pFront;
-				pFront++;
-			}
-
-			header.checkSum = sum;
-
-			mZero = mBuffer;
-			memcpy(mZero, (char*)&header, HEADER_MAX_SIZE);
+		for (int i = 0; i < header.len; ++i)
+		{
+			sum += (BYTE)*pFront;
+			pFront++;
 		}
+
+		header.checkSum = sum;
+
+		memcpy(mZero, (char*)&header, HEADER_MAX_SIZE);
 	}
 
 	void CNetPacket::Encode()
@@ -559,6 +549,7 @@ namespace procademy
 
 		mFront = mBuffer + frontIndex;
 		mRear = mBuffer + rearIndex;
+		mZero = mBuffer;
 
 		mCapacity += eBUFFER_DEFAULT;
 

@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.cpp" />
     <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp" />
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CLanPacket.cpp" />
     <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp" />
     <ClCompile Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.cpp" />
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
@@ -161,6 +162,7 @@
     <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue.h" />
     <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue64.h" />
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h" />
     <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h" />
     <ClInclude Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />

@@ -154,7 +154,7 @@ namespace procademy
 		static CNetPacket*	AllocAddRef();
 		void				AddRef();
 		void				SubRef();
-		void				SetHeader(bool isLengthOnly);
+		void				SetHeader();
 		void				Encode();
 		bool				Decode();
 

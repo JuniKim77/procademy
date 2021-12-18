@@ -418,6 +418,11 @@ namespace procademy
 		}
 	}
 
+	void CLanPacket::SetHeader()
+	{
+		*((USHORT*)mZero) = (USHORT)(mRear - mFront);
+	}
+
 	int CLanPacket::GetPoolCapacity()
 	{
 #ifdef MEMORY_POOL_VER
@@ -456,6 +461,7 @@ namespace procademy
 
 		mFront = mBuffer + frontIndex;
 		mRear = mBuffer + rearIndex;
+		mZero = mBuffer + (HEADER_MAX_SIZE - sizeof(short));
 
 		mCapacity += eBUFFER_DEFAULT;
 

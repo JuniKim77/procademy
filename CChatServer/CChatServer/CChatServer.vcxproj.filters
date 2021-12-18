@@ -54,6 +54,9 @@
     <ClCompile Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CLanPacket.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CChatServerSingle.h">
@@ -108,6 +111,9 @@
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue64.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
   </ItemGroup>
