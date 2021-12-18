@@ -36,9 +36,6 @@
     <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="CMonitorServer.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="CMonitorToolServer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -56,6 +53,9 @@
     </ClCompile>
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
       <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="CMonitorServer.cpp">
+      <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

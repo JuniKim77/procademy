@@ -33,9 +33,6 @@
     <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
@@ -43,6 +40,9 @@
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CLanPacket.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
   </ItemGroup>
@@ -56,9 +56,6 @@
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
@@ -66,6 +63,9 @@
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
   </ItemGroup>

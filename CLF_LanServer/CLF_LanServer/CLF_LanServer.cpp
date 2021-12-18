@@ -680,7 +680,6 @@ namespace procademy
 			//CProfiler::Begin(L"ALLOC");
 			CLanPacket* packet = CLanPacket::AllocAddRef();
 			//CProfiler::End(L"ALLOC");
-			packet->SetHeader();
 
 			memcpy_s(packet->GetZeroPtr(), sizeof(USHORT), (char*)&len, sizeof(USHORT));
 

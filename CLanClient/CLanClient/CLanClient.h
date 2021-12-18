@@ -8,47 +8,48 @@
 
 namespace procademy
 {
-	class CNetPacket;
-
-	struct SessionIoCount
-	{
-		union
-		{
-			LONG ioCount = 0;
-			struct
-			{
-				SHORT count;
-				SHORT isReleased;
-			} releaseCount;
-		};
-	};
-
-	struct Session
-	{
-		WSAOVERLAPPED				recvOverlapped;
-		WSAOVERLAPPED				sendOverlapped;
-		RingBuffer					recvQ;
-		TC_LFQueue<CNetPacket*>		sendQ;
-		int							numSendingPacket = 0;
-		alignas(64) SessionIoCount	ioBlock;
-		alignas(64) bool			isSending;
-		SOCKET						socket = INVALID_SOCKET;
-	};
+	class CLanPacket;
 
 	class CLanClient
 	{
+	public:
+		struct SessionIoCount
+		{
+			union
+			{
+				LONG ioCount = 0;
+				struct
+				{
+					SHORT count;
+					SHORT isReleased;
+				} releaseCount;
+			};
+		};
+
+		struct Session
+		{
+			WSAOVERLAPPED				recvOverlapped;
+			WSAOVERLAPPED				sendOverlapped;
+			RingBuffer					recvQ;
+			TC_LFQueue<CLanPacket*>		sendQ;
+			int							numSendingPacket = 0;
+			alignas(64) SessionIoCount	ioBlock;
+			alignas(64) bool			isSending;
+			SOCKET						socket = INVALID_SOCKET;
+		};
+
 	protected:
 		CLanClient();
 		virtual ~CLanClient();
 
 		bool Connect(const WCHAR* serverIP, USHORT serverPort);	//바인딩 IP, 서버IP / 워커스레드 수 / 나글옵션
 		bool Disconnect();
-		bool SendPacket(CNetPacket* packet);
+		bool SendPacket(CLanPacket* packet);
 
 		virtual void OnEnterJoinServer() = 0; //< 서버와의 연결 성공 후
 		virtual void OnLeaveServer() = 0; //< 서버와의 연결이 끊어졌을 때
 
-		virtual void OnRecv(CNetPacket*) = 0; //< 하나의 패킷 수신 완료 후
+		virtual void OnRecv(CLanPacket*) = 0; //< 하나의 패킷 수신 완료 후
 		virtual void OnSend(int sendsize) = 0; //< 패킷 송신 완료 후
 
 		//	virtual void OnWorkerThreadBegin() = 0;

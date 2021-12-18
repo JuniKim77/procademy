@@ -1,4 +1,4 @@
-
+#include "CLanClient.h"
 
 int main()
 {

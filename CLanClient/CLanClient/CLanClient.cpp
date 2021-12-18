@@ -1,6 +1,6 @@
 #include "CLanClient.h"
 #include "CLogger.h"
-#include "CNetPacket.h"
+#include "CLanPacket.h"
 #include "CCrashDump.h"
 #include "CProfiler.h"
 #include "TextParser.h"
@@ -53,7 +53,7 @@ bool procademy::CLanClient::Disconnect()
     return ret;
 }
 
-bool procademy::CLanClient::SendPacket(CNetPacket* packet)
+bool procademy::CLanClient::SendPacket(CLanPacket* packet)
 {
     IncrementIOProc(20000);
 
@@ -329,44 +329,37 @@ void procademy::CLanClient::GQCS()
 void procademy::CLanClient::CompleteRecv(DWORD transferredSize)
 {
     mClient.recvQ.MoveRear(transferredSize);
-    CNetPacket::st_Header header;
+    USHORT len;
     DWORD count = 0;
     bool status = true;
 
     while (count < transferredSize)
     {
-        if (mClient.recvQ.GetUseSize() <= CNetPacket::HEADER_MAX_SIZE)
+        if (mClient.recvQ.GetUseSize() <= sizeof(USHORT))
             break;
 
-        mClient.recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
+        mClient.recvQ.Peek((char*)&len, sizeof(USHORT));
 
-        if (header.code != CNetPacket::sCode)
+        if (len > CLanPacket::eBUFFER_DEFAULT)
         {
             status = false;
             break;
         }
 
-        if (header.len > CNetPacket::eBUFFER_DEFAULT)
-        {
-            status = false;
-            break;
-        }
-
-        if (mClient.recvQ.GetUseSize() < (CNetPacket::HEADER_MAX_SIZE + header.len))
+        if (mClient.recvQ.GetUseSize() < (sizeof(USHORT) + len))
             break;
 
         //CProfiler::Begin(L"ALLOC");
-        CNetPacket* packet = CNetPacket::AllocAddRef();
+        CLanPacket* packet = CLanPacket::AllocAddRef();
         //CProfiler::End(L"ALLOC");
-        packet->SetHeader(true);
 
-        memcpy_s(packet->GetZeroPtr(), CNetPacket::HEADER_MAX_SIZE, (char*)&header, CNetPacket::HEADER_MAX_SIZE);
+        memcpy_s(packet->GetZeroPtr(), sizeof(USHORT), (char*)&len, sizeof(USHORT));
 
         InterlockedIncrement(&recvTPS);
 
-        mClient.recvQ.MoveFront(CNetPacket::HEADER_MAX_SIZE);
+        mClient.recvQ.MoveFront(sizeof(USHORT));
 
-        int ret = mClient.recvQ.Dequeue(packet->GetFrontPtr(), (int)header.len);
+        int ret = mClient.recvQ.Dequeue(packet->GetFrontPtr(), (int)len);
 
         packet->MoveRear(ret);
         OnRecv(packet); // -> SendPacket
@@ -391,7 +384,7 @@ void procademy::CLanClient::CompleteRecv(DWORD transferredSize)
 
 void procademy::CLanClient::CompleteSend(DWORD transferredSize)
 {
-    CNetPacket* packet;
+    CLanPacket* packet;
     InterlockedAdd((LONG*)&sendTPS, mClient.numSendingPacket);
     for (int i = 0; i < mClient.numSendingPacket; ++i)
     {
@@ -545,7 +538,7 @@ void procademy::CLanClient::SetWSABuf(WSABUF* bufs, bool isRecv)
     }
     else
     {
-        CNetPacket* packetBufs[100];
+        CLanPacket* packetBufs[100];
         DWORD snapSize = mClient.sendQ.GetSize();
 
         if (snapSize > 100)
@@ -589,7 +582,7 @@ void procademy::CLanClient::DecrementIOProc(int logic)
 void procademy::CLanClient::ReleaseProc()
 {
     SessionIoCount released;
-    CNetPacket* dummy;
+    CLanPacket* dummy;
 
     released.ioCount = 0;
     released.releaseCount.isReleased = 1;
