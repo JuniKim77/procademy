@@ -10,9 +10,6 @@
 
 namespace procademy
 {
-	BYTE	CLanPacket::sCode = 0;
-	BYTE	CLanPacket::sPacketKey = 0;
-
 	//#define DEBUG
 #ifdef MEMORY_POOL_VER
 	alignas(64) TC_LFObjectPool<CLanPacket> CLanPacket::sPacketPool;
@@ -27,13 +24,11 @@ namespace procademy
 
 	CLanPacket::CLanPacket(int iBufferSize)
 		: mCapacity(iBufferSize)
-		, mPacketSize(0)
-		, mHeaderSize(HEADER_MAX_SIZE)
 	{
-		mBuffer = (char*)malloc(mCapacity);
+		mBuffer = (char*)malloc(mCapacity + HEADER_MAX_SIZE);
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mBuffer + HEADER_MAX_SIZE;
-
+		mEnd = mFront + mCapacity;
 		mZero = mBuffer + (HEADER_MAX_SIZE - sizeof(SHORT));
 	}
 
@@ -50,310 +45,280 @@ namespace procademy
 
 	void CLanPacket::Clear(void)
 	{
-		mPacketSize = 0;
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mFront;
-		mZero = mBuffer;
 	}
 
 	int CLanPacket::MoveFront(int iSize)
 	{
-		if (iSize <= 0)
-			return 0;
+		if (mFront + iSize > mRear)
+		{
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"MoveFront - front is over rear");
 
-		int size = iSize <= mPacketSize ? iSize : mPacketSize;
+			iSize = mRear - mFront;
+		}
 
-		mFront += size;
-		mPacketSize -= size;
+		mFront += iSize;
 
-		return size;
+		return iSize;
 	}
 
 	int CLanPacket::MoveRear(int iSize)
 	{
-		if (iSize <= 0)
-			return 0;
+		if (mRear + iSize >= mEnd)
+		{
+			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"MoveFront - front is over rear");
 
-		int size = iSize <= GetFreeSize() ? iSize : GetFreeSize();
+			iSize = mEnd - mRear;
+		}
 
-		mRear += size;
-		mPacketSize += size;
+		mRear += iSize;
 
-		return size;
+		return iSize;
 	}
 
 	CLanPacket& CLanPacket::operator<<(unsigned char byValue)
 	{
-		if (sizeof(unsigned char) > GetFreeSize())
+		if (sizeof(unsigned char) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&byValue, sizeof(unsigned char));
+		*mRear = byValue;
+		mRear++;
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(char chValue)
 	{
-		if (sizeof(char) > GetFreeSize())
+		if (sizeof(char) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer(&chValue, sizeof(char));
+		*mRear = chValue;
+		mRear++;
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(short shValue)
 	{
-		if (sizeof(short) > GetFreeSize())
+		if (sizeof(short) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&shValue, sizeof(short));
+		*((short*)mRear) = shValue;
+		mRear += sizeof(short);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(unsigned short wValue)
 	{
-		if (sizeof(unsigned short) > GetFreeSize())
+		if (sizeof(unsigned short) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&wValue, sizeof(unsigned short));
+		*((unsigned short*)mRear) = wValue;
+		mRear += sizeof(unsigned short);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(int iValue)
 	{
-		if (sizeof(int) > GetFreeSize())
+		if (sizeof(int) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&iValue, sizeof(int));
+		*((int*)mRear) = iValue;
+		mRear += sizeof(int);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(unsigned int iValue)
 	{
-		if (sizeof(unsigned int) > GetFreeSize())
+		if (sizeof(unsigned int) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&iValue, sizeof(unsigned int));
+		*((unsigned int*)mRear) = iValue;
+		mRear += sizeof(unsigned int);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(long lValue)
 	{
-		if (sizeof(long) > GetFreeSize())
+		if (sizeof(long) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&lValue, sizeof(long));
+		*((long*)mRear) = lValue;
+		mRear += sizeof(long);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(unsigned long lValue)
 	{
-		if (sizeof(unsigned long) > GetFreeSize())
+		if (sizeof(unsigned long) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&lValue, sizeof(unsigned long));
+		*((unsigned long*)mRear) = lValue;
+		mRear += sizeof(unsigned long);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(float fValue)
 	{
-		if (sizeof(float) > GetFreeSize())
+		if (sizeof(float) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&fValue, sizeof(float));
+		*((float*)mRear) = fValue;
+		mRear += sizeof(float);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(__int64 iValue)
 	{
-		if (sizeof(__int64) > GetFreeSize())
+		if (sizeof(__int64) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&iValue, sizeof(__int64));
+		*((__int64*)mRear) = iValue;
+		mRear += sizeof(__int64);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(double dValue)
 	{
-		if (sizeof(double) > GetFreeSize())
+		if (sizeof(double) + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
-		writeBuffer((char*)&dValue, sizeof(double));
+		*((double*)mRear) = dValue;
+		mRear += sizeof(double);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(unsigned char& byValue)
 	{
-		unsigned char* pBuf = (unsigned char*)mFront;
-
-		byValue = *pBuf;
-		MoveFront(sizeof(unsigned char));
+		byValue = *((unsigned char*)mFront);
+		mFront += sizeof(unsigned char);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(char& chValue)
 	{
-		char* pBuf = mFront;
-
-		chValue = *pBuf;
-		MoveFront(sizeof(char));
+		chValue = *((char*)mFront);
+		mFront += sizeof(char);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(short& shValue)
 	{
-		short* pBuf = (short*)mFront;
-
-		shValue = *pBuf;
-		MoveFront(sizeof(short));
+		shValue = *((short*)mFront);
+		mFront += sizeof(short);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(unsigned short& wValue)
 	{
-		unsigned short* pBuf = (unsigned short*)mFront;
-
-		wValue = *pBuf;
-		MoveFront(sizeof(unsigned short));
+		wValue = *((unsigned short*)mFront);
+		mFront += sizeof(unsigned short);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(int& iValue)
 	{
-		int* pBuf = (int*)mFront;
-
-		iValue = *pBuf;
-		MoveFront(sizeof(int));
+		iValue = *((int*)mFront);
+		mFront += sizeof(int);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(unsigned int& iValue)
 	{
-		unsigned int* pBuf = (unsigned int*)mFront;
-
-		iValue = *pBuf;
-		MoveFront(sizeof(unsigned int));
+		iValue = *((unsigned int*)mFront);
+		mFront += sizeof(unsigned int);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(long& dwValue)
 	{
-		long* pBuf = (long*)mFront;
-
-		dwValue = *pBuf;
-		MoveFront(sizeof(long));
+		dwValue = *((long*)mFront);
+		mFront += sizeof(long);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(unsigned long& dwValue)
 	{
-		unsigned long* pBuf = (unsigned long*)mFront;
-
-		dwValue = *pBuf;
-		MoveFront(sizeof(unsigned long));
+		dwValue = *((unsigned long*)mFront);
+		mFront += sizeof(unsigned long);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(float& fValue)
 	{
-		float* pBuf = (float*)mFront;
-
-		fValue = *pBuf;
-		MoveFront(sizeof(float));
+		fValue = *((float*)mFront);
+		mFront += sizeof(float);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(__int64& iValue)
 	{
-		__int64* pBuf = (__int64*)mFront;
-
-		iValue = *pBuf;
-		MoveFront(sizeof(__int64));
+		iValue = *((__int64*)mFront);
+		mFront += sizeof(__int64);
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator>>(double& dValue)
 	{
-		double* pBuf = (double*)mFront;
-
-		dValue = *pBuf;
-		MoveFront(sizeof(double));
+		dValue = *((double*)mFront);
+		mFront += sizeof(double);
 
 		return *this;
 	}
 
 	int CLanPacket::GetData(char* chpDest, int iLength)
 	{
-		int size = iLength >= mPacketSize ? mPacketSize : iLength;
+		if (mFront + iLength > mRear)
+		{
+			iLength = mRear - mFront;
+		}
 
-		memcpy(chpDest, mFront, size);
-		MoveFront(size);
+		memcpy(chpDest, mFront, iLength);
+		mFront += iLength;
 
-		return size;
+		return iLength;
 	}
 
 	int CLanPacket::GetData(wchar_t* chpDest, int iLength)
@@ -363,15 +328,13 @@ namespace procademy
 
 	int CLanPacket::PutData(const char* chpSrc, int iLength)
 	{
-		if (iLength > GetFreeSize())
+		if (iLength + mRear > mEnd)
 		{
 			resize();
-
-			// log
 		}
 
 		memcpy(mRear, chpSrc, iLength);
-		MoveRear(iLength);
+		mRear += iLength;
 
 		return iLength;
 	}
@@ -383,18 +346,14 @@ namespace procademy
 
 	CLanPacket& CLanPacket::operator<<(const char* s)
 	{
-		int len = (int)strlen(s);
-
-		PutData(s, len);
+		PutData(s, strlen(s));
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(const wchar_t* s)
 	{
-		int len = (int)wcslen(s);
-
-		PutData(s, len);
+		PutData(s, wcslen(s));
 
 		return *this;
 	}
@@ -431,6 +390,11 @@ namespace procademy
 	void CLanPacket::SubRef()
 	{
 		int ret = InterlockedDecrement16((SHORT*)&mRefCount);
+
+		if (ret < 0)
+		{
+			CRASH();
+		}
 
 		if (ret == 0)
 		{
@@ -478,10 +442,10 @@ namespace procademy
 
 	void CLanPacket::resize()
 	{
-		char* pBuffer = (char*)malloc((long long)mCapacity + eBUFFER_DEFAULT);
+		char* pBuffer = (char*)malloc((long long)mCapacity + HEADER_MAX_SIZE + eBUFFER_DEFAULT);
 
 		if (pBuffer != 0)
-			memcpy(pBuffer, mBuffer, mPacketSize);
+			memcpy(pBuffer, mBuffer, mCapacity + HEADER_MAX_SIZE);
 
 		int frontIndex = (int)(mFront - mBuffer);
 		int rearIndex = (int)(mRear - mBuffer);
@@ -494,6 +458,8 @@ namespace procademy
 		mRear = mBuffer + rearIndex;
 
 		mCapacity += eBUFFER_DEFAULT;
+
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Resize");
 	}
 
 	void CLanPacket::writeBuffer(const char* src, int size)

@@ -70,9 +70,8 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
-		int		GetSize(void) { return mPacketSize + mHeaderSize; }
-		int		GetUseSize() { return mPacketSize; }
-		USHORT	GetPacketSize() { return mPacketSize; }
+		int		GetSize(void) { return mRear - mZero; }
+		int		GetUseSize() { return mRear - mFront; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 포인터 얻기.
@@ -97,7 +96,7 @@ namespace procademy
 		/// 현재 버퍼의 사용 가능 사이즈 반환
 		/// </summary>
 		/// <returns>사용 가능 사이즈</returns>
-		int		GetFreeSize() const { return mCapacity - mPacketSize - HEADER_MAX_SIZE; }
+		int		GetFreeSize() const { return mEnd - mRear; }
 
 		// 연산자 오버로딩 넣기
 		CLanPacket& operator << (unsigned char byValue);
@@ -152,15 +151,12 @@ namespace procademy
 		CLanPacket& operator << (const char* s);
 		CLanPacket& operator << (const wchar_t* s);
 
-		static CLanPacket* AllocAddRef();
+		static CLanPacket*	AllocAddRef();
 		void				AddRef();
 		void				SubRef();
 
 		static int			GetPoolCapacity();
 		static DWORD		GetPoolSize();
-		static void			SetCode(BYTE code) { sCode = code; }
-		static void			SetPacketKey(BYTE key) { sPacketKey = key; }
-
 
 	protected:
 		/// <summary>
@@ -173,29 +169,14 @@ namespace procademy
 		CLanPacket();
 		CLanPacket(int iBufferSize);
 
-	public:
-#pragma pack(push, 1)
-		struct st_Header
-		{
-			BYTE	code;
-			USHORT	len;
-			BYTE	randKey;
-			BYTE	checkSum;
-		};
-#pragma pack(pop)
 	private:
-
 		SHORT		mRefCount = 0;
-		char* mBuffer;
+		char*		mBuffer;
+		char*		mEnd;
 		int			mCapacity;
-		int			mPacketSize;
-		int			mHeaderSize;
-		char* mFront;
-		char* mRear;
-		char* mZero;
-	public:
-		static BYTE	sCode;
-		static BYTE	sPacketKey;
+		char*		mFront;
+		char*		mRear;
+		char*		mZero;
 
 #ifdef MEMORY_POOL_VER
 		alignas(64) static TC_LFObjectPool<CLanPacket> sPacketPool;
