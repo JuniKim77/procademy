@@ -132,8 +132,8 @@ void procademy::CMonitorServer::LoadInitFile(const WCHAR* fileName)
 
     tp.LoadFile(fileName);
 
-    tp.GetValue(L"TOKEN_DB_IP", mDBIP);
-    tp.GetValue(L"TOKEN_DB_PORT", &num);
+    tp.GetValue(L"LAN_DB_IP", mDBIP);
+    tp.GetValue(L"LAN_DB_PORT", &num);
     mDBPort = (USHORT)num;
 }
 
@@ -188,6 +188,25 @@ void procademy::CMonitorServer::WaitForThreadsFin()
 
 void procademy::CMonitorServer::MakeMonitorStr(WCHAR* s, int size)
 {
+    LONGLONG idx = 0;
+    WCHAR bigNumber[18];
+
+    idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d]\n", mbZeroCopy, mbNagle);
+    idx += swprintf_s(s + idx, size - idx, L"[Monitor Lan Server Status: %s]\n", mbBegin ? L"RUN" : L"STOP");
+    idx += swprintf_s(s + idx, size - idx, L"[WorkerTh: %d] [ActiveTh: %d]\n", mWorkerThreadNum, mActiveThreadNum);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%llu\n", L"Server Client Num : ", mServerClients.size());
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"[Monitor Tool Server Status: %s]\n", mbBegin ? L"RUN" : L"STOP");
+    idx += swprintf_s(s + idx, size - idx, L"[WorkerTh: %d] [ActiveTh: %d]\n", mMonitorToolServer.mWorkerThreadNum, mMonitorToolServer.mActiveThreadNum);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%llu\n", L"Monitor Client Num : ", mMonitorToolServer.mMonitorClients.size());
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Accept Total : ", mMonitor.acceptTotal);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Accept TPS : ", mMonitor.acceptTPS);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Update TPS : ", mUpdateTPS);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Recv TPS : ", mMonitor.prevRecvTPS);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Send TPS : ", mMonitor.prevSendTPS);
+    idx += swprintf_s(s + idx, size - idx, L"========================================\n");
 }
 
 void procademy::CMonitorServer::ClearTPS()

@@ -17,6 +17,7 @@ namespace procademy
 
 	class CMonitorToolServer : public CLF_NetServer
 	{
+		friend class CMonitorServer;
 	public:
 		CMonitorToolServer();
 		virtual ~CMonitorToolServer();

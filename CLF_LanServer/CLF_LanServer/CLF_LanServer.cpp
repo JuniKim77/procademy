@@ -5,68 +5,6 @@
 #include "CProfiler.h"
 #include "TextParser.h"
 
-//struct packetDebug
-//{
-//	int			logicId;
-//	DWORD		threadId;
-//	void*		pChunk;
-//	int			allocCount;
-//	void*		pPacket;
-//	LONG		freeCount;
-//};
-//
-//struct ioDebug
-//{
-//	int			logicId;
-//	UINT64		sessionID;
-//	SHORT		released;
-//	SHORT		ioCount;
-//	DWORD		threadId;
-//};
-//
-//USHORT g_debugIdx = 0;
-//packetDebug g_packetDebugs[USHRT_MAX + 1] = { 0, };
-//USHORT g_debugPacket = 0;
-//procademy::CLanPacket* g_sessionDebugs[USHRT_MAX + 1] = { 0, };
-//USHORT g_ioIdx = 0;
-//ioDebug g_ioDebugs[USHRT_MAX + 1] = { 0, };
-//
-//void ioDebugLog(
-//	int			logicId,
-//	DWORD		threadId,
-//	UINT64		sessionID,
-//	SHORT		ioCount,
-//	SHORT		released
-//)
-//{
-//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ioIdx);
-//
-//	g_ioDebugs[index].logicId = logicId;
-//	g_ioDebugs[index].sessionID = sessionID;
-//	g_ioDebugs[index].ioCount = ioCount;
-//	g_ioDebugs[index].released = released;
-//	g_ioDebugs[index].threadId = threadId;
-//}
-//
-//void packetLog(
-//	int			logicId = -9999,
-//	DWORD		threadId = 0,
-//	void*		pChunk = nullptr,
-//	void*		pPacket = nullptr,
-//	int			allocCount = -9999,
-//	LONG		freeCount = 9999
-//)
-//{
-//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
-//
-//	g_packetDebugs[index].logicId = logicId;
-//	g_packetDebugs[index].threadId = threadId;
-//	g_packetDebugs[index].pChunk = pChunk;
-//	g_packetDebugs[index].pPacket = pPacket;
-//	g_packetDebugs[index].allocCount = allocCount;
-//	g_packetDebugs[index].freeCount = freeCount;
-//}
-
 namespace procademy
 {
 	void CLF_LanServer::Init()
