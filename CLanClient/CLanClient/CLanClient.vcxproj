@@ -149,6 +149,7 @@
     <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp" />
     <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
     <ClCompile Include="CLanClient.cpp" />
+    <ClCompile Include="CLanEchoClient.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -159,6 +160,7 @@
     <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h" />
     <ClInclude Include="..\..\TextParser\TextParser\TextParser.h" />
     <ClInclude Include="CLanClient.h" />
+    <ClInclude Include="CLanEchoClient.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

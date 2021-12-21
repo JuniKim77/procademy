@@ -115,7 +115,9 @@ bool procademy::CMonitorServer::DBProc()
 
         if (retval == WAIT_TIMEOUT)
         {
+            // DB ÀÛ¾÷
 
+            ClearMonitorData();
         }
     }
 
@@ -195,7 +197,7 @@ void procademy::CMonitorServer::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d]\n", mbZeroCopy, mbNagle);
     idx += swprintf_s(s + idx, size - idx, L"[Monitor Lan Server Status: %s]\n", mbBegin ? L"RUN" : L"STOP");
     idx += swprintf_s(s + idx, size - idx, L"[WorkerTh: %d] [ActiveTh: %d]\n", mWorkerThreadNum, mActiveThreadNum);
-    idx += swprintf_s(s + idx, size - idx, L"%22s%llu\n", L"Server Client Num : ", mServerClients.size());
+    idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"Server Client Num : ", (int)mServerClients.size());
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
     idx += swprintf_s(s + idx, size - idx, L"[Monitor Tool Server Status: %s]\n", mbBegin ? L"RUN" : L"STOP");
     idx += swprintf_s(s + idx, size - idx, L"[WorkerTh: %d] [ActiveTh: %d]\n", mMonitorToolServer.mWorkerThreadNum, mMonitorToolServer.mActiveThreadNum);
@@ -390,6 +392,9 @@ procademy::CNetPacket* procademy::CMonitorServer::MakeMonitorLoginRes(BYTE Statu
 
     *packet << (WORD)en_PACKET_CS_MONITOR_TOOL_RES_LOGIN << Status;
 
+    packet->SetHeader();
+    packet->Encode();
+
     return packet;
 }
 
@@ -413,6 +418,26 @@ void procademy::CMonitorServer::InsertServer(SESSION_ID sessionNo, st_ServerClie
 void procademy::CMonitorServer::DeleteServer(SESSION_ID sessionNo)
 {
     mServerClients.erase(sessionNo);
+}
+
+void procademy::CMonitorServer::ClearMonitorData()
+{
+    LockServer();
+    for (auto iter = mServerClients.begin(); iter != mServerClients.end(); ++iter)
+    {
+        for (int i = 0; i < DATA_SET_SZIE; ++i)
+        {
+            int count = iter->second->dataSet[i].GetUseSize();
+
+            for (int j = 0; j < count; ++j)
+            {
+                st_MonitorData* data = iter->second->dataSet[i].Dequeue();
+
+                mMonitorDataPool.Free(data);
+            }
+        }
+    }
+    UnlockServer();
 }
 
 unsigned int __stdcall procademy::CMonitorServer::MonitorThread(LPVOID arg)

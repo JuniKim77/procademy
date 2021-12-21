@@ -9,6 +9,8 @@
 #include <cpp_redis/cpp_redis>
 #include "CSafeQueue.h"
 #include "ObjectPool_TLS.h"
+#include "CLanClient.h"
+#include "CMonitorClient.h"
 
 #pragma comment (lib, "cpp_redis.lib")
 #pragma comment (lib, "tacopie.lib")
@@ -107,15 +109,18 @@ namespace procademy
 		void			ClearTPS();
 		void			Init();
 		void			RecordPerformentce();
+		void			LoginMonitorServer();
+		void			SendMonitorDataProc();
 
-	/// <summary>
-	/// Make Packet Funcs
-	/// </summary>
-		CNetPacket*		MakeCSResLogin(BYTE status, INT64 accountNo);
-		CNetPacket*		MakeCSResSectorMove(INT64 accountNo, WORD sectorX, WORD sectorY);
-		CNetPacket*		MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD messageLen, WCHAR* message);
-		CNetPacket*		MakeResultLogin(INT64 accountNo, WCHAR* ID, WCHAR* nickname);
-
+		/// <summary>
+		/// Make Packet Funcs
+		/// </summary>
+		CNetPacket* MakeCSResLogin(BYTE status, INT64 accountNo);
+		CNetPacket* MakeCSResSectorMove(INT64 accountNo, WORD sectorX, WORD sectorY);
+		CNetPacket* MakeCSResMessage(INT64 accountNo, WCHAR* ID, WCHAR* nickname, WORD messageLen, WCHAR* message);
+		CNetPacket* MakeResultLogin(INT64 accountNo, WCHAR* ID, WCHAR* nickname);
+		CLanPacket* MakeMonitorLogin(int serverNo);
+		CLanPacket* MakeMonitorPacket(BYTE dataType, int dataValue);
 	public:
 		enum {
 			SECTOR_MAX_Y = 100,
@@ -132,6 +137,10 @@ namespace procademy
 		cpp_redis::client						mRedis;
 		WCHAR									mTokenDBIP[16];
 		USHORT									mTokenDBPort;
+
+		u_short									mMonitorPort = 0;
+		WCHAR									mMonitorIP[32];
+		CMonitorClient							mMonitorClient;
 
 		alignas(64) ObjectPool_TLS<st_MSG>		mMsgPool;
 		alignas(64) TC_LFQueue<st_MSG*>			mMsgQ;
@@ -154,6 +163,7 @@ namespace procademy
 		bool									mGQCSEx;
 		bool									mbMonitoring;
 		bool									mbPrint;
+		int										mServerNo;
 		alignas(64) RatioMonitor				mRatioMonitor;
-};
+	};
 }

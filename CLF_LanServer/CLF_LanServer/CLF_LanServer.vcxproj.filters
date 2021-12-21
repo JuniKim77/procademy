@@ -30,9 +30,6 @@
     <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp">
-      <Filter>소스 파일\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
@@ -40,6 +37,12 @@
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
     <ClCompile Include="CLF_LanServer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CLanPacket.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="CLanEchoServer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -50,9 +53,6 @@
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
@@ -61,6 +61,12 @@
     </ClInclude>
     <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h">
       <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="CLanEchoServer.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

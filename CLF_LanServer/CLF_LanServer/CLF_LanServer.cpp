@@ -191,7 +191,7 @@ namespace procademy
 			}
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServer Accept Thread End");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CLanServer Accept Thread End");
 
 		return 0;
 	}
@@ -202,7 +202,7 @@ namespace procademy
 
 		server->MonitorProc();
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServer Monitor Thread End");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CLanServer Monitor Thread End");
 
 		return 0;
 	}
@@ -327,13 +327,7 @@ namespace procademy
 		else
 		{
 			CLanPacket* packetBufs[100];
-			DWORD snapSize = session->sendQ.GetSize();
-
-			if (snapSize > 100)
-				snapSize = 100;
-
-			if (session->sendQ.Peek(packetBufs, snapSize) != snapSize)
-				CRASH();
+			DWORD snapSize = session->sendQ.Peek(packetBufs, 100);
 
 			for (DWORD i = 0; i < snapSize; ++i)
 			{
@@ -814,7 +808,7 @@ namespace procademy
 			break;
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CNetServer");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CLanServer");
 	}
 
 	CLF_LanServer::CLF_LanServer()
@@ -835,7 +829,7 @@ namespace procademy
 		{
 			_aligned_free(mSessionArray);
 		}
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServerNoLock End");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CLanServer End");
 	}
 
 	bool CLF_LanServer::Start()
@@ -846,7 +840,7 @@ namespace procademy
 			return false;
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServer Begin");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CLanServer Begin");
 
 		if (!CreateListenSocket())
 		{
@@ -871,7 +865,7 @@ namespace procademy
 			//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Cancel Ret: %d, Err: %d", ret, GetLastError());
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CNetServer");
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CLanServer");
 	}
 
 	bool CLF_LanServer::Disconnect(SESSION_ID SessionID)
@@ -975,6 +969,12 @@ namespace procademy
 			mbNagle = true;
 		else
 			mbNagle = false;
+
+		tp.GetValue(L"LAN_ZERO_COPY", buffer);
+		if (wcscmp(L"TRUE", buffer) == 0)
+			mbZeroCopy = true;
+		else
+			mbZeroCopy = false;
 
 		tp.GetValue(L"LAN_LOG_LEVEL", buffer);
 		if (wcscmp(buffer, L"DEBUG") == 0)

@@ -1012,6 +1012,8 @@ namespace procademy
 		TextParser  tp;
 		int         num;
 		WCHAR       buffer[MAX_PARSER_LENGTH];
+		BYTE        code;
+		BYTE        key;
 
 		tp.LoadFile(fileName);
 
@@ -1019,6 +1021,14 @@ namespace procademy
 
 		tp.GetValue(L"BIND_PORT", &num);
 		mPort = (u_short)num;
+
+		tp.GetValue(L"PACKET_CODE", &num);
+		code = (BYTE)num;
+		CNetPacket::SetCode(code);
+
+		tp.GetValue(L"PACKET_KEY", &num);
+		key = (BYTE)num;
+		CNetPacket::SetPacketKey(key);
 
 		tp.GetValue(L"IOCP_WORKER_THREAD", &num);
 		mWorkerThreadNum = (BYTE)num;
@@ -1034,6 +1044,12 @@ namespace procademy
 			mbNagle = true;
 		else
 			mbNagle = false;
+
+		tp.GetValue(L"ZERO_COPY", buffer);
+		if (wcscmp(L"TRUE", buffer) == 0)
+			mbZeroCopy = true;
+		else
+			mbZeroCopy = false;
 
 		tp.GetValue(L"LOG_LEVEL", buffer);
 		if (wcscmp(buffer, L"DEBUG") == 0)

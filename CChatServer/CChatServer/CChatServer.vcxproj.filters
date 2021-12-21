@@ -57,6 +57,12 @@
     <ClCompile Include="..\..\CNetPacket\CNetPacket\CLanPacket.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CMonitorClient\CMonitorClient\CMonitorClient.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CLanClient\CLanClient\CLanClient.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CChatServerSingle.h">
@@ -115,6 +121,15 @@
     </ClInclude>
     <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h">
       <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CMonitorClient\CMonitorClient\CMonitorClient.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CMonitorClient\CMonitorClient\MonitorProtocol.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CLanClient\CLanClient\CLanClient.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

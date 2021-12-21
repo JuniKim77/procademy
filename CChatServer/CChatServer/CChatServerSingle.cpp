@@ -1,5 +1,5 @@
 #define SEND_TO_WORKER
-#define REDIS_MODE
+//#define REDIS_MODE
 
 #include "CChatServerSingle.h"
 #include "CNetPacket.h"
@@ -9,6 +9,8 @@
 #include <vector>
 #include <conio.h>
 #include "CProfiler.h"
+#include "CLanPacket.h"
+#include "MonitorProtocol.h"
 
 #define MAX_STR (30000)
 
@@ -493,6 +495,16 @@ bool procademy::CChatServerSingle::MonitoringProc()
         {
             mCpuUsage.UpdateProcessorCpuTime();
             RecordPerformentce();
+
+            if (mMonitorClient.IsLogin())
+            {
+                SendMonitorDataProc();
+            }
+            else
+            {
+                LoginMonitorServer();
+            }
+
             // Ãâ·Â
             MakeMonitorStr(str, 2048);
             
@@ -1312,6 +1324,73 @@ void procademy::CChatServerSingle::RecordPerformentce()
     CProfiler::SetRecord(L"PROCESS_TOTAL", mCpuUsage.ProcessTotal() * 10.0);
 }
 
+void procademy::CChatServerSingle::LoginMonitorServer()
+{
+    mMonitorClient.Connect(mMonitorIP, mMonitorPort);
+
+    if (mMonitorClient.IsJoin())
+    {
+        CLanPacket* packet = MakeMonitorLogin(mServerNo);
+
+        mMonitorClient.SendPacket(packet);
+
+        packet->SubRef();
+
+        mMonitorClient.SetLogin();
+    }
+}
+
+void procademy::CChatServerSingle::SendMonitorDataProc()
+{
+    CLanPacket* loginPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_SERVER_RUN, mbBegin);
+
+    mMonitorClient.SendPacket(loginPacket);
+
+    loginPacket->SubRef();
+    
+    CLanPacket* cpuUsagePacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_SERVER_CPU, (int)mCpuUsage.ProcessTotal());
+
+    mMonitorClient.SendPacket(cpuUsagePacket);
+
+    cpuUsagePacket->SubRef();
+
+    CLanPacket* memoryUsagePacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_SERVER_MEM, (int)mCpuUsage.ProcessUserMemory());
+
+    mMonitorClient.SendPacket(memoryUsagePacket);
+
+    memoryUsagePacket->SubRef();
+
+    CLanPacket* sessionNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_SESSION, (int)mPlayerMap.size());
+
+    mMonitorClient.SendPacket(sessionNumPacket);
+
+    sessionNumPacket->SubRef();
+
+    CLanPacket* playerNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_PLAYER, (int)mLoginCount);
+
+    mMonitorClient.SendPacket(playerNumPacket);
+
+    playerNumPacket->SubRef();
+
+    CLanPacket* updateTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_UPDATE_TPS, (int)mUpdateTPS);
+
+    mMonitorClient.SendPacket(updateTPSPacket);
+
+    updateTPSPacket->SubRef();
+
+    CLanPacket* packetPoolSizePacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_PACKET_POOL, (int)CNetPacket::sPacketPool.GetSize());
+
+    mMonitorClient.SendPacket(packetPoolSizePacket);
+
+    packetPoolSizePacket->SubRef();
+
+    CLanPacket* updateMSGPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_UPDATEMSG_POOL, (int)mMsgPool.GetSize());
+
+    mMonitorClient.SendPacket(updateMSGPacket);
+
+    updateMSGPacket->SubRef();
+}
+
 procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status, INT64 accountNo)
 {
     CNetPacket* packet = CNetPacket::AllocAddRef();
@@ -1365,6 +1444,32 @@ procademy::CNetPacket* procademy::CChatServerSingle::MakeResultLogin(INT64 accou
     return packet;
 }
 
+procademy::CLanPacket* procademy::CChatServerSingle::MakeMonitorLogin(int serverNo)
+{
+    CLanPacket* packet = CLanPacket::AllocAddRef();
+
+    *packet << (WORD)en_PACKET_SS_MONITOR_LOGIN << serverNo;
+
+    packet->SetHeader();
+
+    return packet;
+}
+
+procademy::CLanPacket* procademy::CChatServerSingle::MakeMonitorPacket(BYTE dataType, int dataValue)
+{
+    CLanPacket* packet = CLanPacket::AllocAddRef();
+
+    time_t timeval;
+
+    time(&timeval);
+
+    *packet << (WORD)en_PACKET_SS_MONITOR_DATA_UPDATE << dataType << dataValue << (int)timeval;
+
+    packet->SetHeader();
+
+    return packet;
+}
+
 void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
 {
     TextParser  tp;
@@ -1375,13 +1480,12 @@ void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
 
     tp.LoadFile(fileName);
 
-    tp.GetValue(L"PACKET_CODE", &num);
-    code = (BYTE)num;
-    CNetPacket::SetCode(code);
+    tp.GetValue(L"MONITOR_SERVER_IP", mMonitorIP);
 
-    tp.GetValue(L"PACKET_KEY", &num);
-    key = (BYTE)num;
-    CNetPacket::SetPacketKey(key);
+    tp.GetValue(L"MONITOR_SERVER_PORT", &num);
+    mMonitorPort = (u_short)num;
+
+    tp.GetValue(L"MONITOR_NO", &mServerNo);
 
 #ifdef TLS_MEMORY_POOL_VER
     tp.GetValue(L"POOL_SIZE_CHECK", buffer);

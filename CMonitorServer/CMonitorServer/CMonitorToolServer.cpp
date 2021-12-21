@@ -116,7 +116,7 @@ bool procademy::CMonitorToolServer::RecvProc(SESSION_ID sessionID, CNetPacket* p
 
 	switch (type)
 	{
-	case en_PACKET_SS_MONITOR_LOGIN:
+	case en_PACKET_CS_MONITOR_TOOL_REQ_LOGIN:
 		MonitorLoginProc(sessionID, packet);
 		break;
 	default:
@@ -152,9 +152,12 @@ bool procademy::CMonitorToolServer::LeaveProc(SESSION_ID sessionID)
 
 bool procademy::CMonitorToolServer::MonitorLoginProc(SESSION_ID sessionID, CNetPacket* packet)
 {
-	char	LoginSessionKey[32];
+	char	LoginSessionKey[33];
 
 	packet->GetData(LoginSessionKey, 32);
+	LoginSessionKey[32] = '\0';
+
+	int test = strcmp(LoginSessionKey, mLoginSessionKey);
 
 	if (strcmp(LoginSessionKey, mLoginSessionKey) != 0)
 	{
@@ -184,7 +187,7 @@ void procademy::CMonitorToolServer::LoadInitFile(const WCHAR* fileName)
 {
 	TextParser  tp;
 	int         num;
-	WCHAR       buffer[MAX_PARSER_LENGTH];
+	WCHAR       buffer[MAX_PARSER_LENGTH] = { 0, };
 
 	tp.LoadFile(fileName);
 

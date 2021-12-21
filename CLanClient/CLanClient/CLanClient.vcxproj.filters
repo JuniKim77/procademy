@@ -45,6 +45,9 @@
     <ClCompile Include="..\..\CNetPacket\CNetPacket\CLanPacket.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
+    <ClCompile Include="CLanEchoClient.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CLanClient.h">
@@ -67,6 +70,9 @@
     </ClInclude>
     <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h">
       <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="CLanEchoClient.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

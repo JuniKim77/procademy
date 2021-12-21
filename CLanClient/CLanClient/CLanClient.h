@@ -38,13 +38,16 @@ namespace procademy
 			SOCKET						socket = INVALID_SOCKET;
 		};
 
-	protected:
-		CLanClient();
-		virtual ~CLanClient();
-
+	public:
 		bool Connect(const WCHAR* serverIP, USHORT serverPort);	//바인딩 IP, 서버IP / 워커스레드 수 / 나글옵션
 		bool Disconnect();
 		bool SendPacket(CLanPacket* packet);
+
+	protected:
+		CLanClient();
+		virtual ~CLanClient();
+		bool Start();
+		void Stop();
 
 		virtual void OnEnterJoinServer() = 0; //< 서버와의 연결 성공 후
 		virtual void OnLeaveServer() = 0; //< 서버와의 연결이 끊어졌을 때

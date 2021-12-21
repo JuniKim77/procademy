@@ -50,6 +50,6 @@ namespace procademy
 	private:
 		SRWLOCK												mToolServerLock;
 		std::unordered_map<u_int64, st_MonitorClient*>		mMonitorClients;
-		char												mLoginSessionKey[32];
+		char												mLoginSessionKey[33];
 	};
 }

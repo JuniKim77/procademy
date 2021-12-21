@@ -20,6 +20,26 @@ procademy::CLanClient::~CLanClient()
     }
 }
 
+bool procademy::CLanClient::Start()
+{
+    if (mbBegin == true)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Network is already running");
+        return false;
+    }
+
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CLanServer Begin");
+
+    mbBegin = true;
+
+    return true;
+}
+
+void procademy::CLanClient::Stop()
+{
+    mbBegin = false;
+}
+
 bool procademy::CLanClient::Connect(const WCHAR* serverIP, USHORT serverPort)
 {
     wcscpy_s(mServerIP, _countof(mServerIP), serverIP);
@@ -29,6 +49,8 @@ bool procademy::CLanClient::Connect(const WCHAR* serverIP, USHORT serverPort)
     {
         return false;
     }
+
+    OnEnterJoinServer();
 
     return true;
 }
@@ -55,6 +77,9 @@ bool procademy::CLanClient::Disconnect()
 
 bool procademy::CLanClient::SendPacket(CLanPacket* packet)
 {
+    if (mClient.ioBlock.ioCount == 0)
+        return false;
+
     IncrementIOProc(20000);
 
     if (mClient.ioBlock.releaseCount.isReleased == 1)
@@ -160,6 +185,8 @@ void procademy::CLanClient::LoadInitFile(const WCHAR* fileName)
     int         num;
     WCHAR       buffer[MAX_PARSER_LENGTH];
 
+    tp.LoadFile(fileName);
+
     tp.GetValue(L"IOCP_WORKER_THREAD", &num);
     mWorkerThreadNum = (BYTE)num;
 
@@ -171,6 +198,12 @@ void procademy::CLanClient::LoadInitFile(const WCHAR* fileName)
         mbNagle = true;
     else
         mbNagle = false;
+
+    tp.GetValue(L"ZERO_COPY", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        mbZeroCopy = true;
+    else
+        mbZeroCopy = false;
 }
 
 bool procademy::CLanClient::CreateIOCP()
@@ -215,8 +248,8 @@ bool procademy::CLanClient::CreateSocket()
 {
     WSADATA			wsa;
     SOCKADDR_IN		addr;
-    int             connectRetval;
     HANDLE          hResult;
+    LINGER			optval;
 
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
     {
@@ -230,21 +263,42 @@ bool procademy::CLanClient::CreateSocket()
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"Create socket [Error: %d]", WSAGetLastError());
         return false;
     }
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Create");
+    // TimeWait Zero
+    optval.l_onoff = 1;
+    optval.l_linger = 0;
+
+    int timeOutnRet = setsockopt(mClient.socket, SOL_SOCKET, SO_LINGER, (char*)&optval, sizeof(optval));
+    if (timeOutnRet == SOCKET_ERROR)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Listen Socket Linger [Error: %d]", WSAGetLastError());
+        closesocket(mClient.socket);
+        return false;
+    }
 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(mServerPort);
     InetPton(AF_INET, mServerIP, &addr.sin_addr);
 
-    connectRetval = connect(mClient.socket, (SOCKADDR*)&addr, sizeof(addr));
+    int connectRetval = connect(mClient.socket, (SOCKADDR*)&addr, sizeof(addr));
 
     if (connectRetval == SOCKET_ERROR)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Connect [Error: %d]", WSAGetLastError());
+        //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Connect [Error: %d]", WSAGetLastError());
         closesocket(mClient.socket);
         return false;
     }
+    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Create");
     CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Connect");
+
+    if (mbZeroCopy)
+    {
+        SetZeroCopy(mbZeroCopy);
+    }
+
+    if (mbNagle)
+    {
+        SetNagle(mbNagle);
+    }
 
     hResult = CreateIoCompletionPort((HANDLE)mClient.socket, mIocp, 0, 0);
 
@@ -256,15 +310,9 @@ bool procademy::CLanClient::CreateSocket()
         return false;
     }
 
-    if (mbZeroCopy)
-    {
-        SetZeroCopy(mbZeroCopy);
-    }
-
-    if (mbNagle)
-    {
-        SetNagle(mbNagle);
-    }
+    IncrementIOProc(10000);
+    mClient.ioBlock.releaseCount.isReleased = 0;
+    RecvPost(true);
 
     return true;
 }
@@ -318,10 +366,7 @@ void procademy::CLanClient::GQCS()
                 CompleteSend(transferredSize);
 #endif // PROFILE
             }
-
-            SendPost();
         }
-
         DecrementIOProc(10000);
     }
 }
@@ -539,13 +584,7 @@ void procademy::CLanClient::SetWSABuf(WSABUF* bufs, bool isRecv)
     else
     {
         CLanPacket* packetBufs[100];
-        DWORD snapSize = mClient.sendQ.GetSize();
-
-        if (snapSize > 100)
-            snapSize = 100;
-
-        if (mClient.sendQ.Peek(packetBufs, snapSize) != snapSize)
-            CRASH();
+        DWORD snapSize = mClient.sendQ.Peek(packetBufs, 100);
 
         for (DWORD i = 0; i < snapSize; ++i)
         { 

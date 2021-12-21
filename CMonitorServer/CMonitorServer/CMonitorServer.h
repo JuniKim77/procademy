@@ -50,6 +50,7 @@ namespace procademy
 		void				DeleteServer(SESSION_ID sessionNo);
 		void				LockServer() { AcquireSRWLockExclusive(&mServerLock); }
 		void				UnlockServer() { ReleaseSRWLockExclusive(&mServerLock); }
+		void				ClearMonitorData();
 
 		static unsigned int WINAPI	MonitorThread(LPVOID arg);
 		static unsigned int WINAPI	DBThread(LPVOID arg);
