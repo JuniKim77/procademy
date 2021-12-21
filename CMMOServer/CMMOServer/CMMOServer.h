@@ -54,7 +54,7 @@ namespace procademy
 		bool RecvPost(CSession* session, bool isFirst = false);
 		bool SendPost(CSession* session);
 		void SendPacket(CSession* session, CNetPacket* packet); // SESSION_ID / HOST_ID
-		void SetWSABuf(WSABUF* bufs, CSession* session, bool isRecv);
+		int SetWSABuf(WSABUF* bufs, CSession* session, bool isRecv);
 		void ReleaseProc(CSession* session);
 		void Disconnect(CSession* session);
 

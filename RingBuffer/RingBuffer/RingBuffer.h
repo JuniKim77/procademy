@@ -7,7 +7,7 @@
 class RingBuffer
 {
 	enum {
-		DEFAULT_SIZE = 3000
+		DEFAULT_SIZE = 300
 	};
 
 public:
@@ -127,10 +127,13 @@ public:
 
 	void SetLogMode(bool mode) { mLogMode = mode; }
 
+	char* GetEndBuffer() { return mpEnd; }
+
 public:
 	int mFront;
 	int mRear;
 	char* mBuffer;
+	char* mpEnd;
 	int mCapacity;
 	SRWLOCK mSrwLock;
 	bool	mLogMode = true;

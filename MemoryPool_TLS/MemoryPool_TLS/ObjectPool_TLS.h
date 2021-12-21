@@ -6,16 +6,16 @@
 
 struct packetDebug;
 
-extern USHORT g_debugIdx;
-extern packetDebug g_packetDebugs[USHRT_MAX + 1];
-extern void packetLog(
-	int			logicId,
-	DWORD		threadId,
-	void*		pChunk,
-	void*		pPacket,
-	int			allocCount,
-	LONG		freeCount
-);
+//extern USHORT g_debugIdx;
+//extern packetDebug g_packetDebugs[USHRT_MAX + 1];
+//extern void packetLog(
+//	int			logicId,
+//	DWORD		threadId,
+//	void*		pChunk,
+//	void*		pPacket,
+//	int			allocCount,
+//	LONG		freeCount
+//);
 
 #define CHUNK_CHECKSUM (0xBBBBBBBB)
 
@@ -40,7 +40,7 @@ namespace procademy
 
 			st_Chunk_Block				mArray[MAX_SIZE];
 			int							mAllocCount = 0;
-			alignas(64) DWORD			threadID;
+			DWORD						threadID;
 			ObjectPool_TLS*				pObjPool = nullptr;			
 			alignas(64) LONG			mFreeCount;
 		};

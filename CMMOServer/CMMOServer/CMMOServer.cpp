@@ -186,6 +186,12 @@ void procademy::CMMOServer::LoadInitFile(const WCHAR* fileName)
 	else
 		mbNagle = false;
 
+	tp.GetValue(L"ZERO_COPY", buffer);
+	if (wcscmp(L"TRUE", buffer) == 0)
+		mbZeroCopy = true;
+	else
+		mbZeroCopy = false;
+
 	tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
 
 	tp.GetValue(L"POOL_SIZE_CHECK", buffer);
@@ -797,12 +803,12 @@ void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSiz
 	DWORD count = 0;
 	bool status = true;
 
-	while (count < transferredSize)
+	while ((count + CNetPacket::HEADER_MAX_SIZE) < transferredSize)
 	{
 		if (session->recvQ.GetUseSize() <= CNetPacket::HEADER_MAX_SIZE)
 			break;
 
-		session->recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
+		int temp = session->recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
 
 		if (header.code != CNetPacket::sCode)
 		{
@@ -813,6 +819,11 @@ void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSiz
 		if (header.len > CNetPacket::eBUFFER_DEFAULT)
 		{
 			status = false;
+			break;
+		}
+
+		if (count + header.len > transferredSize)
+		{
 			break;
 		}
 
@@ -848,7 +859,7 @@ void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSiz
 			CRASH();
 		}
 
-		count += (ret + sizeof(SHORT));
+		count += (ret + CNetPacket::HEADER_MAX_SIZE);
 		packet->SubRef();
 	}
 
@@ -887,7 +898,12 @@ bool procademy::CMMOServer::RecvPost(CSession* session, bool isFirst)
 	WSABUF buffers[2];
 	DWORD flags = 0;
 
-	SetWSABuf(buffers, session, true);
+	int len = SetWSABuf(buffers, session, true);
+
+	if (len == 0)
+	{
+		CRASH();
+	}
 
 	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
 
@@ -990,14 +1006,14 @@ void procademy::CMMOServer::SendPacket(CSession* session, CNetPacket* packet)
 	//DecrementIOProc(session, 20020);
 }
 
-void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRecv)
+int procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRecv)
 {
 	if (isRecv)
 	{
 		char* pRear = session->recvQ.GetRearBufferPtr();
 		char* pFront = session->recvQ.GetFrontBufferPtr();
 		char* pBuf = session->recvQ.GetBuffer();
-		int capa = session->recvQ.GetCapacity();
+		char* pEnd = session->recvQ.GetEndBuffer();
 
 		if (pRear < pFront)
 		{
@@ -1008,11 +1024,23 @@ void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRe
 		}
 		else
 		{
-			bufs[0].buf = pRear;
-			bufs[0].len = (ULONG)(capa + 1 - (pRear - pBuf));
-			bufs[1].buf = pBuf;
-			bufs[1].len = (ULONG)(pFront - pBuf);
+			if (pFront == pBuf)
+			{
+				bufs[0].buf = pRear;
+				bufs[0].len = (ULONG)(pEnd - pRear - 1);
+				bufs[1].buf = pBuf;
+				bufs[1].len = 0;
+			}
+			else
+			{
+				bufs[0].buf = pRear;
+				bufs[0].len = (ULONG)(pEnd - pRear);
+				bufs[1].buf = pBuf;
+				bufs[1].len = (ULONG)(pFront - pBuf - 1);
+			}
 		}
+
+		return bufs[0].len + bufs[1].len;
 
 		//ringbufLog(pRear, pFront, pBuf, session->recvQ.mRear, session->recvQ.mFront, session->recvQ.mCapacity, bufs[0].len, bufs[1].len);
 	}
@@ -1022,6 +1050,8 @@ void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRe
 
 		DWORD snapSize = session->sendQ.Peek(packetBufs, 200);
 
+		int ret = 0;
+
 		/*statusLog(50000, session->status, session->isSending, session->toGame, session->sessionEnd,
 			session->index, session->sessionID, GetCurrentThreadId(), session->ioCount, session->sendQ.mFront, session->sendQ.mRear);*/
 
@@ -1029,9 +1059,12 @@ void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRe
 		{
 			bufs[i].buf = packetBufs[i]->GetZeroPtr();
 			bufs[i].len = packetBufs[i]->GetSize();
+			ret += bufs[i].len;
 		}
 
 		session->numSendingPacket = snapSize;
+
+		return ret;
 	}
 }
 

@@ -14,56 +14,56 @@
 
 #define MAX_STR (30000)
 
-struct msgDebug
-{
-    int			logicId;
-    INT64	    SessionNo;
-    void*	    address;
-    int			secX;
-    int			secY;
-    bool        login;
-};
-
-struct info
-{
-    int logicId;
-    INT64 sessionNo;
-};
-
-USHORT g_msgIdx;
-msgDebug g_msgDebugs[USHRT_MAX + 1];
-//std::unordered_map<INT64, std::vector<info>> g_msgSort;
-//std::unordered_map<INT64, std::vector<info>> g_pointerSort;
-
-void msgDebugLog(
-    int			logicId,
-    INT64	    SessionNo,
-    void*       address,
-    int			secX,
-    int			secY,
-    bool        login
-)
-{
-    USHORT index = g_msgIdx++;
-
-    g_msgDebugs[index].logicId = logicId;
-    g_msgDebugs[index].SessionNo = SessionNo;
-    g_msgDebugs[index].address = address;
-    g_msgDebugs[index].secX = secX;
-    g_msgDebugs[index].secY = secY;
-    g_msgDebugs[index].login = login;
-
-	//INT64 cur = SessionNo;
-
- //   if (g_msgSort[cur].size() == 0)
- //   {
- //       g_msgSort[cur].reserve(16);
- //   }
-
- //   g_msgSort[cur].push_back({ logicId, (INT64)address });
-
- //   g_pointerSort[(INT64)address].push_back({ logicId, SessionNo });
-}
+//struct msgDebug
+//{
+//    int			logicId;
+//    INT64	    SessionNo;
+//    void*	    address;
+//    int			secX;
+//    int			secY;
+//    bool        login;
+//};
+//
+//struct info
+//{
+//    int logicId;
+//    INT64 sessionNo;
+//};
+//
+//USHORT g_msgIdx;
+//msgDebug g_msgDebugs[USHRT_MAX + 1];
+////std::unordered_map<INT64, std::vector<info>> g_msgSort;
+////std::unordered_map<INT64, std::vector<info>> g_pointerSort;
+//
+//void msgDebugLog(
+//    int			logicId,
+//    INT64	    SessionNo,
+//    void*       address,
+//    int			secX,
+//    int			secY,
+//    bool        login
+//)
+//{
+//    USHORT index = g_msgIdx++;
+//
+//    g_msgDebugs[index].logicId = logicId;
+//    g_msgDebugs[index].SessionNo = SessionNo;
+//    g_msgDebugs[index].address = address;
+//    g_msgDebugs[index].secX = secX;
+//    g_msgDebugs[index].secY = secY;
+//    g_msgDebugs[index].login = login;
+//
+//	//INT64 cur = SessionNo;
+//
+// //   if (g_msgSort[cur].size() == 0)
+// //   {
+// //       g_msgSort[cur].reserve(16);
+// //   }
+//
+// //   g_msgSort[cur].push_back({ logicId, (INT64)address });
+//
+// //   g_pointerSort[(INT64)address].push_back({ logicId, SessionNo });
+//}
 
 
 procademy::CChatServerSingle::CChatServerSingle()
@@ -1354,7 +1354,7 @@ void procademy::CChatServerSingle::SendMonitorDataProc()
 
     cpuUsagePacket->SubRef();
 
-    CLanPacket* memoryUsagePacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_SERVER_MEM, (int)mCpuUsage.ProcessUserMemory());
+    CLanPacket* memoryUsagePacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_SERVER_MEM, (int)mCpuUsage.ProcessUserMemory() / 1000000); // 1MB
 
     mMonitorClient.SendPacket(memoryUsagePacket);
 

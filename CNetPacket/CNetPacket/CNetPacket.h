@@ -29,7 +29,7 @@ namespace procademy
 		enum en_PACKET
 		{
 			HEADER_MAX_SIZE = 5,
-			eBUFFER_DEFAULT = 500		// 패킷의 기본 버퍼 사이즈.
+			eBUFFER_DEFAULT = 200		// 패킷의 기본 버퍼 사이즈.
 		};
 
 		//////////////////////////////////////////////////////////////////////////

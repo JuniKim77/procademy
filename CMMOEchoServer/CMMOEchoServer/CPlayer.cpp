@@ -35,7 +35,7 @@ void procademy::CPlayer::OnAuth_Packet(CNetPacket* packet)
 		ret = LoginProc(packet);
 		break;
 	default:
-		CRASH();
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Auth Unusual Type Packet %u", type);
 		break;
 	}
 
@@ -72,7 +72,7 @@ void procademy::CPlayer::OnGame_Packet(CNetPacket* packet)
 		ret = EchoProc(packet);
 		break;
 	default:
-		
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Game Unusual Type Packet %u", type);
 		break;
 	}
 
@@ -119,6 +119,7 @@ bool procademy::CPlayer::EchoProc(CNetPacket* packet)
 
 	if (AccountNo != mAccountNo || mbLogin == false)
 	{
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Not Matched AccountNo");
 		return false;
 	}
 
@@ -137,7 +138,7 @@ procademy::CNetPacket* procademy::CPlayer::MakeCSGameResLogin(BYTE status, INT64
 
 	*packet << (WORD)en_PACKET_CS_GAME_RES_LOGIN << status << accountNo;
 
-	packet->SetHeader(false);
+	packet->SetHeader();
 	packet->Encode();
 
 	return packet;
@@ -149,7 +150,7 @@ procademy::CNetPacket* procademy::CPlayer::MakeCSGameResEcho(INT64 accountNo, LO
 
 	*packet << (WORD)en_PACKET_CS_GAME_RES_ECHO << accountNo << sendTick;
 
-	packet->SetHeader(false);
+	packet->SetHeader();
 	packet->Encode();
 
 	return packet;

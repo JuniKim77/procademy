@@ -359,7 +359,7 @@ namespace procademy
 			char* pRear = session->recvQ.GetRearBufferPtr();
 			char* pFront = session->recvQ.GetFrontBufferPtr();
 			char* pBuf = session->recvQ.GetBuffer();
-			int capa = session->recvQ.GetCapacity();
+			char* pEnd = session->recvQ.GetEndBuffer();
 
 			if (pRear < pFront)
 			{
@@ -370,10 +370,20 @@ namespace procademy
 			}
 			else
 			{
-				bufs[0].buf = pRear;
-				bufs[0].len = (ULONG)(capa + 1 - (pRear - pBuf));
-				bufs[1].buf = pBuf;
-				bufs[1].len = (ULONG)(pFront - pBuf);
+				if (pFront == pBuf)
+				{
+					bufs[0].buf = pRear;
+					bufs[0].len = (ULONG)(pEnd - pRear - 1);
+					bufs[1].buf = pBuf;
+					bufs[1].len = 0;
+				}
+				else
+				{
+					bufs[0].buf = pRear;
+					bufs[0].len = (ULONG)(pEnd - pRear);
+					bufs[1].buf = pBuf;
+					bufs[1].len = (ULONG)(pFront - pBuf - 1);
+				}
 			}
 		}
 		else
