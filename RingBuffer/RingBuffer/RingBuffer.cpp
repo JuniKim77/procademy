@@ -154,18 +154,13 @@ int RingBuffer::Enqueue(char* chpData, int iSize)
 
 		memcpy(buf + rear, chpData, possibleToEnd);
 		memcpy(buf, chpData + possibleToEnd, (long long)iSize - possibleToEnd);
-	}
-	else
-	{
-		memcpy(buf + rear, chpData, iSize);
-	}
 
-	if (rear + iSize > capacity + 1)
-	{
 		mRear = (rear + iSize) - (capacity + 1);
 	}
 	else
 	{
+		memcpy(buf + rear, chpData, iSize);
+
 		mRear = (rear + iSize);
 	}
 
@@ -211,18 +206,13 @@ int RingBuffer::Dequeue(char* chpDest, int iSize)
 
 		memcpy(chpDest, buf + front, possibleToEnd);
 		memcpy(chpDest + possibleToEnd, buf, (long long)iSize - possibleToEnd);
-	}
-	else
-	{
-		memcpy(chpDest, buf + front, iSize);
-	}
 
-	if (front + iSize > capacity + 1)
-	{
 		mFront = (front + iSize) - (capacity + 1);
 	}
 	else
 	{
+		memcpy(chpDest, buf + front, iSize);
+
 		mFront = (front + iSize);
 	}
 
@@ -269,6 +259,8 @@ int RingBuffer::Peek(char* chpDest, int iSize)
 
 bool RingBuffer::MoveRear(int iSize)
 {
+	int freeSize = GetFreeSize();
+
 	if (iSize > GetFreeSize() || iSize <= 0)
 	{
 		return false;
@@ -277,7 +269,7 @@ bool RingBuffer::MoveRear(int iSize)
 	int rear = mRear;
 	int capacity = mCapacity;
 
-	if (rear + iSize > capacity + 1)
+	if (rear + iSize >= capacity + 1)
 	{
 		mRear = (rear + iSize) - (capacity + 1);
 	}
@@ -301,7 +293,7 @@ bool RingBuffer::MoveFront(int iSize)
 	int front = mFront;
 	int capacity = mCapacity;
 
-	if (front + iSize > capacity + 1)
+	if (front + iSize >= capacity + 1)
 	{
 		mFront = (front + iSize) - (capacity + 1);
 	}

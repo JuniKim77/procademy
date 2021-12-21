@@ -803,12 +803,14 @@ void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSiz
 	DWORD count = 0;
 	bool status = true;
 
-	while ((count + CNetPacket::HEADER_MAX_SIZE) < transferredSize)
+	while (count < transferredSize)
 	{
-		if (session->recvQ.GetUseSize() <= CNetPacket::HEADER_MAX_SIZE)
+		int useSize = session->recvQ.GetUseSize();
+
+		if (useSize <= CNetPacket::HEADER_MAX_SIZE)
 			break;
 
-		int temp = session->recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
+		session->recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
 
 		if (header.code != CNetPacket::sCode)
 		{
@@ -822,12 +824,7 @@ void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSiz
 			break;
 		}
 
-		if (count + header.len > transferredSize)
-		{
-			break;
-		}
-
-		if (session->recvQ.GetUseSize() < (CNetPacket::HEADER_MAX_SIZE + header.len))
+		if (useSize < (CNetPacket::HEADER_MAX_SIZE + header.len))
 			break;
 
 		CNetPacket* packet = CNetPacket::AllocAddRef();
@@ -898,12 +895,7 @@ bool procademy::CMMOServer::RecvPost(CSession* session, bool isFirst)
 	WSABUF buffers[2];
 	DWORD flags = 0;
 
-	int len = SetWSABuf(buffers, session, true);
-
-	if (len == 0)
-	{
-		CRASH();
-	}
+	SetWSABuf(buffers, session, true);
 
 	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
 
@@ -1006,7 +998,7 @@ void procademy::CMMOServer::SendPacket(CSession* session, CNetPacket* packet)
 	//DecrementIOProc(session, 20020);
 }
 
-int procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRecv)
+void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRecv)
 {
 	if (isRecv)
 	{
@@ -1018,7 +1010,7 @@ int procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRec
 		if (pRear < pFront)
 		{
 			bufs[0].buf = pRear;
-			bufs[0].len = (ULONG)(pFront - pRear);
+			bufs[0].len = (ULONG)(pFront - pRear - 1);
 			bufs[1].buf = pRear;
 			bufs[1].len = 0;
 		}
@@ -1040,8 +1032,6 @@ int procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRec
 			}
 		}
 
-		return bufs[0].len + bufs[1].len;
-
 		//ringbufLog(pRear, pFront, pBuf, session->recvQ.mRear, session->recvQ.mFront, session->recvQ.mCapacity, bufs[0].len, bufs[1].len);
 	}
 	else
@@ -1050,8 +1040,6 @@ int procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRec
 
 		DWORD snapSize = session->sendQ.Peek(packetBufs, 200);
 
-		int ret = 0;
-
 		/*statusLog(50000, session->status, session->isSending, session->toGame, session->sessionEnd,
 			session->index, session->sessionID, GetCurrentThreadId(), session->ioCount, session->sendQ.mFront, session->sendQ.mRear);*/
 
@@ -1059,12 +1047,9 @@ int procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRec
 		{
 			bufs[i].buf = packetBufs[i]->GetZeroPtr();
 			bufs[i].len = packetBufs[i]->GetSize();
-			ret += bufs[i].len;
 		}
 
 		session->numSendingPacket = snapSize;
-
-		return ret;
 	}
 }
 

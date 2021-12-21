@@ -496,14 +496,14 @@ bool procademy::CChatServerSingle::MonitoringProc()
             mCpuUsage.UpdateProcessorCpuTime();
             RecordPerformentce();
 
-            if (mMonitorClient.IsLogin())
+            /*if (mMonitorClient.IsLogin())
             {
                 SendMonitorDataProc();
             }
             else
             {
                 LoginMonitorServer();
-            }
+            }*/
 
             // Ãâ·Â
             MakeMonitorStr(str, 2048);

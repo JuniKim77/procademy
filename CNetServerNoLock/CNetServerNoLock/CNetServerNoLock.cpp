@@ -364,7 +364,7 @@ namespace procademy
 			if (pRear < pFront)
 			{
 				bufs[0].buf = pRear;
-				bufs[0].len = (ULONG)(pFront - pRear);
+				bufs[0].len = (ULONG)(pFront - pRear - 1);
 				bufs[1].buf = pRear;
 				bufs[1].len = 0;
 			}
@@ -652,7 +652,9 @@ namespace procademy
 
 		while (count < transferredSize)
 		{
-			if (session->recvQ.GetUseSize() <= CNetPacket::HEADER_MAX_SIZE)
+			int useSize = session->recvQ.GetUseSize();
+
+			if (useSize <= CNetPacket::HEADER_MAX_SIZE)
 				break;
 
 			session->recvQ.Peek((char*)&header, CNetPacket::HEADER_MAX_SIZE);
@@ -669,7 +671,7 @@ namespace procademy
 				break;
 			}
 
-			if (session->recvQ.GetUseSize() < (CNetPacket::HEADER_MAX_SIZE + header.len))
+			if (useSize < (CNetPacket::HEADER_MAX_SIZE + header.len))
 				break;
 
 			CNetPacket* packet = CNetPacket::AllocAddRef();
