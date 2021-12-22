@@ -1179,7 +1179,8 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
     if (mGQCSEx == false)
         idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"MsgQ : ", mMsgQ.GetPoolCapacity(), mMsgQ.GetSize());
 #ifdef TLS_MEMORY_POOL_VER
-    idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
+    idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Net Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
+    idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Lan Packet Pool : ", CLanPacket::sPacketPool.GetCapacity(), CLanPacket::sPacketPool.GetSize());
 #endif // TLS_MEMORY_POOL_VER
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %d\n", L"Update Msg Pool : ", mMsgPool.GetCapacity(), mMsgPool.GetSize());
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %d\n", L"Player Pool : ", mPlayerPool.GetCapacity(), mPlayerPool.GetSize());
@@ -1520,7 +1521,11 @@ void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
 #ifdef TLS_MEMORY_POOL_VER
     tp.GetValue(L"POOL_SIZE_CHECK", buffer);
     if (wcscmp(L"TRUE", buffer) == 0)
+    {
         CNetPacket::sPacketPool.OnOffCounting();
+        CLanPacket::sPacketPool.OnOffCounting();
+        mMsgPool.OnOffCounting();
+    }  
 #endif // TLS_MEMORY_POOL_VER
 
     tp.GetValue(L"GQCSEX", buffer);

@@ -23,7 +23,7 @@ namespace procademy
 
 			void*							code;
 			alignas(64) DATA				data;			
-			alignas(64) st_BLOCK_NODE*		stpNextBlock;
+			st_BLOCK_NODE*					stpNextBlock;
 			unsigned int					checkSum_over = CHECKSUM_OVER;
 		};
 	public:
@@ -69,7 +69,6 @@ namespace procademy
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mSize; }
-		DWORD	GetMallocCount() { return mMallocCount; }
 
 	private:
 		void AllocMemory(int size);
@@ -84,7 +83,6 @@ namespace procademy
 		alignas(64) DWORD mSize;
 
 		DWORD mCapacity;
-		alignas(64) DWORD mMallocCount = 0;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		t_Top _pFreeTop;
@@ -189,7 +187,6 @@ namespace procademy
 		{
 			// prerequisite
 			node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
-			InterlockedIncrement(&mMallocCount);
 			node->code = this;
 			new (&node->data) (DATA);
 			node->checkSum_over = CHECKSUM_OVER;

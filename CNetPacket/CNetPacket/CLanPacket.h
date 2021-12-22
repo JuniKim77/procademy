@@ -29,7 +29,7 @@ namespace procademy
 		enum en_PACKET
 		{
 			HEADER_MAX_SIZE = 5,
-			eBUFFER_DEFAULT = 500		// 패킷의 기본 버퍼 사이즈.
+			eBUFFER_DEFAULT = 400		// 패킷의 기본 버퍼 사이즈.
 		};
 
 		//////////////////////////////////////////////////////////////////////////
@@ -178,7 +178,7 @@ namespace procademy
 		char*		mFront;
 		char*		mRear;
 		char*		mZero;
-
+	public:
 #ifdef MEMORY_POOL_VER
 		alignas(64) static TC_LFObjectPool<CLanPacket> sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)

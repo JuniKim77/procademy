@@ -148,6 +148,8 @@
     <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp" />
     <ClCompile Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.cpp" />
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
+    <ClCompile Include="..\..\DB_Writer\DB_Writer\CDBConnector.cpp" />
+    <ClCompile Include="..\..\DB_Writer\DB_Writer\CDBConnector_TLS.cpp" />
     <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp" />
     <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
     <ClCompile Include="CMonitorServer.cpp" />
@@ -162,6 +164,8 @@
     <ClInclude Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h" />
+    <ClInclude Include="..\..\DB_Writer\DB_Writer\CDBConnector.h" />
+    <ClInclude Include="..\..\DB_Writer\DB_Writer\CDBConnector_TLS.h" />
     <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h" />
     <ClInclude Include="..\..\TextParser\TextParser\TextParser.h" />
     <ClInclude Include="CMonitorServer.h" />

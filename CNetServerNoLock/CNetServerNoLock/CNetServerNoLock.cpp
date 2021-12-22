@@ -447,7 +447,6 @@ namespace procademy
 		//
 		u_int64 id = session->sessionID;
 		session->sessionID = 0;
-		InterlockedIncrement((LONG*)&disconnectCount);
 
 		OnClientLeave(id);
 
