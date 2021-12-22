@@ -32,10 +32,11 @@ namespace procademy
 			WSAOVERLAPPED				sendOverlapped;
 			RingBuffer					recvQ;
 			TC_LFQueue<CLanPacket*>		sendQ;
-			int							numSendingPacket = 0;
+			SOCKET						socket = INVALID_SOCKET;
+			bool						isConnecting = false;
 			alignas(64) SessionIoCount	ioBlock;
 			alignas(64) bool			isSending;
-			SOCKET						socket = INVALID_SOCKET;
+			int							numSendingPacket = 0;
 		};
 
 	public:
@@ -71,6 +72,11 @@ namespace procademy
 		bool	CreateIOCP();
 		bool	BeginThreads();
 		bool	CreateSocket();
+		bool	SetStartUp();
+		bool	SetTimeWaitZero();
+		bool	SetNonBlockSocket();
+		bool	ClientConnect();
+		bool	RegisterIocpPort();
 		void	GQCS();
 		void	CompleteRecv(DWORD transferredSize);
 		void	CompleteSend(DWORD transferredSize);

@@ -2,6 +2,9 @@
 #include <conio.h>
 #include "CProfiler.h"
 #include "TextParser.h"
+#include "CLanPacket.h"
+#include "MonitorProtocol.h"
+#include <time.h>
 
 procademy::CMMOEchoServer::CMMOEchoServer()
 {
@@ -157,6 +160,13 @@ void procademy::CMMOEchoServer::LoadInitFile(const WCHAR* fileName)
     WCHAR       buffer[MAX_PARSER_LENGTH];
 
     tp.LoadFile(fileName);
+
+    tp.GetValue(L"MONITOR_SERVER_IP", mMonitorIP);
+
+    tp.GetValue(L"MONITOR_SERVER_PORT", &num);
+    mMonitorPort = (u_short)num;
+
+    tp.GetValue(L"MONITOR_NO", &mServerNo);
 }
 
 void procademy::CMMOEchoServer::Init()
@@ -195,6 +205,7 @@ void procademy::CMMOEchoServer::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"[MMO Echo Server Status: %s]\n", mbBegin ? L"RUN" : L"STOP");
     idx += swprintf_s(s + idx, size - idx, L"[Zero Copy: %d] [Nagle: %d]\n", mbZeroCopy, mbNagle);
     idx += swprintf_s(s + idx, size - idx, L"[WorkerTh: %d] [ActiveTh: %d]\n", mWorkerThreadNum, mActiveThreadNum);
+    idx += swprintf_s(s + idx, size - idx, L"[Auth Max Transfer: %d] [Game Max Transfer: %d]\n", mMaxTransferToAuth, mMaxTransferToGame);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
     idx += swprintf_s(s + idx, size - idx, L"%22s(%d / %d)\n", L"Session Num : ", joinCount, mMaxClient);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
@@ -225,4 +236,163 @@ void procademy::CMMOEchoServer::MakeMonitorStr(WCHAR* s, int size)
     mCpuUsage.GetBigNumberStr(mCpuUsage.NetworkSendBytes(), bigNumber, 18);
     idx += swprintf_s(s + idx, size - idx, L"%25s%s\n", L"NetworkSendBytes : ", bigNumber);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
+}
+
+procademy::CLanPacket* procademy::CMMOEchoServer::MakeMonitorLogin(int serverNo)
+{
+    CLanPacket* packet = CLanPacket::AllocAddRef();
+
+    *packet << (WORD)en_PACKET_SS_MONITOR_LOGIN << serverNo;
+
+    packet->SetHeader();
+
+    return packet;
+}
+
+procademy::CLanPacket* procademy::CMMOEchoServer::MakeMonitorPacket(BYTE dataType, int dataValue)
+{
+    CLanPacket* packet = CLanPacket::AllocAddRef();
+
+    time_t timeval;
+
+    time(&timeval);
+
+    *packet << (WORD)en_PACKET_SS_MONITOR_DATA_UPDATE << dataType << dataValue << (int)timeval;
+
+    packet->SetHeader();
+
+    return packet;
+}
+
+void procademy::CMMOEchoServer::LoginMonitorServer()
+{
+    mMonitorClient.Connect(mMonitorIP, mMonitorPort);
+
+    if (mMonitorClient.IsJoin())
+    {
+        CLanPacket* packet = MakeMonitorLogin(mServerNo);
+
+        mMonitorClient.SendPacket(packet);
+
+        packet->SubRef();
+
+        mMonitorClient.SetLogin();
+    }
+}
+
+void procademy::CMMOEchoServer::SendMonitorDataProc()
+{
+    CLanPacket* runPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_SERVER_RUN, mbBegin);
+
+    mMonitorClient.SendPacket(runPacket);
+
+    runPacket->SubRef();
+
+    CLanPacket* cpuUsagePacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_SERVER_CPU, (int)mCpuUsage.ProcessTotal());
+
+    mMonitorClient.SendPacket(cpuUsagePacket);
+
+    cpuUsagePacket->SubRef();
+
+    CLanPacket* cpuUsageMemoryPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_SERVER_MEM, (int)mCpuUsage.ProcessUserMemory() / 1000000); // 1MB
+
+    mMonitorClient.SendPacket(cpuUsageMemoryPacket);
+
+    cpuUsageMemoryPacket->SubRef();
+
+    CLanPacket* sessionNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_SESSION, 0);
+
+    mMonitorClient.SendPacket(sessionNumPacket);
+
+    sessionNumPacket->SubRef();
+
+    CLanPacket* authPlayerNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_AUTH_PLAYER, 0);
+
+    mMonitorClient.SendPacket(authPlayerNumPacket);
+
+    authPlayerNumPacket->SubRef();
+
+    CLanPacket* gamePlayerNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_GAME_PLAYER, 0);
+
+    mMonitorClient.SendPacket(gamePlayerNumPacket);
+
+    gamePlayerNumPacket->SubRef();
+
+    CLanPacket* acceptTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_ACCEPT_TPS, 0);
+
+    mMonitorClient.SendPacket(acceptTPSPacket);
+
+    acceptTPSPacket->SubRef();
+
+    CLanPacket* recvTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_PACKET_RECV_TPS, 0);
+
+    mMonitorClient.SendPacket(recvTPSPacket);
+
+    recvTPSPacket->SubRef();
+
+    CLanPacket* sendTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_PACKET_SEND_TPS, 0);
+
+    mMonitorClient.SendPacket(sendTPSPacket);
+
+    sendTPSPacket->SubRef();
+
+    CLanPacket* dbWriteTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_DB_WRITE_TPS, 0);
+
+    mMonitorClient.SendPacket(dbWriteTPSPacket);
+
+    dbWriteTPSPacket->SubRef();
+
+    CLanPacket* dbMsgQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_DB_WRITE_MSG, 0);
+
+    mMonitorClient.SendPacket(dbMsgQPacket);
+
+    dbMsgQPacket->SubRef();
+
+    CLanPacket* authFrameQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_AUTH_THREAD_FPS, 0);
+
+    mMonitorClient.SendPacket(authFrameQPacket);
+
+    authFrameQPacket->SubRef();
+
+    CLanPacket* gameFrameQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_GAME_THREAD_FPS, 0);
+
+    mMonitorClient.SendPacket(gameFrameQPacket);
+
+    gameFrameQPacket->SubRef();
+
+    CLanPacket* gamePacketPoolPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_PACKET_POOL, 0);
+
+    mMonitorClient.SendPacket(gamePacketPoolPacket);
+
+    gamePacketPoolPacket->SubRef();
+
+    CLanPacket* serverCpuUsagePacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_MONITOR_CPU_TOTAL, (int)mCpuUsage.ProcessorTotal());
+
+    mMonitorClient.SendPacket(serverCpuUsagePacket);
+
+    serverCpuUsagePacket->SubRef();
+
+    CLanPacket* serverNopagedMemoryPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_MONITOR_NONPAGED_MEMORY, (int)mCpuUsage.NonPagedMemory() / 1000000);
+
+    mMonitorClient.SendPacket(serverNopagedMemoryPacket);
+
+    serverNopagedMemoryPacket->SubRef();
+
+    CLanPacket* serverNetworkRecvPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_MONITOR_NETWORK_RECV, (int)mCpuUsage.NetworkRecvBytes() / 1000);
+
+    mMonitorClient.SendPacket(serverNetworkRecvPacket);
+
+    serverNetworkRecvPacket->SubRef();
+
+    CLanPacket* serverNetworkSendPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_MONITOR_NETWORK_SEND, (int)mCpuUsage.NetworkSendBytes() / 1000);
+
+    mMonitorClient.SendPacket(serverNetworkSendPacket);
+
+    serverNetworkSendPacket->SubRef();
+
+    CLanPacket* serverAvailableMemoryPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_MONITOR_AVAILABLE_MEMORY, (int)mCpuUsage.AvailableMemory());
+
+    mMonitorClient.SendPacket(serverAvailableMemoryPacket);
+
+    serverAvailableMemoryPacket->SubRef();
 }

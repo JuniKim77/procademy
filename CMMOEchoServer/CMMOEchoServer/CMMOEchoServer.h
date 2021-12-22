@@ -3,6 +3,7 @@
 #include "CPlayer.h"
 #include "CMMOServer.h"
 #include "CCpuUsage.h"
+#include "CMonitorClient.h"
 
 namespace procademy
 {
@@ -29,12 +30,21 @@ namespace procademy
 		void			Init();
 		void			MonitoringProc();
 		void			MakeMonitorStr(WCHAR* s, int size);
+		CLanPacket*		MakeMonitorLogin(int serverNo);
+		CLanPacket*		MakeMonitorPacket(BYTE dataType, int dataValue);
+
+		void			LoginMonitorServer();
+		void			SendMonitorDataProc();
 
 	private:
 		CPlayer*				mPlayers;
 		HANDLE					mMonitorThread;
 		bool					mbMonitoring = true;
 		CCpuUsage				mCpuUsage;
+		u_short					mMonitorPort = 0;
+		WCHAR					mMonitorIP[32];
+		int						mServerNo;
+		CMonitorClient			mMonitorClient;		
 		alignas(64) DWORD		mLoginCount = 0;
 	};
 }

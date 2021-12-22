@@ -4,89 +4,89 @@
 #include "CNetPacket.h"
 #include "CFrameSkipper.h"
 
-struct statusDebug
-{
-	int										logicID;
-	procademy::CSession::SESSION_STATUS		status;
-	bool									sending;
-	bool									toGame;
-	bool									sessionEnd;
-	u_short									sessionIndex;
-	u_int64									sessionID;
-	DWORD									threadId;
-	int										ioCount;
-	int										mFront;
-	int										mRear;
-};
-
-struct ringbufDebug
-{
-	char* pRear;
-	char* pFront;
-	char* pBuf;
-	int mRear;
-	int mFront;
-	int mCapa;
-	ULONG len1;
-	ULONG len2;
-};
-
-USHORT g_debugIdx;
-statusDebug g_statusDebugs[USHRT_MAX + 1];
-
-USHORT g_ringbufIdx;
-ringbufDebug g_ringbufDebugs[USHRT_MAX + 1];
-
-void ringbufLog(
-	char* pRear,
-	char* pFront,
-	char* pBuf,
-	int mRear,
-	int mFront,
-	int mCapa,
-	ULONG len1,
-	ULONG len2)
-{
-	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ringbufIdx);
-
-	g_ringbufDebugs[index].pRear = pRear;
-	g_ringbufDebugs[index].pFront = pFront;
-	g_ringbufDebugs[index].pBuf = pBuf;
-	g_ringbufDebugs[index].mRear = mRear;
-	g_ringbufDebugs[index].mFront = mFront;
-	g_ringbufDebugs[index].mCapa = mCapa;
-	g_ringbufDebugs[index].len1 = len1;
-	g_ringbufDebugs[index].len2 = len2;
-}
-
-void statusLog(
-	int										logicID,
-	procademy::CSession::SESSION_STATUS		status,
-	bool									sending,
-	bool									toGame,
-	bool									sessionEnd,
-	u_short									sessionIndex,
-	u_int64									sessionID,
-	DWORD									threadId,
-	int										ioCount,
-	int										mFront,
-int											mRear
-)
-{
-	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
-
-	g_statusDebugs[index].logicID = logicID;
-	g_statusDebugs[index].status = status;
-	g_statusDebugs[index].sending = sending;
-	g_statusDebugs[index].toGame = toGame;
-	g_statusDebugs[index].sessionEnd = sessionEnd;
-	g_statusDebugs[index].sessionIndex = sessionIndex;
-	g_statusDebugs[index].sessionID = sessionID;
-	g_statusDebugs[index].threadId = threadId;
-	g_statusDebugs[index].ioCount = ioCount;
-	g_statusDebugs[index].mFront = mFront;
-	g_statusDebugs[index].mRear = mRear;
-}
+//struct statusDebug
+//{
+//	int										logicID;
+//	procademy::CSession::SESSION_STATUS		status;
+//	bool									sending;
+//	bool									toGame;
+//	bool									sessionEnd;
+//	u_short									sessionIndex;
+//	u_int64									sessionID;
+//	DWORD									threadId;
+//	int										ioCount;
+//	int										mFront;
+//	int										mRear;
+//};
+//
+//struct ringbufDebug
+//{
+//	char* pRear;
+//	char* pFront;
+//	char* pBuf;
+//	int mRear;
+//	int mFront;
+//	int mCapa;
+//	ULONG len1;
+//	ULONG len2;
+//};
+//
+//USHORT g_debugIdx;
+//statusDebug g_statusDebugs[USHRT_MAX + 1];
+//
+//USHORT g_ringbufIdx;
+//ringbufDebug g_ringbufDebugs[USHRT_MAX + 1];
+//
+//void ringbufLog(
+//	char* pRear,
+//	char* pFront,
+//	char* pBuf,
+//	int mRear,
+//	int mFront,
+//	int mCapa,
+//	ULONG len1,
+//	ULONG len2)
+//{
+//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ringbufIdx);
+//
+//	g_ringbufDebugs[index].pRear = pRear;
+//	g_ringbufDebugs[index].pFront = pFront;
+//	g_ringbufDebugs[index].pBuf = pBuf;
+//	g_ringbufDebugs[index].mRear = mRear;
+//	g_ringbufDebugs[index].mFront = mFront;
+//	g_ringbufDebugs[index].mCapa = mCapa;
+//	g_ringbufDebugs[index].len1 = len1;
+//	g_ringbufDebugs[index].len2 = len2;
+//}
+//
+//void statusLog(
+//	int										logicID,
+//	procademy::CSession::SESSION_STATUS		status,
+//	bool									sending,
+//	bool									toGame,
+//	bool									sessionEnd,
+//	u_short									sessionIndex,
+//	u_int64									sessionID,
+//	DWORD									threadId,
+//	int										ioCount,
+//	int										mFront,
+//int											mRear
+//)
+//{
+//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
+//
+//	g_statusDebugs[index].logicID = logicID;
+//	g_statusDebugs[index].status = status;
+//	g_statusDebugs[index].sending = sending;
+//	g_statusDebugs[index].toGame = toGame;
+//	g_statusDebugs[index].sessionEnd = sessionEnd;
+//	g_statusDebugs[index].sessionIndex = sessionIndex;
+//	g_statusDebugs[index].sessionID = sessionID;
+//	g_statusDebugs[index].threadId = threadId;
+//	g_statusDebugs[index].ioCount = ioCount;
+//	g_statusDebugs[index].mFront = mFront;
+//	g_statusDebugs[index].mRear = mRear;
+//}
 
 procademy::CMMOServer::CMMOServer()
 {
@@ -179,6 +179,9 @@ void procademy::CMMOServer::LoadInitFile(const WCHAR* fileName)
 
 	tp.GetValue(L"CLIENT_MAX", &num);
 	mMaxClient = (u_short)num;
+
+	tp.GetValue(L"AUTH_MAX_TRANSFER", &mMaxTransferToAuth);
+	tp.GetValue(L"GAME_MAX_TRANSFER", &mMaxTransferToGame);
 
 	tp.GetValue(L"NAGLE", buffer);
 	if (wcscmp(L"TRUE", buffer) == 0)
@@ -960,9 +963,14 @@ bool procademy::CMMOServer::SendPost(CSession* session)
 			return true;
 		}
 
-		if (err != WSAECONNRESET && err != WSAEINTR)
+		if (err != WSAECONNRESET && err != WSAEINTR && err != WSAECONNABORTED)
 		{
 			CRASH();
+		}
+
+		if (err == WSAECONNABORTED)
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendPost Unusual Error %d", err);
 		}
 
 		DecrementIOProc(session, 20050);
@@ -1103,6 +1111,8 @@ void procademy::CMMOServer::Disconnect(CSession* session)
 
 void procademy::CMMOServer::AuthLoopProc()
 {
+	int transferCount = 0;
+
 	for (int i = 0; i < mMaxClient; ++i)
 	{
 		CSession* session = mSessionArray[i];
@@ -1111,7 +1121,11 @@ void procademy::CMMOServer::AuthLoopProc()
 		{
 		case CSession::en_AUTH_READY:
 		{
-			AuthReadySessionProc(session);
+			if (transferCount < mMaxTransferToAuth)
+			{
+				AuthReadySessionProc(session);
+				transferCount++;
+			}
 			break;
 		}
 		case CSession::en_AUTH_RUN:
@@ -1250,6 +1264,8 @@ void procademy::CMMOServer::SendPacketProc(CSession* session)
 
 void procademy::CMMOServer::GameLoopProc()
 {
+	int transferCount = 0;
+
 	for (int i = 0; i < mMaxClient; ++i)
 	{
 		CSession* session = mSessionArray[i];
@@ -1258,7 +1274,11 @@ void procademy::CMMOServer::GameLoopProc()
 		{
 		case CSession::en_GAME_READY:
 		{
-			GameReadySessionProc(session);
+			if (transferCount < mMaxTransferToGame)
+			{
+				GameReadySessionProc(session);
+				transferCount++;
+			}
 			break;
 		}
 		case CSession::en_GAME_RUN:

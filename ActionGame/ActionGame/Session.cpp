@@ -46,7 +46,7 @@ bool Session::Connect(HWND hWnd)
 #ifdef DEBUG
 	
 #else
-	InetPton(AF_INET, L"127.0.0.1", &addr.sin_addr);
+	InetPton(AF_INET, L"106.245.38.107", &addr.sin_addr);
 #endif // DEBUG
 	/*WCHAR ServerIP[16] = { 0, };
 	wprintf_s(L"Server IP: ");

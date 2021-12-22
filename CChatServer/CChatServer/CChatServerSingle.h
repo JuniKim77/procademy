@@ -108,7 +108,7 @@ namespace procademy
 		void			PrintRecvSendRatio();
 		void			ClearTPS();
 		void			Init();
-		void			RecordPerformentce();
+		void			RecordPerformence();
 		void			LoginMonitorServer();
 		void			SendMonitorDataProc();
 

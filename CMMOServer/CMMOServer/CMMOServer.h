@@ -156,6 +156,8 @@ namespace procademy
 		BYTE					mActiveThreadNum = 0;
 		BYTE					mWorkerThreadNum = 0;
 		u_short					mMaxClient = 0;
+		int						mMaxTransferToAuth = 20;
+		int						mMaxTransferToGame = 20;
 
 		struct Monitor
 		{

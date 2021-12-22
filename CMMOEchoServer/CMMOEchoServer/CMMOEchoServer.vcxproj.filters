@@ -72,6 +72,12 @@
     <ClCompile Include="CPlayer.cpp">
       <Filter>소스 파일\Objects</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CLanClient\CLanClient\CLanClient.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CMonitorClient\CMonitorClient\CMonitorClient.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\CMMOServer\CMMOServer\CMMOServer.h">
@@ -133,6 +139,12 @@
     </ClInclude>
     <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h">
       <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CLanClient\CLanClient\CLanClient.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CMonitorClient\CMonitorClient\CMonitorClient.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -45,12 +45,10 @@ bool procademy::CLanClient::Connect(const WCHAR* serverIP, USHORT serverPort)
     wcscpy_s(mServerIP, _countof(mServerIP), serverIP);
     mServerPort = serverPort;
 
-    if (CreateSocket() == false)
+    if (ClientConnect())
     {
-        return false;
+        OnEnterJoinServer();
     }
-
-    OnEnterJoinServer();
 
     return true;
 }
@@ -174,6 +172,10 @@ unsigned int __stdcall procademy::CLanClient::MonitorThread(LPVOID arg)
 
 void procademy::CLanClient::Init()
 {
+    SetStartUp();
+
+    CreateSocket();
+
     mhThreads = new HANDLE[(long long)mWorkerThreadNum + 1];
 
     CreateIOCP();
@@ -246,49 +248,24 @@ bool procademy::CLanClient::BeginThreads()
 
 bool procademy::CLanClient::CreateSocket()
 {
-    WSADATA			wsa;
-    SOCKADDR_IN		addr;
-    HANDLE          hResult;
-    LINGER			optval;
-
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"WSAStartup [Error: %d]", WSAGetLastError());
-        return false;
-    }
-
     mClient.socket = socket(AF_INET, SOCK_STREAM, 0);
     if (mClient.socket == INVALID_SOCKET)
     {
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"Create socket [Error: %d]", WSAGetLastError());
         return false;
     }
-    // TimeWait Zero
-    optval.l_onoff = 1;
-    optval.l_linger = 0;
 
-    int timeOutnRet = setsockopt(mClient.socket, SOL_SOCKET, SO_LINGER, (char*)&optval, sizeof(optval));
-    if (timeOutnRet == SOCKET_ERROR)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Listen Socket Linger [Error: %d]", WSAGetLastError());
-        closesocket(mClient.socket);
-        return false;
-    }
-
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(mServerPort);
-    InetPton(AF_INET, mServerIP, &addr.sin_addr);
-
-    int connectRetval = connect(mClient.socket, (SOCKADDR*)&addr, sizeof(addr));
-
-    if (connectRetval == SOCKET_ERROR)
-    {
-        //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Socket Connect [Error: %d]", WSAGetLastError());
-        closesocket(mClient.socket);
-        return false;
-    }
     CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Create");
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Connect");
+    
+    if (!SetTimeWaitZero())
+    {
+        return false;
+    }
+
+    if (!SetNonBlockSocket())
+    {
+        return false;
+    }
 
     if (mbZeroCopy)
     {
@@ -300,7 +277,132 @@ bool procademy::CLanClient::CreateSocket()
         SetNagle(mbNagle);
     }
 
-    hResult = CreateIoCompletionPort((HANDLE)mClient.socket, mIocp, 0, 0);
+    return true;
+}
+
+bool procademy::CLanClient::SetStartUp()
+{
+    WSADATA			wsa;
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"WSAStartup [Error: %d]", WSAGetLastError());
+        return false;
+    }
+
+    return true;
+}
+
+bool procademy::CLanClient::SetTimeWaitZero()
+{
+    LINGER optval;
+
+    optval.l_onoff = 1;
+    optval.l_linger = 0;
+
+    int timeOutnRet = setsockopt(mClient.socket, SOL_SOCKET, SO_LINGER, (char*)&optval, sizeof(optval));
+    if (timeOutnRet == SOCKET_ERROR)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Client Socket Linger [Error: %d]", WSAGetLastError());
+        closesocket(mClient.socket);
+        return false;
+    }
+
+    return true;
+}
+
+bool procademy::CLanClient::SetNonBlockSocket()
+{
+    u_long on = 1;
+
+    int retval = ioctlsocket(mClient.socket, FIONBIO, &on);
+
+    if (retval == SOCKET_ERROR)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Set NonBlock Socket [Error: %d]", WSAGetLastError());
+        closesocket(mClient.socket);
+        return false;
+    }
+
+    return true;
+}
+
+bool procademy::CLanClient::ClientConnect()
+{
+    if (mClient.isConnecting)
+    {
+        int optval = 0;
+        int len = sizeof(optval);
+        int retval = getsockopt(mClient.socket, SOL_SOCKET, SO_ERROR, (char*)&optval, &len);
+
+        if (retval == SOCKET_ERROR)
+        {
+            int err = WSAGetLastError();
+
+            switch (err)
+            {
+            case WSAECONNREFUSED:
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Monitor Server Connect Denied");
+                mClient.isConnecting = false;
+                break;
+            case WSAETIMEDOUT:
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Monitor Server Connect TimeOut");
+                mClient.isConnecting = false;
+                break;
+            default:
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Monitor Server Connect Unusual Result");
+                CRASH();
+                break;
+            }
+
+            return false;
+        }
+        else
+        {
+            mClient.isConnecting = false;
+
+            CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Connect");
+
+            return RegisterIocpPort();
+        }
+    }
+
+    SOCKADDR_IN	addr;
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(mServerPort);
+    InetPton(AF_INET, mServerIP, &addr.sin_addr);
+
+    int connectRetval = connect(mClient.socket, (SOCKADDR*)&addr, sizeof(addr));
+
+    if (connectRetval == SOCKET_ERROR)
+    {
+        int err = WSAGetLastError();
+
+        if (err == WSAEWOULDBLOCK)
+        {
+            mClient.isConnecting = true;
+
+            return false;
+        }
+
+        return false;
+    }
+    else
+    {
+        mClient.isConnecting = false;
+
+        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Connect");
+
+        return RegisterIocpPort();
+    }
+
+    return false;
+}
+
+bool procademy::CLanClient::RegisterIocpPort()
+{
+    HANDLE hResult = CreateIoCompletionPort((HANDLE)mClient.socket, mIocp, 0, 0);
 
     if (hResult == NULL)
     {

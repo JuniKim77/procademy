@@ -24,7 +24,6 @@ RingBuffer::RingBuffer(int iBufferSize)
 {
 	mBuffer = new char[(long long)iBufferSize + 1];
 	mpEnd = mBuffer + iBufferSize + 1;
-	memset(mBuffer, 0, (long long)iBufferSize + 1);
 }
 
 void RingBuffer::Resize(int size)

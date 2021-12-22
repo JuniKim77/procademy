@@ -494,16 +494,16 @@ bool procademy::CChatServerSingle::MonitoringProc()
         if (retval == WAIT_TIMEOUT)
         {
             mCpuUsage.UpdateProcessorCpuTime();
-            RecordPerformentce();
+            RecordPerformence();
 
-            /*if (mMonitorClient.IsLogin())
+            if (mMonitorClient.IsLogin())
             {
                 SendMonitorDataProc();
             }
             else
             {
                 LoginMonitorServer();
-            }*/
+            }
 
             // Ãâ·Â
             MakeMonitorStr(str, 2048);
@@ -1313,7 +1313,7 @@ void procademy::CChatServerSingle::Init()
     mRedisIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
 }
 
-void procademy::CChatServerSingle::RecordPerformentce()
+void procademy::CChatServerSingle::RecordPerformence()
 {
     CProfiler::SetRecord(L"Accept_TPS", mMonitor.acceptTPS * 10);
     CProfiler::SetRecord(L"Update_TPS", mUpdateTPS * 10);
@@ -1342,11 +1342,11 @@ void procademy::CChatServerSingle::LoginMonitorServer()
 
 void procademy::CChatServerSingle::SendMonitorDataProc()
 {
-    CLanPacket* loginPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_SERVER_RUN, mbBegin);
+    CLanPacket* runPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_SERVER_RUN, mbBegin);
 
-    mMonitorClient.SendPacket(loginPacket);
+    mMonitorClient.SendPacket(runPacket);
 
-    loginPacket->SubRef();
+    runPacket->SubRef();
     
     CLanPacket* cpuUsagePacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_SERVER_CPU, (int)mCpuUsage.ProcessTotal());
 
@@ -1384,11 +1384,41 @@ void procademy::CChatServerSingle::SendMonitorDataProc()
 
     packetPoolSizePacket->SubRef();
 
-    CLanPacket* updateMSGPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_UPDATEMSG_POOL, (int)mMsgPool.GetSize());
+    CLanPacket* updateMSGPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_CHAT_UPDATEMSG_POOL, (int)mMsgQ.GetSize());
 
     mMonitorClient.SendPacket(updateMSGPacket);
 
     updateMSGPacket->SubRef();
+
+    CLanPacket* serverCpuUsagePacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_MONITOR_CPU_TOTAL, (int)mCpuUsage.ProcessorTotal());
+
+    mMonitorClient.SendPacket(serverCpuUsagePacket);
+
+    serverCpuUsagePacket->SubRef();
+
+    CLanPacket* serverNopagedMemoryPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_MONITOR_NONPAGED_MEMORY, (int)mCpuUsage.NonPagedMemory() / 1000000);
+
+    mMonitorClient.SendPacket(serverNopagedMemoryPacket);
+
+    serverNopagedMemoryPacket->SubRef();
+
+    CLanPacket* serverNetworkRecvPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_MONITOR_NETWORK_RECV, (int)mCpuUsage.NetworkRecvBytes() / 1000);
+
+    mMonitorClient.SendPacket(serverNetworkRecvPacket);
+
+    serverNetworkRecvPacket->SubRef();
+
+    CLanPacket* serverNetworkSendPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_MONITOR_NETWORK_SEND, (int)mCpuUsage.NetworkSendBytes() / 1000);
+
+    mMonitorClient.SendPacket(serverNetworkSendPacket);
+
+    serverNetworkSendPacket->SubRef();
+
+    CLanPacket* serverAvailableMemoryPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_MONITOR_AVAILABLE_MEMORY, (int)mCpuUsage.AvailableMemory());
+
+    mMonitorClient.SendPacket(serverAvailableMemoryPacket);
+
+    serverAvailableMemoryPacket->SubRef();
 }
 
 procademy::CNetPacket* procademy::CChatServerSingle::MakeCSResLogin(BYTE status, INT64 accountNo)
