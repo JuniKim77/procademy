@@ -168,9 +168,6 @@ namespace procademy
 			pHead = pHead->next;
 		}
 
-		if (i > mSize)
-			CRASH();
-
 		return i;
 	}
 

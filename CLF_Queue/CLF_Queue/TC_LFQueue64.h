@@ -184,14 +184,11 @@ namespace procademy
 	{
 		DWORD i;
 		Node* pHead = GetNodeAddress(mHead)->next;
+		int curSize = mSize;
+		size = size > curSize ? curSize : size;
 
 		for (i = 0; i < size; ++i)
 		{
-			if (pHead == nullptr)
-			{
-				return i;
-			}
-
 			arr[i] = pHead->data;
 			pHead = pHead->next;
 		}

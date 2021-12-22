@@ -723,7 +723,7 @@ procademy::CNetPacket* procademy::CNetLoginServer::MakeCSResLogin(BYTE status, I
     packet->PutData(mDummyServers[index].ChatServerIP, 16);
     *packet << mDummyServers[index].ChatServerPort;
 
-    packet->SetHeader(false);
+    packet->SetHeader();
     packet->Encode();
 
     return packet;
