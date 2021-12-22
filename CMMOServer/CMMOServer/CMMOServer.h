@@ -143,11 +143,11 @@ namespace procademy
 		alignas(64) DWORD		recvTPS;
 		DWORD					acceptTotal;
 		DWORD					acceptTPS;
+
+	protected:
 		DWORD					sendLoopCount = 0;
 		DWORD					authLoopCount = 0;
 		DWORD					gameLoopCount = 0;
-
-	protected:
 		alignas(64) DWORD		joinCount = 0;
 		bool					mbNagle = true;
 		bool					mbZeroCopy = true;
@@ -158,6 +158,8 @@ namespace procademy
 		u_short					mMaxClient = 0;
 		int						mMaxTransferToAuth = 20;
 		int						mMaxTransferToGame = 20;
+		int						mAuthPlayerNum = 0;
+		int						mGamePlayerNum = 0;
 
 		struct Monitor
 		{

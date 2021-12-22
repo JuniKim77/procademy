@@ -5,6 +5,7 @@
 #include "CLanPacket.h"
 #include "MonitorProtocol.h"
 #include <time.h>
+#include "CNetPacket.h"
 
 procademy::CMMOEchoServer::CMMOEchoServer()
 {
@@ -187,6 +188,15 @@ void procademy::CMMOEchoServer::MonitoringProc()
         {
             mCpuUsage.UpdateProcessorCpuTime();
 
+            if (mMonitorClient.IsLogin())
+            {
+                SendMonitorDataProc();
+            }
+            else
+            {
+                LoginMonitorServer();
+            }
+
             MakeMonitorStr(str, 2048);
 
             wprintf(str);
@@ -209,6 +219,9 @@ void procademy::CMMOEchoServer::MakeMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
     idx += swprintf_s(s + idx, size - idx, L"%22s(%d / %d)\n", L"Session Num : ", joinCount, mMaxClient);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"Auth Mode Player : ", mAuthPlayerNum);
+    idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"Game Mode Player : ", mGamePlayerNum);
+    idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %d\n", L"Packet Pool: ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Accept Total : ", mMonitor.acceptTotal);
     idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Accept TPS : ", mMonitor.acceptTPS);
@@ -300,37 +313,37 @@ void procademy::CMMOEchoServer::SendMonitorDataProc()
 
     cpuUsageMemoryPacket->SubRef();
 
-    CLanPacket* sessionNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_SESSION, 0);
+    CLanPacket* sessionNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_SESSION, (int)joinCount);
 
     mMonitorClient.SendPacket(sessionNumPacket);
 
     sessionNumPacket->SubRef();
 
-    CLanPacket* authPlayerNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_AUTH_PLAYER, 0);
+    CLanPacket* authPlayerNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_AUTH_PLAYER, mAuthPlayerNum);
 
     mMonitorClient.SendPacket(authPlayerNumPacket);
 
     authPlayerNumPacket->SubRef();
 
-    CLanPacket* gamePlayerNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_GAME_PLAYER, 0);
+    CLanPacket* gamePlayerNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_GAME_PLAYER, mGamePlayerNum);
 
     mMonitorClient.SendPacket(gamePlayerNumPacket);
 
     gamePlayerNumPacket->SubRef();
 
-    CLanPacket* acceptTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_ACCEPT_TPS, 0);
+    CLanPacket* acceptTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_ACCEPT_TPS, (int)mMonitor.acceptTPS);
 
     mMonitorClient.SendPacket(acceptTPSPacket);
 
     acceptTPSPacket->SubRef();
 
-    CLanPacket* recvTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_PACKET_RECV_TPS, 0);
+    CLanPacket* recvTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_PACKET_RECV_TPS, (int)mMonitor.prevRecvTPS);
 
     mMonitorClient.SendPacket(recvTPSPacket);
 
     recvTPSPacket->SubRef();
 
-    CLanPacket* sendTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_PACKET_SEND_TPS, 0);
+    CLanPacket* sendTPSPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_PACKET_SEND_TPS, (int)mMonitor.prevSendTPS);
 
     mMonitorClient.SendPacket(sendTPSPacket);
 
@@ -348,19 +361,19 @@ void procademy::CMMOEchoServer::SendMonitorDataProc()
 
     dbMsgQPacket->SubRef();
 
-    CLanPacket* authFrameQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_AUTH_THREAD_FPS, 0);
+    CLanPacket* authFrameQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_AUTH_THREAD_FPS, (int)authLoopCount);
 
     mMonitorClient.SendPacket(authFrameQPacket);
 
     authFrameQPacket->SubRef();
 
-    CLanPacket* gameFrameQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_GAME_THREAD_FPS, 0);
+    CLanPacket* gameFrameQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_GAME_THREAD_FPS, (int)gameLoopCount);
 
     mMonitorClient.SendPacket(gameFrameQPacket);
 
     gameFrameQPacket->SubRef();
 
-    CLanPacket* gamePacketPoolPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_PACKET_POOL, 0);
+    CLanPacket* gamePacketPoolPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_PACKET_POOL, (int)CNetPacket::sPacketPool.GetSize());
 
     mMonitorClient.SendPacket(gamePacketPoolPacket);
 

@@ -169,6 +169,7 @@
     <ClInclude Include="..\..\CMMOServer\CMMOServer\CMMOServer.h" />
     <ClInclude Include="..\..\CMMOServer\CMMOServer\CSession.h" />
     <ClInclude Include="..\..\CMonitorClient\CMonitorClient\CMonitorClient.h" />
+    <ClInclude Include="..\..\CMonitorServer\CMonitorServer\MonitorProtocol.h" />
     <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h" />
     <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />

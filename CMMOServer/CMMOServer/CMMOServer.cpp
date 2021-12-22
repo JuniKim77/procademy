@@ -1162,6 +1162,8 @@ void procademy::CMMOServer::AuthReadySessionProc(CSession* session)
 	RecvPost(session, true);
 
 	session->status = CSession::en_AUTH_RUN;
+
+	mAuthPlayerNum++;
 }
 
 void procademy::CMMOServer::AuthCompleteRecvProc(CSession* session)
@@ -1203,6 +1205,9 @@ void procademy::CMMOServer::AuthSessionToGameProc(CSession* session)
 	{
 		session->OnAuth_ClientLeave();
 		session->status = CSession::en_GAME_READY;
+
+		mAuthPlayerNum--;
+		mGamePlayerNum++;
 	}
 }
 
@@ -1212,6 +1217,8 @@ void procademy::CMMOServer::AuthReleaseProc(CSession* session)
 	session->OnAuth_ClientRelease();
 
 	ReleaseProc(session);
+
+	mAuthPlayerNum--;
 }
 
 void procademy::CMMOServer::SendLoopProc()
@@ -1345,6 +1352,8 @@ void procademy::CMMOServer::GameReleaseProc(CSession* session)
 	session->OnGame_ClientRelease();
 	
 	ReleaseProc(session);
+
+	mGamePlayerNum--;
 }
 
 
