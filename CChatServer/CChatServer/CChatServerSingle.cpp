@@ -65,7 +65,6 @@
 // //   g_pointerSort[(INT64)address].push_back({ logicId, SessionNo });
 //}
 
-
 procademy::CChatServerSingle::CChatServerSingle()
 {
     LoadInitFile(L"Server.cnf");
@@ -117,8 +116,8 @@ void procademy::CChatServerSingle::OnRecv(SESSION_ID SessionID, CNetPacket* pack
 
     msg->type = MSG_TYPE_RECV;
     msg->sessionNo = SessionID;
-    msg->packet = packet;
     packet->AddRef();
+    msg->packet = packet;
 
     EnqueueMessage(msg);
 }
@@ -446,8 +445,6 @@ void procademy::CChatServerSingle::EventProc()
             }
 
             mMsgPool.Free(msg);
-
-            msg = nullptr;
         }
 #ifdef PROFILE
         CProfiler::End(L"EventProc");
@@ -1180,6 +1177,7 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
         idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"MsgQ : ", mMsgQ.GetPoolCapacity(), mMsgQ.GetSize());
 #ifdef TLS_MEMORY_POOL_VER
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Net Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
+    idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"Net Alloc Count : ", CNetPacket::totalCount);
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Lan Packet Pool : ", CLanPacket::sPacketPool.GetCapacity(), CLanPacket::sPacketPool.GetSize());
 #endif // TLS_MEMORY_POOL_VER
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %d\n", L"Update Msg Pool : ", mMsgPool.GetCapacity(), mMsgPool.GetSize());

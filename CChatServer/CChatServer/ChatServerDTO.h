@@ -47,5 +47,13 @@ namespace procademy
 		BYTE			type;
 		SESSION_ID		sessionNo;
 		CNetPacket*		packet;
+		int				mCounter = 0;
+
+		st_MSG() {
+			InterlockedIncrement((long*)&mCounter);
+
+			if (mCounter > 1)
+				CRASH();
+		}
 	};
 }

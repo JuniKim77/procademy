@@ -123,8 +123,17 @@ namespace procademy
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
 
-		InterlockedIncrement(&mSize);
+		/*long incVal = InterlockedIncrement(&mSize);
+		int capa = mCapacity;
 
+		if (incVal > capa)
+		{
+			InterlockedIncrement(&mCapacity);
+			AllocMemory(1);
+		}*/
+
+		InterlockedIncrement(&mSize);
+		
 		if (mSize > mCapacity)
 		{
 			InterlockedIncrement(&mCapacity);
