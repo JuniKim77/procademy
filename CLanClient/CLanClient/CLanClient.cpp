@@ -117,11 +117,11 @@ void procademy::CLanClient::SetZeroCopy(bool on)
 
     if (on)
     {
-        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Zero Copy On");
+        //CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Zero Copy On");
     }
     else
     {
-        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Zero Copy Off");
+        //CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Zero Copy Off");
     }
 }
 
@@ -139,11 +139,11 @@ void procademy::CLanClient::SetNagle(bool on)
 
     if (on)
     {
-        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Nagle On");
+        //CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Nagle On");
     }
     else
     {
-        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Nagle Off");
+        //CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Nagle Off");
     }
 }
 
@@ -255,7 +255,7 @@ bool procademy::CLanClient::CreateSocket()
         return false;
     }
 
-    CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Create");
+    //CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Create");
     
     if (!SetTimeWaitZero())
     {
@@ -329,45 +329,12 @@ bool procademy::CLanClient::SetNonBlockSocket()
 
 bool procademy::CLanClient::ClientConnect()
 {
-    if (mClient.isConnecting)
-    {
-        int optval = 0;
-        int len = sizeof(optval);
-        int retval = getsockopt(mClient.socket, SOL_SOCKET, SO_ERROR, (char*)&optval, &len);
-
-        if (retval == SOCKET_ERROR)
-        {
-            int err = WSAGetLastError();
-
-            switch (err)
-            {
-            case WSAECONNREFUSED:
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Monitor Server Connect Denied");
-                mClient.isConnecting = false;
-                break;
-            case WSAETIMEDOUT:
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Monitor Server Connect TimeOut");
-                mClient.isConnecting = false;
-                break;
-            default:
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Monitor Server Connect Unusual Result");
-                CRASH();
-                break;
-            }
-
-            return false;
-        }
-        else
-        {
-            mClient.isConnecting = false;
-
-            CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Connect");
-
-            return RegisterIocpPort();
-        }
-    }
-
     SOCKADDR_IN	addr;
+    timeval tval;
+    tval.tv_sec = 0;
+    tval.tv_usec = 200000;
+    int test = 0;
+    int err = 0;
 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(mServerPort);
@@ -381,20 +348,44 @@ bool procademy::CLanClient::ClientConnect()
 
         if (err == WSAEWOULDBLOCK)
         {
-            mClient.isConnecting = true;
+            FD_ZERO(&mClient.wset);
+            FD_ZERO(&mClient.errset);
+
+            FD_SET(mClient.socket, &mClient.wset);
+            FD_SET(mClient.socket, &mClient.errset);
+
+            int retval = select(0, nullptr, &mClient.wset, &mClient.errset, &tval);
+
+            if (retval > 0)
+            {
+                if (FD_ISSET(mClient.socket, &mClient.wset))
+                {
+                    return RegisterIocpPort();
+                }
+                else if (FD_ISSET(mClient.socket, &mClient.errset))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                closesocket(mClient.socket);
+
+                CreateSocket();
+            }
 
             return false;
         }
 
-        return false;
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Unusual Connect Error %d", err);
+
+        CRASH();
     }
     else
     {
-        mClient.isConnecting = false;
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Unusual Connect Result %d", connectRetval);
 
-        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Client Socket Connect");
-
-        return RegisterIocpPort();
+        CRASH();
     }
 
     return false;
