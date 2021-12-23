@@ -5,15 +5,15 @@
 #include "CProfiler.h"
 #include "TextParser.h"
 
-//struct packetDebug
-//{
-//	int			logicId;
-//	DWORD		threadId;
-//	void*		pChunk;
-//	int			allocCount;
-//	void*		pPacket;
-//	LONG		freeCount;
-//};
+struct packetDebug
+{
+	int				logicId;
+	DWORD			threadId;
+	//void*		pChunk;
+	int				allocCount;
+	procademy::CNetPacket*		pPacket;
+	//LONG		freeCount;
+};
 //
 //struct ioDebug
 //{
@@ -51,20 +51,20 @@
 //void packetLog(
 //	int			logicId = -9999,
 //	DWORD		threadId = 0,
-//	void*		pChunk = nullptr,
-//	void*		pPacket = nullptr,
-//	int			allocCount = -9999,
-//	LONG		freeCount = 9999
+//	//void*		pChunk = nullptr,
+//	procademy::CNetPacket*		pPacket = nullptr,
+//	int			allocCount = -9999
+//	//LONG		freeCount = 9999
 //)
 //{
 //	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
 //
 //	g_packetDebugs[index].logicId = logicId;
 //	g_packetDebugs[index].threadId = threadId;
-//	g_packetDebugs[index].pChunk = pChunk;
+//	//g_packetDebugs[index].pChunk = pChunk;
 //	g_packetDebugs[index].pPacket = pPacket;
 //	g_packetDebugs[index].allocCount = allocCount;
-//	g_packetDebugs[index].freeCount = freeCount;
+//	//g_packetDebugs[index].freeCount = freeCount;
 //}
 
 namespace procademy
@@ -462,10 +462,9 @@ namespace procademy
 				break;
 			}
 			
-			/*USHORT ret = InterlockedIncrement16((SHORT*)&g_debugPacket2);
-			g_sessionDebugs2[ret] = dummy;*/
 			dummy->SubRef();
 		}
+
 		session->recvQ.ClearBuffer();
 
 		ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
