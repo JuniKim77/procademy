@@ -81,6 +81,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -131,7 +132,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;..\..\CNetServerNoLock\CNetServerNoLock;..\..\CSafeQueue\CSafeQueue;..\..\CLF_LanServer\CLF_LanServer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;..\..\CNetServerNoLock\CNetServerNoLock;..\..\CSafeQueue\CSafeQueue;..\..\CLF_LanServer\CLF_LanServer;..\..\DB_Writer\DB_Writer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
@@ -139,6 +140,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>..\..\DB_Writer\DB_Writer\mysql\lib\vs14;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>mysqlclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

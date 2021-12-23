@@ -4,6 +4,7 @@
 #include <WS2tcpip.h>
 #include <WinSock2.h>
 #include "RingBuffer.h"
+#include "CDBConnector_TLS.h"
 #include "CLF_LanServer.h"
 #include <unordered_map>
 #include "TC_LFObjectPool.h"

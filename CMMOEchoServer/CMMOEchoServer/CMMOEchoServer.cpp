@@ -361,13 +361,13 @@ void procademy::CMMOEchoServer::SendMonitorDataProc()
 
     dbMsgQPacket->SubRef();
 
-    CLanPacket* authFrameQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_AUTH_THREAD_FPS, (int)authLoopCount);
+    CLanPacket* authFrameQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_AUTH_THREAD_FPS, (int)mMonitor.prevAuthLoopCount);
 
     mMonitorClient.SendPacket(authFrameQPacket);
 
     authFrameQPacket->SubRef();
 
-    CLanPacket* gameFrameQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_GAME_THREAD_FPS, (int)gameLoopCount);
+    CLanPacket* gameFrameQPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_GAME_GAME_THREAD_FPS, (int)mMonitor.prevGameLoopCount);
 
     mMonitorClient.SendPacket(gameFrameQPacket);
 

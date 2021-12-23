@@ -57,10 +57,10 @@
     <ClCompile Include="CMonitorServer.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\DB_Writer\DB_Writer\CDBConnector.cpp">
+    <ClCompile Include="..\..\DB_Writer\DB_Writer\CDBConnector_TLS.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\DB_Writer\DB_Writer\CDBConnector_TLS.cpp">
+    <ClCompile Include="..\..\DB_Writer\DB_Writer\CDBConnector.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
   </ItemGroup>
