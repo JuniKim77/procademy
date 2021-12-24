@@ -377,9 +377,10 @@ bool procademy::CLanClient::ClientConnect()
             return false;
         }
 
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Unusual Connect Error %d", err);
-
-        CRASH();
+        if (err != WSAEISCONN)
+        {
+            CLogger::_Log(dfLOG_LEVEL_ERROR, L"Unusual Connect Error %d", err);
+        }
     }
     else
     {

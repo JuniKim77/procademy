@@ -7,9 +7,6 @@
 #include "CCrashDump.h"
 #include <unordered_map>
 
-extern std::unordered_map<procademy::CNetPacket*, int> g_mapPacket;
-extern SRWLOCK g_mapLock;
-
 #define NET_VERSION
 //#define TEST
 
@@ -387,10 +384,6 @@ namespace procademy
 		ret = sPacketPool.Alloc();
 #endif // NEW_DELETE_VER
 
-		AcquireSRWLockExclusive(&g_mapLock);
-		g_mapPacket[ret]++;
-		ReleaseSRWLockExclusive(&g_mapLock);
-
 		ret->mRefCount = 1;
 
 #ifdef PROFILE
@@ -427,13 +420,7 @@ namespace procademy
 #elif defined(MEMORY_POOL_VER)
 			sPacketPool.Free(this);
 #elif defined(TLS_MEMORY_POOL_VER)
-			AcquireSRWLockExclusive(&g_mapLock);
-			g_mapPacket[this]--;
 
-			if (g_mapPacket[this] == 0)
-				g_mapPacket.erase(this);
-			
-			ReleaseSRWLockExclusive(&g_mapLock);
 			sPacketPool.Free(this);
 #endif // NEW_DELETE_VER
 

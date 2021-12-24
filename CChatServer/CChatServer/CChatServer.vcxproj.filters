@@ -22,6 +22,12 @@
     <Filter Include="헤더 파일\Tools">
       <UniqueIdentifier>{f2ca05a0-2725-4c14-b8fa-e3591065f01d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\debugging">
+      <UniqueIdentifier>{9b788029-a36a-41b7-8f8c-584367f129a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\debugging">
+      <UniqueIdentifier>{d3ed10c4-8f4e-42d9-a5f0-1c49e61dea4e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -63,6 +69,12 @@
     <ClCompile Include="..\..\CLanClient\CLanClient\CLanClient.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="myNewMalloc.cpp">
+      <Filter>소스 파일\debugging</Filter>
+    </ClCompile>
+    <ClCompile Include="myNew.cpp">
+      <Filter>소스 파일\debugging</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CChatServerSingle.h">
@@ -90,9 +102,6 @@
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h">
-      <Filter>헤더 파일\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\MemoryPool\MemoryPool\ObjectPool.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\MemoryPool_TLS\MemoryPool_TLS\ObjectPool_TLS.h">
@@ -130,6 +139,15 @@
     </ClInclude>
     <ClInclude Include="..\..\CLanClient\CLanClient\CLanClient.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="memoryDebug.h">
+      <Filter>헤더 파일\debugging</Filter>
+    </ClInclude>
+    <ClInclude Include="myNew.h">
+      <Filter>헤더 파일\debugging</Filter>
+    </ClInclude>
+    <ClInclude Include="myNewMalloc.h">
+      <Filter>헤더 파일\debugging</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

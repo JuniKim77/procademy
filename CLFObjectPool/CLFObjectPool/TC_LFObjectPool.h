@@ -5,14 +5,16 @@
 #include <string.h>
 #include <wtypes.h>
 #include "CCrashDump.h"
-//#include "myNewMalloc.h"
+#include "myNewMalloc.h"
+
+//#define SAFE_MODE
 
 #define CHECKSUM_OVER (0xAAAAAAAA)
 
-extern bool g_btn;
-
 namespace procademy
 {
+	
+
 	template <typename DATA>
 	class TC_LFObjectPool
 	{
@@ -24,10 +26,17 @@ namespace procademy
 				stpNextBlock = NULL;
 			}
 
-			void*							code;
-			alignas(64) DATA				data;			
-			st_BLOCK_NODE*					stpNextBlock;
+#ifdef SAFE_MODE
+			void* code;
+			alignas(64) DATA				data;
+			st_BLOCK_NODE* stpNextBlock;
 			unsigned int					checkSum_over = CHECKSUM_OVER;
+#else
+			DATA				data;
+			st_BLOCK_NODE* stpNextBlock;
+#endif // SAFE_MODE
+
+			
 		};
 	public:
 		TC_LFObjectPool();
@@ -83,9 +92,8 @@ namespace procademy
 			LONG64			counter = 0;
 		};
 
-		alignas(64) DWORD mSize;
-
-		DWORD mCapacity;
+		alignas(64) long	mSize;
+		alignas(64) long	mCapacity;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		t_Top _pFreeTop;
@@ -126,16 +134,13 @@ namespace procademy
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
 
-		int capa = mCapacity;
+		long capa = mCapacity;
 
 		if (capa < InterlockedIncrement(&mSize))
 		{
-			InterlockedIncrement(&mCapacity);
-
-			if (g_btn)
-				CRASH();
-
 			AllocMemory(1);
+
+			InterlockedIncrement(&mCapacity);
 		}
 
 		do
@@ -159,8 +164,10 @@ namespace procademy
 	{
 		// prerequisite
 		st_BLOCK_NODE* top;
+
+
+#ifdef SAFE_MODE
 		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - 64);
-		//st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)pData;
 
 		if (pNode->code != this ||
 			pNode->checkSum_over != CHECKSUM_OVER)
@@ -168,6 +175,9 @@ namespace procademy
 			CRASH();
 			return false;
 		}
+#else
+		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)pData;
+#endif // SAFE_MODE
 
 		do
 		{
@@ -194,14 +204,16 @@ namespace procademy
 		{
 			// prerequisite
 			node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
+
+#ifdef SAFE_MODE
 			node->code = this;
+			node->checkSum_over = CHECKSUM_OVER;
+#endif // SAFE_MODE
 
 			if (false == mbPlacementNew)
 			{
 				new (&node->data) (DATA);
 			}
-			
-			node->checkSum_over = CHECKSUM_OVER;
 
 			do
 			{

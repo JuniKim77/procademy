@@ -157,6 +157,8 @@
     <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
     <ClCompile Include="CChatServerSingle.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="myNew.cpp" />
+    <ClCompile Include="myNewMalloc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.h" />
@@ -173,7 +175,6 @@
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h" />
     <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h" />
-    <ClInclude Include="..\..\MemoryPool\MemoryPool\ObjectPool.h" />
     <ClInclude Include="..\..\MemoryPool_TLS\MemoryPool_TLS\ObjectPool_TLS.h" />
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h" />
     <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h" />
@@ -181,6 +182,9 @@
     <ClInclude Include="CChatServerSingle.h" />
     <ClInclude Include="ChatServerDTO.h" />
     <ClInclude Include="CommonProtocol.h" />
+    <ClInclude Include="memoryDebug.h" />
+    <ClInclude Include="myNew.h" />
+    <ClInclude Include="myNewMalloc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
