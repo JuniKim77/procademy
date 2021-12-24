@@ -25,7 +25,7 @@ namespace procademy
 	CLanPacket::CLanPacket(int iBufferSize)
 		: mCapacity(iBufferSize)
 	{
-		mBuffer = (char*)malloc(mCapacity + HEADER_MAX_SIZE);
+		mBuffer = (char*)malloc((LONGLONG)mCapacity + HEADER_MAX_SIZE);
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mBuffer + HEADER_MAX_SIZE;
 		mEnd = mFront + mCapacity;
@@ -55,7 +55,7 @@ namespace procademy
 		{
 			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"MoveFront - front is over rear");
 
-			iSize = mRear - mFront;
+			iSize = (int)(mRear - mFront);
 		}
 
 		mFront += iSize;
@@ -69,7 +69,7 @@ namespace procademy
 		{
 			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"MoveFront - front is over rear");
 
-			iSize = mEnd - mRear;
+			iSize = (int)(mEnd - mRear);
 		}
 
 		mRear += iSize;
@@ -312,7 +312,7 @@ namespace procademy
 	{
 		if (mFront + iLength > mRear)
 		{
-			iLength = mRear - mFront;
+			iLength = (int)(mRear - mFront);
 		}
 
 		memcpy(chpDest, mFront, iLength);
@@ -346,14 +346,14 @@ namespace procademy
 
 	CLanPacket& CLanPacket::operator<<(const char* s)
 	{
-		PutData(s, strlen(s));
+		PutData(s, (int)strlen(s));
 
 		return *this;
 	}
 
 	CLanPacket& CLanPacket::operator<<(const wchar_t* s)
 	{
-		PutData(s, wcslen(s));
+		PutData(s, (int)wcslen(s));
 
 		return *this;
 	}
@@ -450,7 +450,7 @@ namespace procademy
 		char* pBuffer = (char*)malloc((long long)mCapacity + HEADER_MAX_SIZE + eBUFFER_DEFAULT);
 
 		if (pBuffer != 0)
-			memcpy(pBuffer, mBuffer, mCapacity + HEADER_MAX_SIZE);
+			memcpy(pBuffer, mBuffer, (LONGLONG)mCapacity + HEADER_MAX_SIZE);
 
 		int frontIndex = (int)(mFront - mBuffer);
 		int rearIndex = (int)(mRear - mBuffer);

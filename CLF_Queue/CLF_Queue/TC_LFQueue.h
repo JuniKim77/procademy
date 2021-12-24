@@ -159,7 +159,7 @@ namespace procademy
 	{
 		DWORD i;
 		Node* pHead = mHead.ptr_node->next;
-		int curSize = mSize;
+		DWORD curSize = (DWORD)mSize;
 		size = size > curSize ? curSize : size;
 
 		for (i = 0; i < size; ++i)

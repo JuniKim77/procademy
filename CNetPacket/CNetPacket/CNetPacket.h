@@ -70,8 +70,8 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
-		int		GetSize(void) { return mRear - mZero; }
-		int		GetUseSize() { return mRear - mFront; }
+		int		GetSize(void) { return (int)(mRear - mZero); }
+		int		GetUseSize() { return (int)(mRear - mFront); }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 포인터 얻기.
@@ -96,7 +96,7 @@ namespace procademy
 		/// 현재 버퍼의 사용 가능 사이즈 반환
 		/// </summary>
 		/// <returns>사용 가능 사이즈</returns>
-		int		GetFreeSize() const { return mEnd - mRear; }
+		int		GetFreeSize() const { return (int)(mEnd - mRear); }
 
 		// 연산자 오버로딩 넣기
 		CNetPacket& operator << (unsigned char byValue);

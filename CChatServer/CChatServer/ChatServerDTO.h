@@ -1,8 +1,9 @@
 #pragma once
+#pragma warning(disable:26495)
 
 namespace procademy
 {
-	class st_Player;
+	struct st_Player;
 
 	struct st_Sector
 	{

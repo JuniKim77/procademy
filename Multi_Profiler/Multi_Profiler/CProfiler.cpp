@@ -1,3 +1,6 @@
+#pragma warning(disable:4101)
+#pragma warning(disable:6387)
+
 #include "CProfiler.h"
 #include <stdio.h>
 #include <time.h>
@@ -287,7 +290,6 @@ void CProfiler::ProfilePrint()
 
 		QueryPerformanceFrequency(&f);
 		__int64 time = mProfiles[i].iTotalTime;
-		double avg;
 		double freq = f.QuadPart / 1000.0;  // ms
 
 		wprintf_s(L"%s : %.3lfms\n", mProfiles[i].szName, time / freq);

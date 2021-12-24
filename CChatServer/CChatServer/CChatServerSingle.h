@@ -80,6 +80,7 @@ namespace procademy
 		bool			CompleteMessage(SESSION_ID sessionNo, CNetPacket* packet);
 		bool			JoinProc(SESSION_ID sessionNo);
 		bool			LoginProc(SESSION_ID sessionNo, CNetPacket* packet);
+		bool			LoginProc_Redis(SESSION_ID sessionNo, CNetPacket* packet);
 		bool			LeaveProc(SESSION_ID sessionNo);
 		bool			MoveSectorProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool			SendMessageProc(SESSION_ID sessionNo, CNetPacket* packet);
@@ -162,6 +163,8 @@ namespace procademy
 		bool									mGQCSEx;
 		bool									mbMonitoring;
 		bool									mbPrint;
+		bool									mbRedisMode;
+		bool									mbProfiler;
 		int										mServerNo;
 		alignas(64) RatioMonitor				mRatioMonitor;
 	};

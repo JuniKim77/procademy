@@ -1,3 +1,5 @@
+#pragma warning(disable:6387)
+
 #include "CNetServerNoLock.h"
 #include "CLogger.h"
 #include "CNetPacket.h"
@@ -74,7 +76,7 @@ namespace procademy
 		WORD		version = MAKEWORD(2, 2);
 		WSADATA		data;
 
-		WSAStartup(version, &data);
+		int ret = WSAStartup(version, &data);
 		CLogger::SetDirectory(L"_log");
 
 		mBeginEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);

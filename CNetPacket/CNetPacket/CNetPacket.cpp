@@ -30,7 +30,7 @@ namespace procademy
 	CNetPacket::CNetPacket(int iBufferSize)
 		: mCapacity(iBufferSize)
 	{
-		mBuffer = (char*)malloc(mCapacity + HEADER_MAX_SIZE);
+		mBuffer = (char*)malloc((LONGLONG)mCapacity + HEADER_MAX_SIZE);
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mBuffer + HEADER_MAX_SIZE;
 		mZero = mBuffer;
@@ -60,7 +60,7 @@ namespace procademy
 		{
 			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"MoveFront - front is over rear");
 
-			iSize = mRear - mFront;
+			iSize = (DWORD)(mRear - mFront);
 		}
 
 		mFront += iSize;
@@ -74,7 +74,7 @@ namespace procademy
 		{
 			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"MoveFront - front is over rear");
 
-			iSize = mEnd - mRear;
+			iSize = (DWORD)(mEnd - mRear);
 		}
 
 		mRear += iSize;
@@ -320,7 +320,7 @@ namespace procademy
 
 		if (front + iLength > rear)
 		{
-			iLength = rear - front;
+			iLength = (int)(rear - front);
 		}
 
 		memcpy(chpDest, front, iLength);
@@ -354,14 +354,14 @@ namespace procademy
 
 	CNetPacket& CNetPacket::operator<<(const char* s)
 	{
-		PutData(s, strlen(s));
+		PutData(s, (int)strlen(s));
 
 		return *this;
 	}
 
 	CNetPacket& CNetPacket::operator<<(const wchar_t* s)
 	{
-		PutData(s, wcslen(s));
+		PutData(s, (int)wcslen(s));
 
 		return *this;
 	}
@@ -460,7 +460,7 @@ namespace procademy
 		BYTE D;
 		st_Header header = *((st_Header*)mZero);
 
-		BYTE len = mRear - mFront + 1;
+		BYTE len = (BYTE)(mRear - mFront + 1);
 
 		for (BYTE i = 1; i <= len; ++i)
 		{
@@ -484,7 +484,7 @@ namespace procademy
 		BYTE D;
 		st_Header header = *((st_Header*)mZero);
 
-		BYTE len = mRear - mFront + 1;
+		BYTE len = (BYTE)(mRear - mFront + 1);
 
 		for (BYTE i = 1; i <= len; ++i)
 		{
@@ -540,7 +540,7 @@ namespace procademy
 		char* pBuffer = (char*)malloc((long long)mCapacity + HEADER_MAX_SIZE + eBUFFER_DEFAULT);
 
 		if (pBuffer != 0)
-			memcpy(pBuffer, mBuffer, mCapacity + HEADER_MAX_SIZE);
+			memcpy(pBuffer, mBuffer, (LONGLONG)mCapacity + HEADER_MAX_SIZE);
 
 		int frontIndex = (int)(mFront - mBuffer);
 		int rearIndex = (int)(mRear - mBuffer);
