@@ -197,7 +197,6 @@ namespace procademy
 	public:
 		static BYTE	sCode;
 		static BYTE	sPacketKey;
-		static long totalCount;
 
 #ifdef MEMORY_POOL_VER
 		alignas(64) static TC_LFObjectPool<CNetPacket> sPacketPool;

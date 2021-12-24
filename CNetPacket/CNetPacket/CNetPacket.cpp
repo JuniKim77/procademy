@@ -14,7 +14,6 @@ namespace procademy
 {
 	BYTE	CNetPacket::sCode = 0;
 	BYTE	CNetPacket::sPacketKey = 0;
-	long	CNetPacket::totalCount = 0;
 
 	//#define DEBUG
 #ifdef MEMORY_POOL_VER
@@ -36,8 +35,6 @@ namespace procademy
 		mRear = mBuffer + HEADER_MAX_SIZE;
 		mZero = mBuffer;
 		mEnd = mFront + mCapacity;
-
-		InterlockedIncrement(&totalCount);
 	}
 
 	CNetPacket::~CNetPacket()

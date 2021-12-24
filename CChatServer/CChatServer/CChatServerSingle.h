@@ -143,9 +143,8 @@ namespace procademy
 		CMonitorClient							mMonitorClient;
 
 		alignas(64) ObjectPool_TLS<st_MSG>		mMsgPool;
-		alignas(64) TC_LFQueue<st_MSG*>			mMsgQ;
-		//CSafeQueue<st_MSG*>						mMsgLQ;
-		//SRWLOCK									mMsgLock;
+		alignas(64) TC_LFQueue64<st_MSG*>		mMsgQ;
+
 		HANDLE									mUpdateEvent = INVALID_HANDLE_VALUE;
 
 		std::unordered_map<u_int64, st_Player*>	mPlayerMap;

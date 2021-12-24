@@ -31,9 +31,9 @@ namespace procademy
 		alignas(64) LONG64	mHead;        // 시작노드를 포인트한다.
 		alignas(64) LONG64	mTail;        // 마지막노드를 포인트한다.
 		alignas(64) int		mSize = 0;
-		alignas(64) procademy::TC_LFObjectPool<Node> mMemoryPool;
 
 	public:
+		alignas(64) procademy::TC_LFObjectPool<Node> mMemoryPool;
 		enum {
 			LOGIC_DEQUEUE = 10000,
 			LOGIC_ENQUEUE = 20000

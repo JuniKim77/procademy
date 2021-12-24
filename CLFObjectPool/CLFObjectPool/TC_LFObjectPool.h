@@ -122,8 +122,11 @@ namespace procademy
 		{
 			st_BLOCK_NODE* pNext = node->stpNextBlock;
 
+#ifdef SAFE_MODE
 			_aligned_free(node);
-
+#else
+			free(node);
+#endif // SAFE_MODE
 			node = pNext;
 		}
 	}
@@ -203,11 +206,12 @@ namespace procademy
 		for (int i = 0; i < size; ++i)
 		{
 			// prerequisite
-			node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
-
 #ifdef SAFE_MODE
+			node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
 			node->code = this;
 			node->checkSum_over = CHECKSUM_OVER;
+#else
+			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
 #endif // SAFE_MODE
 
 			if (false == mbPlacementNew)

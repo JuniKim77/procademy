@@ -5,7 +5,7 @@
 #undef malloc
 #undef _aligned_malloc
 
-void* Alloc(const char* File, int Line, size_t size)
+void* _Alloc(const char* File, int Line, size_t size)
 {
     tm t;
     time_t newTime;

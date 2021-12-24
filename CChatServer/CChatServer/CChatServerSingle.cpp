@@ -285,16 +285,6 @@ void procademy::CChatServerSingle::EnqueueMessage(st_MSG* msg)
     else
     {
         mMsgQ.Enqueue(msg);
-        //AcquireSRWLockExclusive(&mMsgLock);
-        //while (1)
-        //{
-        //    if (mMsgLQ.Enqueue(msg))
-        //    {
-        //        break;
-        //    }
-        //}
-        //
-        //ReleaseSRWLockExclusive(&mMsgLock);
 
         SetEvent(mUpdateEvent);
     }    
@@ -1177,7 +1167,6 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
         idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"MsgQ : ", mMsgQ.GetPoolCapacity(), mMsgQ.GetSize());
 #ifdef TLS_MEMORY_POOL_VER
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Net Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
-    idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"Net Alloc Count : ", CNetPacket::totalCount);
     idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"Player PoolAlloc Count : ", mPlayerPool.GetCapacity());
     idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"CNetChunk PoolAlloc Count : ", CNetPacket::sPacketPool.mMemoryPool->GetCapacity());
     idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"MsgQ PoolAlloc Count : ", mMsgQ.mMemoryPool.GetCapacity());
