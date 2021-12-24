@@ -131,7 +131,10 @@ namespace procademy
 		u_short					mSessionCount = 0;
 		u_short					mPort = 0;
 		WCHAR					mBindIP[32];
-		HANDLE					mBeginEvent = INVALID_HANDLE_VALUE;
+		HANDLE					mAcceptEvent = INVALID_HANDLE_VALUE;
+		HANDLE					mGameEvent = INVALID_HANDLE_VALUE;
+		HANDLE					mAuthEvent = INVALID_HANDLE_VALUE;
+		HANDLE					mSendEvent = INVALID_HANDLE_VALUE;
 		int						mAuthPacketLoopNum = 1;
 		int						mGamePacketLoopNum = 300;
 		int						mTimeOut;

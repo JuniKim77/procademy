@@ -4,90 +4,6 @@
 #include "CNetPacket.h"
 #include "CFrameSkipper.h"
 
-//struct statusDebug
-//{
-//	int										logicID;
-//	procademy::CSession::SESSION_STATUS		status;
-//	bool									sending;
-//	bool									toGame;
-//	bool									sessionEnd;
-//	u_short									sessionIndex;
-//	u_int64									sessionID;
-//	DWORD									threadId;
-//	int										ioCount;
-//	int										mFront;
-//	int										mRear;
-//};
-//
-//struct ringbufDebug
-//{
-//	char* pRear;
-//	char* pFront;
-//	char* pBuf;
-//	int mRear;
-//	int mFront;
-//	int mCapa;
-//	ULONG len1;
-//	ULONG len2;
-//};
-//
-//USHORT g_debugIdx;
-//statusDebug g_statusDebugs[USHRT_MAX + 1];
-//
-//USHORT g_ringbufIdx;
-//ringbufDebug g_ringbufDebugs[USHRT_MAX + 1];
-//
-//void ringbufLog(
-//	char* pRear,
-//	char* pFront,
-//	char* pBuf,
-//	int mRear,
-//	int mFront,
-//	int mCapa,
-//	ULONG len1,
-//	ULONG len2)
-//{
-//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ringbufIdx);
-//
-//	g_ringbufDebugs[index].pRear = pRear;
-//	g_ringbufDebugs[index].pFront = pFront;
-//	g_ringbufDebugs[index].pBuf = pBuf;
-//	g_ringbufDebugs[index].mRear = mRear;
-//	g_ringbufDebugs[index].mFront = mFront;
-//	g_ringbufDebugs[index].mCapa = mCapa;
-//	g_ringbufDebugs[index].len1 = len1;
-//	g_ringbufDebugs[index].len2 = len2;
-//}
-//
-//void statusLog(
-//	int										logicID,
-//	procademy::CSession::SESSION_STATUS		status,
-//	bool									sending,
-//	bool									toGame,
-//	bool									sessionEnd,
-//	u_short									sessionIndex,
-//	u_int64									sessionID,
-//	DWORD									threadId,
-//	int										ioCount,
-//	int										mFront,
-//int											mRear
-//)
-//{
-//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
-//
-//	g_statusDebugs[index].logicID = logicID;
-//	g_statusDebugs[index].status = status;
-//	g_statusDebugs[index].sending = sending;
-//	g_statusDebugs[index].toGame = toGame;
-//	g_statusDebugs[index].sessionEnd = sessionEnd;
-//	g_statusDebugs[index].sessionIndex = sessionIndex;
-//	g_statusDebugs[index].sessionID = sessionID;
-//	g_statusDebugs[index].threadId = threadId;
-//	g_statusDebugs[index].ioCount = ioCount;
-//	g_statusDebugs[index].mFront = mFront;
-//	g_statusDebugs[index].mRear = mRear;
-//}
-
 procademy::CMMOServer::CMMOServer()
 {
 	LoadInitFile(L"Server.cnf");
@@ -125,9 +41,10 @@ bool procademy::CMMOServer::Start()
 		return false;
 	}
 
-	//mbBegin = true;
-
-	SetEvent(mBeginEvent);
+	SetEvent(mAcceptEvent);
+	SetEvent(mGameEvent);
+	SetEvent(mAuthEvent);
+	SetEvent(mSendEvent);
 
 	return true;
 }
@@ -218,7 +135,7 @@ void procademy::CMMOServer::QuitServer()
 
 	PostQueuedCompletionStatus(mIOCP, 0, 0, 0);
 
-	SetEvent(mBeginEvent);
+	SetEvent(mAcceptEvent);
 
 	DWORD waitResult = WaitForMultipleObjects(mNumThreads, mhThreads, TRUE, INFINITE);
 
@@ -310,8 +227,7 @@ unsigned int __stdcall procademy::CMMOServer::AcceptThread(LPVOID arg)
 		}
 		else
 		{
-			WaitForSingleObject(server->mBeginEvent, INFINITE);
-			SetEvent(server->mBeginEvent);
+			WaitForSingleObject(server->mAcceptEvent, INFINITE);
 			server->mbBegin = true;
 		}
 	}
@@ -343,8 +259,7 @@ unsigned int __stdcall procademy::CMMOServer::GameThread(LPVOID arg)
 		}
 		else
 		{
-			WaitForSingleObject(server->mBeginEvent, INFINITE);
-			SetEvent(server->mBeginEvent);
+			WaitForSingleObject(server->mGameEvent, INFINITE);
 			server->mbBegin = true;
 		}
 	}
@@ -364,8 +279,7 @@ unsigned int __stdcall procademy::CMMOServer::AuthThread(LPVOID arg)
 		}
 		else
 		{
-			WaitForSingleObject(server->mBeginEvent, INFINITE);
-			SetEvent(server->mBeginEvent);
+			WaitForSingleObject(server->mAuthEvent, INFINITE);
 			server->mbBegin = true;
 		}
 	}
@@ -385,8 +299,7 @@ unsigned int __stdcall procademy::CMMOServer::SendThread(LPVOID arg)
 		}
 		else
 		{
-			WaitForSingleObject(server->mBeginEvent, INFINITE);
-			SetEvent(server->mBeginEvent);
+			WaitForSingleObject(server->mSendEvent, INFINITE);
 			server->mbBegin = true;
 		}
 	}
@@ -401,7 +314,10 @@ void procademy::CMMOServer::Init()
 
 	WSAStartup(version, &data);
 	CLogger::SetDirectory(L"_log");
-	mBeginEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
+	mAcceptEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
+	mGameEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
+	mAuthEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
+	mSendEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
 
 	mhThreads = new HANDLE[(long long)mWorkerThreadNum + 5];
 	mSessionArray = (CSession**)(new CSession*[mMaxClient]);

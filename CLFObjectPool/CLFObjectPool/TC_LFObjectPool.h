@@ -5,7 +5,7 @@
 #include <string.h>
 #include <wtypes.h>
 #include "CCrashDump.h"
-#include "myNewMalloc.h"
+//#include "myNewMalloc.h"
 
 //#define SAFE_MODE
 
@@ -13,8 +13,6 @@
 
 namespace procademy
 {
-	
-
 	template <typename DATA>
 	class TC_LFObjectPool
 	{
