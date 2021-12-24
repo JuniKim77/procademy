@@ -4,7 +4,6 @@
 #include <WS2tcpip.h>
 #include <WinSock2.h>
 #include "RingBuffer.h"
-#include "CDBConnector_TLS.h"
 #include "CLF_LanServer.h"
 #include <unordered_map>
 #include "TC_LFObjectPool.h"
@@ -14,6 +13,7 @@
 namespace procademy
 {
 	class CMonitorToolServer;
+	class CDBConnector;
 
 	class CMonitorServer : public CLF_LanServer
 	{
@@ -51,19 +51,29 @@ namespace procademy
 		void				DeleteServer(SESSION_ID sessionNo);
 		void				LockServer() { AcquireSRWLockExclusive(&mServerLock); }
 		void				UnlockServer() { ReleaseSRWLockExclusive(&mServerLock); }
-		void				ClearMonitorData();
+		void				SaveMonitorData();
 
 		static unsigned int WINAPI	MonitorThread(LPVOID arg);
 		static unsigned int WINAPI	DBThread(LPVOID arg);
+		static VOID WINAPI APCDBFunc(ULONG_PTR param) {}
 
 	private:
 		std::unordered_map<u_int64, st_ServerClient*>		mServerClients;
 		SRWLOCK												mServerLock;
-		WCHAR												mDBIP[16];
-		USHORT												mDBPort;
-		HANDLE*												mThreads = nullptr;
+		HANDLE												mMonitorThread;
+		HANDLE												mDBThread;
 		TC_LFObjectPool<st_MonitorData>						mMonitorDataPool;
 		DWORD												mUpdateTPS = 0;
 		CMonitorToolServer									mMonitorToolServer;
+
+		/// <summary>
+		/// DB INFO
+		/// </summary>
+		CDBConnector*										mDB = nullptr;
+		WCHAR												mLogDBIP[16];
+		USHORT												mLogDBPort;
+		WCHAR												mLogDBUser[32];
+		WCHAR												mLogDBPassword[32];
+		WCHAR												mLogDBSchema[32];
 	};
 }

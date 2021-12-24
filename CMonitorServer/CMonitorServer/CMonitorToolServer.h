@@ -6,6 +6,7 @@
 #include "RingBuffer.h"
 #include "CNetServerNoLock.h"
 #include <unordered_map>
+#include "CDBConnector.h"
 
 namespace procademy
 {

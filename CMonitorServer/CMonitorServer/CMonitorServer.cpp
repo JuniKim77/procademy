@@ -4,6 +4,8 @@
 #include "CNetPacket.h"
 #include "CLanPacket.h"
 #include "MonitorProtocol.h"
+#include <time.h>
+#include "CDBConnector.h"
 
 procademy::CMonitorServer::CMonitorServer()
 {
@@ -14,11 +16,14 @@ procademy::CMonitorServer::CMonitorServer()
 
 procademy::CMonitorServer::~CMonitorServer()
 {
-    delete[] mThreads;
+    mDB->Disconnect();
+    delete mDB;
 }
 
 bool procademy::CMonitorServer::BeginServer()
 {
+    HANDLE threads[2] = { mMonitorThread, mDBThread };
+
     if (Start() == false)
     {
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error");
@@ -30,7 +35,7 @@ bool procademy::CMonitorServer::BeginServer()
 
     WaitForThreadsFin();
 
-    DWORD ret = WaitForMultipleObjects(2, mThreads, true, INFINITE);
+    DWORD ret = WaitForMultipleObjects(2, threads, true, INFINITE);
 
     switch (ret)
     {
@@ -77,7 +82,7 @@ void procademy::CMonitorServer::OnError(int errorcode, const WCHAR* log)
 void procademy::CMonitorServer::Init()
 {
     InitializeSRWLock(&mServerLock);
-    mThreads = new HANDLE[2];
+    mDB = new CDBConnector(mLogDBIP, mLogDBUser, mLogDBPassword, mLogDBSchema, mLogDBPort);
 }
 
 bool procademy::CMonitorServer::MonitorProc()
@@ -111,13 +116,19 @@ bool procademy::CMonitorServer::DBProc()
 
     while (!mbExit)
     {
-        DWORD retval = WaitForSingleObject(dummyevent, 60000);
+        DWORD retval = WaitForSingleObjectEx(dummyevent, 10000, true);
 
-        if (retval == WAIT_TIMEOUT)
+        switch (retval)
         {
-            // DB ÀÛ¾÷
-
-            ClearMonitorData();
+        case WAIT_TIMEOUT:
+            SaveMonitorData();
+            break;
+        case WAIT_IO_COMPLETION:
+            CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"DB Thread End");
+            mDB->Disconnect();
+            break;
+        default:
+            break;
         }
     }
 
@@ -134,15 +145,19 @@ void procademy::CMonitorServer::LoadInitFile(const WCHAR* fileName)
 
     tp.LoadFile(fileName);
 
-    tp.GetValue(L"LAN_DB_IP", mDBIP);
-    tp.GetValue(L"LAN_DB_PORT", &num);
-    mDBPort = (USHORT)num;
+    tp.GetValue(L"LOG_DB_IP", mLogDBIP);
+    tp.GetValue(L"LOG_DB_PORT", &num);
+    mLogDBPort = (USHORT)num;
+
+    tp.GetValue(L"LOG_DB_USER", mLogDBUser);
+    tp.GetValue(L"LOG_DB_PASS", mLogDBPassword);
+    tp.GetValue(L"LOG_DB_SCHEMA", mLogDBSchema);
 }
 
 void procademy::CMonitorServer::BeginThreads()
 {
-    mThreads[0] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, this, 0, nullptr);
-    mThreads[1] = (HANDLE)_beginthreadex(nullptr, 0, DBThread, this, 0, nullptr);
+    mMonitorThread = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, this, 0, nullptr);
+    mDBThread = (HANDLE)_beginthreadex(nullptr, 0, DBThread, this, 0, nullptr);
 }
 
 void procademy::CMonitorServer::WaitForThreadsFin()
@@ -181,6 +196,7 @@ void procademy::CMonitorServer::WaitForThreadsFin()
         case 'q':
             mMonitorToolServer.QuitMonitorServer();
             QuitServer();
+            QueueUserAPC(APCDBFunc, mDBThread, 0);
             return;
         default:
             break;
@@ -361,14 +377,14 @@ void procademy::CMonitorServer::EnqueueDataProc(st_ServerClient* server, st_Moni
 
     server->dataSet[data->type].Enqueue(data);
 
-    if (value > server->max)
+    if (value > server->max[data->type])
     {
-        server->max = value;
+        server->max[data->type] = value;
     }
 
-    if (value < server->min)
+    if (value < server->min[data->type])
     {
-        server->min = value;
+        server->min[data->type] = value;
     }
 }
 
@@ -420,24 +436,106 @@ void procademy::CMonitorServer::DeleteServer(SESSION_ID sessionNo)
     mServerClients.erase(sessionNo);
 }
 
-void procademy::CMonitorServer::ClearMonitorData()
+void procademy::CMonitorServer::SaveMonitorData()
 {
+    st_DBData dbSets[DATA_SET_SZIE];
+    WCHAR timeStr[64];
+    WCHAR tableName[64];
+    tm t;
+    time_t newTime;
+
+    time(&newTime);
+    localtime_s(&t, &newTime);
+
+    swprintf_s(timeStr, _countof(timeStr), L"%d-%d-%d %d:%d:%d", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+
+    swprintf_s(tableName, _countof(tableName), L"monitorLog_%d_%d", t.tm_year + 1900, t.tm_mon + 1);
+
     LockServer();
     for (auto iter = mServerClients.begin(); iter != mServerClients.end(); ++iter)
     {
-        for (int i = 0; i < DATA_SET_SZIE; ++i)
+        for (int i = 1; i < DATA_SET_SZIE; ++i)
         {
-            int count = iter->second->dataSet[i].GetUseSize();
+            CSafeQueue<st_MonitorData*>* dataSet = &iter->second->dataSet[i];
+
+            int sum = 0;
+            int timeVal = 0;
+            int count = dataSet->GetUseSize();
+            
 
             for (int j = 0; j < count; ++j)
             {
-                st_MonitorData* data = iter->second->dataSet[i].Dequeue();
+                st_MonitorData* data = dataSet->Dequeue();
+
+                sum += data->value;
+                timeVal = data->timeStamp;
 
                 mMonitorDataPool.Free(data);
             }
+
+            if (0 == count)
+            {
+                dbSets[i].serverNo = -1;
+                continue;
+            }
+            
+            if (count > 2)
+            {
+                dbSets[i].max = iter->second->max[i];
+                dbSets[i].min = iter->second->min[i];
+                dbSets[i].avg = (sum - dbSets[i].max - dbSets[i].min) / (count - 2);
+                dbSets[i].serverNo = iter->second->serverNo;
+                dbSets[i].type = i;
+            }
+            else
+            {
+                dbSets[i].max = iter->second->max[i];
+                dbSets[i].min = iter->second->min[i];
+                dbSets[i].avg = sum / count;
+                dbSets[i].serverNo = iter->second->serverNo;
+                dbSets[i].type = i;
+            }
+
+            iter->second->max[i] = 0;
+            iter->second->min[i] = MAXINT32;
         }
     }
     UnlockServer();
+
+    for (int i = 1; i < DATA_SET_SZIE;)
+    {
+        if (dbSets[i].serverNo >= 0)
+        {
+            bool retval = mDB->Query_Save(L"INSERT INTO logdb.`%s` (logtime, serverno, type, avr, min, max) VALUES (cast('%s' As datetime), %d, %d, %d, %d, %d)", 
+                tableName,
+                timeStr,
+                dbSets[i].serverNo,
+                dbSets[i].type,
+                dbSets[i].avg,
+                dbSets[i].min,
+                dbSets[i].max);
+
+            if (false == retval)
+            {
+                if (mDB->GetLastError() == 1146)
+                {
+                    retval = mDB->Query_Save(L"CREATE TABLE logdb.`%s` LIKE logdb.`monitorlog`", tableName);
+
+                    if (false == retval)
+                    {
+                        CLogger::_Log(dfLOG_LEVEL_ERROR, mDB->GetLastErrorMsg());
+                    }
+
+                    continue;
+                }
+                else
+                {
+                    CLogger::_Log(dfLOG_LEVEL_ERROR, mDB->GetLastErrorMsg());
+                }
+            }
+        }
+        i++;
+    }
 }
 
 unsigned int __stdcall procademy::CMonitorServer::MonitorThread(LPVOID arg)
