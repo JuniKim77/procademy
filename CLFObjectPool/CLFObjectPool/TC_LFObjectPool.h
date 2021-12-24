@@ -5,8 +5,11 @@
 #include <string.h>
 #include <wtypes.h>
 #include "CCrashDump.h"
+//#include "myNewMalloc.h"
 
 #define CHECKSUM_OVER (0xAAAAAAAA)
+
+extern bool g_btn;
 
 namespace procademy
 {
@@ -123,20 +126,15 @@ namespace procademy
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
 
-		/*long incVal = InterlockedIncrement(&mSize);
 		int capa = mCapacity;
 
-		if (incVal > capa)
+		if (capa < InterlockedIncrement(&mSize))
 		{
 			InterlockedIncrement(&mCapacity);
-			AllocMemory(1);
-		}*/
 
-		InterlockedIncrement(&mSize);
-		
-		if (mSize > mCapacity)
-		{
-			InterlockedIncrement(&mCapacity);
+			if (g_btn)
+				CRASH();
+
 			AllocMemory(1);
 		}
 
@@ -197,7 +195,12 @@ namespace procademy
 			// prerequisite
 			node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
 			node->code = this;
-			new (&node->data) (DATA);
+
+			if (false == mbPlacementNew)
+			{
+				new (&node->data) (DATA);
+			}
+			
 			node->checkSum_over = CHECKSUM_OVER;
 
 			do
