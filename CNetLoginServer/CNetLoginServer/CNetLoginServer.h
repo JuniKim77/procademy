@@ -7,6 +7,7 @@
 #include "CCpuUsage.h"
 #include "TC_LFObjectPool.h"
 #include <cpp_redis/cpp_redis>
+#include "CMonitorClient.h"
 
 #pragma comment (lib, "cpp_redis.lib")
 #pragma comment (lib, "tacopie.lib")
@@ -49,8 +50,13 @@ namespace procademy
 		void			ClearTPS();
 		bool			TokenVerificationProc(INT64 accountNo, char* sessionKey, st_Player* output, ULONGLONG loginBeginTime);
 		void			UpdateTimeInfo(ULONGLONG loginBegin, ULONGLONG dbTime, ULONGLONG redisTime, ULONGLONG endtime);
+		void			LoginMonitorServer();
+		void			SendMonitorDataProc();
 
 		CNetPacket*		MakeCSResLogin(BYTE status, INT64 accountNo, const WCHAR* id, const WCHAR* nickName, BYTE index);
+		CLanPacket*		MakeMonitorLogin(int serverNo);
+		CLanPacket*		MakeMonitorPacket(BYTE dataType, int dataValue);
+
 
 	private:
 		enum {
@@ -93,6 +99,14 @@ namespace procademy
 		DWORD										mRedisTimeSum = 0;
 		DWORD										mRedisTimeMax = 0;
 		DWORD										mRedisTimeMin = -1;
+
+		/// <summary>
+		/// Monitor Client
+		/// </summary>
+		CMonitorClient								mMonitorClient;
+		u_short										mMonitorPort = 0;
+		WCHAR										mMonitorIP[32];
+		int											mServerNo;
 	};
 }
 

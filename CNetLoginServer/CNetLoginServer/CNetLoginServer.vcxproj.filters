@@ -28,6 +28,9 @@
     <Filter Include="소스 파일\DB">
       <UniqueIdentifier>{ecc79de6-43fc-4aba-9f89-4e578a9f5a45}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Network">
+      <UniqueIdentifier>{e6f88808-4301-43d4-8af1-92d89a222c7e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -73,6 +76,15 @@
       <Filter>소스 파일\DB</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CRedis_TLS\CRedis_TLS\CRedis_TLS.cpp">
+      <Filter>소스 파일\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CLanClient\CLanClient\CLanClient.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CMonitorClient\CMonitorClient\CMonitorClient.cpp">
+      <Filter>소스 파일\Network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CLanPacket.cpp">
       <Filter>소스 파일\Tools</Filter>
     </ClCompile>
   </ItemGroup>
@@ -129,6 +141,18 @@
       <Filter>헤더 파일\DB</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CRedis_TLS\CRedis_TLS\CRedis_TLS.h">
+      <Filter>헤더 파일\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CLanClient\CLanClient\CLanClient.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CMonitorClient\CMonitorClient\CMonitorClient.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CMonitorClient\CMonitorClient\MonitorProtocol.h">
+      <Filter>헤더 파일\Network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
   </ItemGroup>

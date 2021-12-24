@@ -340,6 +340,11 @@ bool procademy::CLanClient::ClientConnect()
     addr.sin_port = htons(mServerPort);
     InetPton(AF_INET, mServerIP, &addr.sin_addr);
 
+    if (mClient.socket == INVALID_SOCKET)
+    {
+        CreateSocket();
+    }
+
     int connectRetval = connect(mClient.socket, (SOCKADDR*)&addr, sizeof(addr));
 
     if (connectRetval == SOCKET_ERROR)
@@ -728,6 +733,7 @@ void procademy::CLanClient::ReleaseProc()
     OnLeaveServer();
 
     closesocket(mClient.socket);
+    mClient.socket = INVALID_SOCKET;
 
     mClient.isSending = false;
 

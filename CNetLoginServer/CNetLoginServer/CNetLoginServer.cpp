@@ -12,6 +12,9 @@
 #include <conio.h>
 #include "Query.h"
 #include <stack>
+#include "CLanPacket.h"
+#include "MonitorProtocol.h"
+#include <time.h>
 
 procademy::CNetLoginServer::CNetLoginServer()
 {
@@ -289,6 +292,13 @@ void procademy::CNetLoginServer::LoadInitFile(const WCHAR* fileName)
     tp.GetValue(L"ACCOUNT_DB_USER", mAccountDBUser);
     tp.GetValue(L"ACCOUNT_DB_PASS", mAccountDBPassword);
     tp.GetValue(L"ACCOUNT_DB_SCHEMA", mAccountDBSchema);
+
+    tp.GetValue(L"MONITOR_SERVER_IP", mMonitorIP);
+
+    tp.GetValue(L"MONITOR_SERVER_PORT", &num);
+    mMonitorPort = (u_short)num;
+
+    tp.GetValue(L"MONITOR_NO", &mServerNo);
 }
 
 void procademy::CNetLoginServer::FreePlayer(st_Player* player)
@@ -485,7 +495,16 @@ bool procademy::CNetLoginServer::MonitoringProc()
         if (retval == WAIT_TIMEOUT)
         {
             mCpuUsage.UpdateProcessorCpuTime();
-            // Ãâ·Â
+
+            if (mMonitorClient.IsLogin())
+            {
+                SendMonitorDataProc();
+            }
+            else
+            {
+                LoginMonitorServer();
+            }
+
             MakeMonitorStr(str, 2048);
 
             wprintf(str);
@@ -710,6 +729,61 @@ void procademy::CNetLoginServer::UpdateTimeInfo(ULONGLONG loginBegin, ULONGLONG 
     ReleaseSRWLockExclusive(&mTimeInfoLock);
 }
 
+void procademy::CNetLoginServer::LoginMonitorServer()
+{
+    mMonitorClient.Connect(mMonitorIP, mMonitorPort);
+
+    if (mMonitorClient.IsJoin())
+    {
+        CLanPacket* packet = MakeMonitorLogin(mServerNo);
+
+        mMonitorClient.SendPacket(packet);
+
+        packet->SubRef();
+
+        mMonitorClient.SetLogin();
+    }
+}
+
+void procademy::CNetLoginServer::SendMonitorDataProc()
+{
+    CLanPacket* runPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_LOGIN_SERVER_RUN, mbBegin);
+
+    mMonitorClient.SendPacket(runPacket);
+
+    runPacket->SubRef();
+
+    CLanPacket* cpuUsagePacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_LOGIN_SERVER_CPU, (int)mCpuUsage.ProcessTotal());
+
+    mMonitorClient.SendPacket(cpuUsagePacket);
+
+    cpuUsagePacket->SubRef();
+
+    CLanPacket* cpuUsageMemoryPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_LOGIN_SERVER_MEM, (int)mCpuUsage.ProcessUserMemory() / 1000000); // 1MB
+
+    mMonitorClient.SendPacket(cpuUsageMemoryPacket);
+
+    cpuUsageMemoryPacket->SubRef();
+
+    CLanPacket* sessionNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_LOGIN_SESSION, (int)mPlayerMap.size());
+
+    mMonitorClient.SendPacket(sessionNumPacket);
+
+    sessionNumPacket->SubRef();
+
+    CLanPacket* authNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_LOGIN_AUTH_TPS, 0);
+
+    mMonitorClient.SendPacket(authNumPacket);
+
+    authNumPacket->SubRef();
+
+    CLanPacket* loginPacketPoolPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_LOGIN_PACKET_POOL, (int)CNetPacket::sPacketPool.GetSize());
+
+    mMonitorClient.SendPacket(loginPacketPoolPacket);
+
+    loginPacketPoolPacket->SubRef();
+}
+
 procademy::CNetPacket* procademy::CNetLoginServer::MakeCSResLogin(BYTE status, INT64 accountNo, const WCHAR* id, const WCHAR* nickName, BYTE index)
 {
     CNetPacket* packet = CNetPacket::AllocAddRef();
@@ -725,6 +799,32 @@ procademy::CNetPacket* procademy::CNetLoginServer::MakeCSResLogin(BYTE status, I
 
     packet->SetHeader();
     packet->Encode();
+
+    return packet;
+}
+
+procademy::CLanPacket* procademy::CNetLoginServer::MakeMonitorLogin(int serverNo)
+{
+    CLanPacket* packet = CLanPacket::AllocAddRef();
+
+    *packet << (WORD)en_PACKET_SS_MONITOR_LOGIN << serverNo;
+
+    packet->SetHeader();
+
+    return packet;
+}
+
+procademy::CLanPacket* procademy::CNetLoginServer::MakeMonitorPacket(BYTE dataType, int dataValue)
+{
+    CLanPacket* packet = CLanPacket::AllocAddRef();
+
+    time_t timeval;
+
+    time(&timeval);
+
+    *packet << (WORD)en_PACKET_SS_MONITOR_DATA_UPDATE << dataType << dataValue << (int)timeval;
+
+    packet->SetHeader();
 
     return packet;
 }
