@@ -12,7 +12,7 @@
 #define Reverse_Stand (2.0f)
 
 extern TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
-MyHeap g_openList(128);
+MyHeap g_openList(1280);
 RingBuffer g_NodeRing;
 bool g_Visit[MAP_HEIGHT][MAP_WIDTH];
 bool g_ColorTable[13][13][13];
