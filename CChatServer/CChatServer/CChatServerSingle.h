@@ -143,8 +143,8 @@ namespace procademy
 		WCHAR									mMonitorIP[32];
 		CMonitorClient							mMonitorClient;
 
-		alignas(64) ObjectPool_TLS<st_MSG>		mMsgPool;
-		alignas(64) TC_LFQueue64<st_MSG*>		mMsgQ;
+		ObjectPool_TLS<st_MSG>					mMsgPool;
+		TC_LFQueue64<st_MSG*>					mMsgQ;
 
 		HANDLE									mUpdateEvent = INVALID_HANDLE_VALUE;
 
@@ -166,6 +166,6 @@ namespace procademy
 		bool									mbRedisMode;
 		bool									mbProfiler;
 		int										mServerNo;
-		alignas(64) RatioMonitor				mRatioMonitor;
+		RatioMonitor							mRatioMonitor;
 	};
 }

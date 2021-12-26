@@ -87,6 +87,11 @@ namespace procademy
 		/// </summary>
 		/// <param name="session"></param>
 		void AuthReleaseProc(CSession* session);
+		/// <summary>
+		/// Auth 타임아웃 체크
+		/// </summary>
+		/// <param name="session"></param>
+		void AuthTimeoutProc(CSession* session);
 
 		void SendLoopProc();
 		void SendPacketProc(CSession* session);
@@ -115,6 +120,11 @@ namespace procademy
 		/// </summary>
 		/// <param name="session"></param>
 		void GameReleaseProc(CSession* session);
+		/// <summary>
+		/// Game 타임아웃 체크
+		/// </summary>
+		/// <param name="session"></param>
+		void GameTimeoutProc(CSession* session);
 
 	private:
 		enum {

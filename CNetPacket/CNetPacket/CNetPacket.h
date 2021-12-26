@@ -199,9 +199,9 @@ namespace procademy
 		static BYTE	sPacketKey;
 
 #ifdef MEMORY_POOL_VER
-		alignas(64) static TC_LFObjectPool<CNetPacket> sPacketPool;
+		static TC_LFObjectPool<CNetPacket> sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)
-		alignas(64) static ObjectPool_TLS<CNetPacket> sPacketPool;
+		static ObjectPool_TLS<CNetPacket> sPacketPool;
 #endif // MEMORY_POOL_VER
 	};
 #endif

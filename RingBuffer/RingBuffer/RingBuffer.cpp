@@ -1,3 +1,6 @@
+#pragma warning(disable:26495)
+#pragma warning(disable:26110)
+
 #include "RingBuffer.h"
 #include <cstring>
 #include <stdio.h>

@@ -1,3 +1,5 @@
+#pragma warning(disable:6387)
+
 #include "CMMOServer.h"
 #include "CLogger.h"
 #include "TextParser.h"
@@ -312,7 +314,7 @@ void procademy::CMMOServer::Init()
 	WORD		version = MAKEWORD(2, 2);
 	WSADATA		data;
 
-	WSAStartup(version, &data);
+	int ret = WSAStartup(version, &data);
 	CLogger::SetDirectory(L"_log");
 	mAcceptEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
 	mGameEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
@@ -668,9 +670,9 @@ void procademy::CMMOServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 	session->ip = clientAddr.sin_addr.S_un.S_addr;
 	session->port = clientAddr.sin_port;
 	session->isSending = false;
-	//session->sessionEnd = false;
 	session->sessionID = mSessionIDCounter++;
 	session->index = index;
+	session->lastRecvTime = GetTickCount64();
 	
 	ZeroMemory(&session->recvOverlapped, sizeof(WSAOVERLAPPED));
 	ZeroMemory(&session->sendOverlapped, sizeof(WSAOVERLAPPED));
@@ -690,7 +692,7 @@ void procademy::CMMOServer::CreateSession(SOCKET client, SOCKADDR_IN clientAddr)
 	/*statusLog(10050, session->status, session->isSending, session->toGame, session->sessionEnd,
 		session->index, session->sessionID, GetCurrentThreadId(), session->ioCount);*/
 
-	session->status = CSession::en_AUTH_READY;
+	session->status = CSession::SESSION_STATUS::en_AUTH_READY;
 }
 
 void procademy::CMMOServer::IncrementIOProc(CSession* session, int logic)
@@ -987,7 +989,7 @@ void procademy::CMMOServer::ReleaseProc(CSession* session)
 
 	session->toGame = false;
 	session->sessionEnd = false;
-	session->status = CSession::en_NONE_USE;
+	session->status = CSession::SESSION_STATUS::en_NONE_USE;
 
 	/*statusLog(30000, session->status, session->isSending, session->toGame, session->sessionEnd,
 		session->index, session->sessionID, GetCurrentThreadId(), session->ioCount, session->sendQ.mFront, session->sendQ.mRear);*/
@@ -1023,6 +1025,11 @@ void procademy::CMMOServer::ReleaseProc(CSession* session)
 
 void procademy::CMMOServer::Disconnect(CSession* session)
 {
+	IncrementIOProc(session, 40000);
+
+	BOOL ret = CancelIoEx((HANDLE)session->socket, nullptr);
+
+	DecrementIOProc(session, 40040);
 }
 
 void procademy::CMMOServer::AuthLoopProc()
@@ -1035,7 +1042,7 @@ void procademy::CMMOServer::AuthLoopProc()
 
 		switch (session->status)
 		{
-		case CSession::en_AUTH_READY:
+		case CSession::SESSION_STATUS::en_AUTH_READY:
 		{
 			if (transferCount < mMaxTransferToAuth)
 			{
@@ -1044,15 +1051,15 @@ void procademy::CMMOServer::AuthLoopProc()
 			}
 			break;
 		}
-		case CSession::en_AUTH_RUN:
+		case CSession::SESSION_STATUS::en_AUTH_RUN:
 		{
 			AuthCompleteRecvProc(session);
-			
+			AuthTimeoutProc(session);
 			AuthSessionToReleaseProc(session);
 			AuthSessionToGameProc(session);
 			break;
 		}
-		case CSession::en_AUTH_RELEASE:
+		case CSession::SESSION_STATUS::en_AUTH_RELEASE:
 		{
 			AuthReleaseProc(session);
 			break;
@@ -1070,14 +1077,13 @@ void procademy::CMMOServer::AuthReadySessionProc(CSession* session)
 	// 세션 최초 recvPost 호출
 	IncrementIOProc(session, 10000);
 
-
 	session->sessionEnd = false;
 
 	session->OnAuth_ClientJoin();
 
 	RecvPost(session, true);
 
-	session->status = CSession::en_AUTH_RUN;
+	session->status = CSession::SESSION_STATUS::en_AUTH_RUN;
 
 	mAuthPlayerNum++;
 }
@@ -1104,6 +1110,11 @@ void procademy::CMMOServer::AuthCompleteRecvProc(CSession* session)
 		/*statusLog(50000, session->status, session->isSending, session->toGame, session->sessionEnd,
 			session->index, session->sessionID, GetCurrentThreadId());*/
 	}
+
+	if (count > 0)
+	{
+		session->lastRecvTime = GetTickCount64();
+	}
 }
 
 void procademy::CMMOServer::AuthSessionToReleaseProc(CSession* session)
@@ -1111,7 +1122,7 @@ void procademy::CMMOServer::AuthSessionToReleaseProc(CSession* session)
 	if (session->sessionEnd)
 	{
 		session->toGame = false;
-		session->status = CSession::en_AUTH_RELEASE_REQ;
+		session->status = CSession::SESSION_STATUS::en_AUTH_RELEASE_REQ;
 	}
 }
 
@@ -1120,7 +1131,7 @@ void procademy::CMMOServer::AuthSessionToGameProc(CSession* session)
 	if (session->toGame)
 	{
 		session->OnAuth_ClientLeave();
-		session->status = CSession::en_GAME_READY;
+		session->status = CSession::SESSION_STATUS::en_GAME_READY;
 
 		mAuthPlayerNum--;
 		mGamePlayerNum++;
@@ -1137,6 +1148,16 @@ void procademy::CMMOServer::AuthReleaseProc(CSession* session)
 	mAuthPlayerNum--;
 }
 
+void procademy::CMMOServer::AuthTimeoutProc(CSession* session)
+{
+	ULONGLONG curTime = GetTickCount64();
+
+	if (curTime - session->lastRecvTime > mTimeOut)
+	{
+		Disconnect(session);
+	}
+}
+
 void procademy::CMMOServer::SendLoopProc()
 {
 	int count = 0;
@@ -1147,25 +1168,25 @@ void procademy::CMMOServer::SendLoopProc()
 
 		switch (session->status)
 		{
-		case CSession::en_AUTH_RUN:
-		case CSession::en_GAME_RUN:
+		case CSession::SESSION_STATUS::en_AUTH_RUN:
+		case CSession::SESSION_STATUS::en_GAME_RUN:
 		{
 			SendPacketProc(session);
 			break;
 		}
-		case CSession::en_AUTH_RELEASE_REQ:
+		case CSession::SESSION_STATUS::en_AUTH_RELEASE_REQ:
 		{
 			if (session->isSending == false)
 			{
-				session->status = CSession::en_AUTH_RELEASE;
+				session->status = CSession::SESSION_STATUS::en_AUTH_RELEASE;
 			}
 			break;
 		}
-		case CSession::en_GAME_RELEASE_REQ:
+		case CSession::SESSION_STATUS::en_GAME_RELEASE_REQ:
 		{
 			if (session->isSending == false)
 			{
-				session->status = CSession::en_GAME_RELEASE;
+				session->status = CSession::SESSION_STATUS::en_GAME_RELEASE;
 			}
 			break;
 		}
@@ -1195,7 +1216,7 @@ void procademy::CMMOServer::GameLoopProc()
 
 		switch (session->status)
 		{
-		case CSession::en_GAME_READY:
+		case CSession::SESSION_STATUS::en_GAME_READY:
 		{
 			if (transferCount < mMaxTransferToGame)
 			{
@@ -1204,14 +1225,14 @@ void procademy::CMMOServer::GameLoopProc()
 			}
 			break;
 		}
-		case CSession::en_GAME_RUN:
+		case CSession::SESSION_STATUS::en_GAME_RUN:
 		{
 			GameCompleteRecvProc(session);
-
+			GameTimeoutProc(session);
 			GameSessionToReleaseProc(session);
 			break;
 		}
-		case CSession::en_GAME_RELEASE:
+		case CSession::SESSION_STATUS::en_GAME_RELEASE:
 		{
 			GameReleaseProc(session);
 			break;
@@ -1230,7 +1251,7 @@ void procademy::CMMOServer::GameReadySessionProc(CSession* session)
 
 	// 할게 있나...?
 
-	session->status = CSession::en_GAME_RUN;
+	session->status = CSession::SESSION_STATUS::en_GAME_RUN;
 }
 
 void procademy::CMMOServer::GameCompleteRecvProc(CSession* session)
@@ -1252,13 +1273,18 @@ void procademy::CMMOServer::GameCompleteRecvProc(CSession* session)
 
 		packet->SubRef();
 	}
+
+	if (count > 0)
+	{
+		session->lastRecvTime = GetTickCount64();
+	}
 }
 
 void procademy::CMMOServer::GameSessionToReleaseProc(CSession* session)
 {
 	if (session->sessionEnd)
 	{
-		session->status = CSession::en_GAME_RELEASE_REQ;
+		session->status = CSession::SESSION_STATUS::en_GAME_RELEASE_REQ;
 	}
 }
 
@@ -1270,6 +1296,16 @@ void procademy::CMMOServer::GameReleaseProc(CSession* session)
 	ReleaseProc(session);
 
 	mGamePlayerNum--;
+}
+
+void procademy::CMMOServer::GameTimeoutProc(CSession* session)
+{
+	ULONGLONG curTime = GetTickCount64();
+
+	if (curTime - session->lastRecvTime > mTimeOut)
+	{
+		Disconnect(session);
+	}
 }
 
 

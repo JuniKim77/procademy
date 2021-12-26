@@ -22,7 +22,6 @@ bool g_btn = false;
 int main()
 {
 	InitializeSRWLock(&g_mapLock);
-	//CProfiler::InitProfiler(30);
 
 	procademy::CCrashDump::SetHandlerDump();
 

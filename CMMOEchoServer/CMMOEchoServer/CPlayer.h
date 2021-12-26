@@ -8,6 +8,7 @@ namespace procademy
 	class CPlayer : public CSession
 	{
 	public:
+		CPlayer() { }
 		virtual void OnAuth_ClientJoin() override;
 		virtual void OnAuth_ClientLeave() override;
 		virtual void OnAuth_ClientRelease() override;

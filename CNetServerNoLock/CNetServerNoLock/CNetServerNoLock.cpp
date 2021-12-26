@@ -7,15 +7,15 @@
 #include "CProfiler.h"
 #include "TextParser.h"
 
-struct packetDebug
-{
-	int				logicId;
-	DWORD			threadId;
-	//void*		pChunk;
-	int				allocCount;
-	procademy::CNetPacket*		pPacket;
-	//LONG		freeCount;
-};
+//struct packetDebug
+//{
+//	int				logicId;
+//	DWORD			threadId;
+//	//void*		pChunk;
+//	int				allocCount;
+//	procademy::CNetPacket*		pPacket;
+//	//LONG		freeCount;
+//};
 //
 //struct ioDebug
 //{
@@ -606,9 +606,9 @@ namespace procademy
 				if (pOverlapped == &session->recvOverlapped) // Recv
 				{
 #ifdef PROFILE
-					//CProfiler::Begin(L"CompleteRecv");
+					CProfiler::Begin(L"CompleteRecv");
 					CompleteRecv(session, transferredSize);
-					//CProfiler::End(L"CompleteRecv");
+					CProfiler::End(L"CompleteRecv");
 #else
 					CompleteRecv(session, transferredSize);
 #endif // PROFILE
@@ -616,9 +616,9 @@ namespace procademy
 				else // Send
 				{
 #ifdef PROFILE
-					//CProfiler::Begin(L"CompleteSend");
+					CProfiler::Begin(L"CompleteSend");
 					CompleteSend(session, transferredSize);
-					//CProfiler::End(L"CompleteSend");
+					CProfiler::End(L"CompleteSend");
 #else
 					CompleteSend(session, transferredSize);
 #endif // PROFILE

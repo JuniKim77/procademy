@@ -180,9 +180,9 @@ namespace procademy
 		char*		mZero;
 	public:
 #ifdef MEMORY_POOL_VER
-		alignas(64) static TC_LFObjectPool<CLanPacket> sPacketPool;
+		static TC_LFObjectPool<CLanPacket> sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)
-		alignas(64) static ObjectPool_TLS<CLanPacket> sPacketPool;
+		static ObjectPool_TLS<CLanPacket> sPacketPool;
 #endif // MEMORY_POOL_VER
 	};
 #endif

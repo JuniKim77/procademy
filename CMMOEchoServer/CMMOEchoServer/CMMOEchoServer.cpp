@@ -1,3 +1,6 @@
+#pragma warning(disable:6387)
+#pragma warning(disable:6385)
+
 #include "CMMOEchoServer.h"
 #include <conio.h>
 #include "CProfiler.h"
@@ -16,15 +19,18 @@ procademy::CMMOEchoServer::CMMOEchoServer()
 
 procademy::CMMOEchoServer::~CMMOEchoServer()
 {
-    delete[] mPlayers;
+    //delete[] mPlayers;
+    _aligned_free(mPlayers);
 }
 
 void procademy::CMMOEchoServer::AllocSessions(int num)
 {
-    mPlayers = new CPlayer[num];
+    //mPlayers = new CPlayer[num];
+    mPlayers = (CPlayer*)_aligned_malloc(sizeof(CPlayer) * num, 64);
 
     for (int i = 0; i < num; ++i)
     {
+		new (&mPlayers[i]) CPlayer;
         mPlayers[i].SetServer(this);
         SetSession(&mPlayers[i]);
     }
@@ -158,7 +164,7 @@ void procademy::CMMOEchoServer::LoadInitFile(const WCHAR* fileName)
 {
     TextParser  tp;
     int         num;
-    WCHAR       buffer[MAX_PARSER_LENGTH];
+    //WCHAR       buffer[MAX_PARSER_LENGTH];
 
     tp.LoadFile(fileName);
 

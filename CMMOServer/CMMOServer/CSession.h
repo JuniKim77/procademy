@@ -16,14 +16,14 @@ namespace procademy
 	{
 		friend class CMMOServer;
 	public:
-		enum SESSION_STATUS
+		enum class SESSION_STATUS
 		{
 			en_NONE_USE,
 			en_AUTH_READY,
 			en_AUTH_RUN,
+			en_AUTH_RELEASE,
 			en_GAME_READY,
 			en_GAME_RUN,
-			en_AUTH_RELEASE,
 			en_GAME_RELEASE,
 			en_AUTH_RELEASE_REQ,
 			en_GAME_RELEASE_REQ
@@ -62,7 +62,8 @@ namespace procademy
 		ULONG						ip;
 		u_int64						sessionID;
 		bool						sessionEnd = false;
-		SESSION_STATUS				status = en_NONE_USE;
+		SESSION_STATUS				status = SESSION_STATUS::en_NONE_USE;
 		u_short						index = 0;
+		ULONGLONG					lastRecvTime = 0;
 	};
 }

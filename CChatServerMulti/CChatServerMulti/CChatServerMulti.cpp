@@ -1,3 +1,6 @@
+#pragma warning(disable:6387)
+#pragma warning(disable:26110)
+
 //#define REDIS_MODE
 #define SEND_TO_WORKER
 
@@ -155,6 +158,7 @@ void procademy::CChatServerMulti::Init()
     char    IP[64];
     int     index = 0;
 
+    mRedisIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
     WideCharToMultiByte(CP_ACP, 0, mTokenDBIP, -1, IP, sizeof(IP), nullptr, nullptr);
 
     mRedis.connect(IP, mTokenDBPort);
@@ -369,8 +373,8 @@ bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* pa
 #else
 
     player->accountNo = AccountNo;
-    wcscpy_s(player->ID, NAME_MAX, ID);
-    wcscpy_s(player->nickName, NAME_MAX, Nickname);
+    wcscpy_s(player->ID, _countof(player->ID), ID);
+    wcscpy_s(player->nickName, _countof(player->nickName), Nickname);
     player->bLogin = true;
     player->lastRecvTime = GetTickCount64();
 
@@ -847,7 +851,7 @@ DWORD procademy::CChatServerMulti::SendMessageSectorAround(CNetPacket* packet, s
 
         LockSector(curX, curY, false);
         {
-            size = mSector[curY][curX].list.size();
+            size = (DWORD)mSector[curY][curX].list.size();
 
             for (std::list<st_Player*>::iterator iter = mSector[curY][curX].list.begin(); iter != mSector[curY][curX].list.end(); ++iter)
             {
@@ -879,7 +883,6 @@ DWORD procademy::CChatServerMulti::SendMessageSectorAround(CNetPacket* packet, s
 void procademy::CChatServerMulti::MakeMonitorStr(WCHAR* s, int size)
 {
     LONGLONG idx = 0;
-    int len;
     WCHAR bigNumber[18];
 
     idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
@@ -965,17 +968,17 @@ void procademy::CChatServerMulti::PrintRecvSendRatio()
                     avgPlayers += mSector[curY][curX].playerCount / (double)mSector[curY][curX].updateCount;
                 }
 
-                idx += swprintf_s(str + idx, MAX_STR - idx, L"%.2lf<%.2lf>,",
+                idx += swprintf_s(str + idx, MAX_STR - (LONGLONG)idx, L"%.2lf<%.2lf>,",
                     mSector[i][j].sendCount / (double)mSector[i][j].recvCount,
                     avgPlayers);
             }
             else
             {
-                idx += swprintf_s(str + idx, MAX_STR - idx, L"%6d,", 0);
+                idx += swprintf_s(str + idx, MAX_STR - (LONGLONG)idx, L"%6d,", 0);
             }
         }
 
-        idx += swprintf_s(str + idx, MAX_STR - idx, L"\n");
+        idx += swprintf_s(str + idx, MAX_STR - (LONGLONG)idx, L"\n");
     }
 
     fwprintf_s(fout, str);
@@ -1008,12 +1011,12 @@ void procademy::CChatServerMulti::ClearTPS()
 
 void procademy::CChatServerMulti::RecordPerformentce()
 {
-    CProfiler::SetRecord(L"Accept_TPS", mMonitor.acceptTPS * 10);
-    CProfiler::SetRecord(L"Update_TPS", mUpdateTPS * 10);
-    CProfiler::SetRecord(L"Recv_TPS", mMonitor.prevRecvTPS * 10);
-    CProfiler::SetRecord(L"Send_TPS", mMonitor.prevSendTPS * 10);
-    CProfiler::SetRecord(L"CPU_TOTAL", mCpuUsage.ProcessorTotal() * 10.0);
-    CProfiler::SetRecord(L"PROCESS_TOTAL", mCpuUsage.ProcessTotal() * 10.0);
+    CProfiler::SetRecord(L"Accept_TPS", (LONGLONG)mMonitor.acceptTPS * 10);
+    CProfiler::SetRecord(L"Update_TPS", (LONGLONG)mUpdateTPS * 10);
+    CProfiler::SetRecord(L"Recv_TPS", (LONGLONG)mMonitor.prevRecvTPS * 10);
+    CProfiler::SetRecord(L"Send_TPS", (LONGLONG)mMonitor.prevSendTPS * 10);
+    CProfiler::SetRecord(L"CPU_TOTAL", (LONGLONG)(mCpuUsage.ProcessorTotal() * 10.0));
+    CProfiler::SetRecord(L"PROCESS_TOTAL", (LONGLONG)(mCpuUsage.ProcessTotal() * 10.0));
 }
 
 void procademy::CChatServerMulti::EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet)

@@ -1,3 +1,5 @@
+#pragma warning(disable:6387)
+
 #include "CLanClient.h"
 #include "CLogger.h"
 #include "CLanPacket.h"

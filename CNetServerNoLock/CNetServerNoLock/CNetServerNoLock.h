@@ -10,7 +10,7 @@
 //#include "TC_LFQueue.h"
 //#include "myNew.h"
 
-//#define PROFILE
+#define PROFILE
 
 namespace procademy
 {
@@ -38,7 +38,7 @@ namespace procademy
 			WSAOVERLAPPED							recvOverlapped;
 			WSAOVERLAPPED							sendOverlapped;
 			RingBuffer								recvQ;
-			alignas(64) TC_LFQueue64<CNetPacket*>	sendQ;
+			TC_LFQueue64<CNetPacket*>				sendQ;
 			alignas(64) SessionIoCount				ioBlock;
 			alignas(64) bool						isSending;
 			int										numSendingPacket = 0;

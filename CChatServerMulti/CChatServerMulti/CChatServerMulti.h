@@ -108,6 +108,6 @@ namespace procademy
 		CCpuUsage								mCpuUsage;
 		bool									mbMonitoring = true;
 		bool									mbPrint = false;
-		alignas(64) RatioMonitor				mRatioMonitor;
+		RatioMonitor							mRatioMonitor;
 	};
 }

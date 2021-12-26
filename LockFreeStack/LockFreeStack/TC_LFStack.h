@@ -38,13 +38,8 @@ public:
 	void cLog(int loginId, t_Top snap_top);
 
 private:
-#ifdef VER_CASH_LINE
 	alignas(64) t_Top	mTop;
 	alignas(64) int		mSize = 0;
-#else
-	t_Top	mTop;
-	int		mSize = 0;
-#endif // VER_CASH_LINE	
 	procademy::TC_LFObjectPool<Node> mMemoryPool;
 };
 

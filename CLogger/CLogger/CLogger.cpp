@@ -1,3 +1,5 @@
+#pragma warning(disable:26110)
+
 #include "CLogger.h"
 #include <stdio.h>
 #include <stdarg.h>

@@ -12,9 +12,9 @@ namespace procademy
 {
 	//#define DEBUG
 #ifdef MEMORY_POOL_VER
-	alignas(64) TC_LFObjectPool<CLanPacket> CLanPacket::sPacketPool;
+	TC_LFObjectPool<CLanPacket> CLanPacket::sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)
-	alignas(64) ObjectPool_TLS<CLanPacket> CLanPacket::sPacketPool;
+	ObjectPool_TLS<CLanPacket> CLanPacket::sPacketPool;
 #endif // MEMORY_POOL_VER
 
 	CLanPacket::CLanPacket()
