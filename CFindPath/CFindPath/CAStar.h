@@ -1,5 +1,5 @@
 #pragma once
-
+#include "FilePathDTO.h"
 #include "CSafeQueue.h"
 #include "TC_LFObjectPool.h"
 
@@ -14,25 +14,6 @@ namespace procademy
 	class CAStar
 	{
 	public:
-		enum class TileType
-		{
-			TILE_TYPE_PATH,
-			TILE_TYPE_WALL,
-			TILE_TYPE_BEGIN,
-			TILE_TYPE_END,
-		};
-
-		struct Coordi
-		{
-			int x;
-			int y;
-
-			bool operator == (Coordi& other)
-			{
-				return x == other.x && y == other.y;
-			}
-		};
-
 		enum class NodeType
 		{
 			NODE_TYPE_NONE,
@@ -44,34 +25,6 @@ namespace procademy
 			DEFAULT_HEAP_SIZE = 1000,
 			MAP_MAX_HEIGHT = 500,
 			MAP_MAX_WIDTH = 500,
-		};
-
-		struct Node
-		{
-			Coordi position;
-			float g;	// 출발점으로부터의 거리
-			float h;	// 목적지까지 거리
-			float f;	// g + h
-
-			Node* pParent;
-
-			Node()
-				: position({ 0,0 })
-				, g(0)
-				, h(0)
-				, f(0)
-				, pParent(nullptr)
-			{}
-			Node(Coordi _pos,
-				float _g,
-				float _h,
-				float _f)
-				: position(_pos)
-				, g(_g)
-				, h(_h)
-				, f(_f)
-				, pParent(nullptr)
-			{}
 		};
 
 	public:

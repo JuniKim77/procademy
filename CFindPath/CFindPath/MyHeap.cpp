@@ -7,7 +7,7 @@ procademy::MyHeap::MyHeap(int size)
     : mCapacity(size)
     , mSize(0)
 {
-    mBuffer = new CAStar::Node*[mCapacity + 1];
+    mBuffer = new Node*[mCapacity + 1];
 }
 
 procademy::MyHeap::~MyHeap()
@@ -16,7 +16,7 @@ procademy::MyHeap::~MyHeap()
         delete[] mBuffer;
 }
 
-void procademy::MyHeap::InsertData(CAStar::Node* data)
+void procademy::MyHeap::InsertData(Node* data)
 {
     if (mSize == mCapacity)
     {
@@ -30,7 +30,7 @@ void procademy::MyHeap::InsertData(CAStar::Node* data)
     Heapify(mSize);
 }
 
-procademy::CAStar::Node* procademy::MyHeap::GetMin()
+procademy::Node* procademy::MyHeap::GetMin()
 {
     if (mSize == 0)
         return nullptr;
@@ -45,7 +45,7 @@ procademy::CAStar::Node* procademy::MyHeap::GetMin()
     return mBuffer[retIndex];
 }
 
-bool procademy::MyHeap::UpdateNode(CAStar::Node* other)
+bool procademy::MyHeap::UpdateNode(Node* other)
 {
     for (int i = 1; i <= mSize; ++i)
     {
@@ -71,7 +71,7 @@ bool procademy::MyHeap::UpdateNode(CAStar::Node* other)
 
 void procademy::MyHeap::Swap(int left, int right)
 {
-    CAStar::Node* temp = mBuffer[left];
+    Node* temp = mBuffer[left];
     mBuffer[left] = mBuffer[right];
     mBuffer[right] = temp;
 }
@@ -120,7 +120,7 @@ void procademy::MyHeap::DeHeapify(int index)
 
 void procademy::MyHeap::resize()
 {
-    CAStar::Node** temp = new CAStar::Node*[mCapacity * 2 + 1];
+    Node** temp = new Node*[mCapacity * 2 + 1];
     for (int i = 0; i < mSize; ++i)
     {
         temp[i] = mBuffer[i];

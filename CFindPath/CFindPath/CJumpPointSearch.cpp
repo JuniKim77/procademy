@@ -1,79 +1,52 @@
-#include "JumpPoint.h"
+#include "CJumpPointSearch.h"
 #include "MyHeap.h"
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
-#include "RingBuffer.h"
-#include "JumpPointOptimizer.h"
-#include "CRayCast.h"
 
-#define G_Weight (1.5f)
-#define H_Weight (1.0f)
-#define Reverse_Stand (2.0f)
+extern procademy::TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
 
-extern TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
-MyHeap g_openList(1280);
-RingBuffer g_NodeRing;
-bool g_Visit[MAP_HEIGHT][MAP_WIDTH];
-bool g_ColorTable[13][13][13];
-JumpPointOptimizer g_Optimizer;
-
-extern void DrawCell(int x, int y, HBRUSH brush, HDC hdc);
-extern void DrawPoint(int x, int y, HBRUSH brush, HDC hdc);
-extern HBRUSH g_White;
-extern HBRUSH g_Red; // µµÂø
-extern HBRUSH g_Green; // ½ÃÀÛ
-extern HBRUSH g_Yellow;
-extern HBRUSH g_Blue;
-extern HFONT g_font;
-extern HPEN g_arrow;
-extern HPEN g_blueArrow;
-extern bool g_space;
-extern HBRUSH g_Brown;
-
-bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
+procademy::CJumpPointSearch::CJumpPointSearch()
 {
-	memset(g_Visit, 0, sizeof(g_Visit));
-	memset(g_ColorTable, 0, sizeof(g_ColorTable));
+    mOpenList = new MyHeap(2500);
+}
 
-	colorSet();
+procademy::CJumpPointSearch::~CJumpPointSearch()
+{
+    Clear();
+    delete mOpenList;
+}
 
-	unsigned short h = abs(begin.x - end.x) + abs(begin.y - end.y);
-	Node* node = new Node(begin, 0, H_Weight * h, H_Weight * h, NodeDirection::NODE_DIRECTION_NONE);
-	g_openList.InsertData(node);
-	g_Visit[begin.y][begin.x] = true;
+procademy::Node* procademy::CJumpPointSearch::JumpPointSearch(Coordi& begin, Coordi& end)
+{
+    memset(mVisit, 0, sizeof(mVisit));
 
-	while (g_openList.GetSize() > 0)
-	{
-		Node* cur = g_openList.GetMin();
-		HBRUSH brush = GetColor();
-		DrawPoint(cur->position.x, cur->position.y, brush, hdc);
+    unsigned short h = abs(begin.x - end.x) + abs(begin.y - end.y);
+    Node* node = mNodePool.Alloc();
+    node->position = begin;
+    node->g = 0;
+    node->h = H_Weight * h;
+    node->f = H_Weight * h;
+    node->dir = NodeDirection::NODE_DIRECTION_NONE;
+	node->pParent = nullptr;
+    mOpenList->InsertData(node);
+    mVisit[begin.y][begin.x] = true;
+
+    while (mOpenList->GetSize() > 0)
+    {
+		Node* cur = mOpenList->GetMin();
 
 		if (cur->position == end)
 		{
-			DrawPoint(end.x, end.y, g_Red, hdc);
-
 			Node* temp = cur;
 
 			while (temp != nullptr)
 			{
-				g_Optimizer.InsertNode(temp);
+				mOptimizer.InsertNode(temp);
 
 				temp = temp->pParent;
 			}
-			if (g_space)
-			{
-				DrawPathCell(g_Optimizer.GetHead(), hdc, g_Brown);
-			}
-			DrawPath(cur, hdc, g_arrow);
-			DrawPath(g_Optimizer.GetHead(), hdc, g_blueArrow);
 
-			DrawPoint(cur->position.x, cur->position.y, brush, hdc);
+			mNodeQ.Enqueue(cur);
 
-			FreeNode();
-			g_Optimizer.Clear();
-
-			return true;
+			return mOptimizer.GetHead();
 		}
 
 		// Å½»ö ¹æÇâÀ» °áÁ¤ Áþ´Â ºÐ±â¹®
@@ -81,6 +54,9 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 		{
 		case NodeDirection::NODE_DIRECTION_RR:
 		{
+			//	[o]  [x]
+			// cur  []
+			//	[o]	[x]
 			int nY = cur->position.y - 1;
 			int nX = cur->position.x + 1;
 
@@ -92,20 +68,23 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			if (nY >= 0 && g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RU, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RU);
 			}
 			++nY;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RR, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RR);
 			++nY;
 			if (nY < MAP_HEIGHT && g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RD, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RD);
 			}
 			break;
 		}
 		case NodeDirection::NODE_DIRECTION_RD:
 		{
+			//		[o]  [x]
+			//	[o]	cur  []
+			//	[x]	[]	[x]
 			int nY = cur->position.y - 1;
 			int nX = cur->position.x + 1;
 
@@ -113,28 +92,28 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 				g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RU, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RU);
 			}
 			nY++;
-			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RR);
 			nY++;
 			if (nY < MAP_HEIGHT && nX < MAP_WIDTH)
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RD, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RD);
 			nX--;
-			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_DD);
 			nX--;
 
 			if (nY < MAP_HEIGHT && nX >= 0 &&
 				g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LD, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LD);
 			}
 
 			break;
 		}
 		case NodeDirection::NODE_DIRECTION_DD:
 		{
+			//	[o]	cur	[o]
+			//	[x]	[]	[x]
 			int nY = cur->position.y + 1;
 			int nX = cur->position.x - 1;
 
@@ -146,20 +125,23 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			if (nX >= 0 && g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LD, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LD);
 			}
 			++nX;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_DD, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_DD);
 			++nX;
 			if (nX < MAP_WIDTH && g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RD, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RD);
 			}
 			break;
 		}
 		case NodeDirection::NODE_DIRECTION_LD:
 		{
+			//	[x]	[o]
+			//	[]	cur [o]
+			//	[x]	[]	[x]
 			int nY = cur->position.y - 1;
 			int nX = cur->position.x - 1;
 
@@ -167,28 +149,29 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 				g_Map[nY][nX + 1] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LU, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LU);
 			}
 			nY++;
-			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LL);
 			nY++;
 			if (nY < MAP_HEIGHT && nX >= 0)
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LD, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LD);
 			nX++;
-			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_DD);
 			nX++;
 
 			if (nY < MAP_HEIGHT && nX < MAP_WIDTH &&
 				g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RD, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RD);
 			}
 
 			break;
 		}
 		case NodeDirection::NODE_DIRECTION_LL:
 		{
+			//	[x] [o]
+			//	[]  cur
+			//	[x]	[o]
 			int nY = cur->position.y - 1;
 			int nX = cur->position.x - 1;
 
@@ -200,20 +183,23 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			if (nY >= 0 && g_Map[nY][nX + 1] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LU, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LU);
 			}
 			++nY;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LL, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LL);
 			++nY;
 			if (nY < MAP_HEIGHT && g_Map[nY][nX + 1] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LD, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LD);
 			}
 			break;
 		}
 		case NodeDirection::NODE_DIRECTION_LU:
 		{
+			//	[x]	[]	[x]
+			//	[]	cur [o]
+			//	[x]	[o]	
 			int nY = cur->position.y + 1;
 			int nX = cur->position.x - 1;
 
@@ -221,28 +207,28 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 				g_Map[nY][nX + 1] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LD, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LD);
 			}
 			nY--;
-			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LL);
 			nY--;
 			if (nY >= 0 && nX >= 0)
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LU, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LU);
 			nX++;
-			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_UU);
 			nX++;
 
 			if (nY >= 0 && nX < MAP_WIDTH &&
 				g_Map[nY + 1][nX] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RU, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RU);
 			}
 
 			break;
 		}
 		case NodeDirection::NODE_DIRECTION_UU:
 		{
+			//	[x]	[]	[x]
+			//	[o]	cur	[o]
 			int nY = cur->position.y - 1;
 			int nX = cur->position.x - 1;
 
@@ -254,20 +240,23 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			if (nX >= 0 && g_Map[nY + 1][nX] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LU, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LU);
 			}
 			++nX;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_UU, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_UU);
 			++nX;
 			if (nX < MAP_WIDTH && g_Map[nY + 1][nX] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RU, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RU);
 			}
 			break;
 		}
 		case NodeDirection::NODE_DIRECTION_RU:
 		{
+			//	[x]	[]	[x]
+			//	[o]	cur []
+			//		[o]	[x]
 			int nY = cur->position.y + 1;
 			int nX = cur->position.x + 1;
 
@@ -275,22 +264,20 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 				g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RD, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RD);
 			}
 			nY--;
-			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RR);
 			nY--;
 			if (nY >= 0 && nX < MAP_WIDTH)
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RU, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RU);
 			nX--;
-			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_UU);
 			nX--;
 
 			if (nY >= 0 && nX >= 0 &&
 				g_Map[nY + 1][nX] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
-				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LU, brush);
+				SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LU);
 			}
 
 			break;
@@ -300,21 +287,21 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			int nY = cur->position.y;
 			int nX = cur->position.x + 1;
 
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RR, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RR);
 			//nY++;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RD, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RD);
 			//nX--;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_DD, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_DD);
 			//nX--;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LD, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LD);
 			//nY--;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LL, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LL);
 			//nY--;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LU, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_LU);
 			//nX++;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_UU, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_UU);
 			//nX++;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RU, brush);
+			SearchDirection(cur, end, NodeDirection::NODE_DIRECTION_RU);
 
 			break;
 		}
@@ -322,13 +309,13 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			break;
 		}
 
-		Sleep(30);
-	}
+		mNodeQ.Enqueue(cur);
+    }
 
-	return false;
+    return nullptr;
 }
 
-bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRUSH brush)
+bool procademy::CJumpPointSearch::SearchDirection(Node* pParent, Coordi& end, NodeDirection dir)
 {
 	switch (dir)
 	{
@@ -353,21 +340,24 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 				return false;
 			}
 
-			if (g_Visit[nY][nX] == true)
+			if (mVisit[nY][nX] == true)
 			{
 				return false;
 			}
-
-			DrawCell(nX, nY, brush, hdc);
 
 			if (end.x == nX && end.y == nY)
 			{
 				int g = pParent->g + count + 1;
 
-				Node* node = new Node({ nX, nY }, g, 0, g, NodeDirection::NODE_DIRECTION_RR);
+				Node* node = mNodePool.Alloc();
+				node->position = { nX, nY };
+				node->g = g;
+				node->f = 0;
+				node->h = g;
+				node->dir = NodeDirection::NODE_DIRECTION_RR;
 				node->pParent = pParent;
 
-				InsertNode(node, hdc);
+				InsertNode(node);
 
 				return true;
 			}
@@ -382,11 +372,15 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 						int h = abs(nX - 1 - end.x) + abs(nY - end.y);
 						float f = g + h * H_Weight;
 
-						Node* node = new Node({ nX - 1, nY }, g, h, f, NodeDirection::NODE_DIRECTION_RR);
+						Node* node = mNodePool.Alloc();
+						node->position = { nX - 1, nY };
+						node->g = g;
+						node->f = h;
+						node->h = f;
+						node->dir = NodeDirection::NODE_DIRECTION_RR;
 						node->pParent = pParent;
-						DrawCell(nX, nY, g_White, hdc);
 
-						InsertNode(node, hdc);
+						InsertNode(node);
 
 						return true;
 					}
@@ -410,11 +404,15 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 						int h = abs(nX - 1 - end.x) + abs(nY - end.y);
 						float f = g + h * H_Weight;
 
-						Node* node = new Node({ nX - 1, nY }, g, h, f, NodeDirection::NODE_DIRECTION_RR);
+						Node* node = mNodePool.Alloc();
+						node->position = { nX - 1, nY };
+						node->g = g;
+						node->f = h;
+						node->h = f;
+						node->dir = NodeDirection::NODE_DIRECTION_RR;
 						node->pParent = pParent;
-						DrawCell(nX, nY, g_White, hdc);
 
-						InsertNode(node, hdc);
+						InsertNode(node);
 
 						return true;
 					}
@@ -439,7 +437,7 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		int nY = pParent->position.y + 1;
 		int count = 0;
 		bool hasCreated = false;
-		Node* bridge = new Node;
+		Node* bridge = mNodePool.Alloc();
 
 		bridge->dir = NodeDirection::NODE_DIRECTION_RD;
 		bridge->pParent = pParent;
@@ -448,20 +446,18 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY >= MAP_HEIGHT || nX >= MAP_WIDTH)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
-			if (g_Visit[nY][nX] == true)
+			if (mVisit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
-
-			DrawCell(nX, nY, brush, hdc);
 
 			if (end.x == nX && end.y == nY)
 			{
@@ -469,10 +465,10 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 
 				bridge->g = g;
 				bridge->h = 0;
-				bridge->f = g;
+				bridge->f = 0;
 				bridge->position = { nX, nY };
 
-				InsertNode(bridge, hdc);
+				InsertNode(bridge);
 
 				return true;
 			}
@@ -486,14 +482,14 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			bridge->f = f;
 			bridge->position = { nX, nY };
 
-			bool ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_RR, brush);
+			bool ret = SearchDirection(bridge, end, NodeDirection::NODE_DIRECTION_RR);
 
 			if (ret == true)
 			{
 				hasCreated = true;
 			}
 
-			ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_DD, brush);
+			ret = SearchDirection(bridge, end, NodeDirection::NODE_DIRECTION_DD);
 
 			if (ret == true)
 			{
@@ -535,13 +531,14 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			bridge->position = { nX, nY };
 
-			InsertNode(bridge, hdc);
+			InsertNode(bridge);
 
 			return true;
 		}
 		else
 		{
-			delete bridge;
+			//mNodePool.Free(bridge);
+			mNodeQ.Enqueue(bridge);
 		}
 
 		break;
@@ -567,21 +564,24 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 				return false;
 			}
 
-			if (g_Visit[nY][nX] == true)
+			if (mVisit[nY][nX] == true)
 			{
 				return false;
 			}
-
-			DrawCell(nX, nY, brush, hdc);
 
 			if (end.x == nX && end.y == nY)
 			{
 				int g = pParent->g + count + 1;
 
-				Node* node = new Node({ nX, nY }, g, 0, g, NodeDirection::NODE_DIRECTION_DD);
+				Node* node = mNodePool.Alloc();
+				node->position = { nX, nY };
+				node->g = g;
+				node->h = 0;
+				node->f = 0;
+				node->dir = NodeDirection::NODE_DIRECTION_DD;
 				node->pParent = pParent;
 
-				InsertNode(node, hdc);
+				InsertNode(node);
 
 				return true;
 			}
@@ -596,11 +596,15 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 						int h = abs(nX - end.x) + abs(nY - 1 - end.y);
 						float f = g + h * H_Weight;
 
-						Node* node = new Node({ nX, nY - 1 }, g, h, f, NodeDirection::NODE_DIRECTION_DD);
+						Node* node = mNodePool.Alloc();
+						node->position = { nX, nY - 1 };
+						node->g = g;
+						node->h = h;
+						node->f = f;
+						node->dir = NodeDirection::NODE_DIRECTION_DD;
 						node->pParent = pParent;
-						DrawCell(nX, nY, g_White, hdc);
 
-						InsertNode(node, hdc);
+						InsertNode(node);
 
 						return true;
 					}
@@ -624,11 +628,15 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 						int h = abs(nX - end.x) + abs(nY - 1 - end.y);
 						float f = g + h * H_Weight;
 
-						Node* node = new Node({ nX, nY - 1 }, g, h, f, NodeDirection::NODE_DIRECTION_DD);
+						Node* node = mNodePool.Alloc();
+						node->position = { nX, nY - 1 };
+						node->g = g;
+						node->h = h;
+						node->f = f;
+						node->dir = NodeDirection::NODE_DIRECTION_DD;
 						node->pParent = pParent;
-						DrawCell(nX, nY, g_White, hdc);
 
-						InsertNode(node, hdc);
+						InsertNode(node);
 
 						return true;
 					}
@@ -653,7 +661,7 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		int nY = pParent->position.y + 1;
 		int count = 0;
 		bool hasCreated = false;
-		Node* bridge = new Node;
+		Node* bridge = mNodePool.Alloc();
 
 		bridge->dir = NodeDirection::NODE_DIRECTION_LD;
 		bridge->pParent = pParent;
@@ -662,20 +670,18 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY >= MAP_HEIGHT || nX < 0)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
-			if (g_Visit[nY][nX] == true)
+			if (mVisit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
-
-			DrawCell(nX, nY, brush, hdc);
 
 			if (end.x == nX && end.y == nY)
 			{
@@ -683,10 +689,10 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 
 				bridge->g = g;
 				bridge->h = 0;
-				bridge->f = g;
+				bridge->f = 0;
 				bridge->position = { nX, nY };
 
-				InsertNode(bridge, hdc);
+				InsertNode(bridge);
 
 				return true;
 			}
@@ -700,14 +706,14 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			bridge->f = f;
 			bridge->position = { nX, nY };
 
-			bool ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_DD, brush);
+			bool ret = SearchDirection(bridge, end, NodeDirection::NODE_DIRECTION_DD);
 
 			if (ret == true)
 			{
 				hasCreated = true;
 			}
 
-			ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_LL, brush);
+			ret = SearchDirection(bridge, end, NodeDirection::NODE_DIRECTION_LL);
 
 			if (ret == true)
 			{
@@ -749,11 +755,12 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			bridge->position = { nX, nY };
 
-			InsertNode(bridge, hdc);
+			InsertNode(bridge);
 		}
 		else
 		{
-			delete bridge;
+			//mNodePool.Free(bridge);
+			mNodeQ.Enqueue(bridge);
 		}
 
 		break;
@@ -779,21 +786,24 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 				return false;
 			}
 
-			if (g_Visit[nY][nX] == true)
+			if (mVisit[nY][nX] == true)
 			{
 				return false;
 			}
-
-			DrawCell(nX, nY, brush, hdc);
 
 			if (end.x == nX && end.y == nY)
 			{
 				int g = pParent->g + count + 1;
 
-				Node* node = new Node({ nX, nY }, g, 0, g, NodeDirection::NODE_DIRECTION_LL);
+				Node* node = mNodePool.Alloc();
+				node->position = { nX, nY };
+				node->g = g;
+				node->h = 0;
+				node->f = 0;
+				node->dir = NodeDirection::NODE_DIRECTION_LL;
 				node->pParent = pParent;
 
-				InsertNode(node, hdc);
+				InsertNode(node);
 
 				return true;
 			}
@@ -808,11 +818,15 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 						int h = abs(nX + 1 - end.x) + abs(nY - end.y);
 						float f = g + h * H_Weight;
 
-						Node* node = new Node({ nX + 1, nY }, g, h, f, NodeDirection::NODE_DIRECTION_LL);
+						Node* node = mNodePool.Alloc();
+						node->position = { nX + 1, nY };
+						node->g = g;
+						node->h = h;
+						node->f = f;
+						node->dir = NodeDirection::NODE_DIRECTION_LL;
 						node->pParent = pParent;
-						DrawCell(nX, nY, g_White, hdc);
 
-						InsertNode(node, hdc);
+						InsertNode(node);
 
 						return true;
 					}
@@ -836,11 +850,15 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 						int h = abs(nX + 1 - end.x) + abs(nY - end.y);
 						float f = g + h * H_Weight;
 
-						Node* node = new Node({ nX + 1, nY }, g, h, f, NodeDirection::NODE_DIRECTION_LL);
+						Node* node = mNodePool.Alloc();
+						node->position = { nX + 1, nY };
+						node->g = g;
+						node->h = h;
+						node->f = f;
+						node->dir = NodeDirection::NODE_DIRECTION_LL;
 						node->pParent = pParent;
-						DrawCell(nX, nY, g_White, hdc);
 
-						InsertNode(node, hdc);
+						InsertNode(node);
 
 						return true;
 					}
@@ -865,7 +883,7 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		int nY = pParent->position.y - 1;
 		int count = 0;
 		bool hasCreated = false;
-		Node* bridge = new Node;
+		Node* bridge = mNodePool.Alloc();
 
 		bridge->dir = NodeDirection::NODE_DIRECTION_LU;
 		bridge->pParent = pParent;
@@ -874,20 +892,18 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY < 0 || nX < 0)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
-			if (g_Visit[nY][nX] == true)
+			if (mVisit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
-
-			DrawCell(nX, nY, brush, hdc);
 
 			if (end.x == nX && end.y == nY)
 			{
@@ -895,10 +911,10 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 
 				bridge->g = g;
 				bridge->h = 0;
-				bridge->f = g;
+				bridge->f = 0;
 				bridge->position = { nX, nY };
 
-				InsertNode(bridge, hdc);
+				InsertNode(bridge);
 
 				return true;
 			}
@@ -912,14 +928,14 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			bridge->f = f;
 			bridge->position = { nX, nY };
 
-			bool ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_LL, brush);
+			bool ret = SearchDirection(bridge, end, NodeDirection::NODE_DIRECTION_LL);
 
 			if (ret == true)
 			{
 				hasCreated = true;
 			}
 
-			ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_UU, brush);
+			ret = SearchDirection(bridge, end, NodeDirection::NODE_DIRECTION_UU);
 
 			if (ret == true)
 			{
@@ -961,11 +977,12 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			bridge->position = { nX, nY };
 
-			InsertNode(bridge, hdc);
+			InsertNode(bridge);
 		}
 		else
 		{
-			delete bridge;
+			//mNodePool.Free(bridge);
+			mNodeQ.Enqueue(bridge);
 		}
 
 		break;
@@ -991,21 +1008,24 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 				return false;
 			}
 
-			if (g_Visit[nY][nX] == true)
+			if (mVisit[nY][nX] == true)
 			{
 				return false;
 			}
-
-			DrawCell(nX, nY, brush, hdc);
 
 			if (end.x == nX && end.y == nY)
 			{
 				int g = pParent->g + count + 1;
 
-				Node* node = new Node({ nX, nY }, g, 0, g, NodeDirection::NODE_DIRECTION_UU);
+				Node* node = mNodePool.Alloc();
+				node->position = { nX, nY };
+				node->g = g;
+				node->h = 0;
+				node->f = 0;
+				node->dir = NodeDirection::NODE_DIRECTION_UU;
 				node->pParent = pParent;
 
-				InsertNode(node, hdc);
+				InsertNode(node);
 
 				return true;
 			}
@@ -1020,11 +1040,15 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 						int h = abs(nX - end.x) + abs(nY + 1 - end.y);
 						float f = g + h * H_Weight;
 
-						Node* node = new Node({ nX, nY + 1 }, g, h, f, NodeDirection::NODE_DIRECTION_UU);
+						Node* node = mNodePool.Alloc();
+						node->position = { nX, nY + 1 };
+						node->g = g;
+						node->h = h;
+						node->f = f;
+						node->dir = NodeDirection::NODE_DIRECTION_UU;
 						node->pParent = pParent;
-						DrawCell(nX, nY, g_White, hdc);
 
-						InsertNode(node, hdc);
+						InsertNode(node);
 
 						return true;
 					}
@@ -1048,11 +1072,15 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 						int h = abs(nX - end.x) + abs(nY + 1 - end.y);
 						float f = g + h * H_Weight;
 
-						Node* node = new Node({ nX, nY + 1 }, g, h, f, NodeDirection::NODE_DIRECTION_UU);
+						Node* node = mNodePool.Alloc();
+						node->position = { nX, nY + 1 };
+						node->g = g;
+						node->h = h;
+						node->f = f;
+						node->dir = NodeDirection::NODE_DIRECTION_UU;
 						node->pParent = pParent;
-						DrawCell(nX, nY, g_White, hdc);
 
-						InsertNode(node, hdc);
+						InsertNode(node);
 
 						return true;
 					}
@@ -1077,7 +1105,7 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		int nY = pParent->position.y - 1;
 		int count = 0;
 		bool hasCreated = false;
-		Node* bridge = new Node;
+		Node* bridge = mNodePool.Alloc();
 
 		bridge->dir = NodeDirection::NODE_DIRECTION_RU;
 		bridge->pParent = pParent;
@@ -1086,20 +1114,17 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY < 0 || nX >= MAP_WIDTH)
 			{
-				return false;
+				break;
 			}
-
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
-			if (g_Visit[nY][nX] == true)
+			if (mVisit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
-
-			DrawCell(nX, nY, brush, hdc);
 
 			if (end.x == nX && end.y == nY)
 			{
@@ -1107,10 +1132,10 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 
 				bridge->g = g;
 				bridge->h = 0;
-				bridge->f = g;
+				bridge->f = 0;
 				bridge->position = { nX, nY };
 
-				InsertNode(bridge, hdc);
+				InsertNode(bridge);
 
 				return true;
 			}
@@ -1124,14 +1149,14 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 			bridge->f = f;
 			bridge->position = { nX, nY };
 
-			bool ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_UU, brush);
+			bool ret = SearchDirection(bridge, end, NodeDirection::NODE_DIRECTION_UU);
 
 			if (ret == true)
 			{
 				hasCreated = true;
 			}
 
-			ret = SearchDirection(bridge, end, hdc, NodeDirection::NODE_DIRECTION_RR, brush);
+			ret = SearchDirection(bridge, end, NodeDirection::NODE_DIRECTION_RR);
 
 			if (ret == true)
 			{
@@ -1173,11 +1198,12 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			bridge->position = { nX, nY };
 
-			InsertNode(bridge, hdc);
+			InsertNode(bridge);
 		}
 		else
 		{
-			delete bridge;
+			//mNodePool.Free(bridge);
+			mNodeQ.Enqueue(bridge);
 		}
 
 		break;
@@ -1190,105 +1216,30 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 	return false;
 }
 
-void DrawPath(Node* end, HDC hdc, HPEN pen)
+void procademy::CJumpPointSearch::InsertNode(Node* node)
 {
-	HPEN oldPen = (HPEN)SelectObject(hdc, pen);
-	MoveToEx(hdc, end->position.x * CELL_SIZE + CELL_SIZE / 2, end->position.y * CELL_SIZE + CELL_SIZE / 2, NULL);
-
-	Node* next = end->pParent;
-
-	while (1)
-	{
-		LineTo(hdc, next->position.x * CELL_SIZE + CELL_SIZE / 2, next->position.y * CELL_SIZE + CELL_SIZE / 2);
-
-		if (next->pParent == nullptr)
-		{
-			break;
-		}
-
-		next = next->pParent;
-	}
-
-	SelectObject(hdc, oldPen);
+	mOpenList->InsertData(node);
+	mVisit[node->position.y][node->position.x] = true;
+	//mNodeQ.Enqueue(node);
 }
 
-void DrawPathCell(Node* end, HDC hdc, HBRUSH brush)
+void procademy::CJumpPointSearch::Clear()
 {
-	Node* beginPos = end;
-	Node* endPos = end->pParent;
-
-	CRayCast rayCast;
-
-	while (endPos != nullptr)
+	while (mNodeQ.IsEmpty() == false)
 	{
-		rayCast.SetBegin(beginPos->position);
-		rayCast.SetEnd(endPos->position);
+		Node* node = mNodeQ.Dequeue();
 
-		Coordi cur;
-
-		while (!rayCast.GetNext(cur))
-		{
-			DrawCell(cur.x, cur.y, brush, hdc);
-		}
-
-		rayCast.Reset();
-
-		beginPos = beginPos->pParent;
-		endPos = endPos->pParent;
-	}
-}
-
-void FreeNode()
-{
-	g_openList.ClearHeap();
-
-	while (g_NodeRing.GetUseSize() > 0)
-	{
-		Node* node;
-		g_NodeRing.Dequeue(&node);
-
-		delete node;
-	}
-}
-
-void InsertNode(Node* node, HDC hdc)
-{
-	g_openList.InsertData(node);
-	g_Visit[node->position.y][node->position.x] = true;
-	g_NodeRing.Enqueue(node);
-
-	DrawCell(node->position.x, node->position.y, g_Yellow, hdc);
-}
-
-HBRUSH GetColor()
-{
-	while (1)
-	{
-		int r = (rand() & 0xff) / 20;
-		int g = (rand() & 0xff) / 20;
-		int b = (rand() & 0xff) / 20;
-
-		if (g_ColorTable[r][g][b] == false)
-		{
-			g_ColorTable[r][g][b] == true;
-
-			return CreateSolidBrush(RGB(r * 20, g * 20, b * 20));
-		}
+		if (node != nullptr)
+			mNodePool.Free(node);
 	}
 
-	return HBRUSH();
-}
-
-void colorSet()
-{
-	for (int i = 12; i >= 10; --i)
+	while (mOpenList->GetSize() > 0)
 	{
-		for (int j = 12; j >= 10; --j)
-		{
-			for (int k = 12; k >= 10; --k)
-			{
-				g_ColorTable[i][j][k] = true;
-			}
-		}
+		Node* node = mOpenList->GetMin();
+
+		if (node != nullptr)
+			mNodePool.Free(node);
 	}
+
+	mOptimizer.Clear();
 }

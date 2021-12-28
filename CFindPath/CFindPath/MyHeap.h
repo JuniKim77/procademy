@@ -1,5 +1,5 @@
 #pragma once
-
+#include "FilePathDTO.h"
 #include "CAStar.h"
 
 namespace procademy
@@ -14,10 +14,10 @@ namespace procademy
 		MyHeap();
 		MyHeap(int size);
 		~MyHeap();
-		void InsertData(CAStar::Node* data);
-		CAStar::Node* GetMin();
+		void InsertData(Node* data);
+		Node* GetMin();
 		int GetSize() { return mSize; }
-		bool UpdateNode(CAStar::Node* other);
+		bool UpdateNode(Node* other);
 		void ClearHeap() { mSize = 0; }
 
 	private:
@@ -29,6 +29,6 @@ namespace procademy
 	private:
 		int mCapacity;
 		int mSize;
-		CAStar::Node** mBuffer;
+		Node** mBuffer;
 	};
 }

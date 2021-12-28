@@ -1,5 +1,8 @@
 #pragma once
 
+#define MAP_WIDTH (60)
+#define MAP_HEIGHT (40)
+
 namespace procademy
 {
 	enum class TileType

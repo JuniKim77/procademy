@@ -33,6 +33,21 @@
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="CJumpPointSearch.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CJumpPointOptimizer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CRayCast.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp">
+      <Filter>헤더 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CAStar.h">
@@ -57,6 +72,21 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="FilePathDTO.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CJumpPointSearch.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CJumpPointOptimizer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CRayCast.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

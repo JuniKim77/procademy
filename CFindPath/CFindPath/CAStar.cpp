@@ -1,3 +1,4 @@
+#include "FilePathDTO.h"
 #include "CAStar.h"
 #include "CSafeQueue.h"
 #include "MyHeap.h"
@@ -8,7 +9,7 @@
 #define MAP_WIDTH (60)
 #define MAP_HEIGHT (40)
 
-extern procademy::CAStar::TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
+extern procademy::TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
 
 procademy::CAStar::CAStar()
 {
@@ -22,7 +23,7 @@ procademy::CAStar::~CAStar()
 	delete mOpenList;
 }
 
-procademy::CAStar::Node* procademy::CAStar::SearchDestination(Coordi& begin, Coordi& end)
+procademy::Node* procademy::CAStar::SearchDestination(Coordi& begin, Coordi& end)
 {
 	Node* found = SearchHelper(begin, end, false);
 
@@ -32,7 +33,7 @@ procademy::CAStar::Node* procademy::CAStar::SearchDestination(Coordi& begin, Coo
 	return SearchHelper(end, begin, true);
 }
 
-procademy::CAStar::Node* procademy::CAStar::SearchHelper(Coordi& begin, Coordi& end, bool reverse)
+procademy::Node* procademy::CAStar::SearchHelper(Coordi& begin, Coordi& end, bool reverse)
 {
 	memset(mNodeType, 0, sizeof(mNodeType));
 
