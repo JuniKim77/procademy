@@ -43,7 +43,7 @@ namespace procademy
 		bool						JoinProc(SESSION_ID sessionNo);
 		bool						RecvProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						LoginProc(SESSION_ID sessionNo, CNetPacket* packet);
-		bool						LoginCompleteProc();
+		bool						LoginProc_Redis(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						LeaveProc(SESSION_ID sessionNo);
 		bool						MoveSectorProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						SendMessageProc(SESSION_ID sessionNo, CNetPacket* packet);
@@ -108,6 +108,7 @@ namespace procademy
 		CCpuUsage								mCpuUsage;
 		bool									mbMonitoring = true;
 		bool									mbPrint = false;
+		bool									mbRedisMode = false;
 		RatioMonitor							mRatioMonitor;
 	};
 }

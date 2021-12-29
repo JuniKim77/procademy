@@ -1,7 +1,6 @@
 #pragma warning(disable:6387)
 #pragma warning(disable:26110)
 
-//#define REDIS_MODE
 #define SEND_TO_WORKER
 
 #include "CChatServerMulti.h"
@@ -38,14 +37,26 @@ void procademy::CChatServerMulti::OnClientJoin(SESSION_ID SessionID)
 {
     InterlockedIncrement(&mUpdateTPS);
     mRatioMonitor.joinCount++;
-	JoinProc(SessionID);
+#ifdef PROFILE
+    CProfiler::Begin(L"JoinProc");
+    JoinProc(SessionID);
+    CProfiler::End(L"JoinProc");
+#else
+    JoinProc(SessionID);
+#endif
 }
 
 void procademy::CChatServerMulti::OnClientLeave(SESSION_ID SessionID)
 {
     InterlockedIncrement(&mUpdateTPS);
     InterlockedIncrement(&mRatioMonitor.leaveCount);
-	LeaveProc(SessionID);
+#ifdef PROFILE
+    CProfiler::Begin(L"LeaveProc");
+    LeaveProc(SessionID);
+    CProfiler::End(L"LeaveProc");
+#else
+    LeaveProc(SessionID);
+#endif
 }
 
 void procademy::CChatServerMulti::OnRecv(SESSION_ID SessionID, CNetPacket* packet)
@@ -283,11 +294,58 @@ bool procademy::CChatServerMulti::RecvProc(SESSION_ID sessionNo, CNetPacket* pac
 
     *packet >> type;
 
+#ifdef PROFILE
     switch (type)
     {
     case en_PACKET_CS_CHAT_REQ_LOGIN:
         InterlockedIncrement(&mRatioMonitor.loginCount);
-        ret = LoginProc(sessionNo, packet);
+        if (mbRedisMode)
+        {
+            CProfiler::Begin(L"LoginProc_Redis");
+            ret = LoginProc_Redis(sessionNo, packet);
+            CProfiler::End(L"LoginProc_Redis");
+        }
+        else
+        {
+            CProfiler::Begin(L"LoginProc");
+            ret = LoginProc(sessionNo, packet);
+            CProfiler::End(L"LoginProc");
+        }
+        break;
+    case en_PACKET_CS_CHAT_REQ_SECTOR_MOVE:
+        InterlockedIncrement(&mRatioMonitor.moveSectorCount);
+        CProfiler::Begin(L"MoveSectorProc");
+        ret = MoveSectorProc(sessionNo, packet);
+        CProfiler::End(L"MoveSectorProc");
+        break;
+    case en_PACKET_CS_CHAT_REQ_MESSAGE:
+        InterlockedIncrement(&mRatioMonitor.sendMsgInCount);
+        CProfiler::Begin(L"SendMessageProc");
+        ret = SendMessageProc(sessionNo, packet);
+        CProfiler::End(L"SendMessageProc");
+        break;
+    case en_PACKET_CS_CHAT_REQ_HEARTBEAT:
+        CProfiler::Begin(L"HeartUpdateProc");
+        ret = HeartUpdateProc(sessionNo);
+        CProfiler::End(L"HeartUpdateProc");
+        break;
+    default:
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Undefined Message", sessionNo);
+        break;
+}
+#else
+    switch (type)
+    {
+    case en_PACKET_CS_CHAT_REQ_LOGIN:
+        InterlockedIncrement(&mRatioMonitor.loginCount);
+        if (mbRedisMode)
+        {
+            ret = LoginProc_Redis(sessionNo, packet);
+        }
+        else
+        {
+            ret = LoginProc(sessionNo, packet);
+        }
         break;
     case en_PACKET_CS_CHAT_REQ_SECTOR_MOVE:
         InterlockedIncrement(&mRatioMonitor.moveSectorCount);
@@ -304,6 +362,8 @@ bool procademy::CChatServerMulti::RecvProc(SESSION_ID sessionNo, CNetPacket* pac
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Undefined Message", sessionNo);
         break;
     }
+#endif // PROFILE
+    
 
     if (ret == false)
     {
@@ -315,31 +375,85 @@ bool procademy::CChatServerMulti::RecvProc(SESSION_ID sessionNo, CNetPacket* pac
 
 bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* packet)
 {
-#ifndef REDIS_MODE
     INT64	    AccountNo;
     WCHAR	    ID[20];				// null 포함
     WCHAR	    Nickname[20];		// null 포함
     char	    SessionKey[64];		// 인증토큰
     CNetPacket* response;
-#endif // REDIS_MODE
 
-    *packet >> AccountNo;
+    * packet >> AccountNo;
 
     packet->GetData(ID, 20);
     packet->GetData(Nickname, 20);
     packet->GetData(SessionKey, 64);
 
-    LockPlayerMap();
+    //LockPlayerMap(false);
 
     st_Player* player = FindPlayer(sessionNo);
 
     if (player == nullptr)
     {
-        //CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
 
-        //CRASH();
+        CRASH();
 
-        UnlockPlayerMap();
+        //UnlockPlayerMap(false);
+
+        return true;
+    }
+
+    if (player->sessionNo != sessionNo)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
+
+        CRASH();
+
+        return false;
+    }
+
+    if (player->accountNo != 0 || player->bLogin)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login",
+            sessionNo, player->accountNo);
+
+        CRASH();
+
+		return false;
+	}
+
+	// token verification
+	player->accountNo = AccountNo;
+	wcscpy_s(player->ID, _countof(player->ID), ID);
+	wcscpy_s(player->nickName, _countof(player->nickName), Nickname);
+	player->bLogin = true;
+	player->lastRecvTime = GetTickCount64();
+
+	//msgDebugLog(2000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
+
+	response = MakeCSResLogin(1, AccountNo);
+	{
+#ifdef SEND_TO_WORKER
+		SendPacketToWorker(sessionNo, response);
+#else
+		SendPacket(sessionNo, response);
+#endif // SEND_TO_WORKER
+	}
+
+	//UnlockPlayerMap(false);
+	response->SubRef();
+
+    return true;
+}
+
+bool procademy::CChatServerMulti::LoginProc_Redis(SESSION_ID sessionNo, CNetPacket* packet)
+{
+    st_Player* player = FindPlayer(sessionNo);
+
+    if (player == nullptr)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
+
+        CRASH();
 
         return true;
     }
@@ -363,43 +477,12 @@ bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* pa
         return false;
     }
 
-    // token verification
-#ifdef REDIS_MODE
-    packet->AddRef();
+	// token verification
+	packet->AddRef();
 
-    EnqueueRedisQ(sessionNo, packet);
-
-    UnlockPlayerMap();
-#else
-
-    player->accountNo = AccountNo;
-    wcscpy_s(player->ID, _countof(player->ID), ID);
-    wcscpy_s(player->nickName, _countof(player->nickName), Nickname);
-    player->bLogin = true;
-    player->lastRecvTime = GetTickCount64();
-
-    //msgDebugLog(2000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
-
-    response = MakeCSResLogin(1, AccountNo);
-    {
-#ifdef SEND_TO_WORKER
-        SendPacketToWorker(sessionNo, response);
-#else
-        SendPacket(sessionNo, response);
-#endif // SEND_TO_WORKER
-    }
-
-    UnlockPlayerMap();
-    response->SubRef();
-
-#endif // REDIS_MODE
+	EnqueueRedisQ(sessionNo, packet);
 
     return true;
-}
-
-bool procademy::CChatServerMulti::LoginCompleteProc()
-{
-    return false;
 }
 
 bool procademy::CChatServerMulti::LeaveProc(SESSION_ID sessionNo)
@@ -455,7 +538,7 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
 
     *packet >> AccountNo >> SectorX >> SectorY;
 
-    LockPlayerMap(false);
+    //LockPlayerMap(false);
 
     st_Player* player = FindPlayer(sessionNo);
 
@@ -465,7 +548,7 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
             sessionNo);
 
         CRASH();*/
-        UnlockPlayerMap(false);
+        //UnlockPlayerMap(false);
 
         return true;
     }
@@ -532,7 +615,7 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
 #endif // SEND_TO_WORKER
     }
 
-    UnlockPlayerMap(false);
+    //UnlockPlayerMap(false);
     response->SubRef();
 
     return true;
@@ -610,7 +693,7 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
 
 bool procademy::CChatServerMulti::HeartUpdateProc(SESSION_ID sessionNo)
 {
-    LockPlayerMap(false);
+    //LockPlayerMap(false);
 
     st_Player* player = FindPlayer(sessionNo);
 
@@ -635,7 +718,7 @@ bool procademy::CChatServerMulti::HeartUpdateProc(SESSION_ID sessionNo)
 
     player->lastRecvTime = GetTickCount64();
 
-    UnlockPlayerMap(false);
+    //UnlockPlayerMap(false);
 
     return true;
 }
@@ -687,8 +770,36 @@ bool procademy::CChatServerMulti::RedisProc()
 
         if (cmpRet)
         {
+            LockPlayerMap(false);
+            st_Player* player = FindPlayer(sessionNo);
 
+            if (player == nullptr)
+            {
+                UnlockPlayerMap(false);
 
+#ifdef PROFILE
+                CProfiler::End(L"RedisProc");
+#endif // PROFILE
+                continue;
+            }
+
+            player->accountNo = AccountNo;
+            wcscpy_s(player->ID, _countof(player->ID), ID);
+            wcscpy_s(player->nickName, _countof(player->nickName), Nickname);
+            player->bLogin = true;
+            player->lastRecvTime = GetTickCount64();
+
+            CNetPacket* response = MakeCSResLogin(1, AccountNo);
+            {
+#ifdef SEND_TO_WORKER
+                SendPacketToWorker(sessionNo, response);
+#else
+                SendPacket(sessionNo, response);
+#endif // SEND_TO_WORKER
+            }
+
+            UnlockPlayerMap(false);
+            response->SubRef();
         }
 
 #ifdef PROFILE
@@ -738,6 +849,11 @@ void procademy::CChatServerMulti::LoadInitFile(const WCHAR* fileName)
     tp.GetValue(L"TOKEN_DB_PORT", &num);
     mTokenDBPort = (USHORT)num;
 
+    tp.GetValue(L"REDIS_MODE", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        mbRedisMode = true;
+    else
+        mbRedisMode = false;
 }
 
 void procademy::CChatServerMulti::FreePlayer(st_Player* player)
@@ -1026,6 +1142,20 @@ void procademy::CChatServerMulti::EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket
 
 void procademy::CChatServerMulti::LockSector(WORD x, WORD y, bool exclusive)
 {
+#ifdef PROFILE
+    if (exclusive)
+    {
+        CProfiler::Begin(L"LockSector_Exclusive");
+        AcquireSRWLockExclusive(&mSector[y][x].sectorLock);
+        CProfiler::End(L"LockSector_Exclusive");
+    }
+    else
+    {
+        CProfiler::Begin(L"LockSector_Shared");
+        AcquireSRWLockShared(&mSector[y][x].sectorLock);
+        CProfiler::End(L"LockSector_Shared");
+    }
+#else
     if (exclusive)
     {
         AcquireSRWLockExclusive(&mSector[y][x].sectorLock);
@@ -1034,10 +1164,25 @@ void procademy::CChatServerMulti::LockSector(WORD x, WORD y, bool exclusive)
     {
         AcquireSRWLockShared(&mSector[y][x].sectorLock);
     }
+#endif // PROFILE
 }
 
 void procademy::CChatServerMulti::UnlockSector(WORD x, WORD y, bool exclusive)
 {
+#ifdef PROFILE
+    if (exclusive)
+    {
+        CProfiler::Begin(L"UnlockSector_Exclusive");
+        ReleaseSRWLockExclusive(&mSector[y][x].sectorLock);
+        CProfiler::End(L"UnlockSector_Exclusive");
+    }
+    else
+    {
+        CProfiler::Begin(L"UnlockSector_Shared");
+        ReleaseSRWLockShared(&mSector[y][x].sectorLock);
+        CProfiler::End(L"UnlockSector_Shared");
+    }
+#else
     if (exclusive)
     {
         ReleaseSRWLockExclusive(&mSector[y][x].sectorLock);
@@ -1046,6 +1191,7 @@ void procademy::CChatServerMulti::UnlockSector(WORD x, WORD y, bool exclusive)
     {
         ReleaseSRWLockShared(&mSector[y][x].sectorLock);
     }
+#endif // PROFILE
 }
 
 void procademy::CChatServerMulti::LockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive)
@@ -1053,6 +1199,46 @@ void procademy::CChatServerMulti::LockSectors(WORD x1, WORD y1, WORD x2, WORD y2
     int index1 = mSector[y1][x1].lockIndex;
     int index2 = mSector[y2][x2].lockIndex;
 
+#ifdef PROFILE
+    if (exclusive)
+    {
+        CProfiler::Begin(L"LockSectors_Exclusive");
+        if (index1 == index2)
+        {
+            AcquireSRWLockExclusive(&mSector[y1][x1].sectorLock);
+        }
+        else if (index1 < index2)
+        {
+            AcquireSRWLockExclusive(&mSector[y1][x1].sectorLock);
+            AcquireSRWLockExclusive(&mSector[y2][x2].sectorLock);
+        }
+        else
+        {
+            AcquireSRWLockExclusive(&mSector[y2][x2].sectorLock);
+            AcquireSRWLockExclusive(&mSector[y1][x1].sectorLock);
+        }
+        CProfiler::End(L"LockSectors_Exclusive");
+    }
+    else
+    {
+        CProfiler::Begin(L"LockSectors_Shared");
+        if (index1 == index2)
+        {
+            AcquireSRWLockShared(&mSector[y1][x1].sectorLock);
+        }
+        else if (index1 < index2)
+        {
+            AcquireSRWLockShared(&mSector[y1][x1].sectorLock);
+            AcquireSRWLockShared(&mSector[y2][x2].sectorLock);
+        }
+        else
+        {
+            AcquireSRWLockShared(&mSector[y2][x2].sectorLock);
+            AcquireSRWLockShared(&mSector[y1][x1].sectorLock);
+        }
+        CProfiler::End(L"LockSectors_Shared");
+    }
+#else
     if (exclusive)
     {
         if (index1 == index2)
@@ -1063,7 +1249,7 @@ void procademy::CChatServerMulti::LockSectors(WORD x1, WORD y1, WORD x2, WORD y2
         {
             AcquireSRWLockExclusive(&mSector[y1][x1].sectorLock);
             AcquireSRWLockExclusive(&mSector[y2][x2].sectorLock);
-        }
+}
         else
         {
             AcquireSRWLockExclusive(&mSector[y2][x2].sectorLock);
@@ -1087,6 +1273,7 @@ void procademy::CChatServerMulti::LockSectors(WORD x1, WORD y1, WORD x2, WORD y2
             AcquireSRWLockShared(&mSector[y1][x1].sectorLock);
         }
     }
+#endif // PROFILE
 }
 
 void procademy::CChatServerMulti::UnlockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive)
@@ -1094,8 +1281,10 @@ void procademy::CChatServerMulti::UnlockSectors(WORD x1, WORD y1, WORD x2, WORD 
     int index1 = mSector[y1][x1].lockIndex;
     int index2 = mSector[y2][x2].lockIndex;
 
+#ifdef PROFILE
     if (exclusive)
-	{
+    {
+        CProfiler::Begin(L"UnlockSectors_Exclusive");
         if (index1 == index2)
         {
             ReleaseSRWLockExclusive(&mSector[y1][x1].sectorLock);
@@ -1105,9 +1294,11 @@ void procademy::CChatServerMulti::UnlockSectors(WORD x1, WORD y1, WORD x2, WORD 
             ReleaseSRWLockExclusive(&mSector[y1][x1].sectorLock);
             ReleaseSRWLockExclusive(&mSector[y2][x2].sectorLock);
         }
-	}
-	else
-	{
+        CProfiler::End(L"UnlockSectors_Exclusive");
+    }
+    else
+    {
+        CProfiler::Begin(L"UnlockSectors_Shared");
         if (index1 == index2)
         {
             ReleaseSRWLockShared(&mSector[y1][x1].sectorLock);
@@ -1117,11 +1308,52 @@ void procademy::CChatServerMulti::UnlockSectors(WORD x1, WORD y1, WORD x2, WORD 
             ReleaseSRWLockShared(&mSector[y1][x1].sectorLock);
             ReleaseSRWLockShared(&mSector[y2][x2].sectorLock);
         }
-	}
+        CProfiler::End(L"UnlockSectors_Shared");
+    }
+#else
+    if (exclusive)
+    {
+        if (index1 == index2)
+        {
+            ReleaseSRWLockExclusive(&mSector[y1][x1].sectorLock);
+        }
+        else
+        {
+            ReleaseSRWLockExclusive(&mSector[y1][x1].sectorLock);
+            ReleaseSRWLockExclusive(&mSector[y2][x2].sectorLock);
+}
+    }
+    else
+    {
+        if (index1 == index2)
+        {
+            ReleaseSRWLockShared(&mSector[y1][x1].sectorLock);
+        }
+        else
+        {
+            ReleaseSRWLockShared(&mSector[y1][x1].sectorLock);
+            ReleaseSRWLockShared(&mSector[y2][x2].sectorLock);
+        }
+    }
+#endif // PROFILE
 }
 
 void procademy::CChatServerMulti::LockPlayerMap(bool exclusive)
 {
+#ifdef PROFILE
+    if (exclusive)
+    {
+        CProfiler::Begin(L"LockPlayerMap_Exclusive");
+        AcquireSRWLockExclusive(&mPlayerMapLock);
+        CProfiler::End(L"LockPlayerMap_Exclusive");
+}
+    else
+    {
+        CProfiler::Begin(L"LockPlayerMap_Shared");
+        AcquireSRWLockShared(&mPlayerMapLock);
+        CProfiler::End(L"LockPlayerMap_Shared");
+    }
+#else
     if (exclusive)
     {
         AcquireSRWLockExclusive(&mPlayerMapLock);
@@ -1130,10 +1362,25 @@ void procademy::CChatServerMulti::LockPlayerMap(bool exclusive)
     {
         AcquireSRWLockShared(&mPlayerMapLock);
     }
+#endif // PROFILE
 }
 
 void procademy::CChatServerMulti::UnlockPlayerMap(bool exclusive)
 {
+#ifdef PROFILE
+    if (exclusive)
+    {
+        CProfiler::Begin(L"UnlockPlayerMap_Exclusive");
+        ReleaseSRWLockExclusive(&mPlayerMapLock);
+        CProfiler::End(L"UnlockPlayerMap_Exclusive");
+    }
+    else
+    {
+        CProfiler::Begin(L"UnlockPlayerMap_Shared");
+        ReleaseSRWLockShared(&mPlayerMapLock);
+        CProfiler::End(L"UnlockPlayerMap_Shared");
+    }
+#else
     if (exclusive)
     {
         ReleaseSRWLockExclusive(&mPlayerMapLock);
@@ -1142,6 +1389,8 @@ void procademy::CChatServerMulti::UnlockPlayerMap(bool exclusive)
     {
         ReleaseSRWLockShared(&mPlayerMapLock);
     }
+#endif // PROFILE
+    
 
 }
 
