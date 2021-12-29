@@ -83,6 +83,7 @@ namespace procademy
 		WCHAR										mAccountDBPassword[32];
 		WCHAR										mAccountDBSchema[32];
 		bool										mbMonitoring;
+		bool										mbTlsMode = false;
 
 		alignas(64) DWORD							mLoginWaitCount = 0;
 

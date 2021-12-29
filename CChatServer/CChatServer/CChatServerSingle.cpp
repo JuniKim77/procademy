@@ -1134,6 +1134,7 @@ bool procademy::CChatServerSingle::RedisProc()
             }
             else
             {
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Redis Fail %d - %s", AccountNo, SessionKey);
                 msg->type = MSG_TYPE_VERIFICATION_FAIL;
             }
 

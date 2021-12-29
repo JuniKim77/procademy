@@ -8,7 +8,7 @@
 // 여러 스레드에서 동시에 이를 사용한다면 개판이 됨.
 //
 /////////////////////////////////////////////////////////
-#pragma (lib, "mysqlclient.lib")
+#pragma comment(lib, "mysqlclient.lib")
 
 #include <Windows.h>
 #include "mysql/include/mysql.h"

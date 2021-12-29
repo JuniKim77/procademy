@@ -1,6 +1,6 @@
 #pragma once
 
-#define PROFILE_MAX (50)
+#define PROFILE_MAX (100)
 #define NAME_MAX (32)
 #define FILE_NAME_MAX (80)
 #define MAX_PARSER_LENGTH (256)

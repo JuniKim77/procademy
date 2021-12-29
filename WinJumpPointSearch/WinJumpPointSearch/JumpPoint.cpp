@@ -322,6 +322,8 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			break;
 		}
 
+		g_NodeRing.Enqueue(cur);
+
 		Sleep(30);
 	}
 
@@ -448,17 +450,17 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY >= MAP_HEIGHT || nX >= MAP_WIDTH)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Visit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
 
 			DrawCell(nX, nY, brush, hdc);
@@ -662,17 +664,17 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY >= MAP_HEIGHT || nX < 0)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Visit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
 
 			DrawCell(nX, nY, brush, hdc);
@@ -874,17 +876,17 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY < 0 || nX < 0)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Visit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
 
 			DrawCell(nX, nY, brush, hdc);
@@ -1086,17 +1088,17 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY < 0 || nX >= MAP_WIDTH)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Visit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
 
 			DrawCell(nX, nY, brush, hdc);
@@ -1255,7 +1257,7 @@ void InsertNode(Node* node, HDC hdc)
 {
 	g_openList.InsertData(node);
 	g_Visit[node->position.y][node->position.x] = true;
-	g_NodeRing.Enqueue(node);
+	//g_NodeRing.Enqueue(node);
 
 	DrawCell(node->position.x, node->position.y, g_Yellow, hdc);
 }

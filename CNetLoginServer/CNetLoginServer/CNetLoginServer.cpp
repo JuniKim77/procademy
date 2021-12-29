@@ -1,6 +1,5 @@
-//#define TLS_VERSION
-
 #pragma comment(lib, "winmm.lib")
+#pragma warning(disable:6387)
 
 #include "CNetLoginServer.h"
 #include "LoginServerDTO.h"
@@ -299,6 +298,12 @@ void procademy::CNetLoginServer::LoadInitFile(const WCHAR* fileName)
     mMonitorPort = (u_short)num;
 
     tp.GetValue(L"MONITOR_NO", &mServerNo);
+
+    tp.GetValue(L"TLS_MODE", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        mbTlsMode = true;
+    else
+        mbTlsMode = false;
 }
 
 void procademy::CNetLoginServer::FreePlayer(st_Player* player)
@@ -579,13 +584,13 @@ void procademy::CNetLoginServer::MakeTimeInfoStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"%15s%d\n", L"Login Total : ", mLoginTotal);
     idx += swprintf_s(s + idx, size - idx, L"%15s%d\n", L"Wait Count : ", mLoginWaitCount);
     idx += swprintf_s(s + idx, size - idx, L"%15s%d\n", L"Login Count : ", mLoginCount);
-    idx += swprintf_s(s + idx, size - idx, L"%15s%.2llf\n", L"Login Avg : ", loginAvg);
+    idx += swprintf_s(s + idx, size - idx, L"%15s%.2f\n", L"Login Avg : ", loginAvg);
     idx += swprintf_s(s + idx, size - idx, L"%15s%u\n", L"Login Max : ", mLoginTimeMax);
     idx += swprintf_s(s + idx, size - idx, L"%15s%u\n", L"Login Min : ", mLoginTimeMin);
-    idx += swprintf_s(s + idx, size - idx, L"%15s%.2llf\n", L"   DB Avg : ", dbAvg);
+    idx += swprintf_s(s + idx, size - idx, L"%15s%.2f\n", L"   DB Avg : ", dbAvg);
     idx += swprintf_s(s + idx, size - idx, L"%15s%u\n", L"   DB Max : ", mDBTimeMax);
     idx += swprintf_s(s + idx, size - idx, L"%15s%u\n", L"   DB Min : ", mDBTimeMin);
-    idx += swprintf_s(s + idx, size - idx, L"%15s%.2llf\n", L"Redis Avg : ", redisAvg);
+    idx += swprintf_s(s + idx, size - idx, L"%15s%.2f\n", L"Redis Avg : ", redisAvg);
     idx += swprintf_s(s + idx, size - idx, L"%15s%u\n", L"Redis Max : ", mRedisTimeMax);
     idx += swprintf_s(s + idx, size - idx, L"%15s%u\n", L"Redis Min : ", mRedisTimeMin);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
@@ -619,69 +624,76 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
     DWORD	    beginRedisTime = 0;
     DWORD	    endLoginTime = 0;
 
-#ifdef TLS_VERSION
-    beginDBTime = timeGetTime();
-    CDBConnector_TLS::Query(L"SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = %lld;", accountNo);
-    
-	sql_row = CDBConnector_TLS::FetchRow();
-
-	if (sql_row == NULL)
+	if (mbTlsMode)
 	{
-		ret = false;
+		beginDBTime = timeGetTime();
+		CDBConnector_TLS::Query(L"SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = %lld;", accountNo);
+
+		sql_row = CDBConnector_TLS::FetchRow();
+
+		if (sql_row == NULL)
+		{
+			ret = false;
+		}
+
+		output->accountNo = accountNo;
+		strcpy_s(szAccountNumber, 20, sql_row[0]);
+		MultiByteToWideChar(CP_ACP, 0, sql_row[1], -1, output->ID, en_NAME_MAX);
+		MultiByteToWideChar(CP_ACP, 0, sql_row[2], -1, output->nickName, en_NAME_MAX);
+		CDBConnector_TLS::FreeResult();
+
+		beginRedisTime = timeGetTime();
+		if (ret)
+		{
+			cpp_redis::client* redis = CRedis_TLS::GetRedis();
+
+			redis->setex(szAccountNumber, 10, sessionKey);
+			redis->sync_commit();
+		}
+		endLoginTime = timeGetTime();
 	}
-
-	output->accountNo = accountNo;
-	strcpy_s(szAccountNumber, 20, sql_row[0]);
-	MultiByteToWideChar(CP_ACP, 0, sql_row[1], -1, output->ID, en_NAME_MAX);
-	MultiByteToWideChar(CP_ACP, 0, sql_row[2], -1, output->nickName, en_NAME_MAX);
-	CDBConnector_TLS::FreeResult();
-
-    beginRedisTime = timeGetTime();
-	if (ret)
+	else
 	{
-		cpp_redis::client* redis = CRedis_TLS::GetRedis();
+		beginDBTime = timeGetTime();
+		AcquireSRWLockExclusive(&mDBConnectorLock);
+		do
+		{
+			mDBConnector->Query(L"SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = %lld;", accountNo);
 
-		redis->setex(szAccountNumber, 10, sessionKey);
-		redis->sync_commit();
+			sql_row = mDBConnector->FetchRow();
+
+			if (sql_row == NULL)
+			{
+				ret = false;
+				break;
+			}
+
+			output->accountNo = accountNo;
+			strcpy_s(szAccountNumber, 20, sql_row[0]);
+			MultiByteToWideChar(CP_ACP, 0, sql_row[1], -1, output->ID, en_NAME_MAX);
+			MultiByteToWideChar(CP_ACP, 0, sql_row[2], -1, output->nickName, en_NAME_MAX);
+			mDBConnector->FreeResult();
+		} while (0);
+		ReleaseSRWLockExclusive(&mDBConnectorLock);
+		beginRedisTime = timeGetTime();
+
+		AcquireSRWLockExclusive(&mRedisLock);
+		do
+		{
+			if (ret)
+			{
+				mRedis.setex(szAccountNumber, 10, sessionKey);
+				//mRedis.set(szAccountNumber, sessionKey);
+				mRedis.sync_commit();
+			}
+            else
+            {
+                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Verification Fail %s - %s", szAccountNumber, sessionKey);
+            }
+		} while (0);
+		ReleaseSRWLockExclusive(&mRedisLock);
+		endLoginTime = timeGetTime();
 	}
-    endLoginTime = timeGetTime();
-#else
-    beginDBTime = timeGetTime();
-    AcquireSRWLockExclusive(&mDBConnectorLock);
-    do
-    {
-        mDBConnector->Query(L"SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = %lld;", accountNo);
-
-        sql_row = mDBConnector->FetchRow();
-
-        if (sql_row == NULL)
-        {
-            ret = false;
-            break;
-        }
-
-        output->accountNo = accountNo;
-        strcpy_s(szAccountNumber, 20, sql_row[0]);
-        MultiByteToWideChar(CP_ACP, 0, sql_row[1], -1, output->ID, en_NAME_MAX);
-        MultiByteToWideChar(CP_ACP, 0, sql_row[2], -1, output->nickName, en_NAME_MAX);
-        mDBConnector->FreeResult();
-    } while (0);
-    ReleaseSRWLockExclusive(&mDBConnectorLock);
-    beginRedisTime = timeGetTime();
-
-    AcquireSRWLockExclusive(&mRedisLock);
-    do
-    {
-        if (ret)
-        {
-            mRedis.setex(szAccountNumber, 10, sessionKey);
-            //mRedis.set(szAccountNumber, sessionKey);
-            mRedis.sync_commit();
-        }
-    } while (0);
-    ReleaseSRWLockExclusive(&mRedisLock);
-    endLoginTime = timeGetTime();
-#endif
 
     InterlockedDecrement(&mLoginWaitCount);
 
@@ -695,9 +707,9 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
 
 void procademy::CNetLoginServer::UpdateTimeInfo(ULONGLONG loginBegin, ULONGLONG dbBegin, ULONGLONG redisBegin, ULONGLONG endTime)
 {
-    DWORD loginTime = endTime - loginBegin;
-    DWORD dbTime = redisBegin - dbBegin;
-    DWORD redisTime = endTime - redisBegin;
+    DWORD loginTime = (DWORD)(endTime - loginBegin);
+    DWORD dbTime = (DWORD)(redisBegin - dbBegin);
+    DWORD redisTime = (DWORD)(endTime - redisBegin);
 
     AcquireSRWLockExclusive(&mTimeInfoLock);
     {
@@ -771,7 +783,7 @@ void procademy::CNetLoginServer::SendMonitorDataProc()
 
     sessionNumPacket->SubRef();
 
-    CLanPacket* authNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_LOGIN_AUTH_TPS, 0);
+    CLanPacket* authNumPacket = MakeMonitorPacket(dfMONITOR_DATA_TYPE_LOGIN_AUTH_TPS, (int)mLoginCount);
 
     mMonitorClient.SendPacket(authNumPacket);
 

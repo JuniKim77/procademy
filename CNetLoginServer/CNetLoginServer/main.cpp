@@ -4,7 +4,7 @@
 
 int main()
 {
-	CProfiler::InitProfiler(30);
+	CProfiler::InitProfiler(80);
 
 	procademy::CCrashDump::SetHandlerDump();
 
