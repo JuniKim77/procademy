@@ -33,13 +33,13 @@ int main()
 		return -1;
 	}
 
-	/*u_long on = 1;
+	u_long on = 1;
 	int retval = ioctlsocket(g_clientSocket, FIONBIO, &on);
 	if (retval == SOCKET_ERROR)
 	{
 		printf("Transfer Non Block Socket Fail\n");
 		return -1;
-	}*/
+	}
 
 	int conVal = connect(g_clientSocket, (SOCKADDR*)&addr, sizeof(addr));
 

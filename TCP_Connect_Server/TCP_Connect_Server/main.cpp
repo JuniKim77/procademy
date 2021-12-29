@@ -1,7 +1,7 @@
 #pragma comment(lib, "ws2_32")
 
 #define dfNETWORK_PORT (10170)
-#define dfBACKLOG_SIZE (10)
+#define dfBACKLOG_SIZE (0)
 
 #include <WS2tcpip.h>
 #include <WinSock2.h>
