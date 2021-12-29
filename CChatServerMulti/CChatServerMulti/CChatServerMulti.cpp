@@ -387,36 +387,29 @@ bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* pa
     packet->GetData(Nickname, 20);
     packet->GetData(SessionKey, 64);
 
-    //LockPlayerMap(false);
+    LockPlayerMap(false);
 
     st_Player* player = FindPlayer(sessionNo);
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
 
-        CRASH();
+        CRASH();*/
 
-        //UnlockPlayerMap(false);
+        UnlockPlayerMap(false);
 
         return true;
     }
 
-    if (player->sessionNo != sessionNo)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
-
-        CRASH();
-
-        return false;
-    }
-
     if (player->accountNo != 0 || player->bLogin)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login",
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login",
             sessionNo, player->accountNo);
 
-        CRASH();
+        CRASH();*/
+
+        UnlockPlayerMap(false);
 
 		return false;
 	}
@@ -439,7 +432,7 @@ bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* pa
 #endif // SEND_TO_WORKER
 	}
 
-	//UnlockPlayerMap(false);
+	UnlockPlayerMap(false);
 	response->SubRef();
 
     return true;
@@ -447,35 +440,33 @@ bool procademy::CChatServerMulti::LoginProc(SESSION_ID sessionNo, CNetPacket* pa
 
 bool procademy::CChatServerMulti::LoginProc_Redis(SESSION_ID sessionNo, CNetPacket* packet)
 {
+    LockPlayerMap(false);
     st_Player* player = FindPlayer(sessionNo);
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - Player[%llu] Not Found", sessionNo);
 
-        CRASH();
+        CRASH();*/
+
+        UnlockPlayerMap(false);
 
         return true;
     }
 
-    if (player->sessionNo != sessionNo)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
-
-        CRASH();
-
-        return false;
-    }
-
     if (player->accountNo != 0 || player->bLogin)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login",
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LoginProc - [Session %llu] [pAccountNo %lld] Concurrent Login",
             sessionNo, player->accountNo);
 
-        CRASH();
+        CRASH();*/
+
+        UnlockPlayerMap(false);
 
         return false;
     }
+
+    UnlockPlayerMap(false);
 
 	// token verification
 	packet->AddRef();
@@ -493,32 +484,28 @@ bool procademy::CChatServerMulti::LeaveProc(SESSION_ID sessionNo)
 
     if (player == nullptr)
     {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found",
+        /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [Session %llu] Not Found",
             sessionNo);
 
-        CRASH();
+        CRASH();*/
 
-        return false;
-    }
-
-    if (player->sessionNo != sessionNo)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"LeaveProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
-
-        CRASH();
+        UnlockPlayerMap();
 
         return false;
     }
 
     //msgDebugLog(3000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
 
-    if (player->curSectorX != -1 && player->curSectorY != -1)
+    short curX = player->curSectorX;
+    short curY = player->curSectorY;
+
+    if (curX != -1 && curY != -1)
     {
-        LockSector(player->curSectorX, player->curSectorY);
+        LockSector(curX, curY);
         {
-            Sector_RemovePlayer(player->curSectorX, player->curSectorY, player);
+            Sector_RemovePlayer(curX, curY, player);
         }
-        UnlockSector(player->curSectorX, player->curSectorY);
+        UnlockSector(curX, curY);
     }
 
     FreePlayer(player);
@@ -538,7 +525,7 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
 
     *packet >> AccountNo >> SectorX >> SectorY;
 
-    //LockPlayerMap(false);
+    LockPlayerMap(false);
 
     st_Player* player = FindPlayer(sessionNo);
 
@@ -548,18 +535,9 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
             sessionNo);
 
         CRASH();*/
-        //UnlockPlayerMap(false);
+        UnlockPlayerMap(false);
 
         return true;
-    }
-
-    if (player->sessionNo != sessionNo)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"MoveSectorProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
-
-        CRASH();
-
-        return false;
     }
 
     if (player->accountNo != AccountNo)
@@ -568,6 +546,7 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
             sessionNo, player->accountNo, AccountNo);*/
 
             //CRASH();
+        UnlockPlayerMap(false);
 
         return false;
     }
@@ -578,18 +557,22 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
             sessionNo, AccountNo);*/
 
             //CRASH();
+        UnlockPlayerMap(false);
 
         return false;
     }
 
-    if (player->curSectorX != -1 && player->curSectorY != -1)
+    short curX = player->curSectorX;
+    short curY = player->curSectorY;
+
+    if (curX != -1 && curY != -1)
     {
-        LockSectors(player->curSectorX, player->curSectorY, SectorX, SectorY);
+        LockSectors(curX, curY, SectorX, SectorY);
         {
-            Sector_RemovePlayer(player->curSectorX, player->curSectorY, player);
+            Sector_RemovePlayer(curX, curY, player);
             Sector_AddPlayer(SectorX, SectorY, player);
         }
-        UnlockSectors(player->curSectorX, player->curSectorY, SectorX, SectorY);
+        UnlockSectors(curX, curY, SectorX, SectorY);
     }
     else
     {
@@ -604,7 +587,7 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
     player->curSectorY = SectorY;
     player->lastRecvTime = GetTickCount64();
 
-    //msgDebugLog(4000, sessionNo, player, player->curSectorX, player->curSectorY, player->bLogin);
+    UnlockPlayerMap(false);
 
     CNetPacket* response = MakeCSResSectorMove(AccountNo, SectorX, SectorY);
     {
@@ -614,8 +597,7 @@ bool procademy::CChatServerMulti::MoveSectorProc(SESSION_ID sessionNo, CNetPacke
         SendPacket(sessionNo, response);
 #endif // SEND_TO_WORKER
     }
-
-    //UnlockPlayerMap(false);
+    
     response->SubRef();
 
     return true;
@@ -645,15 +627,6 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
         return true;
     }
 
-    if (player->sessionNo != sessionNo)
-    {
-        CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [SessionID %llu]- [Player %llu] Not Match", sessionNo, player->sessionNo);
-
-        CRASH();
-
-        return false;
-    }
-
     if (player->accountNo != AccountNo)
     {
         /*CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendMessageProc - [Session %llu] [pAccountNo %lld] [AccountNo %lld] Not Matched",
@@ -661,30 +634,37 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
 
             //CRASH();
 
+        UnlockPlayerMap(false);
+
         return false;
     }
 
     if (messageLen != packet->GetUseSize())
     {
+        UnlockPlayerMap(false);
+
         return false;
     }
 
     player->lastRecvTime = GetTickCount64();
 
     //msgDebugLog(5000, sessionNo, player->accountNo, player->curSectorX, player->curSectorY, player->bLogin);
-    
-    mSector[player->curSectorY][player->curSectorX].recvCount++;
 
-    GetSectorAround(player->curSectorX, player->curSectorY, &sectorAround);
+    short curX = player->curSectorX;
+    short curY = player->curSectorY;
+    
+    mSector[curY][curX].recvCount++;
+
+    GetSectorAround(curX, curY, &sectorAround);
     
     CNetPacket* response = MakeCSResMessage(player->accountNo, player->ID, player->nickName, messageLen, (WCHAR*)packet->GetFrontPtr());
     
     DWORD count = SendMessageSectorAround(response, &sectorAround);
 
-    mSector[player->curSectorY][player->curSectorX].sendCount += count;
-    InterlockedAdd(&mRatioMonitor.sendMsgOutCount, count);
-
     UnlockPlayerMap(false);
+
+    mSector[curY][curX].sendCount += count;
+    InterlockedAdd(&mRatioMonitor.sendMsgOutCount, count);
 
     response->SubRef();
 

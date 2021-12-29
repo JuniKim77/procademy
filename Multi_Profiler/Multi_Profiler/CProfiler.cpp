@@ -112,6 +112,11 @@ void CProfiler::ProfileEnd(const WCHAR* szName)
 		return;
 	}
 
+	if (mProfiles[idx].lStartTime.QuadPart == 0)
+	{
+		return;
+	}
+
 	__int64 time = end.QuadPart - mProfiles[idx].lStartTime.QuadPart;
 
 	mProfiles[idx].iTotalTime += time;
