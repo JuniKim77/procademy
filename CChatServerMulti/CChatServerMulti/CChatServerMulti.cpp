@@ -1107,12 +1107,12 @@ void procademy::CChatServerMulti::ClearTPS()
 
 void procademy::CChatServerMulti::RecordPerformentce()
 {
-    CProfiler::SetRecord(L"Accept_TPS", (LONGLONG)mMonitor.acceptTPS * 10);
-    CProfiler::SetRecord(L"Update_TPS", (LONGLONG)mUpdateTPS * 10);
-    CProfiler::SetRecord(L"Recv_TPS", (LONGLONG)mMonitor.prevRecvTPS * 10);
-    CProfiler::SetRecord(L"Send_TPS", (LONGLONG)mMonitor.prevSendTPS * 10);
-    CProfiler::SetRecord(L"CPU_TOTAL", (LONGLONG)(mCpuUsage.ProcessorTotal() * 10.0));
-    CProfiler::SetRecord(L"PROCESS_TOTAL", (LONGLONG)(mCpuUsage.ProcessTotal() * 10.0));
+    CProfiler::SetRecord(L"Accept_TPS_AVG", (LONGLONG)mMonitor.acceptTPS, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"Update_TPS_AVG", (LONGLONG)mUpdateTPS, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"Recv_TPS_AVG", (LONGLONG)mMonitor.prevRecvTPS, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"Send_TPS_AVG", (LONGLONG)mMonitor.prevSendTPS, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"CPU_TOTAL_AVG", (LONGLONG)mCpuUsage.ProcessorTotal(), CProfiler::PROFILE_TYPE::PERCENT);
+    CProfiler::SetRecord(L"PROCESS_TOTAL_AVG", (LONGLONG)mCpuUsage.ProcessTotal(), CProfiler::PROFILE_TYPE::PERCENT);
 }
 
 void procademy::CChatServerMulti::EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet)

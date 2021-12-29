@@ -203,6 +203,7 @@ void procademy::CMMOEchoServer::MonitoringProc()
                 LoginMonitorServer();
             }
 
+            RecordPerformentce();
             MakeMonitorStr(str, 2048);
 
             wprintf(str);
@@ -414,4 +415,19 @@ void procademy::CMMOEchoServer::SendMonitorDataProc()
     mMonitorClient.SendPacket(serverAvailableMemoryPacket);
 
     serverAvailableMemoryPacket->SubRef();
+}
+
+void procademy::CMMOEchoServer::RecordPerformentce()
+{
+    CProfiler::SetRecord(L"Accept_TPS_AVG", (LONGLONG)mMonitor.acceptTPS, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"Recv_TPS_AVG", (LONGLONG)mMonitor.prevRecvTPS, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"Send_TPS_AVG", (LONGLONG)mMonitor.prevSendTPS, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"CPU_TOTAL_AVG", (LONGLONG)mCpuUsage.ProcessorTotal(), CProfiler::PROFILE_TYPE::PERCENT);
+    CProfiler::SetRecord(L"PROCESS_TOTAL_AVG", (LONGLONG)mCpuUsage.ProcessTotal(), CProfiler::PROFILE_TYPE::PERCENT);
+    CProfiler::SetRecord(L"Player_AVG", (LONGLONG)mLoginCount, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"Auth_Player_AVG", (LONGLONG)mAuthPlayerNum, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"Game_Player_AVG", (LONGLONG)mGamePlayerNum, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"Send_Loop_AVG", (LONGLONG)mMonitor.prevSendLoopCount, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"Auth_Loop_AVG", (LONGLONG)mMonitor.prevAuthLoopCount, CProfiler::PROFILE_TYPE::COUNT);
+    CProfiler::SetRecord(L"Game_Loop_AVG", (LONGLONG)mMonitor.prevGameLoopCount, CProfiler::PROFILE_TYPE::COUNT);
 }

@@ -35,6 +35,7 @@ namespace procademy
 
 		void			LoginMonitorServer();
 		void			SendMonitorDataProc();
+		void			RecordPerformentce();
 
 	private:
 		CPlayer*				mPlayers;

@@ -10,6 +10,12 @@
 class CProfiler
 {
 public:
+	enum class PROFILE_TYPE {
+		MICRO_SECONDS,
+		PERCENT,
+		COUNT,
+	};
+public:
 	CProfiler(const WCHAR* szSettingFileName);
 	~CProfiler();
 
@@ -30,7 +36,7 @@ private:
 	/// </summary>
 	/// <param name="szName">Profiling Name</param>
 	void ProfileEnd(const WCHAR* szName);
-	void ProfileSetRecord(const WCHAR* szName, LONGLONG time);
+	void ProfileSetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type);
 	/// <summary>
 	/// Profiling Data Text Out
 	/// </summary>
@@ -53,7 +59,7 @@ public:
 	static void DestroyProfiler();
 	static void Begin(const WCHAR* szName);
 	static void End(const WCHAR* szName);
-	static void SetRecord(const WCHAR* szName, LONGLONG time);
+	static void SetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type);
 	static void Print();
 
 private:
@@ -69,6 +75,7 @@ private:
 	typedef struct
 	{
 		bool			bFlag;				// 프로파일의 사용 여부. (배열시에만)
+		PROFILE_TYPE	type;				// 데이터 타입
 		WCHAR			szName[NAME_MAX];	// 프로파일 샘플 이름.
 
 		LARGE_INTEGER	lStartTime;			// 프로파일 샘플 실행 시간.
