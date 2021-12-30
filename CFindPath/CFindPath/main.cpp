@@ -129,7 +129,7 @@ int main()
 		break;
 	}
 
-	return 0;;
+	return 0;
 }
 
 unsigned int __stdcall workerThread(LPVOID arg)
