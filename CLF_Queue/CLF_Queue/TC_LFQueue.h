@@ -3,6 +3,59 @@
 #include <wtypes.h>
 #include "TC_LFObjectPool.h"
 
+struct queueDebug
+{
+	int logicId;
+	int threadId;
+	void* mHead;
+	void* mHeadNext;
+	void* mTail;
+	void* mTailNext;
+	void* snapNode;
+	void* snapNext;
+	void* enqueueNode;
+	void* dequeueNode;
+	LONG64 counter;
+	LONG64 snapCounter;
+	DWORD mSize;
+};
+
+queueDebug g_queueLog[USHRT_MAX + 1];
+USHORT g_idx;
+
+void _QueueLog(
+	int logicId,
+	int threadId,
+	void* mHead,
+	void* mHeadNext,
+	void* mTail,
+	void* mTailNext,
+	void* snapNode,
+	void* snapNext,
+	void* enqueueNode,
+	void* dequeueNode,
+	LONG64 counter,
+	LONG64 snapCounter,
+	DWORD mSize
+)
+{
+	USHORT index = InterlockedIncrement16((short*)&g_idx);
+
+	g_queueLog[index].logicId = logicId;
+	g_queueLog[index].threadId = threadId;
+	g_queueLog[index].mHead = mHead;
+	g_queueLog[index].mHeadNext = mHeadNext;
+	g_queueLog[index].mTail = mTail;
+	g_queueLog[index].mTailNext = mTailNext;
+	g_queueLog[index].snapNode = snapNode;
+	g_queueLog[index].snapNext = snapNext;
+	g_queueLog[index].enqueueNode = enqueueNode;
+	g_queueLog[index].dequeueNode = dequeueNode;
+	g_queueLog[index].counter = counter;
+	g_queueLog[index].snapCounter = snapCounter;
+	g_queueLog[index].mSize = mSize;
+}
+
 namespace procademy
 {
 	template <typename DATA>
@@ -42,8 +95,6 @@ namespace procademy
 		DWORD		GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
 		DWORD		GetPoolSize() { return mMemoryPool.GetSize(); }
 		void		linkCheck(int size);
-		void		Log(int logicId, t_Top snap_top, Node* next, bool isHead = false);
-		void		MoveTail();
 	};
 
 	template<typename DATA>
@@ -76,7 +127,7 @@ namespace procademy
 	template<typename DATA>
 	inline void TC_LFQueue<DATA>::Enqueue(DATA data)
 	{
-		alignas(16) t_Top top;
+		alignas(16) t_Top tail;
 		Node* node = mMemoryPool.Alloc();
 		Node* next;
 
@@ -87,25 +138,38 @@ namespace procademy
 
 		while (1)
 		{
-			top.counter = mTail.counter;
-			top.ptr_node = mTail.ptr_node;
-			next = top.ptr_node->next;
+			tail.counter = mTail.counter;
+			tail.ptr_node = mTail.ptr_node;
+			next = tail.ptr_node->next;
 
 			if (next == nullptr)
 			{
-				if (InterlockedCompareExchangePointer((PVOID*)&top.ptr_node->next, node, nullptr) == nullptr)
+				_QueueLog(LOGIC_ENQUEUE, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
+					tail.ptr_node, next, node, nullptr, mTail.counter, tail.counter, mSize);
+
+				if (InterlockedCompareExchangePointer((PVOID*)&tail.ptr_node->next, node, nullptr) == nullptr)
 				{
 					InterlockedIncrement((long*)&mSize);
-					//Log(LOGIC_ENQUEUE + 50, top, next);
+					/*_QueueLog(LOGIC_ENQUEUE + 10, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
+						tail.ptr_node, tail.ptr_node->next, node, nullptr, mTail.counter, tail.counter, mSize);*/
 
-					MoveTail();
+					InterlockedCompareExchange128((LONG64*)&mTail, tail.counter + 1, (LONG64)node, (LONG64*)&tail);
+
+					/*_QueueLog(LOGIC_ENQUEUE + 20, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
+						tail.ptr_node, node, node, nullptr, mTail.counter, tail.counter, mSize);*/
 
 					break;
 				}
 			}
 			else
 			{
-				MoveTail();
+				/*_QueueLog(LOGIC_ENQUEUE + 30, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
+					tail.ptr_node, next, node, nullptr, mTail.counter, tail.counter, mSize);*/
+
+				InterlockedCompareExchange128((LONG64*)&mTail, tail.counter + 1, (LONG64)next, (LONG64*)&tail);
+
+				/*_QueueLog(LOGIC_ENQUEUE + 40, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
+					tail.ptr_node, next, node, nullptr, mTail.counter, tail.counter, mSize);*/
 			}
 		}
 	}
@@ -113,7 +177,7 @@ namespace procademy
 	template<typename DATA>
 	inline bool TC_LFQueue<DATA>::Dequeue(DATA* data)
 	{
-		alignas(16) t_Top top;
+		alignas(16) t_Top head;
 		alignas(16) t_Top tail;
 
 		if (InterlockedDecrement((long*)&mSize) < 0)
@@ -124,32 +188,50 @@ namespace procademy
 		}
 
 		Node* next;
+		Node* tailNext;
 
 		while (1)
 		{
-			top.counter = mHead.counter;
-			top.ptr_node = mHead.ptr_node;
-			next = top.ptr_node->next;
+			head.counter = mHead.counter;
+			head.ptr_node = mHead.ptr_node;
+			next = head.ptr_node->next;
 
-			//tail.counter = mTail.counter;
+			tail.counter = mTail.counter;
 			tail.ptr_node = mTail.ptr_node;
 
-			if (top.ptr_node == tail.ptr_node || next == nullptr)
+			if (head.ptr_node == tail.ptr_node || next == nullptr)
 			{
-				MoveTail();
+				tailNext = tail.ptr_node->next;
+
+				if (tailNext != nullptr)
+				{
+					/*_QueueLog(LOGIC_DEQUEUE, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
+						tail.ptr_node, tailNext, nullptr, next, mTail.counter, tail.counter, mSize);*/
+
+					InterlockedCompareExchange128((LONG64*)&mTail, tail.counter + 1, (LONG64)tailNext, (LONG64*)&tail);
+
+					/*_QueueLog(LOGIC_DEQUEUE + 10, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
+						tail.ptr_node, tailNext, nullptr, next, mTail.counter, tail.counter, mSize);*/
+				}
 			}
 			else
 			{
+				/*_QueueLog(LOGIC_DEQUEUE + 20, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
+					head.ptr_node, next, nullptr, head.ptr_node, mHead.counter, head.counter, mSize);*/
+
 				*data = next->data;
-				if (InterlockedCompareExchange128((LONG64*)&mHead, top.counter + 1, (LONG64)next, (LONG64*)&top))
+
+				if (InterlockedCompareExchange128((LONG64*)&mHead, head.counter + 1, (LONG64)next, (LONG64*)&head))
 				{
-					//Log(LOGIC_DEQUEUE + 50, top, next, true);
+					/*_QueueLog(LOGIC_DEQUEUE + 30, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
+						head.ptr_node, next, nullptr, head.ptr_node, mHead.counter, head.counter, mSize);*/
+
 					break;
 				}
 			}
 		}
 
-		mMemoryPool.Free(top.ptr_node);
+		mMemoryPool.Free(head.ptr_node);
 
 		return true;
 	}
@@ -187,35 +269,6 @@ namespace procademy
 		if (count == size)
 		{
 			wprintf_s(L"Enqueued Successfully\n=====================\n");
-		}
-	}
-
-	template<typename DATA>
-	inline void TC_LFQueue<DATA>::Log(int logicId, t_Top snap_top, Node* next, bool isHead)
-	{
-		if (isHead)
-		{
-			_Log(logicId, GetCurrentThreadId(), mSize, mHead.counter, snap_top.counter, mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next, snap_top.ptr_node, next);
-		}
-		else
-		{
-			_Log(logicId, GetCurrentThreadId(), mSize, mTail.counter, snap_top.counter, mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next, snap_top.ptr_node, next);
-		}
-	}
-	template<typename DATA>
-	inline void TC_LFQueue<DATA>::MoveTail()
-	{
-		alignas(16) t_Top	tail;
-		Node*				pNext;
-
-		tail.counter = mTail.counter;
-		tail.ptr_node = mTail.ptr_node;
-
-		pNext = tail.ptr_node->next;
-
-		if (pNext != nullptr)
-		{
-			InterlockedCompareExchange128((LONG64*)&mTail, tail.counter + 1, (LONG64)pNext, (LONG64*)&tail);
 		}
 	}
 }

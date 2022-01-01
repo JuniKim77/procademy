@@ -1223,14 +1223,18 @@ void procademy::CJumpPointSearch::InsertNode(Node* node)
 	//mNodeQ.Enqueue(node);
 }
 
-void procademy::CJumpPointSearch::Clear()
+int procademy::CJumpPointSearch::Clear()
 {
+	int count = mNodeQ.GetUseSize() + mOpenList->GetSize();
+
 	while (mNodeQ.IsEmpty() == false)
 	{
 		Node* node = mNodeQ.Dequeue();
 
 		if (node != nullptr)
+		{
 			mNodePool.Free(node);
+		}
 	}
 
 	while (mOpenList->GetSize() > 0)
@@ -1238,8 +1242,12 @@ void procademy::CJumpPointSearch::Clear()
 		Node* node = mOpenList->GetMin();
 
 		if (node != nullptr)
+		{
 			mNodePool.Free(node);
+		}
 	}
 
 	mOptimizer.Clear();
+
+	return count;
 }

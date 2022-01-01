@@ -19,7 +19,7 @@ namespace procademy
 		CJumpPointSearch();
 		virtual ~CJumpPointSearch();
 		Node* JumpPointSearch(Coordi& begin, Coordi& end);
-		void Clear();
+		int Clear();
 
 	private:
 		bool SearchDirection(Node* pParent, Coordi& end, NodeDirection dir);

@@ -69,6 +69,8 @@ int main()
 		g_Map[cur.second.y][cur.second.x] = procademy::TileType::TILE_TYPE_PATH;
 	}
 
+	int sumAstar = 0;
+
 	CProfiler::Begin(L"SINGLE_ASTAR");
 	while (stk3.empty() == false)
 	{
@@ -80,12 +82,16 @@ int main()
 
 		procademy::Node* ret = star.SearchDestination(cur.first, cur.second);
 
-		star.Clear();
+		sumAstar += star.Clear();
 
 		g_Map[cur.first.y][cur.first.x] = procademy::TileType::TILE_TYPE_PATH;
 		g_Map[cur.second.y][cur.second.x] = procademy::TileType::TILE_TYPE_PATH;
 	}
 	CProfiler::End(L"SINGLE_ASTAR");
+
+	CLogger::_Log(dfLOG_LEVEL_DEBUG, L"AStar Node Create AVG : %d", sumAstar / dfCHUNK_SIZE);
+
+	int sumJump = 0;
 
 	CProfiler::Begin(L"SINGLE_JUMP");
 	while (stk4.empty() == false)
@@ -98,36 +104,38 @@ int main()
 
 		procademy::Node* ret2 = jump.JumpPointSearch(cur.first, cur.second);
 
-		jump.Clear();
+		sumJump += jump.Clear();
 
 		g_Map[cur.first.y][cur.first.x] = procademy::TileType::TILE_TYPE_PATH;
 		g_Map[cur.second.y][cur.second.x] = procademy::TileType::TILE_TYPE_PATH;
 	}
 	CProfiler::End(L"SINGLE_JUMP");
 
-	for (int i = 0; i < dfTHREAD_NUM; ++i)
-	{
-		handles[i] = (HANDLE)_beginthreadex(nullptr, 0, workerThread, &stk[i], 0, nullptr);
-	}
+	CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Jump Node Create AVG : %d", sumJump / dfCHUNK_SIZE);
 
-	DWORD retval = WaitForMultipleObjects(dfTHREAD_NUM, handles, true, INFINITE);
+	//for (int i = 0; i < dfTHREAD_NUM; ++i)
+	//{
+	//	handles[i] = (HANDLE)_beginthreadex(nullptr, 0, workerThread, &stk[i], 0, nullptr);
+	//}
+
+	//DWORD retval = WaitForMultipleObjects(dfTHREAD_NUM, handles, true, INFINITE);
 
 	CProfiler::Print();
 
-	switch (retval)
-	{
-	case WAIT_FAILED:
-		wprintf_s(L"Main Thread Handle Error\n");
-		break;
-	case WAIT_TIMEOUT:
-		wprintf_s(L"Main Thread Timeout Error\n");
-		break;
-	case WAIT_OBJECT_0:
-		wprintf_s(L"None Error\n");
-		break;
-	default:
-		break;
-	}
+	//switch (retval)
+	//{
+	//case WAIT_FAILED:
+	//	wprintf_s(L"Main Thread Handle Error\n");
+	//	break;
+	//case WAIT_TIMEOUT:
+	//	wprintf_s(L"Main Thread Timeout Error\n");
+	//	break;
+	//case WAIT_OBJECT_0:
+	//	wprintf_s(L"None Error\n");
+	//	break;
+	//default:
+	//	break;
+	//}
 
 	return 0;;
 }

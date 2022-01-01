@@ -31,8 +31,7 @@ namespace procademy
 		CAStar();
 		virtual ~CAStar();
 		Node* SearchDestination(Coordi& begin, Coordi& end);
-		void Clear();
-
+		int Clear();
 
 	private:
 		Node* SearchHelper(Coordi& begin, Coordi& end, bool reverse);

@@ -131,8 +131,10 @@ procademy::Node* procademy::CAStar::SearchHelper(Coordi& begin, Coordi& end, boo
 	return nullptr;
 }
 
-void procademy::CAStar::Clear()
+int procademy::CAStar::Clear()
 {
+	int count = mNodeQ.GetUseSize() + mOpenList->GetSize();
+
 	while (mNodeQ.IsEmpty() == false)
 	{
 		Node* node = mNodeQ.Dequeue();
@@ -146,4 +148,6 @@ void procademy::CAStar::Clear()
 
 		mNodePool.Free(node);
 	}
+
+	return count;
 }
