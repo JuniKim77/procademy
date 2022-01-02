@@ -3,58 +3,58 @@
 #include <wtypes.h>
 #include "TC_LFObjectPool.h"
 
-struct queueDebug
-{
-	int logicId;
-	int threadId;
-	void* mHead;
-	void* mHeadNext;
-	void* mTail;
-	void* mTailNext;
-	void* snapNode;
-	void* snapNext;
-	void* enqueueNode;
-	void* dequeueNode;
-	LONG64 counter;
-	LONG64 snapCounter;
-	DWORD mSize;
-};
-
-queueDebug g_queueLog[USHRT_MAX + 1];
-USHORT g_idx;
-
-void _QueueLog(
-	int logicId,
-	int threadId,
-	void* mHead,
-	void* mHeadNext,
-	void* mTail,
-	void* mTailNext,
-	void* snapNode,
-	void* snapNext,
-	void* enqueueNode,
-	void* dequeueNode,
-	LONG64 counter,
-	LONG64 snapCounter,
-	DWORD mSize
-)
-{
-	USHORT index = InterlockedIncrement16((short*)&g_idx);
-
-	g_queueLog[index].logicId = logicId;
-	g_queueLog[index].threadId = threadId;
-	g_queueLog[index].mHead = mHead;
-	g_queueLog[index].mHeadNext = mHeadNext;
-	g_queueLog[index].mTail = mTail;
-	g_queueLog[index].mTailNext = mTailNext;
-	g_queueLog[index].snapNode = snapNode;
-	g_queueLog[index].snapNext = snapNext;
-	g_queueLog[index].enqueueNode = enqueueNode;
-	g_queueLog[index].dequeueNode = dequeueNode;
-	g_queueLog[index].counter = counter;
-	g_queueLog[index].snapCounter = snapCounter;
-	g_queueLog[index].mSize = mSize;
-}
+//struct queueDebug
+//{
+//	int logicId;
+//	int threadId;
+//	void* mHead;
+//	void* mHeadNext;
+//	void* mTail;
+//	void* mTailNext;
+//	void* snapNode;
+//	void* snapNext;
+//	void* enqueueNode;
+//	void* dequeueNode;
+//	LONG64 counter;
+//	LONG64 snapCounter;
+//	DWORD mSize;
+//};
+//
+//queueDebug g_queueLog[USHRT_MAX + 1];
+//USHORT g_idx;
+//
+//void _QueueLog(
+//	int logicId,
+//	int threadId,
+//	void* mHead,
+//	void* mHeadNext,
+//	void* mTail,
+//	void* mTailNext,
+//	void* snapNode,
+//	void* snapNext,
+//	void* enqueueNode,
+//	void* dequeueNode,
+//	LONG64 counter,
+//	LONG64 snapCounter,
+//	DWORD mSize
+//)
+//{
+//	USHORT index = InterlockedIncrement16((short*)&g_idx);
+//
+//	g_queueLog[index].logicId = logicId;
+//	g_queueLog[index].threadId = threadId;
+//	g_queueLog[index].mHead = mHead;
+//	g_queueLog[index].mHeadNext = mHeadNext;
+//	g_queueLog[index].mTail = mTail;
+//	g_queueLog[index].mTailNext = mTailNext;
+//	g_queueLog[index].snapNode = snapNode;
+//	g_queueLog[index].snapNext = snapNext;
+//	g_queueLog[index].enqueueNode = enqueueNode;
+//	g_queueLog[index].dequeueNode = dequeueNode;
+//	g_queueLog[index].counter = counter;
+//	g_queueLog[index].snapCounter = snapCounter;
+//	g_queueLog[index].mSize = mSize;
+//}
 
 namespace procademy
 {
@@ -144,8 +144,8 @@ namespace procademy
 
 			if (next == nullptr)
 			{
-				_QueueLog(LOGIC_ENQUEUE, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
-					tail.ptr_node, next, node, nullptr, mTail.counter, tail.counter, mSize);
+				/*_QueueLog(LOGIC_ENQUEUE, GetCurrentThreadId(), mHead.ptr_node, mHead.ptr_node->next, mTail.ptr_node, mTail.ptr_node->next,
+					tail.ptr_node, next, node, nullptr, mTail.counter, tail.counter, mSize);*/
 
 				if (InterlockedCompareExchangePointer((PVOID*)&tail.ptr_node->next, node, nullptr) == nullptr)
 				{

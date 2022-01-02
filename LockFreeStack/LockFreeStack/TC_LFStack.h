@@ -3,52 +3,52 @@
 #include <wtypes.h>
 #include "TC_LFObjectPool.h"
 
-struct stackDebug
-{
-	int logicId;
-	int threadId;
-	void* mTop;
-	void* mTopNext;
-	void* snapTop;
-	void* snapTopNext;
-	void* enqueueNode;
-	void* dequeueNode;
-	int size;
-	int counter;
-	int snapCounter;
-};
-
-stackDebug g_debug[USHRT_MAX + 1];
-USHORT g_index;
-
-void _debug(
-	int logicId,
-	int threadId,
-	void* mTop,
-	void* mTopNext,
-	void* snapTop,
-	void* snapTopNext,
-	void* enqueueNode,
-	void* dequeueNode,
-	int size,
-	int counter,
-	int snapCounter
-)
-{
-	USHORT index = InterlockedIncrement16((short*)&g_index);
-
-	g_debug[index].logicId = logicId;
-	g_debug[index].threadId = threadId;
-	g_debug[index].mTop = mTop;
-	g_debug[index].mTopNext = mTopNext;
-	g_debug[index].snapTop = snapTop;
-	g_debug[index].snapTopNext = snapTopNext;
-	g_debug[index].enqueueNode = enqueueNode;
-	g_debug[index].dequeueNode = dequeueNode;
-	g_debug[index].size = size;
-	g_debug[index].counter = counter;
-	g_debug[index].snapCounter = snapCounter;
-}
+//struct stackDebug
+//{
+//	int logicId;
+//	int threadId;
+//	void* mTop;
+//	void* mTopNext;
+//	void* snapTop;
+//	void* snapTopNext;
+//	void* enqueueNode;
+//	void* dequeueNode;
+//	int size;
+//	int counter;
+//	int snapCounter;
+//};
+//
+//stackDebug g_debug[USHRT_MAX + 1];
+//USHORT g_index;
+//
+//void _debug(
+//	int logicId,
+//	int threadId,
+//	void* mTop,
+//	void* mTopNext,
+//	void* snapTop,
+//	void* snapTopNext,
+//	void* enqueueNode,
+//	void* dequeueNode,
+//	int size,
+//	int counter,
+//	int snapCounter
+//)
+//{
+//	USHORT index = InterlockedIncrement16((short*)&g_index);
+//
+//	g_debug[index].logicId = logicId;
+//	g_debug[index].threadId = threadId;
+//	g_debug[index].mTop = mTop;
+//	g_debug[index].mTopNext = mTopNext;
+//	g_debug[index].snapTop = snapTop;
+//	g_debug[index].snapTopNext = snapTopNext;
+//	g_debug[index].enqueueNode = enqueueNode;
+//	g_debug[index].dequeueNode = dequeueNode;
+//	g_debug[index].size = size;
+//	g_debug[index].counter = counter;
+//	g_debug[index].snapCounter = snapCounter;
+//}
 
 template <typename T>
 class TC_LFStack

@@ -648,7 +648,6 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
 			cpp_redis::client* redis = CRedis_TLS::GetRedis();
 
 			redis->setex(szAccountNumber, 10, sessionKey);
-			redis->sync_commit();
 		}
 		endLoginTime = timeGetTime();
 	}
