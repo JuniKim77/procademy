@@ -414,8 +414,15 @@ void CProfiler::SetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type)
 		profiler->SetThreadId();
 		ReleaseSRWLockExclusive(&s_lock);
 	}
-
-	profiler->ProfileSetRecord(szName, data * 10, type);
+	if (type == PROFILE_TYPE::MICRO_SECONDS)
+	{
+		profiler->ProfileSetRecord(szName, data, type);
+	}
+	else 
+	{
+		profiler->ProfileSetRecord(szName, data * 10, type);
+	}
+	
 }
 
 void CProfiler::Print()

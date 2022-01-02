@@ -31,6 +31,8 @@ procademy::CNetLoginServer::~CNetLoginServer()
 
     mRedis.disconnect();
 
+    procademy::CRedis_TLS::DestroyRedis_TLS();
+
     timeEndPeriod(1);
 }
 
@@ -634,6 +636,8 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
 		if (sql_row == NULL)
 		{
 			ret = false;
+
+            return ret;
 		}
 
 		output->accountNo = accountNo;
@@ -647,7 +651,8 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
 		{
 			cpp_redis::client* redis = CRedis_TLS::GetRedis();
 
-			redis->setex(szAccountNumber, 10, sessionKey);
+			redis->setex(szAccountNumber, 30, sessionKey);
+			redis->sync_commit();
 		}
 		endLoginTime = timeGetTime();
 	}
@@ -681,9 +686,8 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
 		{
 			if (ret)
 			{
-				mRedis.setex(szAccountNumber, 10, sessionKey);
-				//mRedis.set(szAccountNumber, sessionKey);
-				mRedis.sync_commit();
+				mRedis.setex(szAccountNumber, 30, sessionKey);
+				//mRedis.sync_commit();
 			}
             else
             {

@@ -19,7 +19,7 @@ public:
 	CProfiler(const WCHAR* szSettingFileName);
 	~CProfiler();
 
-private:
+//private:
 	/// <summary>
 	/// Profile Init
 	/// CSV File Load
