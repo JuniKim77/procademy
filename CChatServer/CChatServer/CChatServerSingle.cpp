@@ -1160,12 +1160,20 @@ bool procademy::CChatServerSingle::RedisProc()
         packet->SubRef();
 
         _i64toa_s(AccountNo, buffer, 12, 10);
-        mRedis.get(buffer, [SessionKey, &cmpRet](cpp_redis::reply& reply) {
-            if (reply.is_string())
-            {
-                cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
-            }
-            });
+
+		mRedis.get(buffer, [SessionKey, &cmpRet](cpp_redis::reply& reply) {
+			if (reply.is_string())
+			{
+				cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
+
+				//int len = strlen(reply.as_string().c_str());
+
+				//if (len != 64)
+				//{
+				//	CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Length is not 64 - %d", len);
+				//}
+			}
+			});
 
         mRedis.sync_commit();
 
@@ -1184,6 +1192,7 @@ bool procademy::CChatServerSingle::RedisProc()
             }
             else
             {
+                CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Redis Get Fail %lld - %s", AccountNo, SessionKey);
                 msg->type = MSG_TYPE_VERIFICATION_FAIL;
             }
 

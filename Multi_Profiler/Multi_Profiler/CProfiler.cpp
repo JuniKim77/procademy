@@ -247,11 +247,11 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 				time -= mProfiles[i].iMin[j];
 			}
 
-			avg = time / freq / (mProfiles[i].iCall - 4);
+			avg = time / (mProfiles[i].iCall - 4);
 		}
 		else
 		{
-			avg = time / freq / (mProfiles[i].iCall);
+			avg = time / (mProfiles[i].iCall);
 		}
 
 		WCHAR threadIdTxt[32];
@@ -268,20 +268,20 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 		switch (mProfiles[i].type)
 		{
 		case PROFILE_TYPE::MICRO_SECONDS:
-			swprintf_s(avgTxt, _countof(avgTxt), L"%.4lfus |", avg);
+			swprintf_s(avgTxt, _countof(avgTxt), L"%.4lfus |", avg / freq);
 			swprintf_s(minTxt, _countof(minTxt), L"%.4lfus |", mProfiles[i].iMin[0] / freq);
 			swprintf_s(maxTxt, _countof(maxTxt), L"%.4lfus |", mProfiles[i].iMax[0] / freq);
 			break;
 		case PROFILE_TYPE::PERCENT:
 			
 			swprintf_s(avgTxt, _countof(avgTxt), L"%.4lf%% |", avg);
-			swprintf_s(minTxt, _countof(minTxt), L"%.4lf%% |", mProfiles[i].iMin[0] / freq);
-			swprintf_s(maxTxt, _countof(maxTxt), L"%.4lf%% |", mProfiles[i].iMax[0] / freq);
+			swprintf_s(minTxt, _countof(minTxt), L"%.4lf%% |", (double)mProfiles[i].iMin[0]);
+			swprintf_s(maxTxt, _countof(maxTxt), L"%.4lf%% |", (double)mProfiles[i].iMax[0]);
 			break;
 		case PROFILE_TYPE::COUNT:
 			swprintf_s(avgTxt, _countof(avgTxt), L"%.4lf |", avg);
-			swprintf_s(minTxt, _countof(minTxt), L"%.4lf |", mProfiles[i].iMin[0] / freq);
-			swprintf_s(maxTxt, _countof(maxTxt), L"%.4lf |", mProfiles[i].iMax[0] / freq);
+			swprintf_s(minTxt, _countof(minTxt), L"%.4lf |", (double)mProfiles[i].iMin[0]);
+			swprintf_s(maxTxt, _countof(maxTxt), L"%.4lf |", (double)mProfiles[i].iMax[0]);
 			break;
 		default:
 			break;
@@ -414,15 +414,8 @@ void CProfiler::SetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type)
 		profiler->SetThreadId();
 		ReleaseSRWLockExclusive(&s_lock);
 	}
-	if (type == PROFILE_TYPE::MICRO_SECONDS)
-	{
-		profiler->ProfileSetRecord(szName, data, type);
-	}
-	else 
-	{
-		profiler->ProfileSetRecord(szName, data * 10, type);
-	}
 	
+	profiler->ProfileSetRecord(szName, data, type);	
 }
 
 void CProfiler::Print()
