@@ -24,8 +24,10 @@ namespace procademy
 	template <typename DATA>
 	class ObjectPool_TLS
 	{
+		friend class CChunk;
+
 	private:
-		struct st_Chunk_Block;
+		struct st_Element;
 		struct st_FreeCount;
 
 		class CChunk
@@ -38,19 +40,18 @@ namespace procademy
 				MAX_SIZE = 1000
 			};
 
-			st_Chunk_Block				mArray[MAX_SIZE];
+			st_Element					mArray[MAX_SIZE];
 			int							mAllocCount = 0;
 			DWORD						threadID;
 			ObjectPool_TLS*				pObjPool = nullptr;			
 			alignas(64) LONG			mFreeCount;
 		};
 
-		struct st_Chunk_Block
+		struct st_Element
 		{
 			DATA			data;
-			void*			code;
 			CChunk*			pOrigin;
-			unsigned int	checkSum_over = CHUNK_CHECKSUM;
+			void*			code;
 		};
 
 	public:
@@ -93,20 +94,22 @@ namespace procademy
 	inline DATA* ObjectPool_TLS<DATA>::Alloc(void)
 	{
 		CChunk* chunk = (CChunk*)TlsGetValue(mIndex);
+		DWORD myID = GetCurrentThreadId();
 
-		if (chunk == nullptr || chunk->threadID != GetCurrentThreadId() || chunk->mAllocCount == CChunk::MAX_SIZE)
+		if (chunk == nullptr || chunk->mAllocCount == CChunk::MAX_SIZE || chunk->threadID != myID)
 		{
 			chunk = mMemoryPool->Alloc();
 			//packetLog(30040, GetCurrentThreadId(), chunk, nullptr, chunk->mAllocCount, chunk->mFreeCount);
-			chunk->threadID = GetCurrentThreadId();
+			chunk->threadID = myID;
 			chunk->pObjPool = this;
 			chunk->mAllocCount = 0;
 			chunk->mFreeCount = 0;
 			TlsSetValue(mIndex, chunk);
 
-			/*USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
-			chunkTrack[ret] = chunk;*/
+			USHORT ret = InterlockedIncrement16((SHORT*)&trackIdx);
+			chunkTrack[ret] = chunk;
 		}
+
 #ifdef ALLOC_CHECK_VER
 		if (mbSizeCheck)
 		{
@@ -118,7 +121,7 @@ namespace procademy
 	template<typename DATA>
 	inline void ObjectPool_TLS<DATA>::Free(DATA* pData)
 	{
-		st_Chunk_Block* block = (st_Chunk_Block*)pData;
+		st_Element* block = (st_Element*)pData;
 
 		block->pOrigin->Free(pData);
 #ifdef ALLOC_CHECK_VER
@@ -147,22 +150,21 @@ namespace procademy
 	template<typename DATA>
 	inline DATA* ObjectPool_TLS<DATA>::CChunk::Alloc(void)
 	{
-		st_Chunk_Block* pBlock = (st_Chunk_Block*)&mArray[mAllocCount++];
+		st_Element* pBlock = (st_Element*)&mArray[mAllocCount++];
 
 		//packetLog(20000, GetCurrentThreadId(), this, pBlock, mAllocCount, mFreeCount);
 		pBlock->pOrigin = this;
-		pBlock->code = this;
-		pBlock->checkSum_over = CHUNK_CHECKSUM;
+		pBlock->code = pObjPool;
+		//pBlock->checkSum_over = CHUNK_CHECKSUM;
 
 		return (DATA*)pBlock;
 	}
 	template<typename DATA>
 	inline bool ObjectPool_TLS<DATA>::CChunk::Free(DATA* pData)
 	{
-		st_Chunk_Block* block = (st_Chunk_Block*)pData;
+		st_Element* block = (st_Element*)pData;
 
-		if (block->code != this ||
-			block->checkSum_over != CHUNK_CHECKSUM)
+		if (block->code != pObjPool)
 		{
 			CRASH();
 			return false;

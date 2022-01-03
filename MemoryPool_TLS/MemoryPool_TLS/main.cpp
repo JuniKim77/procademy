@@ -3,7 +3,7 @@
 #include <process.h>
 #include <wchar.h>
 
-#define dfTHREAD_SIZE (3)
+#define dfTHREAD_SIZE (5)
 #define dfTEST_SIZE (100000)
 //#define TEST_A
 #define CHUNK_SIZE (1000)
