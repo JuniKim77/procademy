@@ -48,8 +48,9 @@ namespace procademy
 		void			MakeMonitorStr(WCHAR* s, int size);
 		void			MakeTimeInfoStr(WCHAR* s, int size);
 		void			ClearTPS();
-		bool			TokenVerificationProc(INT64 accountNo, char* sessionKey, st_Player* output, ULONGLONG loginBeginTime);
-		void			UpdateTimeInfo(ULONGLONG loginBegin, ULONGLONG dbTime, ULONGLONG redisTime, ULONGLONG endtime);
+		bool			TokenVerificationProc(INT64 accountNo, char* sessionKey, st_Player* output, 
+			LARGE_INTEGER& beginDBTime, LARGE_INTEGER& beginRedisTime, LARGE_INTEGER& endRedisTime);
+		void			UpdateTimeInfo(ULONGLONG loginBegin, ULONGLONG dbBegin, ULONGLONG redisBegin, ULONGLONG redisEnd, ULONGLONG loginEnd);
 		void			LoginMonitorServer();
 		void			SendMonitorDataProc();
 
@@ -86,20 +87,19 @@ namespace procademy
 		bool										mbTlsMode = false;
 
 		alignas(64) DWORD							mLoginWaitCount = 0;
-
 		DWORD										mLoginCount = 0;
 		DWORD										mLoginTotal = 0;
 
 		SRWLOCK										mTimeInfoLock;
-		DWORD										mLoginTimeSum = 0;
-		DWORD										mLoginTimeMax = 0;
-		DWORD										mLoginTimeMin = -1;
-		DWORD										mDBTimeSum = 0;
-		DWORD										mDBTimeMax = 0;
-		DWORD										mDBTimeMin = -1;
-		DWORD										mRedisTimeSum = 0;
-		DWORD										mRedisTimeMax = 0;
-		DWORD										mRedisTimeMin = -1;
+		ULONGLONG									mLoginTimeSum = 0;
+		ULONGLONG									mLoginTimeMax = 0;
+		ULONGLONG									mLoginTimeMin = -1;
+		ULONGLONG									mDBTimeSum = 0;
+		ULONGLONG									mDBTimeMax = 0;
+		ULONGLONG									mDBTimeMin = -1;
+		ULONGLONG									mRedisTimeSum = 0;
+		ULONGLONG									mRedisTimeMax = 0;
+		ULONGLONG									mRedisTimeMin = -1;
 
 		/// <summary>
 		/// Monitor Client

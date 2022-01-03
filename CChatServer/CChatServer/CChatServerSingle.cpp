@@ -1089,7 +1089,7 @@ bool procademy::CChatServerSingle::RedisProc()
         WCHAR	        Nickname[20];		// null 포함
         char	        SessionKey[65];		// 인증토큰
         st_MSG*         msg;
-        bool            cmpRet = false;
+        bool            cmpRet = true;
 
         BOOL gqcsRet = GetQueuedCompletionStatus(mRedisIOCP, &transferredSize, (PULONG_PTR)&sessionNo, (LPOVERLAPPED*)&packet, INFINITE);
 
@@ -1161,21 +1161,13 @@ bool procademy::CChatServerSingle::RedisProc()
 
         _i64toa_s(AccountNo, buffer, 12, 10);
 
+        mRedis.sync_commit();
+
 		mRedis.get(buffer, [SessionKey, &cmpRet](cpp_redis::reply& reply) {
-			if (reply.is_string())
-			{
-				cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
-
-				//int len = strlen(reply.as_string().c_str());
-
-				//if (len != 64)
-				//{
-				//	CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Length is not 64 - %d", len);
-				//}
-			}
+            cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
 			});
 
-        mRedis.sync_commit();
+        //mRedis.sync_commit();
 
         result = MakeResultLogin(AccountNo, ID, Nickname);
         {
