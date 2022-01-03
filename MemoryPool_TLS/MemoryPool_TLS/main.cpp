@@ -3,10 +3,9 @@
 #include <process.h>
 #include <wchar.h>
 
-#define dfTHREAD_SIZE (5)
-#define dfTEST_SIZE (100000)
+#define dfTHREAD_SIZE (3)
+#define dfTEST_SIZE (10000)
 //#define TEST_A
-#define CHUNK_SIZE (1000)
 
 class CTest
 {
@@ -70,10 +69,15 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
 	int count = 100;
 
-	TLS_ALLOC_PROC();
-	TLS_FREE_PROC();
-	NEW_DELETE_ALLOC_PROC();
-	NEW_DELETE_FREE_PROC();
+	while (count-- > 0)
+	{
+		TLS_ALLOC_PROC();
+		TLS_FREE_PROC();
+		NEW_DELETE_ALLOC_PROC();
+		NEW_DELETE_FREE_PROC();
+	}
+	
+	count = 100;
 
 	while (count-- > 0)
 	{

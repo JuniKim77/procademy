@@ -961,6 +961,8 @@ namespace procademy
 
 		ret = CancelIoEx((HANDLE)session->socket, nullptr);
 
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Disconnect", SessionID);
+
 		DecrementIOProc(session, 40040);
 
 		return ret;

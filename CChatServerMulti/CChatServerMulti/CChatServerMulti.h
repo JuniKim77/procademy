@@ -43,12 +43,10 @@ namespace procademy
 		bool						JoinProc(SESSION_ID sessionNo);
 		bool						RecvProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						LoginProc(SESSION_ID sessionNo, CNetPacket* packet);
-		bool						LoginProc_Redis(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						LeaveProc(SESSION_ID sessionNo);
 		bool						MoveSectorProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						SendMessageProc(SESSION_ID sessionNo, CNetPacket* packet);
 		bool						HeartUpdateProc(SESSION_ID sessionNo);
-		bool						RedisProc();
 		void						BeginThreads();
 		void						LoadInitFile(const WCHAR* fileName);
 		void						FreePlayer(st_Player* player);
@@ -64,7 +62,6 @@ namespace procademy
 		void						PrintRecvSendRatio();
 		void						ClearTPS();
 		void						RecordPerformentce();
-		void						EnqueueRedisQ(SESSION_ID sessionNo, CNetPacket* packet);
 		void						LockSector(WORD x, WORD y, bool exclusive = true);
 		void						UnlockSector(WORD x, WORD y, bool exclusive = true);
 		void						LockSectors(WORD x1, WORD y1, WORD x2, WORD y2, bool exclusive = true);
@@ -78,7 +75,6 @@ namespace procademy
 
 		static unsigned int WINAPI	MonitorFunc(LPVOID arg);
 		static unsigned int WINAPI	HeartbeatFunc(LPVOID arg);
-		static unsigned int WINAPI	RedisFunc(LPVOID arg);
 
 	public:
 		enum {
@@ -89,8 +85,6 @@ namespace procademy
 	private:
 		HANDLE									mMonitoringThread;
 		HANDLE									mHeartbeatThread;
-		HANDLE									mRedisThread;
-		HANDLE									mRedisIOCP;
 		cpp_redis::client						mRedis;
 		WCHAR									mTokenDBIP[16];
 		USHORT									mTokenDBPort;

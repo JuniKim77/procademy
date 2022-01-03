@@ -981,11 +981,16 @@ bool procademy::CChatServerSingle::CheckTimeOutProc()
 
     for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end(); ++iter)
     {
-        if (curTime - iter->second->lastRecvTime > mTimeOut) // 40000ms
-        {
-            SESSION_ID sessionNo = iter->second->sessionNo;
+        ULONGLONG playerTime = iter->second->lastRecvTime;
 
-            Disconnect(sessionNo);
+        if (curTime > playerTime)
+        {
+            if (curTime - playerTime > mTimeOut) // 40000ms
+            {
+                SESSION_ID sessionNo = iter->second->sessionNo;
+
+                Disconnect(sessionNo);
+            }
         }
     }
 
@@ -1083,13 +1088,13 @@ bool procademy::CChatServerSingle::RedisProc()
         SESSION_ID      sessionNo;
         CNetPacket*     packet = nullptr;
         CNetPacket*     result = nullptr;
-        char            buffer[12] = { 0, };
+        char            buffer[12];
         INT64	        AccountNo;
         WCHAR	        ID[20];				// null 포함
         WCHAR	        Nickname[20];		// null 포함
         char	        SessionKey[65];		// 인증토큰
         st_MSG*         msg;
-        bool            cmpRet = true;
+        bool            cmpRet = false;
 
         BOOL gqcsRet = GetQueuedCompletionStatus(mRedisIOCP, &transferredSize, (PULONG_PTR)&sessionNo, (LPOVERLAPPED*)&packet, INFINITE);
 
