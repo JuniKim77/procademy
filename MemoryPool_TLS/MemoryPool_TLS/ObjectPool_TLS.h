@@ -2,8 +2,6 @@
 #include "TC_LFObjectPool.h"
 #include <wtypes.h>
 
-#define ALLOC_CHECK_VER
-
 struct packetDebug;
 
 //extern USHORT g_debugIdx;
@@ -110,12 +108,11 @@ namespace procademy
 			chunkTrack[ret] = chunk;*/
 		}
 
-#ifdef ALLOC_CHECK_VER
 		if (mbSizeCheck)
 		{
 			InterlockedIncrement((LONG*)&mSize);
 		}
-#endif // ALLOC_CHECK_VER
+
 		return chunk->Alloc();
 	}
 	template<typename DATA>
@@ -124,12 +121,12 @@ namespace procademy
 		st_Element* block = (st_Element*)pData;
 
 		block->pOrigin->Free(pData);
-#ifdef ALLOC_CHECK_VER
+
 		if (mbSizeCheck)
 		{
 			InterlockedDecrement((LONG*)&mSize);
 		}
-#endif // ALLOC_CHECK_VER
+
 	}
 	template<typename DATA>
 	inline int ObjectPool_TLS<DATA>::GetCapacity(void)
@@ -139,12 +136,11 @@ namespace procademy
 	template<typename DATA>
 	inline DWORD ObjectPool_TLS<DATA>::GetSize(void)
 	{
-#ifdef ALLOC_CHECK_VER
 		if (mbSizeCheck)
 		{
 			return mSize;
 		}
-#endif // ALLOC_CHECK_VER
+
 		return mMemoryPool->GetSize();
 	}
 	template<typename DATA>

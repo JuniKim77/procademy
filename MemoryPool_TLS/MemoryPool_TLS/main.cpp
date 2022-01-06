@@ -5,14 +5,18 @@
 
 #define dfTHREAD_SIZE (3)
 #define dfTEST_SIZE (10000)
-//#define TEST_A
+#define THREAD_ALLOC (2)
+#define MAX_ALLOC (6)
 
 class CTest
 {
-private:
-	char test[1024];
+public:
+	//char test[1024];
+	LONG64 data;
+	LONG64 count;
 };
 
+unsigned int WINAPI MonitorThread(LPVOID lpParam);
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
 
 void TLS_ALLOC_PROC();
@@ -20,29 +24,45 @@ void TLS_FREE_PROC();
 void NEW_DELETE_ALLOC_PROC();
 void NEW_DELETE_FREE_PROC();
 
-#ifdef TEST_A
-__declspec(thread) int* arr1[dfTEST_SIZE];
-__declspec(thread) int* arr2[dfTEST_SIZE];
-procademy::ObjectPool_TLS<int> g_pool_tls;
-#else
+bool g_exit = false;
+
+alignas(64) long AllocTPS;
+alignas(64) long FreeTPS;
+
 __declspec(thread) CTest* arr1[dfTEST_SIZE];
 __declspec(thread) CTest* arr2[dfTEST_SIZE];
 procademy::ObjectPool_TLS<CTest> g_pool_tls;
-#endif // TEST_A
 
 int main()
 {
 	procademy::CCrashDump::SetHandlerDump();
-	CProfiler::InitProfiler(dfTHREAD_SIZE);
+	//CProfiler::InitProfiler(dfTHREAD_SIZE);
 
-	HANDLE hThreads[dfTHREAD_SIZE];
+	HANDLE hThreads[dfTHREAD_SIZE + 1];
 
-	for (int i = 0; i < dfTHREAD_SIZE; ++i)
+	hThreads[0] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
+
+	for (int i = 1; i <= dfTHREAD_SIZE; ++i)
 	{
 		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
 	}
 
-	DWORD retval = WaitForMultipleObjects(dfTHREAD_SIZE, hThreads, TRUE, INFINITE);
+	WORD ControlKey;
+
+	while (1)
+	{
+		ControlKey = _getwch();
+		if (ControlKey == L'q' || ControlKey == L'Q')
+		{
+			//------------------------------------------------
+			// 종료처리
+			//------------------------------------------------
+			g_exit = true;
+			break;
+		}
+	}
+
+	DWORD retval = WaitForMultipleObjects(dfTHREAD_SIZE + 1, hThreads, TRUE, INFINITE);
 
 	switch (retval)
 	{
@@ -59,43 +79,101 @@ int main()
 		break;
 	}
 
-	CProfiler::Print();
-	CProfiler::DestroyProfiler();
+	//CProfiler::Print();
+	//CProfiler::DestroyProfiler();
+
+	return 0;
+}
+
+unsigned int __stdcall MonitorThread(LPVOID lpParam)
+{
+	while (!g_exit)
+	{
+		long alloc = AllocTPS;
+		long _free = FreeTPS;
+
+		AllocTPS = 0;
+		FreeTPS = 0;
+
+		wprintf(L"---------------------------------------------------------------------\n\n");
+		wprintf(L"[Alloc TPS		: %ld\n", alloc);
+		wprintf(L"[Free  TPS		: %ld\n", _free);
+		wprintf(L"[Pool Size		: %ld\n", g_pool_tls.GetSize());
+		wprintf(L"[Pool Capa		: %ld\n", g_pool_tls.GetCapacity());
+		wprintf(L"---------------------------------------------------------------------\n\n\n");
+
+		Sleep(999);
+	}
 
 	return 0;
 }
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
-	int count = 100;
+	CTest* pDataArray[THREAD_ALLOC];
 
-	while (count-- > 0)
+	while (!g_exit)
 	{
-		TLS_ALLOC_PROC();
-		TLS_FREE_PROC();
-		NEW_DELETE_ALLOC_PROC();
-		NEW_DELETE_FREE_PROC();
-	}
-	
-	count = 100;
+		// Alloc
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			pDataArray[i] = g_pool_tls.Alloc();
+			pDataArray[i]->data = 0x0000000055555555;
+			pDataArray[i]->count = 0;
 
-	while (count-- > 0)
-	{
-		CProfiler::Begin(L"TLS_ALLOC_PROC");
-		TLS_ALLOC_PROC();
-		CProfiler::End(L"TLS_ALLOC_PROC");
+			InterlockedIncrement((long*)&AllocTPS);
+		}
+		// Check Init Data Value
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (pDataArray[i]->data != 0x0000000055555555 ||
+				pDataArray[i]->count != 0)
+			{
+				CRASH();
+			}
+		}
+		// Increment
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			InterlockedIncrement64(&pDataArray[i]->data);
+			InterlockedIncrement64(&pDataArray[i]->count);
+		}
+		// Context Switching
+		//Sleep(0);
 
-		CProfiler::Begin(L"TLS_FREE_PROC");
-		TLS_FREE_PROC();
-		CProfiler::End(L"TLS_FREE_PROC");
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (pDataArray[i]->data != 0x0000000055555556 ||
+				pDataArray[i]->count != 1)
+			{
+				CRASH();
+			}
+		}
+		// Decrement
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			InterlockedDecrement64(&pDataArray[i]->data);
+			InterlockedDecrement64(&pDataArray[i]->count);
+		}
+		// Context Switching
+		Sleep(0);
+		// Check Init Data Value
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (pDataArray[i]->data != 0x0000000055555555 ||
+				pDataArray[i]->count != 0)
+			{
+				CRASH();
+			}
+		}
 
-		CProfiler::Begin(L"NEW_ALLOC_PROC");
-		NEW_DELETE_ALLOC_PROC();
-		CProfiler::End(L"NEW_ALLOC_PROC");
-
-		CProfiler::Begin(L"NEW_FREE_PROC");
-		NEW_DELETE_FREE_PROC();
-		CProfiler::End(L"NEW_FREE_PROC");
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			g_pool_tls.Free(pDataArray[i]);
+			InterlockedIncrement((long*)&FreeTPS);
+		}
+		// Context Switching
+		Sleep(0);
 	}
 
 	return 0;

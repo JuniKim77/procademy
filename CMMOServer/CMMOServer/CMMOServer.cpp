@@ -908,20 +908,8 @@ void procademy::CMMOServer::SendPacket(CSession* session, CNetPacket* packet)
 {
 	u_int64 sessionID = session->sessionID;
 
-	//IncrementIOProc(session, 20000);
-
-	// °í¹Î ÇÊ¿ä
-	//if (session->sessionEnd == true || session->sessionID != sessionID)
-	//{
-	//	DecrementIOProc(session, 20020);
-
-	//	return;
-	//}
-
 	packet->AddRef();
 	session->sendQ.Enqueue(packet);
-
-	//DecrementIOProc(session, 20020);
 }
 
 void procademy::CMMOServer::SetWSABuf(WSABUF* bufs, CSession* session, bool isRecv)
