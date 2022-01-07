@@ -40,32 +40,6 @@ void packetLog(
 
 namespace procademy
 {
-	struct packetDebug
-	{
-		DWORD packetNum;
-		u_int64 sessionID;
-		int logicId;
-		DWORD threadId;
-	};
-
-	USHORT g_debug_index = 0;
-	packetDebug g_debugs[USHRT_MAX + 1] = { 0, };
-
-	void packDebug(
-		int logicId,
-		DWORD threadId,
-		u_int64 sessionID,
-		DWORD packetNum
-	)
-	{
-		USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debug_index);
-
-		g_debugs[index].logicId = logicId;
-		g_debugs[index].threadId = threadId;
-		g_debugs[index].sessionID = sessionID;
-		g_debugs[index].packetNum = packetNum;
-	}
-
 	Session* CLanServerNoLock::FindSession(u_int64 sessionNo)
 	{
 		u_short index = GetIndexFromSessionNo(sessionNo);
@@ -616,7 +590,7 @@ namespace procademy
 			CNetPacket* packet = CNetPacket::AllocAddRef();
 			CProfiler::End(L"ALLOC");
 
-			packet->SetHeader(true);
+			packet->SetHeader();
 
 			memcpy_s(packet->GetZeroPtr(), sizeof(USHORT), (char*)&header, sizeof(USHORT));
 

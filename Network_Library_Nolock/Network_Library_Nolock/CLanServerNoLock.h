@@ -34,7 +34,7 @@ namespace procademy
 		int							numSendingPacket = 0;
 		alignas(64) SessionIoCount	ioBlock;
 		alignas(64) bool			isSending;
-		bool						bIsAlive;
+		alignas(64) bool			bIsAlive;
 		SOCKET						socket = INVALID_SOCKET;
 		u_short						port;
 		ULONG						ip;

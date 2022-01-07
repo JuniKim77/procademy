@@ -29,7 +29,8 @@ namespace procademy
 
 		CCpuUsage(HANDLE mhProcess = INVALID_HANDLE_VALUE);
 
-		void		UpdateCpuTime();
+		void		UpdateProcessorCpuTime();
+		void		UpdateProcessCpuTime();
 
 		float		ProcessorTotal() { return mProcessorTotal; }
 		float		ProcessorUser() { return mProcessorUser; }

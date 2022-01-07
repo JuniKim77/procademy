@@ -9,7 +9,7 @@ int main()
 	{
 		WCHAR bigNumber[15];
 
-		CPUTime.UpdateCpuTime();
+		CPUTime.UpdateProcessorCpuTime();
 		wprintf_s(L"\n\n===================================\n\n");
 		wprintf_s(L"Processor:%f / Process:%f \n", CPUTime.ProcessorTotal(), CPUTime.ProcessTotal());
 		wprintf_s(L"ProcessorKernel:%f / ProcessKernel:%f \n", CPUTime.ProcessorKernel(), CPUTime.ProcessKernel());

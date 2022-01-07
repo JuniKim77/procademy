@@ -8,7 +8,7 @@
 // 여러 스레드에서 동시에 이를 사용한다면 개판이 됨.
 //
 /////////////////////////////////////////////////////////
-#pragma (lib, "mysqlclient.lib")
+#pragma comment(lib, "mysqlclient.lib")
 
 #include <Windows.h>
 #include "mysql/include/mysql.h"
@@ -46,8 +46,10 @@ namespace procademy
 		//
 		//////////////////////////////////////////////////////////////////////
 		bool		Query(const WCHAR* szStringFormat, ...);
+		bool		Query(const WCHAR* szStringFormat, va_list ap);
 		bool		Query_Save(const WCHAR* szStringFormat, ...);	// DBWriter 스레드의 Save 쿼리 전용
 																// 결과셋을 저장하지 않음.
+		bool		Query_Save(const WCHAR* szStringFormat, va_list ap);
 
 		//////////////////////////////////////////////////////////////////////
 		// 쿼리를 날린 뒤에 결과 뽑아오기.

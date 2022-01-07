@@ -1,11 +1,14 @@
 #pragma once
 #pragma comment(lib, "ws2_32")
+#pragma warning(disable:26495)
 
 #include <WS2tcpip.h>
 #include <WinSock2.h>
 #include "RingBuffer.h"
 #include "TC_LFStack.h"
-#include "TC_LFQueue.h"
+#include "TC_LFQueue64.h"
+//#include "TC_LFQueue.h"
+//#include "myNew.h"
 
 //#define PROFILE
 
@@ -14,61 +17,58 @@ namespace procademy
 	typedef u_int64 SESSION_ID;
 	class CNetPacket;
 
-	struct SessionIoCount
+	class CLF_NetServer
 	{
-		union
+	public:
+		struct SessionIoCount
 		{
-			LONG ioCount = 0;
-			struct
+			union
 			{
-				SHORT count;
-				SHORT isReleased;
-			} releaseCount;
+				LONG ioCount = 0;
+				struct
+				{
+					SHORT count;
+					SHORT isReleased;
+				} releaseCount;
+			};
 		};
-	};
 
-	struct Session
-	{
-		WSAOVERLAPPED				recvOverlapped;
-		WSAOVERLAPPED				sendOverlapped;
-		RingBuffer					recvQ;
-		TC_LFQueue<CNetPacket*>		sendQ;
-		int							numSendingPacket = 0;
-		alignas(64) SessionIoCount	ioBlock;
-		alignas(64) bool			isSending;
-		bool						bIsAlive = false;
-		SOCKET						socket = INVALID_SOCKET;
-		u_short						port;
-		ULONG						ip;
-		u_int64						sessionID;
-
-		Session()
-			: isSending(false)
-			, sessionID(0)
-			, bIsAlive(false)
+		struct Session
 		{
-			ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
-			ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
-		}
+			WSAOVERLAPPED							recvOverlapped;
+			WSAOVERLAPPED							sendOverlapped;
+			RingBuffer								recvQ;
+			TC_LFQueue64<CNetPacket*>				sendQ;
+			alignas(64) SessionIoCount				ioBlock;
+			alignas(64) bool						isSending;
+			int										numSendingPacket = 0;
+			SOCKET									socket = INVALID_SOCKET;
+			u_short									port;
+			ULONG									ip;
+			u_int64									sessionID;
 
-		Session(SOCKET _socket, ULONG _ip, u_short _port)
-			: socket(_socket)
-			, ip(_ip)
-			, port(_port)
-			, isSending(false)
-			, sessionID(0)
-			, bIsAlive(false)
-		{
-			ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
-			ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
-		}
-	};
+			Session()
+				: isSending(false)
+				, sessionID(0)
+			{
+				ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
+				ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
+			}
 
-	class CNetServerNoLock
-	{
+			Session(SOCKET _socket, ULONG _ip, u_short _port)
+				: socket(_socket)
+				, ip(_ip)
+				, port(_port)
+				, isSending(false)
+				, sessionID(0)
+			{
+				ZeroMemory(&recvOverlapped, sizeof(WSAOVERLAPPED));
+				ZeroMemory(&sendOverlapped, sizeof(WSAOVERLAPPED));
+			}
+		};
 	protected:
-		CNetServerNoLock();
-		virtual ~CNetServerNoLock();
+		CLF_NetServer();
+		virtual ~CLF_NetServer();
 		bool Start();
 		void Stop();
 
@@ -79,7 +79,7 @@ namespace procademy
 
 		virtual void OnClientJoin(SESSION_ID SessionID) = 0; //< Accept 후 접속처리 완료 후 호출.
 		virtual void OnClientLeave(SESSION_ID SessionID) = 0; //< Release 후 호출
-		virtual void LoadInitFile(const WCHAR* fileName);
+		void LoadInitFile(const WCHAR* fileName);
 
 		virtual void OnRecv(SESSION_ID SessionID, CNetPacket* packet) = 0; //< 패킷 수신 완료 후
 		//	virtual void OnSend(SessionID, int sendsize) = 0;           < 패킷 송신 완료 후
@@ -91,8 +91,10 @@ namespace procademy
 		void QuitServer();
 		void SetZeroCopy(bool on);
 		void SetNagle(bool on);
+		ULONG GetSessionIP(SESSION_ID sessionNo);
 
 	private:
+		void	Init();
 		Session* FindSession(SESSION_ID sessionNo);
 		void InsertSessionData(Session* session);
 		void DeleteSessionData(SESSION_ID sessionNo);
@@ -102,8 +104,8 @@ namespace procademy
 		bool BeginThreads();
 		static unsigned int WINAPI WorkerThread(LPVOID arg);
 		static unsigned int WINAPI AcceptThread(LPVOID arg);
-		static unsigned int WINAPI MonitoringThread(LPVOID arg);
-		void NetworkMonitorProc();
+		static unsigned int WINAPI MonitorThread(LPVOID arg);
+		void MonitorProc();
 		bool RecvPost(Session* session, bool isAccepted = false);
 		bool SendPost(Session* session);
 		void SetWSABuf(WSABUF* bufs, Session* session, bool isRecv);
@@ -112,7 +114,7 @@ namespace procademy
 		void ReleaseProc(Session* session);
 		void AcceptProc();
 		Session* CreateSession(SOCKET client, SOCKADDR_IN clientAddr);
-		void CompleteMessage();
+		void GQCS();
 		void CompleteRecv(Session* session, DWORD transferredSize);
 		void CompleteSend(Session* session, DWORD transferredSize);
 		void CloseSessions();
@@ -136,23 +138,21 @@ namespace procademy
 		u_short				mPort = 0;
 		WCHAR				mBindIP[32];
 		u_short				mMaxClient = 0;
+		HANDLE				mBeginEvent = INVALID_HANDLE_VALUE;
 
 		/// <summary>
 		/// 모니터링 변수들
 		/// </summary>
 		alignas(64) DWORD	sendTPS;
 		alignas(64) DWORD	recvTPS;
-		alignas(64) DWORD	disconnectCount;
 		DWORD				acceptTotal;
 		DWORD				acceptTPS;
 
 	protected:
 		bool				mbNagle = true;
-		bool				mbMonitoring = true;
-		bool				mbZeroCopy = true;
+		bool				mbZeroCopy = false;
 		bool				mbExit = false;
 		bool				mbBegin = false;
-		bool				mbPrint = false;
 		BYTE				mActiveThreadNum = 0;
 		BYTE				mWorkerThreadNum = 0;
 

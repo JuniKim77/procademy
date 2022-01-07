@@ -157,6 +157,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             break;
         }
+        
+        if (s_LButton)
+        {
+            if (s_BeginButton)
+            {
+                DrawBegin(x, y, hdc);
+            }
+            else if (s_EndButton)
+            {
+                DrawEnd(x, y, hdc);
+            }
+            else if (s_EraseWall)
+            {
+                g_Map[y][x] = TileType::TILE_TYPE_PATH;
+
+                DrawCell(x, y, g_White, hdc);
+            }
+            else
+            {
+                g_Map[y][x] = TileType::TILE_TYPE_WALL;
+
+                DrawCell(x, y, g_Gray, hdc);
+            }
+
+            break;
+        }
 
         if (s_RayCast)
         {
@@ -195,31 +221,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             LineTo(hdc, x * CELL_SIZE + CELL_SIZE / 2, y * CELL_SIZE + CELL_SIZE / 2);
         }
-
-        if (!s_LButton)
-            break;
-
-        if (s_BeginButton)
-        {
-            DrawBegin(x, y, hdc);
-        }
-        else if (s_EndButton)
-        {
-            DrawEnd(x, y, hdc);
-        }
-        else if (s_EraseWall)
-        {
-            g_Map[y][x] = TileType::TILE_TYPE_PATH;
-
-            DrawCell(x, y, g_White, hdc);
-        }
-        else
-        {
-            g_Map[y][x] = TileType::TILE_TYPE_WALL;
-
-            DrawCell(x, y, g_Gray, hdc);
-        }
-
         break;
     }
     case WM_RBUTTONDOWN:
@@ -285,14 +286,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             break;
         }
-        case 4:
+        case 4: // 시작점 조작
         {
             s_BeginButton = true;
             s_EndButton = false;
             SetFocus(gMainWindow);
             break;
         }
-        case 5:
+        case 5:  // 도착점 조작
         {
             s_BeginButton = false;
             s_EndButton = true;

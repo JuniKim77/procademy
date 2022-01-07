@@ -78,9 +78,11 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir);$(ProjectDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -116,7 +118,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;..\..\CNetServerNoLock\CNetServerNoLock;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;..\..\CNetServerNoLock\CNetServerNoLock;..\..\CSafeQueue\CSafeQueue;..\..\CLanClient\CLanClient;..\..\CMonitorClient\CMonitorClient;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,7 +136,9 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;..\..\CNetServerNoLock\CNetServerNoLock;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;..\..\CNetServerNoLock\CNetServerNoLock;..\..\CSafeQueue\CSafeQueue;..\..\CLanClient\CLanClient;..\..\CMonitorClient\CMonitorClient;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,28 +149,36 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.cpp" />
+    <ClCompile Include="..\..\CLanClient\CLanClient\CLanClient.cpp" />
     <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp" />
+    <ClCompile Include="..\..\CMonitorClient\CMonitorClient\CMonitorClient.cpp" />
+    <ClCompile Include="..\..\CNetPacket\CNetPacket\CLanPacket.cpp" />
     <ClCompile Include="..\..\CNetPacket\CNetPacket\CNetPacket.cpp" />
     <ClCompile Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.cpp" />
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
-    <ClCompile Include="..\..\CSVReader\CSVReader\CSVReader.cpp" />
     <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp" />
     <ClCompile Include="..\..\RingBuffer\RingBuffer\RingBuffer.cpp" />
     <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
     <ClCompile Include="CChatServerSingle.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="myNew.cpp" />
+    <ClCompile Include="myNewMalloc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.h" />
+    <ClInclude Include="..\..\CLanClient\CLanClient\CLanClient.h" />
     <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h" />
     <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue.h" />
+    <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue64.h" />
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
+    <ClInclude Include="..\..\CMonitorClient\CMonitorClient\CMonitorClient.h" />
+    <ClInclude Include="..\..\CMonitorClient\CMonitorClient\MonitorProtocol.h" />
+    <ClInclude Include="..\..\CNetPacket\CNetPacket\CLanPacket.h" />
     <ClInclude Include="..\..\CNetPacket\CNetPacket\CNetPacket.h" />
     <ClInclude Include="..\..\CNetServerNoLock\CNetServerNoLock\CNetServerNoLock.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
-    <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h" />
+    <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h" />
     <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h" />
-    <ClInclude Include="..\..\MemoryPool\MemoryPool\ObjectPool.h" />
     <ClInclude Include="..\..\MemoryPool_TLS\MemoryPool_TLS\ObjectPool_TLS.h" />
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h" />
     <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h" />
@@ -172,6 +186,9 @@
     <ClInclude Include="CChatServerSingle.h" />
     <ClInclude Include="ChatServerDTO.h" />
     <ClInclude Include="CommonProtocol.h" />
+    <ClInclude Include="memoryDebug.h" />
+    <ClInclude Include="myNew.h" />
+    <ClInclude Include="myNewMalloc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

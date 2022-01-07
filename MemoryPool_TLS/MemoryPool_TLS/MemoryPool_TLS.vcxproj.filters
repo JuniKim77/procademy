@@ -27,6 +27,9 @@
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ObjectPool_TLS.h">
@@ -42,6 +45,12 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

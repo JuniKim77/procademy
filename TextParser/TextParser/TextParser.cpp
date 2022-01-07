@@ -42,6 +42,8 @@ bool TextParser::GetValue(const WCHAR* key, int* value)
 	WCHAR chWord[MAX_PARSER_LENGTH];
 	int length;
 
+	chWord[0] = '\0';
+
 	while (GetNextWord(&pCurrent, &length))
 	{
 		memset(chWord, 0, sizeof(chWord));
@@ -81,6 +83,8 @@ bool TextParser::GetValue(const WCHAR* key, WCHAR* value)
 	WCHAR* pCurrent = pBuffer;
 	WCHAR chWord[MAX_PARSER_LENGTH];
 	int length;
+
+	chWord[0] = '\0';
 
 	while (GetNextWord(&pCurrent, &length))
 	{
@@ -213,7 +217,7 @@ bool TextParser::GetNextWord(WCHAR** retBuffer, int* pLength)
 
 	GetEndWord(&wordBuffer);
 
-	*pLength = wordBuffer - *retBuffer;
+	*pLength = (int)(wordBuffer - *retBuffer);
 
 	return true;
 }
@@ -231,7 +235,7 @@ bool TextParser::GetNextStringWord(WCHAR** retBuffer, int* pLength)
 	
 	GetEndStringWord(&wordBuffer);
 
-	*pLength = wordBuffer - *retBuffer;
+	*pLength =(int)(wordBuffer - *retBuffer);
 
 	return true;
 }

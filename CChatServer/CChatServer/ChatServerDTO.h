@@ -1,8 +1,9 @@
 #pragma once
+#pragma warning(disable:26495)
 
 namespace procademy
 {
-	class st_Player;
+	struct st_Player;
 
 	struct st_Sector
 	{
@@ -11,6 +12,8 @@ namespace procademy
 		DWORD					sendCount;
 		DWORD					playerCount;
 		DWORD					updateCount;
+		SRWLOCK					sectorLock;
+		int						lockIndex;
 	};
 
 	struct st_Coordinate
@@ -26,7 +29,7 @@ namespace procademy
 	};
 
 	enum {
-		NAME_MAX = 20
+		en_NAME_MAX = 20
 	};
 
 	struct st_Player
@@ -34,8 +37,8 @@ namespace procademy
 		ULONGLONG	lastRecvTime = 0;
 		INT64		accountNo = 0;
 		SESSION_ID	sessionNo = 0;
-		WCHAR		ID[NAME_MAX];
-		WCHAR		nickName[NAME_MAX];
+		WCHAR		ID[en_NAME_MAX];
+		WCHAR		nickName[en_NAME_MAX];
 		short		curSectorX = -1;
 		short		curSectorY = -1;
 		bool		bLogin = false;
@@ -45,5 +48,13 @@ namespace procademy
 		BYTE			type;
 		SESSION_ID		sessionNo;
 		CNetPacket*		packet;
+		int				mCounter = 0;
+
+		st_MSG() {
+			InterlockedIncrement((long*)&mCounter);
+
+			if (mCounter > 1)
+				CRASH();
+		}
 	};
 }

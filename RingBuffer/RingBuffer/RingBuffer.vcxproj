@@ -103,6 +103,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;..\..\CCpuUsage\CCpuUsage;..\..\CNetServerNoLock\CNetServerNoLock;..\..\CSafeQueue\CSafeQueue;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -117,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\Multi_Profiler\Multi_Profiler;..\..\TextParser\TextParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -134,7 +135,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\Multi_Profiler\Multi_Profiler;..\..\TextParser\TextParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,6 +148,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp" />
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
+    <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp" />
+    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="StreamQueue.cpp" />
@@ -154,6 +157,8 @@
   <ItemGroup>
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
+    <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h" />
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="StreamQueue.h" />
   </ItemGroup>

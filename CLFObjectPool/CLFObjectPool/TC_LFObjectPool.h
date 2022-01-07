@@ -1,11 +1,14 @@
 #pragma once
-#define VER_CASH_LINE
+#pragma warning(disable: 6011)
 
 #include <new.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wtypes.h>
 #include "CCrashDump.h"
+//#include "myNewMalloc.h"
+
+//#define SAFE_MODE
 
 #define CHECKSUM_OVER (0xAAAAAAAA)
 
@@ -22,10 +25,17 @@ namespace procademy
 				stpNextBlock = NULL;
 			}
 
-			DATA data;
+#ifdef SAFE_MODE
 			void* code;
+			alignas(64) DATA				data;
 			st_BLOCK_NODE* stpNextBlock;
-			unsigned int checkSum_over = CHECKSUM_OVER;
+			unsigned int					checkSum_over = CHECKSUM_OVER;
+#else
+			DATA				data;
+			st_BLOCK_NODE* stpNextBlock;
+#endif // SAFE_MODE
+
+			
 		};
 	public:
 		TC_LFObjectPool();
@@ -70,33 +80,19 @@ namespace procademy
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mSize; }
-		DWORD GetMallocCount() { return mMallocCount; }
 
 	private:
 		void AllocMemory(int size);
 
 	private:
-#ifdef VER_CASH_LINE
 		struct alignas(64) t_Top
 		{
-			st_BLOCK_NODE* ptr_node = nullptr;
-			LONG64 counter = 0;
+			st_BLOCK_NODE*	ptr_node = nullptr;
+			LONG64			counter = 0;
 		};
 
-		alignas(64) DWORD mSize;
-#else
-		struct t_Top
-		{
-			st_BLOCK_NODE* ptr_node = nullptr;
-			LONG64 counter = 0;
-		};
-
-		DWORD mSize;
-#endif // VER_CASH_LINE
-
-
-		DWORD mCapacity;
-		DWORD mMallocCount = 0;
+		alignas(64) long	mSize;
+		alignas(64) long	mCapacity;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
 		t_Top _pFreeTop;
@@ -125,13 +121,11 @@ namespace procademy
 		{
 			st_BLOCK_NODE* pNext = node->stpNextBlock;
 
-#ifdef VER_CASH_LINE
+#ifdef SAFE_MODE
 			_aligned_free(node);
 #else
 			free(node);
-#endif // VER_CASH_LINE
-
-
+#endif // SAFE_MODE
 			node = pNext;
 		}
 	}
@@ -142,12 +136,13 @@ namespace procademy
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
 
-		InterlockedIncrement(&mSize);
+		long capa = mCapacity;
 
-		if (mSize > mCapacity)
+		if (capa < InterlockedIncrement(&mSize))
 		{
-			InterlockedIncrement(&mCapacity);
 			AllocMemory(1);
+
+			InterlockedIncrement(&mCapacity);
 		}
 
 		do
@@ -171,8 +166,10 @@ namespace procademy
 	{
 		// prerequisite
 		st_BLOCK_NODE* top;
-		//st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
-		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)pData;
+
+
+#ifdef SAFE_MODE
+		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - 64);
 
 		if (pNode->code != this ||
 			pNode->checkSum_over != CHECKSUM_OVER)
@@ -180,6 +177,9 @@ namespace procademy
 			CRASH();
 			return false;
 		}
+#else
+		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)pData;
+#endif // SAFE_MODE
 
 		do
 		{
@@ -202,19 +202,21 @@ namespace procademy
 		st_BLOCK_NODE* top;
 		st_BLOCK_NODE* node = nullptr;
 
-
 		for (int i = 0; i < size; ++i)
 		{
 			// prerequisite
-#ifdef VER_CASH_LINE
+#ifdef SAFE_MODE
 			node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
+			node->code = this;
+			node->checkSum_over = CHECKSUM_OVER;
 #else
 			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
-#endif // VER_CASH_LINE
-			InterlockedIncrement(&mMallocCount);
-			node->code = this;
-			new (&node->data) (DATA);
-			node->checkSum_over = CHECKSUM_OVER;
+#endif // SAFE_MODE
+
+			if (false == mbPlacementNew)
+			{
+				new (&node->data) (DATA);
+			}
 
 			do
 			{

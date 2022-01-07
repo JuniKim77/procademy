@@ -132,7 +132,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\TextParser\TextParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,18 +142,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp" />
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
     <ClCompile Include="..\..\CSVReader\CSVReader\CSVReader.cpp" />
     <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp" />
+    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
+    <ClCompile Include="CLanPacket.cpp" />
     <ClCompile Include="CNetPacket.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h" />
+    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h" />
     <ClInclude Include="..\..\MemoryPool_TLS\MemoryPool_TLS\ObjectPool_TLS.h" />
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h" />
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h" />
+    <ClInclude Include="CLanPacket.h" />
     <ClInclude Include="CNetPacket.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

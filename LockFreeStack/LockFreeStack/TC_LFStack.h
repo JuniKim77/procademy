@@ -3,6 +3,53 @@
 #include <wtypes.h>
 #include "TC_LFObjectPool.h"
 
+//struct stackDebug
+//{
+//	int logicId;
+//	int threadId;
+//	void* mTop;
+//	void* mTopNext;
+//	void* snapTop;
+//	void* snapTopNext;
+//	void* enqueueNode;
+//	void* dequeueNode;
+//	int size;
+//	int counter;
+//	int snapCounter;
+//};
+//
+//stackDebug g_debug[USHRT_MAX + 1];
+//USHORT g_index;
+//
+//void _debug(
+//	int logicId,
+//	int threadId,
+//	void* mTop,
+//	void* mTopNext,
+//	void* snapTop,
+//	void* snapTopNext,
+//	void* enqueueNode,
+//	void* dequeueNode,
+//	int size,
+//	int counter,
+//	int snapCounter
+//)
+//{
+//	USHORT index = InterlockedIncrement16((short*)&g_index);
+//
+//	g_debug[index].logicId = logicId;
+//	g_debug[index].threadId = threadId;
+//	g_debug[index].mTop = mTop;
+//	g_debug[index].mTopNext = mTopNext;
+//	g_debug[index].snapTop = snapTop;
+//	g_debug[index].snapTopNext = snapTopNext;
+//	g_debug[index].enqueueNode = enqueueNode;
+//	g_debug[index].dequeueNode = dequeueNode;
+//	g_debug[index].size = size;
+//	g_debug[index].counter = counter;
+//	g_debug[index].snapCounter = snapCounter;
+//}
+
 template <typename T>
 class TC_LFStack
 {
@@ -33,18 +80,11 @@ public:
 	DWORD GetSize() { return mSize; }
 	int GetPoolSize() { return mMemoryPool.GetSize(); }
 	int GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
-	DWORD GetMallocCount() { return mMemoryPool.GetMallocCount(); }
 	void linkCheck(int size);
-	void cLog(int loginId, t_Top snap_top);
 
 private:
-#ifdef VER_CASH_LINE
 	alignas(64) t_Top	mTop;
 	alignas(64) int		mSize = 0;
-#else
-	t_Top	mTop;
-	int		mSize = 0;
-#endif // VER_CASH_LINE	
 	procademy::TC_LFObjectPool<Node> mMemoryPool;
 };
 
@@ -64,8 +104,6 @@ inline TC_LFStack<T>::~TC_LFStack()
 
 		count++;
 	}
-
-	wprintf_s(L"[Size: %u] [Counter: %d]\n", mSize, count);
 }
 
 template <typename T>
@@ -81,7 +119,10 @@ void TC_LFStack<T>::Push(T data)
 	{
 		ptop = mTop.ptr_node;		// Node Address -> Low Part
 		node->next = ptop;
+
+		//_debug(PUSH_DEBUG, GetCurrentThreadId(), mTop.ptr_node, mTop.ptr_node == nullptr ? nullptr : mTop.ptr_node->next, ptop, ptop == nullptr? nullptr : ptop->next, node, nullptr, mSize, mTop.counter, 0);
 	} while (InterlockedCompareExchangePointer((PVOID*)&mTop.ptr_node, node, ptop) != ptop);
+	//_debug(PUSH_DEBUG + 10, GetCurrentThreadId(), mTop.ptr_node, mTop.ptr_node == nullptr ? nullptr : mTop.ptr_node->next, ptop, ptop == nullptr ? nullptr : ptop->next, node, nullptr, mSize, mTop.counter, 0);
 
 	InterlockedIncrement((long*)&mSize);
 }
@@ -104,11 +145,37 @@ bool TC_LFStack<T>::Pop(T* result)
 	{
 		top.counter = mTop.counter;
 		top.ptr_node = mTop.ptr_node;
+		//top.counter = mTop.counter;
 		next = top.ptr_node->next;
-	} while (InterlockedCompareExchange128((LONG64*)&mTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
 
+		//_debug(POP_DEBUG, GetCurrentThreadId(), mTop.ptr_node, mTop.ptr_node == nullptr ? nullptr : mTop.ptr_node->next, top.ptr_node, next, nullptr, top.ptr_node, mSize, mTop.counter, top.counter);
+	} while (InterlockedCompareExchange128((LONG64*)&mTop, top.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
+	//_debug(POP_DEBUG + 10, GetCurrentThreadId(), mTop.ptr_node, mTop.ptr_node == nullptr ? nullptr : mTop.ptr_node->next, top.ptr_node, next, nullptr, top.ptr_node, mSize, mTop.counter, top.counter);
 	*result = top.ptr_node->data;
+
 	mMemoryPool.Free(top.ptr_node);
+
+	//Node* ptop;
+
+	//do
+	//{
+	//	ptop = mTop.ptr_node;		// Node Address -> Low Part
+	//	next = ptop->next;
+
+	//	_debug(POP_DEBUG, GetCurrentThreadId(), mTop.ptr_node, mTop.ptr_node == nullptr ? nullptr : mTop.ptr_node->next, ptop, next, nullptr, ptop, mSize, 0, 0);
+
+	//	if (ptop == mTop.ptr_node && next != mTop.ptr_node->next)
+	//	{
+	//		_debug(POP_DEBUG + 10, GetCurrentThreadId(), mTop.ptr_node, mTop.ptr_node == nullptr ? nullptr : mTop.ptr_node->next, ptop, next, nullptr, ptop, mSize, 0, 0);
+	//	}
+
+	//} while (InterlockedCompareExchangePointer((PVOID*)&mTop.ptr_node, next, ptop) != ptop);
+
+	//_debug(POP_DEBUG + 20, GetCurrentThreadId(), mTop.ptr_node, mTop.ptr_node == nullptr? nullptr : mTop.ptr_node->next, ptop, next, nullptr, ptop, mSize, 0, 0);
+
+	//*result = ptop->data;
+
+	//mMemoryPool.Free(ptop);
 
 	return true;
 }
@@ -129,36 +196,5 @@ inline void TC_LFStack<T>::linkCheck(int size)
 	if (count == size)
 	{
 		wprintf_s(L"Pushed Successfully\n=====================\n");
-	}
-}
-
-template<typename T>
-inline void TC_LFStack<T>::cLog(int loginId, t_Top snap_top)
-{
-	t_Top curmTop;
-	curmTop.ptr_node = mTop.ptr_node;
-	curmTop.counter = mTop.counter;
-
-	if (curmTop.ptr_node == nullptr)
-	{
-		if (snap_top.ptr_node == nullptr)
-		{
-			_Log(loginId, GetCurrentThreadId(), mSize, curmTop.counter, snap_top.counter, curmTop.ptr_node, nullptr, snap_top.ptr_node, nullptr);
-		}
-		else
-		{
-			_Log(loginId, GetCurrentThreadId(), mSize, curmTop.counter, snap_top.counter, curmTop.ptr_node, nullptr, snap_top.ptr_node, snap_top.ptr_node->next);
-		}
-	}
-	else
-	{
-		if (snap_top.ptr_node == nullptr)
-		{
-			_Log(loginId, GetCurrentThreadId(), mSize, curmTop.counter, snap_top.counter, curmTop.ptr_node, curmTop.ptr_node->next, snap_top.ptr_node, nullptr);
-		}
-		else
-		{
-			_Log(loginId, GetCurrentThreadId(), mSize, curmTop.counter, snap_top.counter, curmTop.ptr_node, curmTop.ptr_node->next, snap_top.ptr_node, snap_top.ptr_node->next);
-		}
 	}
 }

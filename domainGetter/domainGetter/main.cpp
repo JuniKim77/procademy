@@ -45,7 +45,7 @@ int main()
 	SOCKADDR_IN SockAddr;
 	IN_ADDR* Addr = (IN_ADDR*)malloc(sizeof(IN_ADDR) * 4);
 	memset(&SockAddr, 0, sizeof(SockAddr));
-	WCHAR name[] = L"naver.com";
+	WCHAR name[] = L"procademyserver.iptime.org";
 
 	int count = DomainToIPs(name, Addr, 4);
 

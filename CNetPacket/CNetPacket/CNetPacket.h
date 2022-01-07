@@ -1,9 +1,10 @@
-#ifndef  __PACKET__
-#define  __PACKET__
+#ifndef  __CNET_PACKET__
+#define  __CNET_PACKET__
 
 //#define NEW_DELETE_VER
 //#define MEMORY_POOL_VER
 #define TLS_MEMORY_POOL_VER
+#//define PROFILE
 
 #ifdef MEMORY_POOL_VER
 #include "TC_LFObjectPool.h"
@@ -16,10 +17,6 @@ namespace procademy
 {
 	class CNetPacket
 	{
-		friend class CNetServerNoLock;
-		friend class CEchoServerNoLock;
-		friend class CNetLoginServer;
-		friend class CChatServerSingle;
 		template<typename DATA>
 		friend class TC_LFObjectPool;
 		template<typename DATA>
@@ -32,7 +29,7 @@ namespace procademy
 		enum en_PACKET
 		{
 			HEADER_MAX_SIZE = 5,
-			eBUFFER_DEFAULT = 1000		// 패킷의 기본 버퍼 사이즈.
+			eBUFFER_DEFAULT = 200		// 패킷의 기본 버퍼 사이즈.
 		};
 
 		//////////////////////////////////////////////////////////////////////////
@@ -73,8 +70,8 @@ namespace procademy
 		// Parameters: 없음.
 		// Return: (int)사용중인 데이타 사이즈.
 		//////////////////////////////////////////////////////////////////////////
-		int		GetSize(void) { return mPacketSize + mHeaderSize; }
-		USHORT	GetPacketSize() { return mPacketSize; }
+		int		GetSize(void) { return (int)(mRear - mZero); }
+		int		GetUseSize() { return (int)(mRear - mFront); }
 
 		//////////////////////////////////////////////////////////////////////////
 		// 버퍼 포인터 얻기.
@@ -93,13 +90,13 @@ namespace procademy
 		// Parameters: (int) 이동 사이즈.
 		// Return: (int) 이동된 사이즈.
 		//////////////////////////////////////////////////////////////////////////
-		int		MoveFront(int iSize);
-		int		MoveRear(int iSize);
+		int		MoveFront(DWORD iSize);
+		int		MoveRear(DWORD iSize);
 		/// <summary>
 		/// 현재 버퍼의 사용 가능 사이즈 반환
 		/// </summary>
 		/// <returns>사용 가능 사이즈</returns>
-		int		GetFreeSize() const { return mCapacity - mPacketSize - HEADER_MAX_SIZE; }
+		int		GetFreeSize() const { return (int)(mEnd - mRear); }
 
 		// 연산자 오버로딩 넣기
 		CNetPacket& operator << (unsigned char byValue);
@@ -157,9 +154,9 @@ namespace procademy
 		static CNetPacket*	AllocAddRef();
 		void				AddRef();
 		void				SubRef();
-		void				SetHeader(bool isLengthOnly);
+		void				SetHeader();
 		void				Encode();
-		void				Decode();
+		bool				Decode();
 
 		static int			GetPoolCapacity();
 		static DWORD		GetPoolSize();
@@ -189,22 +186,22 @@ namespace procademy
 		};
 #pragma pack(pop)
 	private:
-
 		SHORT		mRefCount = 0;
 		char*		mBuffer;
+		char*		mEnd;
 		int			mCapacity;
-		int			mPacketSize;
-		int			mHeaderSize;
 		char*		mFront;
 		char*		mRear;
 		char*		mZero;
+
+	public:
 		static BYTE	sCode;
 		static BYTE	sPacketKey;
 
 #ifdef MEMORY_POOL_VER
-		alignas(64) static TC_LFObjectPool<CNetPacket> sPacketPool;
+		static TC_LFObjectPool<CNetPacket> sPacketPool;
 #elif defined(TLS_MEMORY_POOL_VER)
-		alignas(64) static ObjectPool_TLS<CNetPacket> sPacketPool;
+		static ObjectPool_TLS<CNetPacket> sPacketPool;
 #endif // MEMORY_POOL_VER
 	};
 #endif
