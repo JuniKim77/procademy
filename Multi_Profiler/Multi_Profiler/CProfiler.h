@@ -1,17 +1,25 @@
 #pragma once
 
-#define PROFILE_MAX (50)
-#define NAME_MAX (20)
+#define PROFILE_MAX (100)
+#define NAME_MAX (32)
 #define FILE_NAME_MAX (80)
-#define COLUMN_SIZE (6)
+#define MAX_PARSER_LENGTH (256)
 
 #include <wtypes.h>
 
 class CProfiler
 {
 public:
+	enum class PROFILE_TYPE {
+		MICRO_SECONDS,
+		PERCENT,
+		COUNT,
+	};
+public:
 	CProfiler(const WCHAR* szSettingFileName);
 	~CProfiler();
+
+private:
 	/// <summary>
 	/// Profile Init
 	/// CSV File Load
@@ -28,6 +36,7 @@ public:
 	/// </summary>
 	/// <param name="szName">Profiling Name</param>
 	void ProfileEnd(const WCHAR* szName);
+	void ProfileSetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type);
 	/// <summary>
 	/// Profiling Data Text Out
 	/// </summary>
@@ -44,15 +53,30 @@ public:
 
 	void SetThreadId();
 
+public:
 	static void SetProfileFileName(WCHAR* szFileName);
+	static void InitProfiler(int num);
+	static void DestroyProfiler();
+	static void Begin(const WCHAR* szName);
+	static void End(const WCHAR* szName);
+	static void SetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type);
+	static void Print();
+	static void PrintAvg();
 
 private:
 	int SearchName(const WCHAR* s);
+
+public:
+	static CProfiler** s_profilers;
+	static DWORD s_MultiProfiler;
+	static LONG s_ProfilerIndex;
+	static SRWLOCK s_lock;
 
 private:
 	typedef struct
 	{
 		bool			bFlag;				// 프로파일의 사용 여부. (배열시에만)
+		PROFILE_TYPE	type;				// 데이터 타입
 		WCHAR			szName[NAME_MAX];	// 프로파일 샘플 이름.
 
 		LARGE_INTEGER	lStartTime;			// 프로파일 샘플 실행 시간.
@@ -67,8 +91,8 @@ private:
 
 	struct Setting
 	{
-		WCHAR colNames[COLUMN_SIZE][32];
-		int colSize[COLUMN_SIZE];
+		WCHAR** colNames;
+		int* colSize;
 		int totalSize;
 	};
 
@@ -76,8 +100,9 @@ private:
 	{
 		SEARCH_RESULT_FULL = -1
 	};
-	
+
 	PROFILE_SAMPLE mProfiles[PROFILE_MAX];
 	Setting mSetting;
 	DWORD mThreadId = 0;
+	int mColumnSize = 0;
 };

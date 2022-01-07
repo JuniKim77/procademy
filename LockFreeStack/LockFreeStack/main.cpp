@@ -6,16 +6,15 @@
 #include <wchar.h>
 #include "CLogger.h"
 #include "CCrashDump.h"
-#include "CDebugger.h"
  
 #define THREAD_SIZE (3)
-#define MAX_ALLOC (30)
-#define THREAD_ALLOC (10)
+#define MAX_ALLOC (3)
+#define THREAD_ALLOC (1)
 
 struct st_DATA
 {
-	LONG64 data;
-	LONG64 count;
+	LONG64 data = 0x0000000055555555;
+	LONG64 count = 0;
 };
 
 using namespace std;
@@ -27,34 +26,28 @@ unsigned int WINAPI MonitorThread(LPVOID lpParam);
 
 void Init();
 
-TC_LFStack<st_DATA*> g_st;
+alignas(64) TC_LFStack<st_DATA*> g_st;
+DWORD g_MultiProfiler;
 
 long PushTPS = 0;
 long PopTPS = 0;
 
 int main()
 {
+	g_MultiProfiler = TlsAlloc();
+
 	Init();
 
 	procademy::CCrashDump::SetHandlerDump();
 
-	//CDebugger::Initialize();
-	//CDebugger::SetDirectory(L"./");
-
 	HANDLE hThreads[THREAD_SIZE + 1];
-	int args[THREAD_SIZE];
 
 	for (int i = 0; i < THREAD_SIZE; ++i)
 	{
-		args[i] = i * 1000;
+		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
 	}
 
-	hThreads[0] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
-
-	for (int i = 1; i <= THREAD_SIZE; ++i)
-	{
-		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, WorkerThread, &args[i - 1], 0, nullptr);
-	}
+	hThreads[THREAD_SIZE] = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, nullptr, 0, nullptr);
 
 	WORD ControlKey;
 
@@ -99,6 +92,8 @@ int main()
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
 	st_DATA* pDataArray[THREAD_ALLOC];
+
+	TlsSetValue(g_MultiProfiler, lpParam);
 
 #ifdef VERSION_A
 	while (!g_exit)
@@ -207,7 +202,7 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 		wprintf(L"Pop TPS			: %ld\n", pop);
 		wprintf(L"Push  TPS		: %ld\n", push);
 		wprintf(L"Stack Size		: %ld\n", g_st.GetSize());
-		wprintf(L"Malloc Size		: %ld\n", g_st.GetMallocCount());
+		wprintf(L"Malloc Size		: %ld\n", g_st.GetPoolCapacity());
 		wprintf(L"---------------------------------------------------------------------\n\n\n");
 		if (g_st.GetSize() > MAX_ALLOC)
 		{

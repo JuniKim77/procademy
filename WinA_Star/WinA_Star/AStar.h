@@ -36,9 +36,9 @@ enum class NodeType
 struct Node
 {
 	Coordi position;
-	float g;
-	float h;
-	float f;
+	float g;	// 출발점으로부터의 거리
+	float h;	// 목적지까지 거리
+	float f;	// g + h
 
 	Node* pParent;
 

@@ -116,6 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,6 +132,8 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\CSVReader\CSVReader;..\..\Multi_Profiler\Multi_Profiler;..\..\MemoryPool_TLS\MemoryPool_TLS;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\RingBuffer\RingBuffer;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;..\..\LockFreeStack\LockFreeStack;..\..\CNetPacket\CNetPacket;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,19 +143,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CCrashDump.cpp" />
-    <ClCompile Include="CDebugger.cpp" />
-    <ClCompile Include="CLFQueue.cpp" />
-    <ClCompile Include="CLogger.cpp" />
+    <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp" />
+    <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CCrashDump.h" />
-    <ClInclude Include="CDebugger.h" />
-    <ClInclude Include="CLFQueue.h" />
-    <ClInclude Include="CLogger.h" />
-    <ClInclude Include="TC_LFObjectPool.h" />
+    <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h" />
+    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
+    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="TC_LFQueue.h" />
+    <ClInclude Include="TC_LFQueue64.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

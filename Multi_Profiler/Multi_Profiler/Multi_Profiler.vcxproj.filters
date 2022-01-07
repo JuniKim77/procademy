@@ -18,18 +18,18 @@
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CSVReader.cpp">
+    <ClCompile Include="CProfiler.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CProfiler.cpp">
+    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CSVReader.h">
+    <ClInclude Include="CProfiler.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CProfiler.h">
+    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

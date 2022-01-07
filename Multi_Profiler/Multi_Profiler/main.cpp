@@ -20,25 +20,18 @@ void test(int count)
 void test1();
 void test2();
 
-void ReqTextOut(CProfiler** profilers);
-
-DWORD g_MultiProfiler;
 HANDLE g_hExitThreadEvent;
 
 int main()
 {
-	g_MultiProfiler = TlsAlloc();
-
+	CProfiler::InitProfiler(dfTHREAD_NUM);
 	g_hExitThreadEvent = CreateEvent(NULL, false, false, nullptr);
-
-	CProfiler* profilers[dfTHREAD_NUM] = { 0, };
 
 	HANDLE hThreads[dfTHREAD_NUM];
 
 	for (int i = 0; i < dfTHREAD_NUM; ++i)
 	{
-		profilers[i] = new CProfiler(L"settings.csv");
-		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, workerThread, profilers[i], 0, nullptr);
+		hThreads[i] = (HANDLE)_beginthreadex(nullptr, 0, workerThread, nullptr, 0, nullptr);
 	}
 
 	WCHAR ControlKey;
@@ -54,7 +47,7 @@ int main()
 
 		if (ControlKey == L'p' || ControlKey == L'P')
 		{
-			ReqTextOut(profilers);
+			CProfiler::Print();
 		}
 	}
 
@@ -83,10 +76,9 @@ int main()
 
 unsigned int __stdcall workerThread(LPVOID arg)
 {
-	TlsSetValue(g_MultiProfiler, arg);
-	((CProfiler*)arg)->SetThreadId();
-	
 	DWORD dwError;
+	LARGE_INTEGER begin;
+	LARGE_INTEGER end;
 
 	while (1)
 	{
@@ -97,9 +89,15 @@ unsigned int __stdcall workerThread(LPVOID arg)
 			break;
 		}
 
+		QueryPerformanceCounter(&begin);
+
 		test1();
 
 		test2();
+
+		QueryPerformanceCounter(&end);
+
+		CProfiler::SetRecord(L"Test3", end.QuadPart - begin.QuadPart);
 	}
 
 	return 0;
@@ -109,11 +107,9 @@ void test1()
 {
 	for (int i = 0; i < 100; ++i)
 	{
-		((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileBegin(L"Test1");
-
+		CProfiler::Begin(L"Test1");
 		test(50);
-
-		((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileEnd(L"Test1");
+		CProfiler::End(L"Test1");
 	}
 }
 
@@ -121,23 +117,9 @@ void test2()
 {
 	for (int i = 0; i < 100; ++i)
 	{
-		((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileBegin(L"Test2");
-
+		CProfiler::Begin(L"Test2");
 		test(100);
-
-		((CProfiler*)TlsGetValue(g_MultiProfiler))->ProfileEnd(L"Test2");
+		CProfiler::End(L"Test2");
 	}
 }
 
-void ReqTextOut(CProfiler** profilers)
-{
-	WCHAR fileName[FILE_NAME_MAX] = L"Profile";
-
-	CProfiler::SetProfileFileName(fileName);
-
-	for (int i = 0; i < dfTHREAD_NUM; ++i)
-	{
-		profilers[i]->ProfileDataOutText(fileName);
-		profilers[i]->ProfileReset();
-	}
-}

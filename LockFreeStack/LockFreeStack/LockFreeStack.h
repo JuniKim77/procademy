@@ -11,7 +11,6 @@ public:
 	void Push(ULONG64 data);
 	bool Pop(ULONG64* result);
 	DWORD GetSize() { return mSize; }
-	DWORD GetMallocSize() { return mMemoryPool.GetMallocCount(); }
 	int GetPoolSize() { return mMemoryPool.GetSize(); }
 	int GetPoolCapacity() { return mMemoryPool.GetCapacity(); }
 
@@ -89,7 +88,6 @@ bool CLFStack::Pop(ULONG64* result)
 
 	if (top.ptr_node == nullptr)
 	{
-		CDebugger::_Log(L"Pop [C%5lld]", top.counter);
 		CRASH();
 	}
 

@@ -3,8 +3,8 @@
 #include <cstring>
 #include <random>
 #include <conio.h>
-#include "CDebugger.h"
 #include "CCrashDump.h"
+#include "CProfiler.h"
 
 #define STR_SIZE (120)
 #define TIME_PERIOD (50)
@@ -22,14 +22,14 @@ int post = 0;
 
 int main()
 {
+	CProfiler::InitProfiler(5);
 	procademy::CCrashDump::CCrashDump();
-	CDebugger::SetDirectory(L"./");
-	CDebugger::Initialize();
+
+	ringBuffer.SetLogMode(false);
 
 	system(" mode  con lines=30   cols=120 ");
 	int seed = 10;
 	int ringSize = BUFFER_SIZE;
-	RingBuffer ringBuffer(ringSize);
 
 	srand(seed);
 
@@ -59,7 +59,7 @@ int main()
 		CloseHandle(hArray[i]);
 	}
 
-	CDebugger::PrintLogOut(L"Debug.txt");
+	CProfiler::Print();
 
 	return 0;
 }
@@ -69,14 +69,19 @@ int dequeueProcess()
 	char buffer[STR_SIZE + 1];
 	WCHAR wbuffer[STR_SIZE + 1];
 
-	int ran = rand() % (STR_SIZE + 1);
+	int ran = rand() % (4);
 
+	CProfiler::Begin(L"GetUseSize");
 	if (ringBuffer.GetUseSize() == 0)
 	{
+		CProfiler::End(L"GetUseSize");
 		return 0;
 	}
+	CProfiler::End(L"GetUseSize");
 
+	CProfiler::Begin(L"Dequeue");
 	int size = ringBuffer.Dequeue(buffer, ran);
+	CProfiler::End(L"Dequeue");
 
 	buffer[size] = '\0';
 
@@ -99,7 +104,7 @@ int enqueueProcess()
 	char buffer[STR_SIZE + 1];
 	WCHAR wbuffer[STR_SIZE + 1];
 
-	int ran = rand() % (STR_SIZE + 1);
+	int ran = rand() % (4);
 
 	if (cur + ran > STR_SIZE)
 	{
@@ -114,7 +119,9 @@ int enqueueProcess()
 
 	buffer[ran] = '\0';
 
+	CProfiler::Begin(L"Enqueue");
 	int size = ringBuffer.Enqueue(buffer, ran);
+	CProfiler::End(L"Enqueue");
 
 	cur = (cur + size) % STR_SIZE;
 
@@ -129,7 +136,7 @@ unsigned int __stdcall dequeueProc(void* pvParam)
 	{
 		DWORD time = rand() % TIME_PERIOD + 10;
 
-		DWORD retval = WaitForSingleObject(g_event, time);
+		DWORD retval = WaitForSingleObject(g_event, 0);
 
 		switch (retval)
 		{
@@ -159,7 +166,7 @@ unsigned int __stdcall enqueueProc(void* pvParam)
 	{
 		DWORD time = rand() % TIME_PERIOD + 10;
 
-		DWORD retval = WaitForSingleObject(g_event, time);
+		DWORD retval = WaitForSingleObject(g_event, 0);
 
 		switch (retval)
 		{

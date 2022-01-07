@@ -4,6 +4,8 @@
 #include <time.h>
 #include "CSVReader.h"
 
+#define SUB_SIZE (1000.0)
+
 PROFILE_SAMPLE gProfiles[PROFILE_MAX];
 
 void ProfileBegin(const WCHAR* szName)
@@ -189,7 +191,7 @@ void ProfileDataOutText(const WCHAR* szFileName)
 		swprintf_s(minTxt, _countof(minTxt), L"%.4lf |", gProfiles[i].iMin[0] / freq);
 		swprintf_s(maxTxt, _countof(maxTxt), L"%.4lf |", gProfiles[i].iMax[0] / freq);
 		swprintf_s(callTxt, _countof(callTxt), L"%lld |", gProfiles[i].iCall);
-		swprintf_s(depthTxt, _countof(depthTxt), L"%.2f |", gProfiles[i].iDepth / (double)gProfiles[i].iCall);
+		swprintf_s(depthTxt, _countof(depthTxt), L"%.2f |", gProfiles[i].iDepth / ((double)gProfiles[i].iCall * SUB_SIZE));
 
 		swprintf_s(line, _countof(line), tableSet,
 			nameTxt,

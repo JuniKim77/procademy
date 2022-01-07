@@ -83,7 +83,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 
 		Sleep(0);
 
-		CLogger::_Log(dfLOG_LEVEL_NOTICE, L"Test Log [%d] [%d]", rand(), rand());
+		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Test Log [%d] [%d]", rand(), rand());
 	}
 
 	return 0;

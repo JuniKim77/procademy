@@ -1,414 +1,473 @@
 #include "CPacket.h"
 #include <malloc.h>
 #include <string.h>
+#include <Windows.h>
 
-#define DEBUG
-
-CPacket::CPacket()
-	: CPacket(eBUFFER_DEFAULT)
+namespace procademy
 {
-}
+	//#define DEBUG
+#ifdef MEMORY_POOL_VER
+	alignas(64) TC_LFObjectPool<CPacket> CPacket::sPacketPool;
+#elif defined(TLS_MEMORY_POOL_VER)
+	alignas(64) ObjectPool_TLS<CPacket> CPacket::sPacketPool;
+#endif // MEMORY_POOL_VER
 
-CPacket::CPacket(int iBufferSize)
-	: mCapacity(iBufferSize)
-	, mSize(0)
-{
-	mBuffer = (char*)malloc(mCapacity);
-	mFront = mBuffer;
-	mRear = mBuffer;
+	CPacket::CPacket()
+		: CPacket(eBUFFER_DEFAULT)
+	{
+	}
+
+	CPacket::CPacket(int iBufferSize)
+		: mCapacity(iBufferSize)
+		, mSize(0)
+	{
+		mBuffer = (char*)malloc(mCapacity);
+		mFront = mBuffer;
+		mRear = mBuffer;
 
 #ifdef DEBUG
-	memset(mBuffer, 0, mCapacity);
+		if (mBuffer != 0)
+			memset(mBuffer, 0, mCapacity);
 #endif
-}
-
-CPacket::~CPacket()
-{
-	Release();
-}
-
-void CPacket::Release(void)
-{
-	if (mBuffer != nullptr)
-		free(mBuffer);
-}
-
-void CPacket::Clear(void)
-{
-	mSize = 0;
-	mFront = mBuffer;
-	mRear = mFront;
-}
-
-int CPacket::MoveFront(int iSize)
-{
-	if (iSize <= 0)
-		return 0;
-
-	int size = iSize <= mSize ? iSize : mSize;
-
-	mFront += size;
-	mSize -= size;
-
-	return size;
-}
-
-int CPacket::MoveRear(int iSize)
-{
-	if (iSize <= 0)
-		return 0;
-
-	int size = iSize <= GetFreeSize() ? iSize : GetFreeSize();
-
-	mRear += size;
-	mSize += size;
-
-	return size;
-}
-
-int CPacket::GetFreeSize() const
-{
-	return mCapacity - mSize;
-}
-
-CPacket& CPacket::operator<<(unsigned char byValue)
-{
-	if (sizeof(unsigned char) > GetFreeSize())
-	{
-		resize();
-
-		// log
 	}
 
-	writeBuffer((char*)&byValue, sizeof(unsigned char));
-
-	return *this;
-}
-
-CPacket& CPacket::operator<<(char chValue)
-{
-	if (sizeof(char) > GetFreeSize())
+	CPacket::~CPacket()
 	{
-		resize();
-
-		// log
+		Release();
 	}
 
-	writeBuffer(&chValue, sizeof(char));
-
-	return *this;
-}
-
-CPacket& CPacket::operator<<(short shValue)
-{
-	if (sizeof(short) > GetFreeSize())
+	void CPacket::Release(void)
 	{
-		resize();
-
-		// log
+		if (mBuffer != nullptr)
+			free(mBuffer);
 	}
 
-	writeBuffer((char*)&shValue, sizeof(short));
-
-	return *this;
-}
-
-CPacket& CPacket::operator<<(unsigned short wValue)
-{
-	if (sizeof(unsigned short) > GetFreeSize())
+	void CPacket::Clear(void)
 	{
-		resize();
-
-		// log
+		mSize = 0;
+		mFront = mBuffer;
+		mRear = mFront;
 	}
 
-	writeBuffer((char*)&wValue, sizeof(unsigned short));
-
-	return *this;
-}
-
-CPacket& CPacket::operator<<(int iValue)
-{
-	if (sizeof(int) > GetFreeSize())
+	int CPacket::MoveFront(int iSize)
 	{
-		resize();
+		if (iSize <= 0)
+			return 0;
 
-		// log
+		int size = iSize <= mSize ? iSize : mSize;
+
+		mFront += size;
+		mSize -= size;
+
+		return size;
 	}
 
-	writeBuffer((char*)&iValue, sizeof(int));
-
-	return *this;
-}
-
-CPacket& CPacket::operator<<(unsigned int iValue)
-{
-	if (sizeof(unsigned int) > GetFreeSize())
+	int CPacket::MoveRear(int iSize)
 	{
-		resize();
+		if (iSize <= 0)
+			return 0;
 
-		// log
+		int size = iSize <= GetFreeSize() ? iSize : GetFreeSize();
+
+		mRear += size;
+		mSize += size;
+
+		return size;
 	}
 
-	writeBuffer((char*)&iValue, sizeof(unsigned int));
-
-	return *this;
-}
-
-CPacket& CPacket::operator<<(long lValue)
-{
-	if (sizeof(long) > GetFreeSize())
+	int CPacket::GetFreeSize() const
 	{
-		resize();
-
-		// log
+		return mCapacity - mSize;
 	}
 
-	writeBuffer((char*)&lValue, sizeof(long));
-
-	return *this;
-}
-
-CPacket& CPacket::operator<<(unsigned long lValue)
-{
-	if (sizeof(unsigned long) > GetFreeSize())
+	CPacket& CPacket::operator<<(unsigned char byValue)
 	{
-		resize();
+		if (sizeof(unsigned char) > GetFreeSize())
+		{
+			resize();
 
-		// log
+			// log
+		}
+
+		writeBuffer((char*)&byValue, sizeof(unsigned char));
+
+		return *this;
 	}
 
-	writeBuffer((char*)&lValue, sizeof(unsigned long));
-
-	return *this;
-}
-
-CPacket& CPacket::operator<<(float fValue)
-{
-	if (sizeof(float) > GetFreeSize())
+	CPacket& CPacket::operator<<(char chValue)
 	{
-		resize();
+		if (sizeof(char) > GetFreeSize())
+		{
+			resize();
 
-		// log
+			// log
+		}
+
+		writeBuffer(&chValue, sizeof(char));
+
+		return *this;
 	}
 
-	writeBuffer((char*)&fValue, sizeof(float));
-
-	return *this;
-}
-
-CPacket& CPacket::operator<<(__int64 iValue)
-{
-	if (sizeof(__int64) > GetFreeSize())
+	CPacket& CPacket::operator<<(short shValue)
 	{
-		resize();
+		if (sizeof(short) > GetFreeSize())
+		{
+			resize();
 
-		// log
+			// log
+		}
+
+		writeBuffer((char*)&shValue, sizeof(short));
+
+		return *this;
 	}
 
-	writeBuffer((char*)&iValue, sizeof(__int64));
-
-	return *this;
-}
-
-CPacket& CPacket::operator<<(double dValue)
-{
-	if (sizeof(double) > GetFreeSize())
+	CPacket& CPacket::operator<<(unsigned short wValue)
 	{
-		resize();
+		if (sizeof(unsigned short) > GetFreeSize())
+		{
+			resize();
 
-		// log
+			// log
+		}
+
+		writeBuffer((char*)&wValue, sizeof(unsigned short));
+
+		return *this;
 	}
 
-	writeBuffer((char*)&dValue, sizeof(double));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(unsigned char& byValue)
-{
-	unsigned char* pBuf = (unsigned char*)mFront;
-
-	byValue = *pBuf;
-	MoveFront(sizeof(unsigned char));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(char& chValue)
-{
-	char* pBuf = mFront;
-
-	chValue = *pBuf;
-	MoveFront(sizeof(char));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(short& shValue)
-{
-	short* pBuf = (short*)mFront;
-
-	shValue = *pBuf;
-	MoveFront(sizeof(short));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(unsigned short& wValue)
-{
-	unsigned short* pBuf = (unsigned short*)mFront;
-
-	wValue = *pBuf;
-	MoveFront(sizeof(unsigned short));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(int& iValue)
-{
-	int* pBuf = (int*)mFront;
-
-	iValue = *pBuf;
-	MoveFront(sizeof(int));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(unsigned int& iValue)
-{
-	unsigned int* pBuf = (unsigned int*)mFront;
-
-	iValue = *pBuf;
-	MoveFront(sizeof(unsigned int));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(long& dwValue)
-{
-	long* pBuf = (long*)mFront;
-
-	dwValue = *pBuf;
-	MoveFront(sizeof(long));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(unsigned long& dwValue)
-{
-	unsigned long* pBuf = (unsigned long*)mFront;
-
-	dwValue = *pBuf;
-	MoveFront(sizeof(unsigned long));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(float& fValue)
-{
-	float* pBuf = (float*)mFront;
-
-	fValue = *pBuf;
-	MoveFront(sizeof(float));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(__int64& iValue)
-{
-	__int64* pBuf = (__int64*)mFront;
-
-	iValue = *pBuf;
-	MoveFront(sizeof(__int64));
-
-	return *this;
-}
-
-CPacket& CPacket::operator>>(double& dValue)
-{
-	double* pBuf = (double*)mFront;
-
-	dValue = *pBuf;
-	MoveFront(sizeof(double));
-
-	return *this;
-}
-
-int CPacket::GetData(char* chpDest, int iLength)
-{
-	int size = iLength >= mSize ? iLength : mSize;
-
-	memcpy(chpDest, mFront, size);
-	MoveFront(size);
-
-	return size;
-}
-
-int CPacket::GetData(wchar_t* chpDest, int iLength)
-{
-	return GetData((char*)chpDest, iLength * 2);
-}
-
-int CPacket::PutData(const char* chpSrc, int iLength)
-{
-	if (iLength > GetFreeSize())
+	CPacket& CPacket::operator<<(int iValue)
 	{
-		resize();
+		if (sizeof(int) > GetFreeSize())
+		{
+			resize();
 
-		// log
+			// log
+		}
+
+		writeBuffer((char*)&iValue, sizeof(int));
+
+		return *this;
 	}
 
-	memcpy(mRear, chpSrc, iLength);
-	MoveRear(iLength);
+	CPacket& CPacket::operator<<(unsigned int iValue)
+	{
+		if (sizeof(unsigned int) > GetFreeSize())
+		{
+			resize();
 
-	return iLength;
-}
+			// log
+		}
 
-int CPacket::PutData(const wchar_t* chpSrc, int iLength)
-{
-	return PutData((const char*)chpSrc, iLength * 2);
-}
+		writeBuffer((char*)&iValue, sizeof(unsigned int));
 
-CPacket& CPacket::operator<<(const char* s)
-{
-	int len = strlen(s);
+		return *this;
+	}
 
-	PutData(s, len);
+	CPacket& CPacket::operator<<(long lValue)
+	{
+		if (sizeof(long) > GetFreeSize())
+		{
+			resize();
 
-	return *this;
-}
+			// log
+		}
 
-CPacket& CPacket::operator<<(const wchar_t* s)
-{
-	int len = wcslen(s);
+		writeBuffer((char*)&lValue, sizeof(long));
 
-	PutData(s, len);
+		return *this;
+	}
 
-	return *this;
-}
+	CPacket& CPacket::operator<<(unsigned long lValue)
+	{
+		if (sizeof(unsigned long) > GetFreeSize())
+		{
+			resize();
 
-void CPacket::resize()
-{
-	char* pBuffer = (char*)malloc(mCapacity + eBUFFER_DEFAULT);
+			// log
+		}
 
-	memcpy(pBuffer, mBuffer, mSize);
+		writeBuffer((char*)&lValue, sizeof(unsigned long));
 
-	int frontIndex = mFront - mBuffer;
-	int rearIndex = mRear - mBuffer;
+		return *this;
+	}
 
-	Release();
+	CPacket& CPacket::operator<<(float fValue)
+	{
+		if (sizeof(float) > GetFreeSize())
+		{
+			resize();
 
-	mBuffer = pBuffer;
+			// log
+		}
 
-	mFront = mBuffer + frontIndex;
-	mRear = mBuffer + rearIndex;
+		writeBuffer((char*)&fValue, sizeof(float));
 
-	mCapacity += eBUFFER_DEFAULT;
-}
+		return *this;
+	}
 
-void CPacket::writeBuffer(const char* src, int size)
-{
-	memcpy(mRear, src, size);
-	MoveRear(size);
+	CPacket& CPacket::operator<<(__int64 iValue)
+	{
+		if (sizeof(__int64) > GetFreeSize())
+		{
+			resize();
+
+			// log
+		}
+
+		writeBuffer((char*)&iValue, sizeof(__int64));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator<<(double dValue)
+	{
+		if (sizeof(double) > GetFreeSize())
+		{
+			resize();
+
+			// log
+		}
+
+		writeBuffer((char*)&dValue, sizeof(double));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(unsigned char& byValue)
+	{
+		unsigned char* pBuf = (unsigned char*)mFront;
+
+		byValue = *pBuf;
+		MoveFront(sizeof(unsigned char));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(char& chValue)
+	{
+		char* pBuf = mFront;
+
+		chValue = *pBuf;
+		MoveFront(sizeof(char));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(short& shValue)
+	{
+		short* pBuf = (short*)mFront;
+
+		shValue = *pBuf;
+		MoveFront(sizeof(short));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(unsigned short& wValue)
+	{
+		unsigned short* pBuf = (unsigned short*)mFront;
+
+		wValue = *pBuf;
+		MoveFront(sizeof(unsigned short));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(int& iValue)
+	{
+		int* pBuf = (int*)mFront;
+
+		iValue = *pBuf;
+		MoveFront(sizeof(int));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(unsigned int& iValue)
+	{
+		unsigned int* pBuf = (unsigned int*)mFront;
+
+		iValue = *pBuf;
+		MoveFront(sizeof(unsigned int));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(long& dwValue)
+	{
+		long* pBuf = (long*)mFront;
+
+		dwValue = *pBuf;
+		MoveFront(sizeof(long));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(unsigned long& dwValue)
+	{
+		unsigned long* pBuf = (unsigned long*)mFront;
+
+		dwValue = *pBuf;
+		MoveFront(sizeof(unsigned long));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(float& fValue)
+	{
+		float* pBuf = (float*)mFront;
+
+		fValue = *pBuf;
+		MoveFront(sizeof(float));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(__int64& iValue)
+	{
+		__int64* pBuf = (__int64*)mFront;
+
+		iValue = *pBuf;
+		MoveFront(sizeof(__int64));
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator>>(double& dValue)
+	{
+		double* pBuf = (double*)mFront;
+
+		dValue = *pBuf;
+		MoveFront(sizeof(double));
+
+		return *this;
+	}
+
+	int CPacket::GetData(char* chpDest, int iLength)
+	{
+		int size = iLength >= mSize ? iLength : mSize;
+
+		memcpy(chpDest, mFront, size);
+		MoveFront(size);
+
+		return size;
+	}
+
+	int CPacket::GetData(wchar_t* chpDest, int iLength)
+	{
+		return GetData((char*)chpDest, iLength * 2);
+	}
+
+	int CPacket::PutData(const char* chpSrc, int iLength)
+	{
+		if (iLength > GetFreeSize())
+		{
+			resize();
+
+			// log
+		}
+
+		memcpy(mRear, chpSrc, iLength);
+		MoveRear(iLength);
+
+		return iLength;
+	}
+
+	int CPacket::PutData(const wchar_t* chpSrc, int iLength)
+	{
+		return PutData((const char*)chpSrc, iLength * 2);
+	}
+
+	CPacket& CPacket::operator<<(const char* s)
+	{
+		int len = (int)strlen(s);
+
+		PutData(s, len);
+
+		return *this;
+	}
+
+	CPacket& CPacket::operator<<(const wchar_t* s)
+	{
+		int len = (int)wcslen(s);
+
+		PutData(s, len);
+
+		return *this;
+	}
+
+	CPacket* CPacket::AllocAddRef()
+	{
+		CPacket* ret;
+#ifdef NEW_DELETE_VER
+		ret = new CPacket;
+#elif defined(MEMORY_POOL_VER)
+		ret = sPacketPool.Alloc();
+#elif defined(TLS_MEMORY_POOL_VER)
+		ret = sPacketPool.Alloc();
+#endif // NEW_DELETE_VER
+
+		ret->ResetCount();
+		return ret;
+	}
+
+	void CPacket::AddRef()
+	{
+		InterlockedIncrement((LONG*)&mRefCount.counter);
+	}
+
+	void CPacket::SubRef()
+	{
+		st_RefCount stdRef;
+
+		InterlockedDecrement((LONG*)&mRefCount.counter);
+
+		stdRef.counter = 0;
+		stdRef.refStaus.isFreed = 1;
+
+		if (InterlockedCompareExchange(&mRefCount.counter, stdRef.counter, 0) == 0)
+		{
+			Clear();
+#ifdef NEW_DELETE_VER
+			delete this;
+#elif defined(MEMORY_POOL_VER)
+			sPacketPool.Free(this);
+#elif defined(TLS_MEMORY_POOL_VER)
+			sPacketPool.Free(this);
+#endif // NEW_DELETE_VER
+		}
+	}
+
+	void CPacket::ResetCount()
+	{
+		mRefCount.refStaus.count = 1;
+		mRefCount.refStaus.isFreed = 0;
+	}
+
+	void CPacket::resize()
+	{
+		char* pBuffer = (char*)malloc((long long)mCapacity + eBUFFER_DEFAULT);
+
+		if (pBuffer != 0)
+			memcpy(pBuffer, mBuffer, mSize);
+
+		int frontIndex = (int)(mFront - mBuffer);
+		int rearIndex = (int)(mRear - mBuffer);
+
+		Release();
+
+		mBuffer = pBuffer;
+
+		mFront = mBuffer + frontIndex;
+		mRear = mBuffer + rearIndex;
+
+		mCapacity += eBUFFER_DEFAULT;
+	}
+
+	void CPacket::writeBuffer(const char* src, int size)
+	{
+		memcpy(mRear, src, size);
+		MoveRear(size);
+	}
 }

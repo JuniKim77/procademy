@@ -1,13 +1,16 @@
 #pragma once
+#pragma warning(disable: 6011)
+
 #include <new.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wtypes.h>
 #include "CCrashDump.h"
-#include "CDebugger.h"
+//#include "myNewMalloc.h"
 
-#define CHECKSUM_UNDER (0xAAAAAAAA)
-#define CHECKSUM_OVER (0xBBBBBBBB)
+//#define SAFE_MODE
+
+#define CHECKSUM_OVER (0xAAAAAAAA)
 
 namespace procademy
 {
@@ -22,11 +25,17 @@ namespace procademy
 				stpNextBlock = NULL;
 			}
 
-			unsigned int checkSum_under = CHECKSUM_UNDER;
+#ifdef SAFE_MODE
 			void* code;
-			DATA data;
+			alignas(64) DATA				data;
 			st_BLOCK_NODE* stpNextBlock;
-			unsigned int checkSum_over = CHECKSUM_OVER;
+			unsigned int					checkSum_over = CHECKSUM_OVER;
+#else
+			DATA				data;
+			st_BLOCK_NODE* stpNextBlock;
+#endif // SAFE_MODE
+
+			
 		};
 	public:
 		TC_LFObjectPool();
@@ -71,24 +80,22 @@ namespace procademy
 		// Return: (int) 사용중인 블럭 개수.
 		//////////////////////////////////////////////////////////////////////////
 		int		GetSize(void) { return mSize; }
-		DWORD GetMallocCount() { return mMallocCount; }
 
 	private:
 		void AllocMemory(int size);
 
 	private:
-		struct t_Top
+		struct alignas(64) t_Top
 		{
-			st_BLOCK_NODE* ptr_node = nullptr;
-			LONG64 counter = 0;
+			st_BLOCK_NODE*	ptr_node = nullptr;
+			LONG64			counter = 0;
 		};
 
-		DWORD mSize;
-		DWORD mCapacity;
-		DWORD mMallocCount = 0;
+		alignas(64) long	mSize;
+		alignas(64) long	mCapacity;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
-		alignas(16) t_Top _pFreeTop;
+		t_Top _pFreeTop;
 	};
 	template<typename DATA>
 	inline TC_LFObjectPool<DATA>::TC_LFObjectPool()
@@ -113,7 +120,12 @@ namespace procademy
 		while (node != nullptr)
 		{
 			st_BLOCK_NODE* pNext = node->stpNextBlock;
+
+#ifdef SAFE_MODE
+			_aligned_free(node);
+#else
 			free(node);
+#endif // SAFE_MODE
 			node = pNext;
 		}
 	}
@@ -124,24 +136,23 @@ namespace procademy
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
 
-		InterlockedIncrement(&mSize);
+		long capa = mCapacity;
 
-		if (mSize > mCapacity)
+		if (capa < InterlockedIncrement(&mSize))
 		{
-			InterlockedIncrement(&mCapacity);
 			AllocMemory(1);
+
+			InterlockedIncrement(&mCapacity);
 		}
 
 		do
 		{
-			do
-			{
-				top.ptr_node = _pFreeTop.ptr_node;
-				top.counter = _pFreeTop.counter;
-			} while (top.ptr_node != _pFreeTop.ptr_node);
-			ret = top.ptr_node;
+			top.counter = _pFreeTop.counter;
+			top.ptr_node = _pFreeTop.ptr_node;
 			next = top.ptr_node->stpNextBlock;
 		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, _pFreeTop.counter + 1, (LONG64)next, (LONG64*)&top) == 0);
+
+		ret = top.ptr_node;
 
 		if (mbPlacementNew)
 		{
@@ -155,43 +166,26 @@ namespace procademy
 	{
 		// prerequisite
 		st_BLOCK_NODE* top;
-		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
+
+
+#ifdef SAFE_MODE
+		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - 64);
 
 		if (pNode->code != this ||
-			pNode->checkSum_under != CHECKSUM_UNDER ||
 			pNode->checkSum_over != CHECKSUM_OVER)
 		{
 			CRASH();
 			return false;
 		}
+#else
+		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)pData;
+#endif // SAFE_MODE
 
 		do
 		{
 			top = _pFreeTop.ptr_node;
 			pNode->stpNextBlock = top;
 		} while (InterlockedCompareExchangePointer((PVOID*)&_pFreeTop, pNode, top) != top);
-
-		// prerequisite
-		/*alignas(16) t_Top top;
-		st_BLOCK_NODE* pNode = (st_BLOCK_NODE*)((char*)pData - sizeof(st_BLOCK_NODE::code) * 2);
-
-		if (pNode->code != this ||
-			pNode->checkSum_under != CHECKSUM_UNDER ||
-			pNode->checkSum_over != CHECKSUM_OVER)
-		{
-			CRASH();
-			return false;
-		}
-
-		do
-		{
-			do
-			{
-				top.ptr_node = _pFreeTop.ptr_node;
-				top.counter = _pFreeTop.counter;
-			} while (top.ptr_node != _pFreeTop.ptr_node);
-			pNode->stpNextBlock = top.ptr_node;
-		} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)pNode, (LONG64*)&top) == 0);*/
 
 		if (mbPlacementNew)
 		{
@@ -211,22 +205,19 @@ namespace procademy
 		for (int i = 0; i < size; ++i)
 		{
 			// prerequisite
-			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
-			InterlockedIncrement(&mMallocCount);
-			node->checkSum_under = CHECKSUM_UNDER;
+#ifdef SAFE_MODE
+			node = (st_BLOCK_NODE*)_aligned_malloc(sizeof(st_BLOCK_NODE), 64);
 			node->code = this;
-			if (mbPlacementNew)
+			node->checkSum_over = CHECKSUM_OVER;
+#else
+			node = (st_BLOCK_NODE*)malloc(sizeof(st_BLOCK_NODE));
+#endif // SAFE_MODE
+
+			if (false == mbPlacementNew)
 			{
 				new (&node->data) (DATA);
 			}
-			node->checkSum_over = CHECKSUM_OVER;
 
-			/*do
-			{
-				top.ptr_node = _pFreeTop.ptr_node;
-				top.counter = _pFreeTop.counter;
-				node->stpNextBlock = (st_BLOCK_NODE*)top.ptr_node;
-			} while (InterlockedCompareExchange128((LONG64*)&_pFreeTop, top.counter + 1, (LONG64)node, (LONG64*)&top) == 0);*/
 			do
 			{
 				top = _pFreeTop.ptr_node;

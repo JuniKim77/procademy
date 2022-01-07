@@ -8,7 +8,7 @@
 #define PriorHeight
 //#define LogCell
 #define G_Wegiht (1.5f)
-#define H_Wegiht (2.0f)
+#define H_Wegiht (1.0f)
 #define Reverse_Stand (2.0f)
 
 extern TileType g_Map[MAP_HEIGHT][MAP_WIDTH];

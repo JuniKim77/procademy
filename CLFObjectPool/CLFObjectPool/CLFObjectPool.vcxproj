@@ -116,6 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,6 +132,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,17 +142,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CCrashDump.cpp" />
-    <ClCompile Include="CDebugger.cpp" />
+    <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp" />
+    <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
     <ClCompile Include="CLFObjectPool.cpp" />
-    <ClCompile Include="CLogger.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CCrashDump.h" />
-    <ClInclude Include="CDebugger.h" />
+    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
+    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="CLFObjectPool.h" />
-    <ClInclude Include="CLogger.h" />
     <ClInclude Include="TC_LFObjectPool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

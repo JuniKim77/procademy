@@ -12,7 +12,7 @@
 #define Reverse_Stand (2.0f)
 
 extern TileType g_Map[MAP_HEIGHT][MAP_WIDTH];
-MyHeap g_openList(128);
+MyHeap g_openList(1280);
 RingBuffer g_NodeRing;
 bool g_Visit[MAP_HEIGHT][MAP_WIDTH];
 bool g_ColorTable[13][13][13];
@@ -118,7 +118,8 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			nY++;
 			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RR);
 			nY++;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RD, brush);
+			if (nY < MAP_HEIGHT && nX < MAP_WIDTH)
+				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RD, brush);
 			nX--;
 			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_DD);
 			nX--;
@@ -171,7 +172,8 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			nY++;
 			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LL);
 			nY++;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LD, brush);
+			if (nY < MAP_HEIGHT && nX >= 0)
+				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LD, brush);
 			nX++;
 			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_DD);
 			nX++;
@@ -224,7 +226,8 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			nY--;
 			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LL);
 			nY--;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LU, brush);
+			if (nY >= 0 && nX >= 0)
+				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LU, brush);
 			nX++;
 			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_UU);
 			nX++;
@@ -248,7 +251,7 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 				break;
 			}
 
-			if (nX >= 0 && g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL
+			if (nX >= 0 && g_Map[nY + 1][nX] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
 				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_LU, brush);
@@ -256,7 +259,7 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			++nX;
 			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_UU, brush);
 			++nX;
-			if (nX < MAP_WIDTH && g_Map[nY - 1][nX] == TileType::TILE_TYPE_WALL
+			if (nX < MAP_WIDTH && g_Map[nY + 1][nX] == TileType::TILE_TYPE_WALL
 				&& g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
 				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RU, brush);
@@ -268,7 +271,7 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			int nY = cur->position.y + 1;
 			int nX = cur->position.x + 1;
 
-			if (nY < FONT_HEIGHT && nX < MAP_WIDTH &&
+			if (nY < MAP_HEIGHT && nX < MAP_WIDTH &&
 				g_Map[nY][nX - 1] == TileType::TILE_TYPE_WALL &&
 				g_Map[nY][nX] == TileType::TILE_TYPE_PATH)
 			{
@@ -277,7 +280,8 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 			nY--;
 			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RR);
 			nY--;
-			SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RU, brush);
+			if (nY >= 0 && nX < MAP_WIDTH)
+				SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_RU, brush);
 			nX--;
 			//SearchDirection(cur, end, hdc, NodeDirection::NODE_DIRECTION_UU);
 			nX--;
@@ -317,6 +321,8 @@ bool JumpPointSearch(Coordi begin, Coordi end, HDC hdc)
 		default:
 			break;
 		}
+
+		g_NodeRing.Enqueue(cur);
 
 		Sleep(30);
 	}
@@ -444,17 +450,17 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY >= MAP_HEIGHT || nX >= MAP_WIDTH)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Visit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
 
 			DrawCell(nX, nY, brush, hdc);
@@ -658,17 +664,17 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY >= MAP_HEIGHT || nX < 0)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Visit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
 
 			DrawCell(nX, nY, brush, hdc);
@@ -870,17 +876,17 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY < 0 || nX < 0)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Visit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
 
 			DrawCell(nX, nY, brush, hdc);
@@ -1082,17 +1088,17 @@ bool SearchDirection(Node* pParent, Coordi end, HDC hdc, NodeDirection dir, HBRU
 		{
 			if (nY < 0 || nX >= MAP_WIDTH)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Map[nY][nX] == TileType::TILE_TYPE_WALL)
 			{
-				return false;
+				break;
 			}
 
 			if (g_Visit[nY][nX] == true)
 			{
-				return false;
+				break;
 			}
 
 			DrawCell(nX, nY, brush, hdc);
@@ -1251,7 +1257,7 @@ void InsertNode(Node* node, HDC hdc)
 {
 	g_openList.InsertData(node);
 	g_Visit[node->position.y][node->position.x] = true;
-	g_NodeRing.Enqueue(node);
+	//g_NodeRing.Enqueue(node);
 
 	DrawCell(node->position.x, node->position.y, g_Yellow, hdc);
 }

@@ -1,18 +1,20 @@
 #include <stdio.h>
 #include "CEchoServerNoLock.h"
 #include "CCrashDump.h"
+#include "CProfiler.h"
 
+#define dfTHREAD_NUM (3)
 #define dfSERVER_PORT (6000)
 
 int main()
 {
-	procademy::CCrashDump::CCrashDump();
+	CProfiler::InitProfiler(30);
 
-	CEchoServerNoLock server;
+	procademy::CCrashDump::SetHandlerDump();
 
-	server.Start(dfSERVER_PORT, 4, 4, false, 200);
+	procademy::CEchoServerNoLock server;
 
-	server.WaitForThreadsFin();
+	server.BeginServer();
 
 	//CDebugger::PrintLogOut(L"Debug.txt");
 

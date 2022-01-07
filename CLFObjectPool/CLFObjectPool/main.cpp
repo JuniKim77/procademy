@@ -6,7 +6,6 @@
 #include <iostream>
 #include <process.h>
 #include "CCrashDump.h"
-#include "CDebugger.h"
 #include "TC_LFObjectPool.h"
 
 #define THREAD_SIZE (3)
@@ -48,8 +47,6 @@ int main()
 #endif
 
 	procademy::CCrashDump::SetHandlerDump();
-	CDebugger::Initialize();
-	CDebugger::SetDirectory(L"./Debugs");
 
 	HANDLE hThreads[THREAD_SIZE + 1];
 
@@ -96,8 +93,6 @@ int main()
 	{
 		CloseHandle(hThreads[i]);
 	}
-
-	CDebugger::Destroy();
 
 	return 0;
 }

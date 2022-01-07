@@ -1,15 +1,15 @@
 #define TEMPLE
 
 #include "TC_LFQueue.h"
+#include "TC_LFQueue64.h"
 #include "CLogger.h"
-#include "CLFQueue.h"
 #include "CCrashDump.h"
 #include <process.h>
 #include <wchar.h>
 
 #define THREAD_SIZE (3)
-#define MAX_ALLOC (30)
-#define THREAD_ALLOC (10)
+#define MAX_ALLOC (6)
+#define THREAD_ALLOC (2)
 
 struct st_DATA
 {
@@ -25,20 +25,14 @@ unsigned int WINAPI WorkerThread(LPVOID lpParam);
 unsigned int WINAPI MonitorThread(LPVOID lpParam);
 void Init();
 
-TC_LFQueue<st_DATA*> g_q;
+procademy::TC_LFQueue<st_DATA*> g_q;
 
 long PushTPS = 0;
 long DequeueTPS = 0;
 
-DWORD g_records;
-DWORD g_index;
-
 int main()
 {
 	procademy::CCrashDump::SetHandlerDump();
-
-	g_records = TlsAlloc();
-	g_index = TlsAlloc();
 
 	Init();
 
@@ -93,12 +87,6 @@ int main()
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam)
 {
-	st_DEBUG* record = new st_DEBUG[USHRT_MAX];
-	TlsSetValue(g_records, record);
-	USHORT* index = new USHORT;
-	*index = 0;
-	TlsSetValue(g_index, index);
-
 	st_DATA* pDataArray[THREAD_ALLOC];
 	//st_DEBUG* pDataInfo[THREAD_ALLOC];
 
@@ -199,11 +187,7 @@ unsigned int __stdcall MonitorThread(LPVOID lpParam)
 
 void Init()
 {
-	st_DEBUG* record = new st_DEBUG[USHRT_MAX];
-	TlsSetValue(g_records, record);
 	USHORT* index = new USHORT;
-	*index = 0;
-	TlsSetValue(g_index, index);
 
 	st_DATA* pDataArray[MAX_ALLOC];
 

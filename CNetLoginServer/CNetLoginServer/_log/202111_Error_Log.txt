@@ -1,0 +1,28 @@
+[ERROR] [8] [11/25/21 13:11:58] Listen Socket [Error: 10004]
+
+
+[ERROR] [8] [11/25/21 17:00:09] Listen Socket [Error: 10004]
+
+
+[ERROR] [3] [11/25/21 23:03:13] Socket Bind [Error: 10048]
+
+
+[ERROR] [4] [11/25/21 23:03:13] Begin Server Error
+
+
+[ERROR] [3] [11/25/21 23:03:31] Socket Bind [Error: 10048]
+
+
+[ERROR] [4] [11/25/21 23:03:31] Begin Server Error
+
+
+[ERROR] [3] [11/25/21 23:08:38] Socket Bind [Error: 10048]
+
+
+[ERROR] [4] [11/25/21 23:08:38] Begin Server Error
+
+
+[ERROR] [3] [11/28/21 13:29:48] Socket Bind [Error: 10048]
+[ERROR] [4] [11/28/21 13:29:48] Begin Server Error
+[ERROR] [8] [11/28/21 13:30:20] [Query: SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = 30431; - 17407ms Too Long Time]
+[ERROR] [9] [11/28/21 13:30:36] [Query: SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = 30226; - 7391ms Too Long Time]
