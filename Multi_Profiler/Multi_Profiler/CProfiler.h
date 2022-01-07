@@ -61,6 +61,7 @@ public:
 	static void End(const WCHAR* szName);
 	static void SetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type);
 	static void Print();
+	static void PrintAvg();
 
 private:
 	int SearchName(const WCHAR* s);

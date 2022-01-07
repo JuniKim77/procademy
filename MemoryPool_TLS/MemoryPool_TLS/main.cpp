@@ -2,6 +2,7 @@
 #include "CProfiler.h"
 #include <process.h>
 #include <wchar.h>
+#include "TC_LFQueue.h"
 
 #define dfTHREAD_SIZE (3)
 #define dfTEST_SIZE (10000)
@@ -18,6 +19,7 @@ public:
 
 unsigned int WINAPI MonitorThread(LPVOID lpParam);
 unsigned int WINAPI WorkerThread(LPVOID lpParam);
+void Init();
 
 void TLS_ALLOC_PROC();
 void TLS_FREE_PROC();
@@ -32,11 +34,14 @@ alignas(64) long FreeTPS;
 __declspec(thread) CTest* arr1[dfTEST_SIZE];
 __declspec(thread) CTest* arr2[dfTEST_SIZE];
 procademy::ObjectPool_TLS<CTest> g_pool_tls;
+procademy::TC_LFQueue<CTest*> g_q;
 
 int main()
 {
 	procademy::CCrashDump::SetHandlerDump();
 	//CProfiler::InitProfiler(dfTHREAD_SIZE);
+
+	Init();
 
 	HANDLE hThreads[dfTHREAD_SIZE + 1];
 
@@ -118,11 +123,10 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
 			pDataArray[i] = g_pool_tls.Alloc();
-			pDataArray[i]->data = 0x0000000055555555;
-			pDataArray[i]->count = 0;
 
 			InterlockedIncrement((long*)&AllocTPS);
 		}
+
 		// Check Init Data Value
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
@@ -132,6 +136,28 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 				CRASH();
 			}
 		}
+
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			g_q.Enqueue(pDataArray[i]);
+		}
+
+		Sleep(0);
+
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			g_q.Dequeue(&pDataArray[i]);
+		}
+
+		for (int i = 0; i < THREAD_ALLOC; i++)
+		{
+			if (pDataArray[i]->data != 0x0000000055555555 ||
+				pDataArray[i]->count != 0)
+			{
+				CRASH();
+			}
+		}
+
 		// Increment
 		for (int i = 0; i < THREAD_ALLOC; i++)
 		{
@@ -177,6 +203,23 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 	}
 
 	return 0;
+}
+
+void Init()
+{
+	CTest* pDataArray[200];
+
+	for (DWORD i = 0; i < 200; ++i)
+	{
+		pDataArray[i] = g_pool_tls.Alloc();
+		pDataArray[i]->data = 0x0000000055555555;
+		pDataArray[i]->count = 0;
+	}
+
+	for (DWORD i = 0; i < 200; ++i)
+	{
+		g_pool_tls.Free(pDataArray[i]);
+	}
 }
 
 void TLS_ALLOC_PROC()

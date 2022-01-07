@@ -13,8 +13,8 @@
 
 struct st_DATA
 {
-	LONG64 data;
-	LONG64 count;
+	LONG64 data = 0x0000000055555555;
+	LONG64 count = 0;
 };
 
 using namespace std;

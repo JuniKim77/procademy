@@ -239,7 +239,7 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 		double avg;
 		double freq = f.QuadPart / 1000000.0;
 
-		if (mProfiles[i].iCall > 2)
+		if (mProfiles[i].iCall > 4)
 		{
 			for (int j = 0; j < 2; ++j)
 			{
@@ -429,6 +429,54 @@ void CProfiler::Print()
 		s_profilers[i]->ProfileDataOutText(fileName);
 		s_profilers[i]->ProfileReset();
 	}
+}
+
+void CProfiler::PrintAvg()
+{
+	WCHAR fileName[FILE_NAME_MAX] = L"Profile";
+
+	CProfiler::SetProfileFileName(fileName);
+
+	int curIndex = s_ProfilerIndex;
+
+	for (int i = 0; i < curIndex; ++i)
+	{
+		for (int j = 0; j < PROFILE_MAX; ++j)
+		{
+			if (s_profilers[i]->mProfiles[j].bFlag == false)
+				break;
+
+			LARGE_INTEGER f;
+
+			QueryPerformanceFrequency(&f);
+			__int64 time = s_profilers[i]->mProfiles[j].iTotalTime;
+			double avg;
+
+			if (s_profilers[i]->mProfiles[j].iCall > 4)
+			{
+				for (int t = 0; t < 2; ++t)
+				{
+					time -= s_profilers[i]->mProfiles[j].iMax[t];
+					time -= s_profilers[i]->mProfiles[j].iMin[t];
+				}
+
+				avg = time / (s_profilers[i]->mProfiles[j].iCall - 4);
+			}
+			else
+			{
+				avg = time / (s_profilers[i]->mProfiles[j].iCall);
+			}
+
+			s_profilers[s_ProfilerIndex]->SetRecord(s_profilers[i]->mProfiles[j].szName, 
+				avg, PROFILE_TYPE::MICRO_SECONDS);
+		}
+		
+		s_profilers[i]->ProfileDataOutText(fileName);
+		s_profilers[i]->ProfileReset();
+	}
+
+	s_profilers[curIndex]->ProfileDataOutText(fileName);
+	s_profilers[curIndex]->ProfileReset();
 }
 
 int CProfiler::SearchName(const WCHAR* s)

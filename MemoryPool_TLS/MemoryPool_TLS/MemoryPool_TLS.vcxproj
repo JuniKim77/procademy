@@ -116,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\Multi_Profiler\Multi_Profiler;..\..\CSVReader\CSVReader;..\..\CrashDump\CrashDump;D:\Procademy\CLFObjectPool\CLFObjectPool;..\..\TextParser\TextParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Multi_Profiler\Multi_Profiler;..\..\CSVReader\CSVReader;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,7 +132,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\Multi_Profiler\Multi_Profiler;..\..\CSVReader\CSVReader;..\..\CrashDump\CrashDump;D:\Procademy\CLFObjectPool\CLFObjectPool;..\..\TextParser\TextParser;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Multi_Profiler\Multi_Profiler;..\..\CSVReader\CSVReader;..\..\CrashDump\CrashDump;..\..\CLFObjectPool\CLFObjectPool;..\..\TextParser\TextParser;..\..\CLF_Queue\CLF_Queue;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -150,6 +150,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h" />
+    <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="..\..\CSVReader\CSVReader\CSVReader.h" />
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h" />

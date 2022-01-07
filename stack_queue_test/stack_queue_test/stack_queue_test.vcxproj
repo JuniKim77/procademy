@@ -117,7 +117,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\..\CLF_Queue\CLF_Queue;..\..\CSafeQueue\CSafeQueue;..\..\LockFreeStack\LockFreeStack;..\..\Multi_Profiler\Multi_Profiler;..\..\TextParser\TextParser;..\..\CLFObjectPool\CLFObjectPool;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,7 +132,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <AdditionalIncludeDirectories>..\..\CLF_Queue\CLF_Queue;..\..\CSafeQueue\CSafeQueue;..\..\LockFreeStack\LockFreeStack;..\..\Multi_Profiler\Multi_Profiler;..\..\TextParser\TextParser;..\..\CLFObjectPool\CLFObjectPool;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>

@@ -95,6 +95,7 @@ namespace procademy
 		DWORD myID = GetCurrentThreadId();
 
 		if (chunk == nullptr || chunk->mAllocCount == CChunk::MAX_SIZE || chunk->threadID != myID)
+		//if (chunk == nullptr || chunk->threadID != myID || chunk->mAllocCount == CChunk::MAX_SIZE)
 		{
 			chunk = mMemoryPool->Alloc();
 			//packetLog(30040, GetCurrentThreadId(), chunk, nullptr, chunk->mAllocCount, chunk->mFreeCount);
@@ -169,7 +170,7 @@ namespace procademy
 		if (InterlockedIncrement(&mFreeCount) == CChunk::MAX_SIZE)
 		{
 			//packetLog(40040, GetCurrentThreadId(), this, block, mAllocCount, ret);
-			block->pOrigin->threadID = 0;
+			//block->pOrigin->threadID = 0;
 			pObjPool->mMemoryPool->Free(block->pOrigin);
 		}
 
