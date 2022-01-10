@@ -7,8 +7,9 @@
 #include "TC_LFStack.h"
 #include <stdio.h>
 
-#define dfTHREAD_NUM (8)
-#define dfCHUNK_SIZE (1000)
+#define dfTHREAD_MAX (16)
+#define dfCHUNK_SIZE (10000)
+#define dfTRY_NUM (1000)
 
 using namespace std;
 
@@ -32,6 +33,7 @@ alignas(64) bool g_spinQueue;
 procademy::TC_LFQueue<int*> g_lfQueue;
 
 int* g_data;
+int g_thread_num;
 
 void TestFunc(unsigned int WINAPI func(LPVOID arg));
 
@@ -39,7 +41,9 @@ int main()
 {
 	srand(time(NULL));
 	CProfiler::InitProfiler(100);
-	HANDLE handles[dfTHREAD_NUM];
+	
+	wprintf_s(L"Thread Num : ");
+	scanf_s("%d", &g_thread_num);
 
 	init();
 
@@ -60,15 +64,15 @@ int main()
 
 unsigned int __stdcall stdQueue(LPVOID arg)
 {
-	int* localNums[dfCHUNK_SIZE];
+	int* localNums;
 
-	for (int t = 0; t < dfCHUNK_SIZE; ++t)
+	for (int t = 0; t < dfTRY_NUM; ++t)
 	{
 		CProfiler::Begin(L"stdQ");
 		for (int i = 0; i < dfCHUNK_SIZE; ++i)
 		{
 			AcquireSRWLockExclusive(&g_stdQueueLock);
-			localNums[i] = g_stdQueue.front();
+			localNums = g_stdQueue.front();
 			g_stdQueue.pop();
 			ReleaseSRWLockExclusive(&g_stdQueueLock);
 		}
@@ -76,7 +80,7 @@ unsigned int __stdcall stdQueue(LPVOID arg)
 		for (int i = 0; i < dfCHUNK_SIZE; ++i)
 		{
 			AcquireSRWLockExclusive(&g_stdQueueLock);
-			g_stdQueue.push(localNums[i]);
+			g_stdQueue.push(localNums);
 			ReleaseSRWLockExclusive(&g_stdQueueLock);
 		}
 		CProfiler::End(L"stdQ");
@@ -87,18 +91,18 @@ unsigned int __stdcall stdQueue(LPVOID arg)
 
 unsigned int __stdcall lfQueue(LPVOID arg)
 {
-	int* localNums[dfCHUNK_SIZE];
+	int* localNums;
 
-	for (int t = 0; t < dfCHUNK_SIZE; ++t)
+	for (int t = 0; t < dfTRY_NUM; ++t)
 	{
 		CProfiler::Begin(L"lfQ");
 		for (int i = 0; i < dfCHUNK_SIZE; ++i)
 		{
-			g_lfQueue.Dequeue(&localNums[i]);
+			g_lfQueue.Dequeue(&localNums);
 		}
 		for (int i = 0; i < dfCHUNK_SIZE; ++i)
 		{
-			g_lfQueue.Enqueue(localNums[i]);
+			g_lfQueue.Enqueue(localNums);
 		}
 		CProfiler::End(L"lfQ");
 	}
@@ -108,9 +112,9 @@ unsigned int __stdcall lfQueue(LPVOID arg)
 
 unsigned int __stdcall spinQueue(LPVOID arg)
 {
-	int* localNums[dfCHUNK_SIZE];
+	int* localNums;
 
-	for (int t = 0; t < dfCHUNK_SIZE; ++t)
+	for (int t = 0; t < dfTRY_NUM; ++t)
 	{
 		CProfiler::Begin(L"spinQ");
 		for (int i = 0; i < dfCHUNK_SIZE; ++i)
@@ -118,7 +122,7 @@ unsigned int __stdcall spinQueue(LPVOID arg)
 			while (InterlockedExchange8((char*)&g_spinQueue, true) == true)
 			{
 			}
-			localNums[i] = g_stdQueue.front();
+			localNums = g_stdQueue.front();
 			g_stdQueue.pop();
 			g_spinQueue = false;
 		}
@@ -127,7 +131,7 @@ unsigned int __stdcall spinQueue(LPVOID arg)
 			while (InterlockedExchange8((char*)&g_spinQueue, true) == true)
 			{
 			}
-			g_stdQueue.push(localNums[i]);
+			g_stdQueue.push(localNums);
 			g_spinQueue = false;
 		}
 		CProfiler::End(L"spinQ");
@@ -138,22 +142,22 @@ unsigned int __stdcall spinQueue(LPVOID arg)
 
 unsigned int __stdcall stdStack(LPVOID arg)
 {
-	int* localNums[dfCHUNK_SIZE];
+	int* localNums;
 
-	for (int t = 0; t < dfCHUNK_SIZE; ++t)
+	for (int t = 0; t < dfTRY_NUM; ++t)
 	{
 		CProfiler::Begin(L"stdStack");
 		for (int i = 0; i < dfCHUNK_SIZE; ++i)
 		{
 			AcquireSRWLockExclusive(&g_stdStackLock);
-			localNums[i] = g_stdStack.top();
+			localNums = g_stdStack.top();
 			g_stdStack.pop();
 			ReleaseSRWLockExclusive(&g_stdStackLock);
 		}
 		for (int i = 0; i < dfCHUNK_SIZE; ++i)
 		{
 			AcquireSRWLockExclusive(&g_stdStackLock);
-			g_stdStack.push(localNums[i]);
+			g_stdStack.push(localNums);
 			ReleaseSRWLockExclusive(&g_stdStackLock);
 		}
 		CProfiler::End(L"stdStack");
@@ -164,18 +168,18 @@ unsigned int __stdcall stdStack(LPVOID arg)
 
 unsigned int __stdcall lfStack(LPVOID arg)
 {
-	int* localNums[dfCHUNK_SIZE];
+	int* localNums;
 
-	for (int t = 0; t < dfCHUNK_SIZE; ++t)
+	for (int t = 0; t < dfTRY_NUM; ++t)
 	{
 		CProfiler::Begin(L"lfStack");
 		for (int i = 0; i < dfCHUNK_SIZE; ++i)
 		{
-			g_lfStack.Pop(&localNums[i]);
+			g_lfStack.Pop(&localNums);
 		}
 		for (int i = 0; i < dfCHUNK_SIZE; ++i)
 		{
-			g_lfStack.Push(localNums[i]);
+			g_lfStack.Push(localNums);
 		}
 		CProfiler::End(L"lfStack");
 	}
@@ -185,9 +189,9 @@ unsigned int __stdcall lfStack(LPVOID arg)
 
 unsigned int __stdcall spinStack(LPVOID arg)
 {
-	int* localNums[dfCHUNK_SIZE];
+	int* localNums;
 
-	for (int t = 0; t < dfCHUNK_SIZE; ++t)
+	for (int t = 0; t < dfTRY_NUM; ++t)
 	{
 		CProfiler::Begin(L"spinStack");
 		for (int i = 0; i < dfCHUNK_SIZE; ++i)
@@ -195,7 +199,7 @@ unsigned int __stdcall spinStack(LPVOID arg)
 			while (InterlockedExchange8((char*)&g_spinStack, true) == true)
 			{
 			}
-			localNums[i] = g_stdStack.top();
+			localNums = g_stdStack.top();
 			g_stdStack.pop();
 			g_spinStack = false;
 		}
@@ -204,7 +208,7 @@ unsigned int __stdcall spinStack(LPVOID arg)
 			while (InterlockedExchange8((char*)&g_spinStack, true) == true)
 			{
 			}
-			g_stdStack.push(localNums[i]);
+			g_stdStack.push(localNums);
 			g_spinStack = false;
 		}
 		CProfiler::End(L"spinStack");
@@ -218,9 +222,9 @@ void init()
 	InitializeSRWLock(&g_stdStackLock);
 	InitializeSRWLock(&g_stdQueueLock);
 
-	g_data = new int[dfTHREAD_NUM * dfCHUNK_SIZE];
+	g_data = new int[g_thread_num * dfCHUNK_SIZE];
 
-	for (int i = 0; i < dfTHREAD_NUM * dfCHUNK_SIZE; ++i)
+	for (int i = 0; i < g_thread_num * dfCHUNK_SIZE; ++i)
 	{
 		g_stdQueue.push(&g_data[i]);
 		g_lfQueue.Enqueue(&g_data[i]);
@@ -236,14 +240,14 @@ void Destroy()
 
 void TestFunc(unsigned int __stdcall func(LPVOID arg))
 {
-	HANDLE handles[dfTHREAD_NUM];
+	HANDLE handles[dfTHREAD_MAX];
 
-	for (int i = 0; i < dfTHREAD_NUM; ++i)
+	for (int i = 0; i < g_thread_num; ++i)
 	{
 		handles[i] = (HANDLE)_beginthreadex(nullptr, 0, func, nullptr, 0, nullptr);
 	}
 
-	DWORD retval = WaitForMultipleObjects(dfTHREAD_NUM, handles, true, INFINITE);
+	DWORD retval = WaitForMultipleObjects(g_thread_num, handles, true, INFINITE);
 
 	switch (retval)
 	{
