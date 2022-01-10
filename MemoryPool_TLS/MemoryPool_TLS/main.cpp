@@ -5,7 +5,7 @@
 #include "TC_LFQueue.h"
 
 #define dfTHREAD_SIZE (3)
-#define dfTEST_SIZE (10000)
+#define dfTEST_SIZE (100)
 #define THREAD_ALLOC (2)
 #define MAX_ALLOC (6)
 
@@ -207,16 +207,16 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam)
 
 void Init()
 {
-	CTest* pDataArray[200];
+	CTest* pDataArray[10000];
 
-	for (DWORD i = 0; i < 200; ++i)
+	for (DWORD i = 0; i < 10000; ++i)
 	{
 		pDataArray[i] = g_pool_tls.Alloc();
 		pDataArray[i]->data = 0x0000000055555555;
 		pDataArray[i]->count = 0;
 	}
 
-	for (DWORD i = 0; i < 200; ++i)
+	for (DWORD i = 0; i < 10000; ++i)
 	{
 		g_pool_tls.Free(pDataArray[i]);
 	}

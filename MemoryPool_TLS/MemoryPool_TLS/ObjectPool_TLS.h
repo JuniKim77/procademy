@@ -2,7 +2,7 @@
 #include "TC_LFObjectPool.h"
 #include <wtypes.h>
 
-struct packetDebug;
+//struct packetDebug;
 
 //extern USHORT g_debugIdx;
 //extern packetDebug g_packetDebugs[USHRT_MAX + 1];
