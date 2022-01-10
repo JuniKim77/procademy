@@ -540,13 +540,6 @@ void procademy::CMMOServer::GQCSProc()
 			return;
 		}
 
-		if (pOverlapped == nullptr) // I/O Fail
-		{
-			OnError(10000, L"IOCP Error");
-
-			return;
-		}
-
 		session = (CSession*)completionKey;
 
 		if (transferredSize != 0)
