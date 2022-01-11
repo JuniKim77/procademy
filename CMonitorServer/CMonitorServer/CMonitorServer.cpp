@@ -116,7 +116,7 @@ bool procademy::CMonitorServer::DBProc()
 
     while (!mbExit)
     {
-        DWORD retval = WaitForSingleObjectEx(dummyevent, 10000, true);
+        DWORD retval = WaitForSingleObjectEx(dummyevent, 60000, true);
 
         switch (retval)
         {
