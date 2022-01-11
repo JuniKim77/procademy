@@ -19,18 +19,18 @@ procademy::CMMOEchoServer::CMMOEchoServer()
 
 procademy::CMMOEchoServer::~CMMOEchoServer()
 {
-    //delete[] mPlayers;
-    _aligned_free(mPlayers);
+    delete[] mPlayers;
+    //_aligned_free(mPlayers);
 }
 
 void procademy::CMMOEchoServer::AllocSessions(int num)
 {
-    //mPlayers = new CPlayer[num];
-    mPlayers = (CPlayer*)_aligned_malloc(sizeof(CPlayer) * num, 64);
+    mPlayers = new CPlayer[num];
+    //mPlayers = (CPlayer*)_aligned_malloc(sizeof(CPlayer) * num, 64);
 
     for (int i = 0; i < num; ++i)
     {
-		new (&mPlayers[i]) CPlayer;
+		//new (&mPlayers[i]) CPlayer;
         mPlayers[i].SetServer(this);
         SetSession(&mPlayers[i]);
     }

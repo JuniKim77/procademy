@@ -91,7 +91,7 @@ namespace procademy
 			LONG64			counter = 0;
 		};
 
-		alignas(64) long	mSize;
+		long	mSize; // Interlock
 		alignas(64) long	mCapacity;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.

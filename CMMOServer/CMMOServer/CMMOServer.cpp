@@ -499,7 +499,7 @@ void procademy::CMMOServer::MonitorProc()
 		if (retval == WAIT_TIMEOUT)
 		{
 			mMonitor.prevRecvTPS = recvTPS;
-			mMonitor.prevSendTPS = sendTPS;
+			mMonitor.prevSendTPS = maSendTPS;
 			mMonitor.acceptTotal = acceptTotal;
 			mMonitor.acceptTPS = acceptTPS;
 			mMonitor.prevSendLoopCount = sendLoopCount;
@@ -510,7 +510,7 @@ void procademy::CMMOServer::MonitorProc()
 			authLoopCount = 0;
 			gameLoopCount = 0;
 			recvTPS = 0;
-			sendTPS = 0;
+			maSendTPS = 0;
 			acceptTPS = 0;
 		}
 	}
@@ -774,7 +774,7 @@ void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSiz
 void procademy::CMMOServer::CompleteSend(CSession* session, DWORD transferredSize)
 {
 	CNetPacket* packet;
-	InterlockedAdd((LONG*)&sendTPS, session->numSendingPacket);
+	InterlockedAdd((LONG*)&maSendTPS, session->numSendingPacket);
 	for (int i = 0; i < session->numSendingPacket; ++i)
 	{
 		packet = session->sendQ.Dequeue();

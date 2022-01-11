@@ -46,6 +46,6 @@ namespace procademy
 		WCHAR					mMonitorIP[32];
 		int						mServerNo;
 		CMonitorClient			mMonitorClient;		
-		alignas(64) DWORD		mLoginCount = 0;
+		DWORD					mLoginCount = 0; // Interlock
 	};
 }

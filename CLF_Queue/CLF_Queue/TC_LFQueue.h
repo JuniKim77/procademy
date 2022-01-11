@@ -74,7 +74,7 @@ namespace procademy
 			LONG64 counter = -9999;
 		};
 
-		alignas(64) t_Top	mHead;        // 시작노드를 포인트한다.
+		t_Top	mHead;        // 시작노드를 포인트한다. // Interlock
 		alignas(64) t_Top	mTail;        // 마지막노드를 포인트한다.
 		alignas(64) int		mSize = 0;
 

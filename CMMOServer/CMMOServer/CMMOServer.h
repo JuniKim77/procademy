@@ -152,7 +152,7 @@ namespace procademy
 		/// <summary>
 		/// 모니터링 변수들
 		/// </summary>
-		alignas(64) DWORD		sendTPS;
+		DWORD					maSendTPS; // Interlock
 		alignas(64) DWORD		recvTPS;
 		DWORD					acceptTotal;
 		DWORD					acceptTPS;

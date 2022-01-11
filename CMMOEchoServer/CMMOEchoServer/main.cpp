@@ -5,7 +5,6 @@
 int main()
 {
 	procademy::CCrashDump::SetHandlerDump();
-	CProfiler::InitProfiler(20);
 
 	procademy::CMMOEchoServer server;
 
