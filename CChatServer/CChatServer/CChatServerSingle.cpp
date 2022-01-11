@@ -341,13 +341,11 @@ void procademy::CChatServerSingle::GQCSProcEx()
                 break;
             case MSG_TYPE_JOIN:
                 CProfiler::Begin(L"JoinProc");          
-                mRatioMonitor.joinCount++;
                 JoinProc(msg->sessionNo);
                 CProfiler::End(L"JoinProc");                
                 break;
             case MSG_TYPE_LEAVE:
                 CProfiler::Begin(L"LeaveProc");
-                InterlockedIncrement(&mRatioMonitor.leaveCount);
                 LeaveProc(msg->sessionNo);
                 CProfiler::End(L"LeaveProc");
                 break;
@@ -389,11 +387,9 @@ void procademy::CChatServerSingle::GQCSProcEx()
                 CompleteMessage(msg->sessionNo, msg->packet);
                 break;
             case MSG_TYPE_JOIN:            
-                mRatioMonitor.joinCount++;
                 JoinProc(msg->sessionNo);
                 break;
             case MSG_TYPE_LEAVE:
-                InterlockedIncrement(&mRatioMonitor.leaveCount);
                 LeaveProc(msg->sessionNo);
                 break;
             case MSG_TYPE_TIMEOUT:
@@ -659,6 +655,8 @@ bool procademy::CChatServerSingle::JoinProc(SESSION_ID sessionNo)
         return false;
     }
 
+    mRatioMonitor.joinCount++;
+
     player = mPlayerPool.Alloc();
     player->sessionNo = sessionNo;
     player->lastRecvTime = GetTickCount64();
@@ -678,7 +676,8 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
     st_Player* player = FindPlayer(sessionNo);
 
-    InterlockedIncrement(&mRatioMonitor.loginCount);
+    //InterlockedIncrement(&mRatioMonitor.loginCount);
+    mRatioMonitor.loginCount++;
 
     if (player == nullptr)
     {
@@ -739,7 +738,8 @@ bool procademy::CChatServerSingle::LoginProc_Redis(SESSION_ID sessionNo, CNetPac
 {
     st_Player* player = FindPlayer(sessionNo);
 
-    InterlockedIncrement(&mRatioMonitor.loginCount);
+    //InterlockedIncrement(&mRatioMonitor.loginCount);
+    mRatioMonitor.loginCount++;
 
     if (player == nullptr)
     {
@@ -810,6 +810,9 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
         mLoginCount--;
     }
 
+    //InterlockedIncrement(&mRatioMonitor.leaveCount);
+    mRatioMonitor.leaveCount++;
+
     FreePlayer(player);
 
     DeletePlayer(sessionNo);
@@ -824,7 +827,8 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 	WORD	SectorY;
     st_Player* player = FindPlayer(sessionNo);
 
-    InterlockedIncrement(&mRatioMonitor.moveSectorCount);
+    //InterlockedIncrement(&mRatioMonitor.moveSectorCount);
+    mRatioMonitor.moveSectorCount++;
 
     if (player == nullptr)
     {
@@ -894,7 +898,8 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
     st_Player*          player = FindPlayer(sessionNo);
     st_Sector_Around    sectorAround;
 
-    InterlockedIncrement(&mRatioMonitor.sendMsgInCount);
+    //InterlockedIncrement(&mRatioMonitor.sendMsgInCount);
+    mRatioMonitor.sendMsgInCount++;
 
     if (player == nullptr)
     {
@@ -940,7 +945,8 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
     {
         DWORD count = SendMessageSectorAround(response, &sectorAround);
         mSector[player->curSectorY][player->curSectorX].sendCount += count;
-        InterlockedAdd(&mRatioMonitor.sendMsgOutCount, count);
+        //InterlockedAdd(&mRatioMonitor.sendMsgOutCount, count);
+        mRatioMonitor.sendMsgOutCount += count;
     }
     response->SubRef();
 
@@ -1324,9 +1330,9 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
         idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"MsgQ : ", mMsgQ.GetPoolCapacity(), mMsgQ.GetSize());
 #ifdef TLS_MEMORY_POOL_VER
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Net Packet Pool : ", CNetPacket::sPacketPool.GetCapacity(), CNetPacket::sPacketPool.GetSize());
-    idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"Player PoolAlloc Count : ", mPlayerPool.GetCapacity());
-    idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"CNetChunk PoolAlloc Count : ", CNetPacket::sPacketPool.mMemoryPool->GetCapacity());
-    idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"MsgQ PoolAlloc Count : ", mMsgQ.mMemoryPool.GetCapacity());
+    //idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"Player PoolAlloc Count : ", mPlayerPool.GetCapacity());
+    //idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"CNetChunk PoolAlloc Count : ", CNetPacket::sPacketPool.mMemoryPool->GetCapacity());
+    //idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"MsgQ PoolAlloc Count : ", mMsgQ.mMemoryPool.GetCapacity());
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"Lan Packet Pool : ", CLanPacket::sPacketPool.GetCapacity(), CLanPacket::sPacketPool.GetSize());
 #endif // TLS_MEMORY_POOL_VER
     idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %d\n", L"Update Msg Pool : ", mMsgPool.GetCapacity(), mMsgPool.GetSize());

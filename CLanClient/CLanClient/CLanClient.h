@@ -34,7 +34,7 @@ namespace procademy
 			RingBuffer					recvQ;
 			TC_LFQueue<CLanPacket*>		sendQ;
 			SOCKET						socket = INVALID_SOCKET;
-			alignas(64) SessionIoCount	ioBlock;
+			SessionIoCount				ioBlock; // Interlock
 			alignas(64) bool			isSending;
 			int							numSendingPacket = 0;
 			FD_SET						wset;

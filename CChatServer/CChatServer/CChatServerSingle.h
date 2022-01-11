@@ -21,12 +21,17 @@ namespace procademy
 	{
 		struct RatioMonitor
 		{
-			long			 joinCount;
-			alignas(64) long loginCount;
-			alignas(64) long leaveCount;
-			alignas(64) long moveSectorCount;
-			alignas(64) long sendMsgInCount;
-			alignas(64) long sendMsgOutCount;
+			long joinCount;
+			//alignas(64) long loginCount;
+			long loginCount;
+			//alignas(64) long leaveCount;
+			long leaveCount;
+			//alignas(64) long moveSectorCount;
+			long moveSectorCount;
+			//alignas(64) long sendMsgInCount;
+			long sendMsgInCount;
+			//alignas(64) long sendMsgOutCount;
+			long sendMsgOutCount;
 		};
 
 	private:
@@ -144,7 +149,7 @@ namespace procademy
 		CMonitorClient							mMonitorClient;
 
 		ObjectPool_TLS<st_MSG>					mMsgPool;
-		TC_LFQueue64<st_MSG*>					mMsgQ;
+		TC_LFQueue<st_MSG*>						mMsgQ;
 
 		HANDLE									mUpdateEvent = INVALID_HANDLE_VALUE;
 

@@ -132,7 +132,7 @@ namespace procademy
 	template<typename DATA>
 	inline DATA* TC_LFObjectPool<DATA>::Alloc(void)
 	{
-		alignas(16) t_Top top;
+		t_Top top;
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
 
@@ -198,7 +198,6 @@ namespace procademy
 	template<typename DATA>
 	inline void TC_LFObjectPool<DATA>::AllocMemory(int size)
 	{
-		//alignas(16) t_Top top;
 		st_BLOCK_NODE* top;
 		st_BLOCK_NODE* node = nullptr;
 
