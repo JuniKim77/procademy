@@ -8,10 +8,10 @@
 #include <wchar.h>
 #include <intrin.h>
 
-procademy::CProfilerClock** procademy::CProfilerClock::s_profilers = nullptr;
+procademy::CProfilerClock procademy::CProfilerClock::s_profilers[PROFILE_MAX];
 LONG procademy::CProfilerClock::s_ProfilerIndex = 0;
 DWORD procademy::CProfilerClock::s_MultiProfiler;
-SRWLOCK procademy::CProfilerClock::s_lock;
+bool procademy::CProfilerClock::s_spinlock = false;
 
 procademy::CProfilerClock::CProfilerClock()
 {
@@ -20,18 +20,6 @@ procademy::CProfilerClock::CProfilerClock()
 
 procademy::CProfilerClock::~CProfilerClock()
 {
-}
-
-void procademy::CProfilerClock::InitProfilerClock()
-{
-	s_MultiProfiler = TlsAlloc();
-	InitializeSRWLock(&s_lock);
-	s_profilers = new CProfilerClock*[PROFILE_MAX];
-
-	for (int i = 0; i < PROFILE_MAX; ++i)
-	{
-		s_profilers[i] = new CProfilerClock;
-	}
 }
 
 void procademy::CProfilerClock::ProfileBegin(const WCHAR* szName)
@@ -272,27 +260,21 @@ void procademy::CProfilerClock::SetProfileFileName(WCHAR* szFileName)
 	wcscat_s(szFileName, FILE_NAME_MAX, fileName);
 }
 
-void procademy::CProfilerClock::DestroyProfiler()
-{
-	for (int i = 0; i < s_ProfilerIndex; ++i)
-	{
-		delete s_profilers[i];
-	}
-
-	delete[] s_profilers;
-}
-
 void procademy::CProfilerClock::Begin(const WCHAR* szName)
 {
 	CProfilerClock* profiler = (CProfilerClock*)TlsGetValue(s_MultiProfiler);
 
 	if (profiler == nullptr)
 	{
-		AcquireSRWLockExclusive(&s_lock);
-		profiler = s_profilers[s_ProfilerIndex++];
+		while (InterlockedExchange8((char*)&s_spinlock, true) == true)
+		{
+		}
+
+		profiler = &s_profilers[s_ProfilerIndex++];
 		TlsSetValue(s_MultiProfiler, profiler);
 		profiler->SetThreadId();
-		ReleaseSRWLockExclusive(&s_lock);
+
+		s_spinlock = false;
 	}
 
 	profiler->ProfileBegin(szName);
@@ -311,11 +293,15 @@ void procademy::CProfilerClock::SetRecord(const WCHAR* szName, unsigned __int64 
 
 	if (profiler == nullptr)
 	{
-		AcquireSRWLockExclusive(&s_lock);
-		profiler = s_profilers[s_ProfilerIndex++];
+		while (InterlockedExchange8((char*)&s_spinlock, true) == true)
+		{
+		}
+
+		profiler = &s_profilers[s_ProfilerIndex++];
 		TlsSetValue(s_MultiProfiler, profiler);
 		profiler->SetThreadId();
-		ReleaseSRWLockExclusive(&s_lock);
+
+		s_spinlock = false;
 	}
 
 	profiler->ProfileSetRecord(szName, data);
@@ -329,8 +315,8 @@ void procademy::CProfilerClock::Print()
 
 	for (int i = 0; i < s_ProfilerIndex; ++i)
 	{
-		s_profilers[i]->ProfileDataOutText(fileName);
-		s_profilers[i]->ProfileReset();
+		s_profilers[i].ProfileDataOutText(fileName);
+		s_profilers[i].ProfileReset();
 	}
 }
 
@@ -346,37 +332,37 @@ void procademy::CProfilerClock::PrintAvg()
 	{
 		for (int j = 0; j < PROFILE_MAX; ++j)
 		{
-			if (s_profilers[i]->mProfiles[j].bFlag == false)
+			if (s_profilers[i].mProfiles[j].bFlag == false)
 				break;
 
 			LARGE_INTEGER f;
 
 			QueryPerformanceFrequency(&f);
-			__int64 time = s_profilers[i]->mProfiles[j].iTotalTime;
+			__int64 time = s_profilers[i].mProfiles[j].iTotalTime;
 			double avg;
 
-			if (s_profilers[i]->mProfiles[j].iCall > 4)
+			if (s_profilers[i].mProfiles[j].iCall > 4)
 			{
 				for (int t = 0; t < 2; ++t)
 				{
-					time -= s_profilers[i]->mProfiles[j].iMax[t];
-					time -= s_profilers[i]->mProfiles[j].iMin[t];
+					time -= s_profilers[i].mProfiles[j].iMax[t];
+					time -= s_profilers[i].mProfiles[j].iMin[t];
 				}
 
-				avg = time / (s_profilers[i]->mProfiles[j].iCall - 4);
+				avg = time / (s_profilers[i].mProfiles[j].iCall - 4);
 			}
 			else
 			{
-				avg = time / (s_profilers[i]->mProfiles[j].iCall);
+				avg = time / (s_profilers[i].mProfiles[j].iCall);
 			}
 
-			s_profilers[s_ProfilerIndex]->SetRecord(s_profilers[i]->mProfiles[j].szName, avg);
+			s_profilers[s_ProfilerIndex].SetRecord(s_profilers[i].mProfiles[j].szName, avg);
 		}
 
-		s_profilers[i]->ProfileDataOutText(fileName);
-		s_profilers[i]->ProfileReset();
+		s_profilers[i].ProfileDataOutText(fileName);
+		s_profilers[i].ProfileReset();
 	}
 
-	s_profilers[curIndex]->ProfileDataOutText(fileName);
-	s_profilers[curIndex]->ProfileReset();
+	s_profilers[curIndex].ProfileDataOutText(fileName);
+	s_profilers[curIndex].ProfileReset();
 }

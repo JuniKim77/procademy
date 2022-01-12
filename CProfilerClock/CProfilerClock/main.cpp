@@ -9,8 +9,6 @@ int main()
 {
 	int a = 0;
 
-	procademy::CProfilerClock::InitProfilerClock();
-
 	procademy::CProfilerClock::Begin(L"test");
 
 	for (int i = 0; i < 10000; ++i)

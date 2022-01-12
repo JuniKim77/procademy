@@ -44,19 +44,17 @@ namespace procademy
 
 	public:
 		static void SetProfileFileName(WCHAR* szFileName);
-		static void DestroyProfiler();
 		static void Begin(const WCHAR* szName);
 		static void End(const WCHAR* szName);
 		static void SetRecord(const WCHAR* szName, unsigned __int64 data);
 		static void Print();
 		static void PrintAvg();
-		static void InitProfilerClock();
 
 	public:
-		static CProfilerClock** s_profilers;
+		static CProfilerClock s_profilers[PROFILE_MAX];
 		static DWORD s_MultiProfiler;
 		static LONG s_ProfilerIndex;
-		static SRWLOCK s_lock;
+		static bool s_spinlock;
 
 	private:
 		typedef struct
@@ -79,6 +77,5 @@ namespace procademy
 
 		PROFILE_SAMPLE mProfiles[PROFILE_MAX];
 		DWORD mThreadId = 0;
-		int mColumnSize = 0;
 	};
 }

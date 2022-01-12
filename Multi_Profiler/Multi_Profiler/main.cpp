@@ -24,7 +24,6 @@ HANDLE g_hExitThreadEvent;
 
 int main()
 {
-	CProfiler::InitProfiler(dfTHREAD_NUM);
 	g_hExitThreadEvent = CreateEvent(NULL, false, false, nullptr);
 
 	HANDLE hThreads[dfTHREAD_NUM];

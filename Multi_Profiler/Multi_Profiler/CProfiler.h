@@ -16,16 +16,10 @@ public:
 		COUNT,
 	};
 public:
-	CProfiler(const WCHAR* szSettingFileName);
+	CProfiler();
 	~CProfiler();
 
 private:
-	/// <summary>
-	/// Profile Init
-	/// CSV File Load
-	/// </summary>
-	/// <param name="szSettingFileName">Setting File Name</param>
-	void ProfileInitialize(const WCHAR* szSettingFileName);
 	/// <summary>
 	/// Profile Begin
 	/// </summary>
@@ -55,8 +49,6 @@ private:
 
 public:
 	static void SetProfileFileName(WCHAR* szFileName);
-	static void InitProfiler(int num);
-	static void DestroyProfiler();
 	static void Begin(const WCHAR* szName);
 	static void End(const WCHAR* szName);
 	static void SetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type);
@@ -67,10 +59,10 @@ private:
 	int SearchName(const WCHAR* s);
 
 public:
-	static CProfiler** s_profilers;
+	static CProfiler s_profilers[PROFILE_MAX];
 	static DWORD s_MultiProfiler;
 	static LONG s_ProfilerIndex;
-	static SRWLOCK s_lock;
+	static bool s_spinlock;
 
 private:
 	typedef struct
@@ -89,20 +81,11 @@ private:
 
 	} PROFILE_SAMPLE;
 
-	struct Setting
-	{
-		WCHAR** colNames;
-		int* colSize;
-		int totalSize;
-	};
-
 	enum SEARCH_RESULT
 	{
 		SEARCH_RESULT_FULL = -1
 	};
 
 	PROFILE_SAMPLE mProfiles[PROFILE_MAX];
-	Setting mSetting;
 	DWORD mThreadId = 0;
-	int mColumnSize = 0;
 };
