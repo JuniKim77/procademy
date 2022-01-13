@@ -155,8 +155,6 @@ unsigned int __stdcall procademy::CMMOEchoServer::MonitorThread(LPVOID arg)
 
 void procademy::CMMOEchoServer::BeginThreads()
 {
-    CProfiler::InitProfiler(30);
-
     mMonitorThread = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, this, 0, nullptr);
 }
 
