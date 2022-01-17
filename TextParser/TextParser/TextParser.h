@@ -8,8 +8,8 @@ public:
 	TextParser();
 	~TextParser();
 	bool LoadFile(const WCHAR* fileName);
-	bool GetValue(const WCHAR* key, int* value);
-	bool GetValue(const WCHAR* key, WCHAR* value);
+	bool GetValue(const WCHAR* key, const WCHAR* _namespace, int* value);
+	bool GetValue(const WCHAR* key, const WCHAR* _namespace, WCHAR* value);
 
 private:
 	bool SkipNoneCommand(WCHAR** retBuffer);
@@ -18,6 +18,7 @@ private:
 	bool GetNextStringWord(WCHAR** retBuffer, int* pLength);
 	void GetEndWord(WCHAR** retBuffer);
 	void GetEndStringWord(WCHAR** retBuffer);
+	bool FindNamespace(WCHAR** retBuffer, const WCHAR* _namespace);
 
 private:
 	WCHAR* pBuffer;
