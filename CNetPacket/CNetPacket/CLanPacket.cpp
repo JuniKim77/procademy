@@ -47,6 +47,7 @@ namespace procademy
 	{
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mFront;
+		mbSetHeader = false;
 	}
 
 	int CLanPacket::MoveFront(int iSize)
@@ -420,6 +421,9 @@ namespace procademy
 
 	void CLanPacket::SetHeader()
 	{
+		if (mbSetHeader)
+			return;
+
 		*((USHORT*)mZero) = (USHORT)(mRear - mFront);
 	}
 

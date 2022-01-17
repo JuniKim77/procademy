@@ -592,13 +592,6 @@ namespace procademy
 				return;
 			}
 
-			if (pOverlapped == nullptr) // I/O Fail
-			{
-				OnError(10000, L"IOCP Error");
-
-				return;
-			}
-
 			session = (Session*)completionKey;
 
 			if (transferredSize != 0)
@@ -890,9 +883,6 @@ namespace procademy
 
 	CLF_NetServer::CLF_NetServer()
 	{
-		LoadInitFile(L"Server.cnf");
-		Init();
-		BeginThreads();
 	}
 
 	CLF_NetServer::~CLF_NetServer()
@@ -945,6 +935,22 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CNetServer");
 	}
 
+	void CLF_NetServer::Begin()
+	{
+		Init();
+		BeginThreads();
+	}
+
+	void CLF_NetServer::SetServerIP(const WCHAR* server)
+	{
+		wcscpy_s(mBindIP, _countof(mBindIP), server);
+	}
+
+	void CLF_NetServer::SetServerPort(USHORT port)
+	{
+		mPort = port;
+	}
+
 	bool CLF_NetServer::Disconnect(SESSION_ID SessionID)
 	{
 		Session* session = FindSession(SessionID);
@@ -960,8 +966,6 @@ namespace procademy
 		}
 
 		ret = CancelIoEx((HANDLE)session->socket, nullptr);
-
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Disconnect", SessionID);
 
 		DecrementIOProc(session, 40040);
 
@@ -981,8 +985,8 @@ namespace procademy
 			g_sessionDebugs[ret] = packet;*/
 			return;
 		}
-		/*ioDebugLog(20010, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
+		
+		packet->ReadySend();
 		packet->AddRef();
 		session->sendQ.Enqueue(packet);
 
@@ -1010,8 +1014,8 @@ namespace procademy
 			g_sessionDebugs[ret] = packet;*/
 			return;
 		}
-		/*ioDebugLog(20010, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
+
+		packet->ReadySend();
 		packet->AddRef();
 		session->sendQ.Enqueue(packet);
 
@@ -1019,58 +1023,5 @@ namespace procademy
 		PostQueuedCompletionStatus(mHcp, 0, (ULONG_PTR)session, (LPOVERLAPPED)1);
 
 		DecrementIOProc(session, 20020);
-	}
-
-	void CLF_NetServer::LoadInitFile(const WCHAR* fileName)
-	{
-		TextParser  tp;
-		int         num;
-		WCHAR       buffer[MAX_PARSER_LENGTH];
-		BYTE        code;
-		BYTE        key;
-
-		tp.LoadFile(fileName);
-
-		tp.GetValue(L"BIND_IP", mBindIP);
-
-		tp.GetValue(L"BIND_PORT", &num);
-		mPort = (u_short)num;
-
-		tp.GetValue(L"PACKET_CODE", &num);
-		code = (BYTE)num;
-		CNetPacket::SetCode(code);
-
-		tp.GetValue(L"PACKET_KEY", &num);
-		key = (BYTE)num;
-		CNetPacket::SetPacketKey(key);
-
-		tp.GetValue(L"IOCP_WORKER_THREAD", &num);
-		mWorkerThreadNum = (BYTE)num;
-
-		tp.GetValue(L"IOCP_ACTIVE_THREAD", &num);
-		mActiveThreadNum = (BYTE)num;
-
-		tp.GetValue(L"CLIENT_MAX", &num);
-		mMaxClient = (u_short)num;
-
-		tp.GetValue(L"NAGLE", buffer);
-		if (wcscmp(L"TRUE", buffer) == 0)
-			mbNagle = true;
-		else
-			mbNagle = false;
-
-		tp.GetValue(L"ZERO_COPY", buffer);
-		if (wcscmp(L"TRUE", buffer) == 0)
-			mbZeroCopy = true;
-		else
-			mbZeroCopy = false;
-
-		tp.GetValue(L"LOG_LEVEL", buffer);
-		if (wcscmp(buffer, L"DEBUG") == 0)
-			CLogger::setLogLevel(dfLOG_LEVEL_DEBUG);
-		else if (wcscmp(buffer, L"WARNING") == 0)
-			CLogger::setLogLevel(dfLOG_LEVEL_SYSTEM);
-		else if (wcscmp(buffer, L"ERROR") == 0)
-			CLogger::setLogLevel(dfLOG_LEVEL_ERROR);
 	}
 }

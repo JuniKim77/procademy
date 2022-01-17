@@ -45,12 +45,14 @@ namespace procademy
 		bool Connect(const WCHAR* serverIP, USHORT serverPort);	//바인딩 IP, 서버IP / 워커스레드 수 / 나글옵션
 		bool Disconnect();
 		bool SendPacket(CLanPacket* packet);
+		void SetThreadNum(BYTE worker, BYTE active);
 
 	protected:
 		CLanClient();
 		virtual ~CLanClient();
 		bool Start();
 		void Stop();
+		void Begin();
 
 		virtual void OnEnterJoinServer() = 0; //< 서버와의 연결 성공 후
 		virtual void OnLeaveServer() = 0; //< 서버와의 연결이 끊어졌을 때
@@ -62,6 +64,7 @@ namespace procademy
 		//	virtual void OnWorkerThreadEnd() = 0;
 
 		virtual void OnError(int errorcode, const WCHAR*) = 0;
+
 		void	SetZeroCopy(bool on);
 		void	SetNagle(bool on);
 
@@ -70,7 +73,6 @@ namespace procademy
 		static unsigned int WINAPI MonitorThread(LPVOID arg);
 
 		void	Init();
-		void	LoadInitFile(const WCHAR* fileName);
 		bool	CreateIOCP();
 		bool	BeginThreads();
 		bool	CreateSocket();
