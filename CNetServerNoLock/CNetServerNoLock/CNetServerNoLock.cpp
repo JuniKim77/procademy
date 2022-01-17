@@ -883,6 +883,10 @@ namespace procademy
 
 	CLF_NetServer::CLF_NetServer()
 	{
+		WORD		version = MAKEWORD(2, 2);
+		WSADATA		data;
+
+		int ret = WSAStartup(version, &data);
 	}
 
 	CLF_NetServer::~CLF_NetServer()

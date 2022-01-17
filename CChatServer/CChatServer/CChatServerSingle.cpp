@@ -69,9 +69,6 @@
 
 procademy::CChatServerSingle::CChatServerSingle()
 {
-	LoadInitFile(L"Server.cnf");
-	Init();
-	BeginThreads();
 }
 
 procademy::CChatServerSingle::~CChatServerSingle()
@@ -130,7 +127,10 @@ void procademy::CChatServerSingle::OnError(int errorcode, const WCHAR* log)
 
 bool procademy::CChatServerSingle::BeginServer()
 {
+	LoadInitFile(L"Server.cnf");
 	Begin();
+	Init();
+	BeginThreads();
 	mMonitorClient.BeginClient();
 	mMonitorClient.RunClient();
 
