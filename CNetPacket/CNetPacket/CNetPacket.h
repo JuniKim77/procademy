@@ -154,8 +154,7 @@ namespace procademy
 		static CNetPacket*	AllocAddRef();
 		void				AddRef();
 		void				SubRef();
-		void				SetHeader();
-		void				Encode();
+		void				ReadySend();
 		bool				Decode();
 
 		static int			GetPoolCapacity();
@@ -163,6 +162,9 @@ namespace procademy
 		static void			SetCode(BYTE code) { sCode = code; }
 		static void			SetPacketKey(BYTE key) { sPacketKey = key; }
 
+	private:
+		void				SetHeader();
+		void				Encode();
 
 	protected:
 		/// <summary>
@@ -193,6 +195,7 @@ namespace procademy
 		char*		mFront;
 		char*		mRear;
 		char*		mZero;
+		bool		mbHeaderSet = false;
 
 	public:
 		static BYTE	sCode;

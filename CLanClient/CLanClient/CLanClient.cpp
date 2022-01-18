@@ -9,9 +9,6 @@
 
 procademy::CLanClient::CLanClient()
 {
-    LoadInitFile(L"ClientInit.cnf");
-    Init();
-    BeginThreads();
 }
 
 procademy::CLanClient::~CLanClient()
@@ -40,6 +37,12 @@ bool procademy::CLanClient::Start()
 void procademy::CLanClient::Stop()
 {
     mbBegin = false;
+}
+
+void procademy::CLanClient::Begin()
+{
+    Init();
+    BeginThreads();
 }
 
 bool procademy::CLanClient::Connect(const WCHAR* serverIP, USHORT serverPort)
@@ -89,6 +92,7 @@ bool procademy::CLanClient::SendPacket(CLanPacket* packet)
         return false;
     }
 
+    packet->SetHeader();
     packet->AddRef();
     mClient.sendQ.Enqueue(packet);
 
@@ -103,6 +107,12 @@ bool procademy::CLanClient::SendPacket(CLanPacket* packet)
     DecrementIOProc(20020);
     
     return true;
+}
+
+void procademy::CLanClient::SetThreadNum(BYTE worker, BYTE active)
+{
+    mWorkerThreadNum = worker;
+    mActiveThreadNum = active;
 }
 
 void procademy::CLanClient::SetZeroCopy(bool on)
@@ -181,33 +191,6 @@ void procademy::CLanClient::Init()
     mhThreads = new HANDLE[(long long)mWorkerThreadNum + 1];
 
     CreateIOCP();
-}
-
-void procademy::CLanClient::LoadInitFile(const WCHAR* fileName)
-{
-    TextParser  tp;
-    int         num;
-    WCHAR       buffer[MAX_PARSER_LENGTH];
-
-    tp.LoadFile(fileName);
-
-    tp.GetValue(L"IOCP_WORKER_THREAD", &num);
-    mWorkerThreadNum = (BYTE)num;
-
-    tp.GetValue(L"IOCP_ACTIVE_THREAD", &num);
-    mActiveThreadNum = (BYTE)num;
-
-    tp.GetValue(L"NAGLE", buffer);
-    if (wcscmp(L"TRUE", buffer) == 0)
-        mbNagle = true;
-    else
-        mbNagle = false;
-
-    tp.GetValue(L"ZERO_COPY", buffer);
-    if (wcscmp(L"TRUE", buffer) == 0)
-        mbZeroCopy = true;
-    else
-        mbZeroCopy = false;
 }
 
 bool procademy::CLanClient::CreateIOCP()

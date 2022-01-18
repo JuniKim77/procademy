@@ -178,6 +178,8 @@ namespace procademy
 		char*		mFront;
 		char*		mRear;
 		char*		mZero;
+		bool		mbSetHeader = false;
+
 	public:
 #ifdef MEMORY_POOL_VER
 		static TC_LFObjectPool<CLanPacket> sPacketPool;

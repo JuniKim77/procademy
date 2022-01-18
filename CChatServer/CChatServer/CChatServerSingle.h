@@ -54,6 +54,7 @@ namespace procademy
 		virtual void	OnRecv(SESSION_ID SessionID, CNetPacket* packet) override;
 		virtual void	OnError(int errorcode, const WCHAR* log) override;
 		bool			BeginServer();
+		bool			RunServer();
 		void			WaitForThreadsFin();
 
 	private:
