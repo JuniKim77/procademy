@@ -39,7 +39,7 @@ namespace procademy
 			WSAOVERLAPPED							sendOverlapped;
 			RingBuffer								recvQ;
 			TC_LFQueue<CNetPacket*>					sendQ;
-			SessionIoCount							ioBlock; // Interlock
+			alignas(64) SessionIoCount				ioBlock; // Interlock
 			alignas(64) bool						isSending;
 			int										numSendingPacket = 0;
 			SOCKET									socket = INVALID_SOCKET;

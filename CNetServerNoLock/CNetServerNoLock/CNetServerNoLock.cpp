@@ -640,10 +640,9 @@ namespace procademy
 	{
 		session->recvQ.MoveRear(transferredSize);
 		CNetPacket::st_Header header;
-		DWORD count = 0;
 		bool status = true;
 
-		while (count < transferredSize)
+		while (1)
 		{
 			int useSize = session->recvQ.GetUseSize();
 
@@ -692,7 +691,6 @@ namespace procademy
 #endif			
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
-			count += (ret + sizeof(SHORT));
 			packet->SubRef();
 		}
 #ifdef PROFILE

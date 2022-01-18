@@ -685,7 +685,6 @@ bool procademy::CChatServerSingle::LoginProc(SESSION_ID sessionNo, CNetPacket* p
 
 	st_Player* player = FindPlayer(sessionNo);
 
-	//InterlockedIncrement(&mRatioMonitor.loginCount);
 	mRatioMonitor.loginCount++;
 
 	if (player == nullptr)
@@ -747,7 +746,6 @@ bool procademy::CChatServerSingle::LoginProc_Redis(SESSION_ID sessionNo, CNetPac
 {
 	st_Player* player = FindPlayer(sessionNo);
 
-	//InterlockedIncrement(&mRatioMonitor.loginCount);
 	mRatioMonitor.loginCount++;
 
 	if (player == nullptr)
@@ -812,6 +810,7 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
 	if (player->curSectorX != -1 && player->curSectorY != -1)
 	{
 		Sector_RemovePlayer(player->curSectorX, player->curSectorY, player);
+		mRatioMonitor.inSectorCount--;
 	}
 
 	if (player->bLogin)
@@ -819,7 +818,6 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
 		mLoginCount--;
 	}
 
-	//InterlockedIncrement(&mRatioMonitor.leaveCount);
 	mRatioMonitor.leaveCount++;
 
 	FreePlayer(player);
@@ -836,7 +834,6 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 	WORD	SectorY;
 	st_Player* player = FindPlayer(sessionNo);
 
-	//InterlockedIncrement(&mRatioMonitor.moveSectorCount);
 	mRatioMonitor.moveSectorCount++;
 
 	if (player == nullptr)
@@ -881,6 +878,10 @@ bool procademy::CChatServerSingle::MoveSectorProc(SESSION_ID sessionNo, CNetPack
 	{
 		Sector_RemovePlayer(player->curSectorX, player->curSectorY, player);
 	}
+	else
+	{
+		mRatioMonitor.inSectorCount++;
+	}
 
 	player->curSectorX = SectorX;
 	player->curSectorY = SectorY;
@@ -907,7 +908,6 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 	st_Player* player = FindPlayer(sessionNo);
 	st_Sector_Around    sectorAround;
 
-	//InterlockedIncrement(&mRatioMonitor.sendMsgInCount);
 	mRatioMonitor.sendMsgInCount++;
 
 	if (player == nullptr)
@@ -954,7 +954,6 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 	{
 		DWORD count = SendMessageSectorAround(response, &sectorAround);
 		mSector[player->curSectorY][player->curSectorX].sendCount += count;
-		//InterlockedAdd(&mRatioMonitor.sendMsgOutCount, count);
 		mRatioMonitor.sendMsgOutCount += count;
 	}
 	response->SubRef();
@@ -1332,6 +1331,7 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
 	idx += swprintf_s(s + idx, size - idx, L"========================================\n");
 	idx += swprintf_s(s + idx, size - idx, L"%22s%lld\n", L"Session Num : ", mPlayerMap.size());
 	idx += swprintf_s(s + idx, size - idx, L"%22s%u\n", L"Player Num : ", mLoginCount);
+	idx += swprintf_s(s + idx, size - idx, L"%22s%d\n", L"In Sector Num : ", mRatioMonitor.inSectorCount);
 	idx += swprintf_s(s + idx, size - idx, L"========================================\n");
 	if (mGQCSEx == false)
 		idx += swprintf_s(s + idx, size - idx, L"%22sAlloc %d | Use %u\n", L"MsgQ : ", mMsgQ.GetPoolCapacity(), mMsgQ.GetSize());
@@ -1377,12 +1377,12 @@ void procademy::CChatServerSingle::MakeRatioMonitorStr(WCHAR* s, int size)
 	LONGLONG idx = 0;
 	long total = mRatioMonitor.joinCount + mRatioMonitor.leaveCount + mRatioMonitor.loginCount
 		+ mRatioMonitor.moveSectorCount + mRatioMonitor.sendMsgInCount;
-	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Join Ratio", mRatioMonitor.joinCount, total, mRatioMonitor.joinCount / (float)total);
-	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Leave Ratio", mRatioMonitor.leaveCount, total, mRatioMonitor.leaveCount / (float)total);
-	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Login Ratio", mRatioMonitor.loginCount, total, mRatioMonitor.loginCount / (float)total);
-	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"MoveSector Ratio", mRatioMonitor.moveSectorCount, total, mRatioMonitor.moveSectorCount / (float)total);
-	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"SendReq Ratio", mRatioMonitor.sendMsgInCount, total, mRatioMonitor.sendMsgInCount / (float)total);
-	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"SendMsg Ratio", mRatioMonitor.sendMsgInCount, mRatioMonitor.sendMsgOutCount, mRatioMonitor.sendMsgInCount / (float)mRatioMonitor.sendMsgOutCount);
+	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Join Ratio", total, mRatioMonitor.joinCount, total / (float)mRatioMonitor.joinCount);
+	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Leave Ratio", total, mRatioMonitor.leaveCount, total / (float)mRatioMonitor.leaveCount);
+	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Login Ratio", total, mRatioMonitor.loginCount, total / (float)mRatioMonitor.loginCount);
+	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"MoveSector Ratio", total, mRatioMonitor.moveSectorCount, total / (float)mRatioMonitor.moveSectorCount);
+	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"SendReq Ratio", total, mRatioMonitor.sendMsgInCount, total / (float)mRatioMonitor.sendMsgInCount);
+	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"SendMsg Ratio", mRatioMonitor.sendMsgOutCount, mRatioMonitor.sendMsgInCount, mRatioMonitor.sendMsgOutCount / (float)mRatioMonitor.sendMsgInCount);
 	idx += swprintf_s(s + idx, size - idx, L"========================================\n");
 }
 
@@ -1455,6 +1455,7 @@ void procademy::CChatServerSingle::ClearTPS()
 
 	mRatioMonitor.joinCount = 0;
 	mRatioMonitor.loginCount = 0;
+	mRatioMonitor.inSectorCount = 0;
 	mRatioMonitor.leaveCount = 0;
 	mRatioMonitor.moveSectorCount = 0;
 	mRatioMonitor.sendMsgInCount = 0;

@@ -22,15 +22,11 @@ namespace procademy
 		struct RatioMonitor
 		{
 			long joinCount;
-			//alignas(64) long loginCount;
 			long loginCount;
-			//alignas(64) long leaveCount;
+			long inSectorCount;
 			long leaveCount;
-			//alignas(64) long moveSectorCount;
 			long moveSectorCount;
-			//alignas(64) long sendMsgInCount;
 			long sendMsgInCount;
-			//alignas(64) long sendMsgOutCount;
 			long sendMsgOutCount;
 		};
 
