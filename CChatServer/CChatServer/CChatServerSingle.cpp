@@ -148,7 +148,7 @@ bool procademy::CChatServerSingle::RunServer()
 		return false;
 	}
 
-	WaitForThreadsFin();
+	RunningLoop();
 
 	PostQueuedCompletionStatus(mIOCP, 0, 0, 0);
 	PostQueuedCompletionStatus(mRedisIOCP, 0, 0, 0);
@@ -173,7 +173,7 @@ bool procademy::CChatServerSingle::RunServer()
 	return true;
 }
 
-void procademy::CChatServerSingle::WaitForThreadsFin()
+void procademy::CChatServerSingle::RunningLoop()
 {
 	while (1)
 	{

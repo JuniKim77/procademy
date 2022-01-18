@@ -55,7 +55,7 @@ namespace procademy
 		virtual void	OnError(int errorcode, const WCHAR* log) override;
 		bool			BeginServer();
 		bool			RunServer();
-		void			WaitForThreadsFin();
+		void			RunningLoop();
 
 	private:
 		static unsigned int WINAPI UpdateFunc(LPVOID arg);

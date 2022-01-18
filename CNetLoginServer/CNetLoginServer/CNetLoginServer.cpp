@@ -17,9 +17,6 @@
 
 procademy::CNetLoginServer::CNetLoginServer()
 {
-    LoadInitFile(L"Server.cnf");
-    Init();
-    BeginThreads();
 }
 
 procademy::CNetLoginServer::~CNetLoginServer()
@@ -74,6 +71,16 @@ void procademy::CNetLoginServer::OnError(int errorcode, const WCHAR* log)
 
 bool procademy::CNetLoginServer::BeginServer()
 {
+    LoadInitFile(L"Server.cnf");
+    Begin();
+    Init();
+    BeginThreads();
+
+    return true;
+}
+
+bool procademy::CNetLoginServer::RunServer()
+{
     if (Start() == false)
     {
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error");
@@ -81,7 +88,7 @@ bool procademy::CNetLoginServer::BeginServer()
         return false;
     }
 
-    WaitForThreadsFin();
+    RunningLoop();
 
     DWORD ret = WaitForMultipleObjects(2, mhThreads, true, INFINITE);
 
@@ -103,7 +110,7 @@ bool procademy::CNetLoginServer::BeginServer()
     return true;
 }
 
-void procademy::CNetLoginServer::WaitForThreadsFin()
+void procademy::CNetLoginServer::RunningLoop()
 {
     while (1)
     {
@@ -244,68 +251,114 @@ void procademy::CNetLoginServer::LoadInitFile(const WCHAR* fileName)
 {
     TextParser  tp;
     int         num;
+    int         num2;
     WCHAR       buffer[MAX_PARSER_LENGTH];
     BYTE        code;
     BYTE        key;
 
     tp.LoadFile(fileName);
 
-    tp.GetValue(L"PACKET_CODE", &num);
+    // Server
+    tp.GetValue(L"BIND_IP", L"SERVER", buffer);
+    SetServerIP(buffer);
+
+    tp.GetValue(L"BIND_PORT", L"SERVER", &num);
+    SetServerPort(num);
+
+    tp.GetValue(L"IOCP_WORKER_THREAD", L"SERVER", &num);
+    mWorkerThreadNum = (BYTE)num;
+
+    tp.GetValue(L"IOCP_ACTIVE_THREAD", L"SERVER", &num);
+    mActiveThreadNum = (BYTE)num;
+
+    tp.GetValue(L"CLIENT_MAX", L"SERVER", &num);
+    SetMaxClient(num);
+
+    tp.GetValue(L"NAGLE", L"SERVER", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        mbNagle = true;
+    else
+        mbNagle = false;
+
+    tp.GetValue(L"ZERO_COPY", L"SERVER", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        mbZeroCopy = true;
+    else
+        mbZeroCopy = false;
+
+    tp.GetValue(L"PACKET_CODE", L"SERVER", &num);
     code = (BYTE)num;
     CNetPacket::SetCode(code);
 
-    tp.GetValue(L"PACKET_KEY", &num);
+    tp.GetValue(L"PACKET_KEY", L"SERVER", &num);
     key = (BYTE)num;
     CNetPacket::SetPacketKey(key);
 
+    tp.GetValue(L"LOG_LEVEL", L"SERVER", buffer);
+    if (wcscmp(buffer, L"DEBUG") == 0)
+        CLogger::setLogLevel(dfLOG_LEVEL_DEBUG);
+    else if (wcscmp(buffer, L"WARNING") == 0)
+        CLogger::setLogLevel(dfLOG_LEVEL_SYSTEM);
+    else if (wcscmp(buffer, L"ERROR") == 0)
+        CLogger::setLogLevel(dfLOG_LEVEL_ERROR);
+
+    // Service
 #ifdef TLS_MEMORY_POOL_VER
-    tp.GetValue(L"POOL_SIZE_CHECK", buffer);
+    tp.GetValue(L"POOL_SIZE_CHECK", L"SERVICE", buffer);
     if (wcscmp(L"TRUE", buffer) == 0)
         CNetPacket::sPacketPool.OnOffCounting();
 #endif // TLS_MEMORY_POOL_VER
 
-    tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
+    tp.GetValue(L"TIMEOUT_DISCONNECT", L"SERVICE", &mTimeOut);
 
-    tp.GetValue(L"1U_1_IP", mDummyServers[0].IP);
-    tp.GetValue(L"1U_1_GAME_SERVER_IP", mDummyServers[0].GameServerIP);
-    tp.GetValue(L"1U_1_GAME_SERVER_PORT", &num);
-    mDummyServers[0].GameServerPort = (USHORT)num;
-    tp.GetValue(L"1U_1_CHAT_SERVER_IP", mDummyServers[0].ChatServerIP);
-    tp.GetValue(L"1U_1_CHAT_SERVER_PORT", &num);
-    mDummyServers[0].ChatServerPort = (USHORT)num;
-
-    tp.GetValue(L"1U_2_IP", mDummyServers[1].IP);
-    tp.GetValue(L"1U_2_GAME_SERVER_IP", mDummyServers[1].GameServerIP);
-    tp.GetValue(L"1U_2_GAME_SERVER_PORT", &num);
-    mDummyServers[1].GameServerPort = (USHORT)num;
-    tp.GetValue(L"1U_2_CHAT_SERVER_IP", mDummyServers[1].ChatServerIP);
-    tp.GetValue(L"1U_2_CHAT_SERVER_PORT", &num);
-    mDummyServers[1].ChatServerPort = (USHORT)num;
-
-    tp.GetValue(L"TOKEN_DB_IP", mTokenDBIP);
-    tp.GetValue(L"TOKEN_DB_PORT", &num);
+    tp.GetValue(L"TOKEN_DB_IP", L"SERVICE", mTokenDBIP);
+    tp.GetValue(L"TOKEN_DB_PORT", L"SERVICE", &num);
     mTokenDBPort = (USHORT)num;
 
-    tp.GetValue(L"ACCOUNT_DB_IP", mAccountDBIP);
-    tp.GetValue(L"ACCOUNT_DB_PORT", &num);
+    tp.GetValue(L"ACCOUNT_DB_IP", L"SERVICE", mAccountDBIP);
+    tp.GetValue(L"ACCOUNT_DB_PORT", L"SERVICE", &num);
     mAccountDBPort = (USHORT)num;
 
-    tp.GetValue(L"ACCOUNT_DB_USER", mAccountDBUser);
-    tp.GetValue(L"ACCOUNT_DB_PASS", mAccountDBPassword);
-    tp.GetValue(L"ACCOUNT_DB_SCHEMA", mAccountDBSchema);
+    tp.GetValue(L"ACCOUNT_DB_USER", L"SERVICE", mAccountDBUser);
+    tp.GetValue(L"ACCOUNT_DB_PASS", L"SERVICE", mAccountDBPassword);
+    tp.GetValue(L"ACCOUNT_DB_SCHEMA", L"SERVICE", mAccountDBSchema);
 
-    tp.GetValue(L"MONITOR_SERVER_IP", mMonitorIP);
+    tp.GetValue(L"MONITOR_SERVER_IP", L"SERVICE", mMonitorIP);
 
-    tp.GetValue(L"MONITOR_SERVER_PORT", &num);
+    tp.GetValue(L"MONITOR_SERVER_PORT", L"SERVICE", &num);
     mMonitorPort = (u_short)num;
 
-    tp.GetValue(L"MONITOR_NO", &mServerNo);
+    tp.GetValue(L"MONITOR_NO", L"SERVICE", &mServerNo);
 
-    tp.GetValue(L"TLS_MODE", buffer);
+    tp.GetValue(L"TLS_MODE", L"SERVICE", buffer);
     if (wcscmp(L"TRUE", buffer) == 0)
         mbTlsMode = true;
     else
         mbTlsMode = false;
+
+    // Dummy_1
+    tp.GetValue(L"IP", L"DUMMY_1", mDummyServers[0].IP);
+    tp.GetValue(L"GAME_SERVER_IP", L"DUMMY_1", mDummyServers[0].GameServerIP);
+    tp.GetValue(L"GAME_SERVER_PORT", L"DUMMY_1", &num);
+    mDummyServers[0].GameServerPort = (USHORT)num;
+    tp.GetValue(L"CHAT_SERVER_IP", L"DUMMY_1", mDummyServers[0].ChatServerIP);
+    tp.GetValue(L"CHAT_SERVER_PORT", L"DUMMY_1", &num);
+    mDummyServers[0].ChatServerPort = (USHORT)num;
+
+    // Dummy_2
+    tp.GetValue(L"IP", L"DUMMY_2", mDummyServers[1].IP);
+    tp.GetValue(L"GAME_SERVER_IP", L"DUMMY_2", mDummyServers[1].GameServerIP);
+    tp.GetValue(L"GAME_SERVER_PORT", L"DUMMY_2", &num);
+    mDummyServers[1].GameServerPort = (USHORT)num;
+    tp.GetValue(L"CHAT_SERVER_IP", L"DUMMY_2", mDummyServers[1].ChatServerIP);
+    tp.GetValue(L"CHAT_SERVER_PORT", L"DUMMY_2", &num);
+    mDummyServers[1].ChatServerPort = (USHORT)num;
+
+    // Lan_Client
+    tp.GetValue(L"IOCP_WORKER_THREAD", L"LAN_CLIENT", &num);
+    tp.GetValue(L"IOCP_ACTIVE_THREAD", L"LAN_CLIENT", &num2);
+
+    mMonitorClient.SetThreadNum(num, num2);
 }
 
 void procademy::CNetLoginServer::FreePlayer(st_Player* player)
@@ -612,7 +665,7 @@ void procademy::CNetLoginServer::MakeTimeInfoStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"%15s%.2fus\n", L"   DB Avg : ", dbAvg);
     idx += swprintf_s(s + idx, size - idx, L"%15s%.2fus\n", L"   DB Max : ", mDBTimeMax / 10.0);
     idx += swprintf_s(s + idx, size - idx, L"%15s%.2fus\n", L"   DB Min : ", mDBTimeMin / 10.0);
-    idx += swprintf_s(s + idx, size - idx, L"%15s%.2fua\n", L"Redis Avg : ", redisAvg);
+    idx += swprintf_s(s + idx, size - idx, L"%15s%.2fus\n", L"Redis Avg : ", redisAvg);
     idx += swprintf_s(s + idx, size - idx, L"%15s%.2fus\n", L"Redis Max : ", mRedisTimeMax / 10.0);
     idx += swprintf_s(s + idx, size - idx, L"%15s%.2fus\n", L"Redis Min : ", mRedisTimeMin / 10.0);
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
@@ -858,9 +911,6 @@ procademy::CNetPacket* procademy::CNetLoginServer::MakeCSResLogin(BYTE status, I
     packet->PutData(mDummyServers[index].ChatServerIP, 16);
     *packet << mDummyServers[index].ChatServerPort;
 
-    packet->SetHeader();
-    packet->Encode();
-
     return packet;
 }
 
@@ -869,8 +919,6 @@ procademy::CLanPacket* procademy::CNetLoginServer::MakeMonitorLogin(int serverNo
     CLanPacket* packet = CLanPacket::AllocAddRef();
 
     *packet << (WORD)en_PACKET_SS_MONITOR_LOGIN << serverNo;
-
-    packet->SetHeader();
 
     return packet;
 }
@@ -884,8 +932,6 @@ procademy::CLanPacket* procademy::CNetLoginServer::MakeMonitorPacket(BYTE dataTy
     time(&timeval);
 
     *packet << (WORD)en_PACKET_SS_MONITOR_DATA_UPDATE << dataType << dataValue << (int)timeval;
-
-    packet->SetHeader();
 
     return packet;
 }

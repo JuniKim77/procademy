@@ -9,9 +9,6 @@
 
 procademy::CMonitorServer::CMonitorServer()
 {
-    LoadInitFile(L"Server.cnf");
-    Init();
-    BeginThreads();
 }
 
 procademy::CMonitorServer::~CMonitorServer()
@@ -22,6 +19,17 @@ procademy::CMonitorServer::~CMonitorServer()
 
 bool procademy::CMonitorServer::BeginServer()
 {
+    LoadInitFile(L"Server.cnf");
+    Begin();
+    Init();
+    BeginThreads();
+    mMonitorToolServer.BeginServer();
+
+    return true;
+}
+
+bool procademy::CMonitorServer::RunServer()
+{
     HANDLE threads[2] = { mMonitorThread, mDBThread };
 
     if (Start() == false)
@@ -31,9 +39,9 @@ bool procademy::CMonitorServer::BeginServer()
         return false;
     }
 
-    mMonitorToolServer.BeginServer();
+    mMonitorToolServer.RunServer();
 
-    WaitForThreadsFin();
+    RunningLoop();
 
     DWORD ret = WaitForMultipleObjects(2, threads, true, INFINITE);
 
@@ -145,13 +153,50 @@ void procademy::CMonitorServer::LoadInitFile(const WCHAR* fileName)
 
     tp.LoadFile(fileName);
 
-    tp.GetValue(L"LOG_DB_IP", mLogDBIP);
-    tp.GetValue(L"LOG_DB_PORT", &num);
+    // Server
+    tp.GetValue(L"BIND_IP", L"MONITOR_SERVER", buffer);
+    SetServerIP(buffer);
+
+    tp.GetValue(L"BIND_PORT", L"MONITOR_SERVER", &num);
+    SetServerPort(num);
+
+    tp.GetValue(L"IOCP_WORKER_THREAD", L"MONITOR_SERVER", &num);
+    mWorkerThreadNum = (BYTE)num;
+
+    tp.GetValue(L"IOCP_ACTIVE_THREAD", L"MONITOR_SERVER", &num);
+    mActiveThreadNum = (BYTE)num;
+
+    tp.GetValue(L"CLIENT_MAX", L"MONITOR_SERVER", &num);
+    SetMaxClient(num);
+
+    tp.GetValue(L"NAGLE", L"MONITOR_SERVER", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        mbNagle = true;
+    else
+        mbNagle = false;
+
+    tp.GetValue(L"ZERO_COPY", L"MONITOR_SERVER", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        mbZeroCopy = true;
+    else
+        mbZeroCopy = false;
+
+    tp.GetValue(L"LOG_LEVEL", L"MONITOR_SERVER", buffer);
+    if (wcscmp(buffer, L"DEBUG") == 0)
+        CLogger::setLogLevel(dfLOG_LEVEL_DEBUG);
+    else if (wcscmp(buffer, L"WARNING") == 0)
+        CLogger::setLogLevel(dfLOG_LEVEL_SYSTEM);
+    else if (wcscmp(buffer, L"ERROR") == 0)
+        CLogger::setLogLevel(dfLOG_LEVEL_ERROR);
+
+    // Service
+    tp.GetValue(L"LOG_DB_IP", L"DB_INFO", mLogDBIP);
+    tp.GetValue(L"LOG_DB_PORT", L"DB_INFO", &num);
     mLogDBPort = (USHORT)num;
 
-    tp.GetValue(L"LOG_DB_USER", mLogDBUser);
-    tp.GetValue(L"LOG_DB_PASS", mLogDBPassword);
-    tp.GetValue(L"LOG_DB_SCHEMA", mLogDBSchema);
+    tp.GetValue(L"LOG_DB_USER", L"DB_INFO", mLogDBUser);
+    tp.GetValue(L"LOG_DB_PASS", L"DB_INFO", mLogDBPassword);
+    tp.GetValue(L"LOG_DB_SCHEMA", L"DB_INFO", mLogDBSchema);
 }
 
 void procademy::CMonitorServer::BeginThreads()
@@ -160,7 +205,7 @@ void procademy::CMonitorServer::BeginThreads()
     mDBThread = (HANDLE)_beginthreadex(nullptr, 0, DBThread, this, 0, nullptr);
 }
 
-void procademy::CMonitorServer::WaitForThreadsFin()
+void procademy::CMonitorServer::RunningLoop()
 {
     while (1)
     {
@@ -396,9 +441,6 @@ procademy::CNetPacket* procademy::CMonitorServer::MakeMonitoringPacket(st_Server
 
     *packet << data->value << data->timeStamp;
 
-    packet->SetHeader();
-    packet->Encode();
-
     return packet;
 }
 
@@ -407,9 +449,6 @@ procademy::CNetPacket* procademy::CMonitorServer::MakeMonitorLoginRes(BYTE Statu
     CNetPacket* packet = CNetPacket::AllocAddRef();
 
     *packet << (WORD)en_PACKET_CS_MONITOR_TOOL_RES_LOGIN << Status;
-
-    packet->SetHeader();
-    packet->Encode();
 
     return packet;
 }
