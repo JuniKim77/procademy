@@ -4,11 +4,12 @@
 #include <stack>
 #include <queue>
 #include "TC_LFQueue.h"
+//#include "TC_LFQueue64.h"
 #include "TC_LFStack.h"
 #include <stdio.h>
 #include "CProfilerClock.h"
 
-#define dfTHREAD_MAX (16)
+#define dfTHREAD_MAX (32)
 //#define dfDEBUG
 
 using namespace std;
@@ -32,9 +33,7 @@ bool g_spinQueue;
 procademy::TC_LFQueue<int*> g_lfQueue;
 
 int g_thread_num;
-int g_test_size = 1000;
-int g_sleep_time;
-int g_sleep_count;
+volatile int g_test_size = 1000;
 int* g_data;
 
 enum DEBUG_TYPE
@@ -85,12 +84,6 @@ int main()
 
 	int op = 0;
 
-	//wprintf_s(L"Sleep Time : ");
-	//scanf_s("%d", &g_sleep_time);
-
-	wprintf_s(L"Sleep Count : ");
-	scanf_s("%d", &g_sleep_count);
-
 	init();
 
 	TestFunc(stdQueue);
@@ -113,7 +106,7 @@ unsigned int __stdcall stdQueue(LPVOID arg)
 
 	WaitForSingleObject(g_event, INFINITE);
 
-	int count = 0;
+	volatile int count = 0;
 
 	for (int t = 0; t < g_test_size; ++t)
 	{
@@ -124,13 +117,26 @@ unsigned int __stdcall stdQueue(LPVOID arg)
 #endif		
 		localNums = g_stdQueue.front();
 		g_stdQueue.pop();
-		g_stdQueue.push(localNums);
 		ReleaseSRWLockExclusive(&g_stdQueueLock);
 		procademy::CProfilerClock::End(L"stdQ");
 		
-		for (int i = 0; i < g_sleep_count; ++i)
+		for (int i = 0; i < 1000; ++i)
 		{
-			Sleep(g_sleep_time);
+			count++;
+		}
+
+		procademy::CProfilerClock::Begin(L"stdQ");
+		AcquireSRWLockExclusive(&g_stdQueueLock);
+#ifdef dfDEBUG
+		_log(DEBUG_TYPE::STL_Q);
+#endif		
+		g_stdQueue.push(localNums);
+		ReleaseSRWLockExclusive(&g_stdQueueLock);
+		procademy::CProfilerClock::End(L"stdQ");
+
+		for (int i = 0; i < 1000; ++i)
+		{
+			count++;
 		}
 	}
 
@@ -147,16 +153,17 @@ unsigned int __stdcall lfQueue(LPVOID arg)
 	{
 		procademy::CProfilerClock::Begin(L"lfQ");
 		g_lfQueue.Dequeue(&localNums);
-		g_lfQueue.Enqueue(localNums);
 #ifdef dfDEBUG
 		_log(DEBUG_TYPE::LF_Q);
 #endif	
 		procademy::CProfilerClock::End(L"lfQ");
 
-		/*for (int i = 0; i < g_sleep_count; ++i)
-		{
-			Sleep(g_sleep_time);
-		}*/
+		procademy::CProfilerClock::Begin(L"lfQ");
+		g_lfQueue.Enqueue(localNums);
+#ifdef dfDEBUG
+		_log(DEBUG_TYPE::LF_Q);
+#endif	
+		procademy::CProfilerClock::End(L"lfQ");
 	}
 
 	return 0;
@@ -179,14 +186,19 @@ unsigned int __stdcall spinQueue(LPVOID arg)
 #endif	
 		localNums = g_stdQueue.front();
 		g_stdQueue.pop();
-		g_stdQueue.push(localNums);
 		g_spinQueue = false;
 		procademy::CProfilerClock::End(L"spinQ");
 
-		/*for (int i = 0; i < g_sleep_count; ++i)
+		procademy::CProfilerClock::Begin(L"spinQ");
+		while (InterlockedExchange8((char*)&g_spinQueue, true) == true)
 		{
-			Sleep(g_sleep_time);
-		}*/
+		}
+#ifdef dfDEBUG
+		_log(DEBUG_TYPE::SPIN_Q);
+#endif	
+		g_stdQueue.push(localNums);
+		g_spinQueue = false;
+		procademy::CProfilerClock::End(L"spinQ");
 	}
 
 	return 0;
@@ -198,6 +210,8 @@ unsigned int __stdcall stdStack(LPVOID arg)
 
 	WaitForSingleObject(g_event, INFINITE);
 
+	volatile int count = 0;
+
 	for (int t = 0; t < g_test_size; ++t)
 	{
 		procademy::CProfilerClock::Begin(L"stdStack");
@@ -207,13 +221,26 @@ unsigned int __stdcall stdStack(LPVOID arg)
 #endif	
 		localNums = g_stdStack.top();
 		g_stdStack.pop();
+		ReleaseSRWLockExclusive(&g_stdStackLock);
+		procademy::CProfilerClock::End(L"stdStack");
+
+		for (int i = 0; i < 1000; ++i)
+		{
+			count++;
+		}
+
+		procademy::CProfilerClock::Begin(L"stdStack");
+		AcquireSRWLockExclusive(&g_stdStackLock);
+#ifdef dfDEBUG
+		_log(DEBUG_TYPE::STL_STACK);
+#endif	
 		g_stdStack.push(localNums);
 		ReleaseSRWLockExclusive(&g_stdStackLock);
 		procademy::CProfilerClock::End(L"stdStack");
 
-		for (int i = 0; i < g_sleep_count; ++i)
+		for (int i = 0; i < 1000; ++i)
 		{
-			Sleep(g_sleep_time);
+			count++;
 		}
 	}
 
@@ -230,16 +257,17 @@ unsigned int __stdcall lfStack(LPVOID arg)
 	{
 		procademy::CProfilerClock::Begin(L"lfStack");
 		g_lfStack.Pop(&localNums);
-		g_lfStack.Push(localNums);
 #ifdef dfDEBUG
 		_log(DEBUG_TYPE::LF_STACK);
 #endif	
 		procademy::CProfilerClock::End(L"lfStack");
 
-		/*for (int i = 0; i < g_sleep_count; ++i)
-		{
-			Sleep(g_sleep_time);
-		}*/
+		procademy::CProfilerClock::Begin(L"lfStack");
+		g_lfStack.Push(localNums);
+#ifdef dfDEBUG
+		_log(DEBUG_TYPE::LF_STACK);
+#endif	
+		procademy::CProfilerClock::End(L"lfStack");
 	}
 
 	return 0;
@@ -262,14 +290,19 @@ unsigned int __stdcall spinStack(LPVOID arg)
 #endif	
 		localNums = g_stdStack.top();
 		g_stdStack.pop();
-		g_stdStack.push(localNums);
 		g_spinStack = false;
 		procademy::CProfilerClock::End(L"spinStack");
 
-		/*for (int i = 0; i < g_sleep_count; ++i)
+		procademy::CProfilerClock::Begin(L"spinStack");
+		while (InterlockedExchange8((char*)&g_spinStack, true) == true)
 		{
-			Sleep(g_sleep_time);
-		}*/
+		}
+#ifdef dfDEBUG
+		_log(DEBUG_TYPE::SPIN_STACK);
+#endif	
+		g_stdStack.push(localNums);
+		g_spinStack = false;
+		procademy::CProfilerClock::End(L"spinStack");
 	}
 
 	return 0;
@@ -280,9 +313,9 @@ void init()
 	InitializeSRWLock(&g_stdStackLock);
 	InitializeSRWLock(&g_stdQueueLock);
 
-	g_data = new int[10];
+	g_data = new int[100];
 
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 100; ++i)
 	{
 		g_stdQueue.push(&g_data[i]);
 		g_lfQueue.Enqueue(&g_data[i]);

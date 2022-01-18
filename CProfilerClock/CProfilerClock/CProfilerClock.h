@@ -1,5 +1,6 @@
 #pragma once
 
+#define PROFILER_MAX (300)
 #define PROFILE_MAX (100)
 #define NAME_MAX (32)
 #define FILE_NAME_MAX (80)
@@ -51,7 +52,7 @@ namespace procademy
 		static void PrintAvg();
 
 	public:
-		static CProfilerClock s_profilers[PROFILE_MAX];
+		static CProfilerClock s_profilers[PROFILER_MAX];
 		static DWORD s_MultiProfiler;
 		static LONG s_ProfilerIndex;
 		static bool s_spinlock;

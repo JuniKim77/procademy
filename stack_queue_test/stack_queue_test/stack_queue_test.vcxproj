@@ -132,7 +132,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Full</Optimization>
       <AdditionalIncludeDirectories>..\..\CLF_Queue\CLF_Queue;..\..\CSafeQueue\CSafeQueue;..\..\LockFreeStack\LockFreeStack;..\..\Multi_Profiler\Multi_Profiler;..\..\TextParser\TextParser;..\..\CLFObjectPool\CLFObjectPool;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CProfilerClock\CProfilerClock;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>

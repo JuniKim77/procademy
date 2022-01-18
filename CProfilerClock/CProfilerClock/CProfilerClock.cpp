@@ -8,7 +8,7 @@
 #include <wchar.h>
 #include <intrin.h>
 
-procademy::CProfilerClock procademy::CProfilerClock::s_profilers[PROFILE_MAX];
+procademy::CProfilerClock procademy::CProfilerClock::s_profilers[PROFILER_MAX];
 LONG procademy::CProfilerClock::s_ProfilerIndex = 0;
 DWORD procademy::CProfilerClock::s_MultiProfiler;
 bool procademy::CProfilerClock::s_spinlock = false;
