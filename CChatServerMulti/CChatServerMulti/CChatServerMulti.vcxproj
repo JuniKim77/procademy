@@ -155,7 +155,6 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\CChatServer\CChatServer\ChatServerDTO.h" />
     <ClInclude Include="..\..\CChatServer\CChatServer\CommonProtocol.h" />
     <ClInclude Include="..\..\CCpuUsage\CCpuUsage\CCpuUsage.h" />
     <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h" />
@@ -171,6 +170,7 @@
     <ClInclude Include="..\..\RingBuffer\RingBuffer\RingBuffer.h" />
     <ClInclude Include="..\..\TextParser\TextParser\TextParser.h" />
     <ClInclude Include="CChatServerMulti.h" />
+    <ClInclude Include="MultiChatServerDTO.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

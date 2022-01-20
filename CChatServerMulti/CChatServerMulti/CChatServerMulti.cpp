@@ -822,10 +822,6 @@ DWORD procademy::CChatServerMulti::SendMessageSectorAround(CNetPacket* packet, s
             SendPacket(sessionNo, packet);
 #endif // SEND_TO_WORKER
         }
-
-        mSector[curY][curX].updateCount++;
-        mSector[curY][curX].playerCount += size;
-        ret += size;
     }
 
     return ret;
@@ -1230,9 +1226,6 @@ procademy::CNetPacket* procademy::CChatServerMulti::MakeCSResLogin(BYTE status, 
 
     *packet << (WORD)en_PACKET_CS_CHAT_RES_LOGIN << status << (__int64)accountNo;
 
-    packet->SetHeader();
-    packet->Encode();
-
     return packet;
 }
 
@@ -1241,9 +1234,6 @@ procademy::CNetPacket* procademy::CChatServerMulti::MakeCSResSectorMove(SESSION_
     CNetPacket* packet = CNetPacket::AllocAddRef();
 
     *packet << (WORD)en_PACKET_CS_CHAT_RES_SECTOR_MOVE << (__int64)accountNo << sectorX << sectorY;
-
-    packet->SetHeader();
-    packet->Encode();
 
     return packet;
 }
@@ -1258,9 +1248,6 @@ procademy::CNetPacket* procademy::CChatServerMulti::MakeCSResMessage(SESSION_ID 
     packet->PutData(nickname, 20);
     *packet << meesageLen;
     packet->PutData(message, meesageLen / 2);
-
-    packet->SetHeader();
-    packet->Encode();
 
     return packet;
 }
