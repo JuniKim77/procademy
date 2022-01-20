@@ -12,6 +12,9 @@ namespace procademy
 	public:
 		static void					InitRedis_TLS(const WCHAR* redisIP, int redisPort, int num);
 		static void					DestroyRedis_TLS();
+		static void					SetRedis(const char* key, int time, std::string& value);
+
+	private:
 		static cpp_redis::client*	GetRedis();
 
 	private:

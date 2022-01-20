@@ -13,7 +13,6 @@
 #include <stack>
 #include "CLanPacket.h"
 #include "MonitorProtocol.h"
-#include <time.h>
 
 procademy::CNetLoginServer::CNetLoginServer()
 {
@@ -29,8 +28,7 @@ procademy::CNetLoginServer::~CNetLoginServer()
     mRedis.disconnect();
 
     procademy::CRedis_TLS::DestroyRedis_TLS();
-
-    timeEndPeriod(1);
+    procademy::CDBConnector_TLS::DestroyDBConnector_TLS();
 }
 
 bool procademy::CNetLoginServer::OnConnectionRequest(u_long IP, u_short Port)
@@ -75,6 +73,8 @@ bool procademy::CNetLoginServer::BeginServer()
     Begin();
     Init();
     BeginThreads();
+    mMonitorClient.BeginClient();
+    mMonitorClient.RunClient();
 
     return true;
 }
@@ -228,8 +228,6 @@ void procademy::CNetLoginServer::BeginThreads()
 void procademy::CNetLoginServer::Init()
 {
     char IP[64];
-
-    timeBeginPeriod(1);
 
     InitializeSRWLock(&mPlayerMapLock);
     InitializeSRWLock(&mDBConnectorLock);
@@ -385,7 +383,7 @@ bool procademy::CNetLoginServer::JoinProc(SESSION_ID sessionNo)
 
 	player = mPlayerPool.Alloc();
 	player->sessionNo = sessionNo;
-    player->lastRecvTime = timeGetTime();
+    player->lastRecvTime = GetTickCount64();
     ULONG sessionIP = GetSessionIP(sessionNo);
 
     InetNtop(AF_INET, &sessionIP, IP, 16);
@@ -476,7 +474,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
 
     QueryPerformanceCounter(&loginBegin);
     
-    player->lastRecvTime = loginBegin.QuadPart / 10000;
+    player->lastRecvTime = GetTickCount64();
 
     *packet >> AccountNo;
 
@@ -520,16 +518,19 @@ bool procademy::CNetLoginServer::CheckHeartProc()
 
         if (retval == WAIT_TIMEOUT)
         {
-            ULONGLONG curTime = timeGetTime();
+            ULONGLONG curTime = GetTickCount64();
             AcquireSRWLockShared(&mPlayerMapLock);
             {
                 for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end(); ++iter)
                 {
-                    if (curTime - iter->second->lastRecvTime > mTimeOut) // 40000ms
-                    {
-                        //Disconnect(iter->second->sessionNo);
+                    ULONGLONG playerTime = iter->second->lastRecvTime;
 
-                        releaseSessions.push(iter->second->sessionNo);
+                    if (curTime > playerTime)
+                    {
+                        if (curTime - playerTime > mTimeOut) // 40000ms
+                        {
+                            releaseSessions.push(iter->second->sessionNo);
+                        }
                     }
                 }
             }
@@ -710,8 +711,6 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
 
 	if (mbTlsMode)
 	{
-        cpp_redis::client* redis = CRedis_TLS::GetRedis();
-
         QueryPerformanceCounter(&beginDBTime);
 
 		CDBConnector_TLS::Query(L"SELECT `accountno`, `userid`, `usernick` FROM `accountdb`.`account` WHERE `accountno` = %lld;", accountNo);
@@ -736,8 +735,7 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
 
 		if (ret)
 		{
-			redis->setex(szAccountNumber, 30, strKey);
-			redis->sync_commit();
+            CRedis_TLS::SetRedis(szAccountNumber, 30, strKey);
 		}
         else
         {

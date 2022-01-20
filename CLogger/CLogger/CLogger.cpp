@@ -11,7 +11,7 @@
 
 #define dfLOG_SIZE (1024)
 
-int CLogger::mLogLevel = dfLOG_LEVEL_DEBUG;
+int CLogger::mLogLevel = dfLOG_LEVEL_ERROR;
 DWORD CLogger::mLogCount = 0;
 SRWLOCK CLogger::mSrwLock;
 WCHAR CLogger::mFolderPath[MAX_PATH];

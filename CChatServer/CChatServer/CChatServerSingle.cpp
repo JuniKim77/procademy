@@ -1066,6 +1066,9 @@ bool procademy::CChatServerSingle::CompleteLoginProc(SESSION_ID sessionNo, CNetP
 	}
 	else
 	{
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Login Verification Fail - [Session %llu] [pAccountNo %lld]",
+			sessionNo, player->accountNo);
+
 		response = MakeCSResLogin(0, AccountNo);
 		{
 			SendPacketToWorker(sessionNo, response);
@@ -1179,13 +1182,11 @@ bool procademy::CChatServerSingle::RedisProc()
 
 		_i64toa_s(AccountNo, buffer, 12, 10);
 
-		mRedis.sync_commit();
-
 		mRedis.get(buffer, [SessionKey, &cmpRet](cpp_redis::reply& reply) {
 			cmpRet = strcmp(reply.as_string().c_str(), SessionKey) == 0;
 			});
 
-		//mRedis.sync_commit();
+		mRedis.sync_commit();
 
 		result = MakeResultLogin(AccountNo, ID, Nickname);
 		{
@@ -1449,13 +1450,17 @@ void procademy::CChatServerSingle::MakeRatioMonitorStr(WCHAR* s, int size)
 		});
 
 	int len = sortedDist.size();
+	int sumTop = 0;
 
 	len = len > 5 ? 5 : len;
 
 	for (int i = 0; i < len; ++i)
 	{
 		idx += swprintf_s(s + idx, size - idx, L"%d : %d | ", sortedDist[i].first, sortedDist[i].second);
+		sumTop += sortedDist[i].first * sortedDist[i].second;
 	}
+
+	idx += swprintf_s(s + idx, size - idx, L"Total : %d |", sumTop);
 
 	idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
 }
