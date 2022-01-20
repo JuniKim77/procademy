@@ -7,7 +7,6 @@
 #include "ChatServerDTO.h"
 #include "CCpuUsage.h"
 #include <cpp_redis/cpp_redis>
-#include "CSafeQueue.h"
 #include "ObjectPool_TLS.h"
 #include "CLanClient.h"
 #include "CMonitorClient.h"
@@ -58,6 +57,7 @@ namespace procademy
 		static unsigned int WINAPI MonitorFunc(LPVOID arg);
 		static unsigned int WINAPI HeartbeatFunc(LPVOID arg);
 		static unsigned int WINAPI RedisFunc(LPVOID arg);
+		static unsigned int WINAPI RatioFunc(LPVOID arg);
 
 		/// <summary>
 		/// OnRecv가 MsgQ에 넣을 때, 호출할 함수
@@ -90,6 +90,7 @@ namespace procademy
 		bool			CheckTimeOutProc();
 		bool			CompleteLoginProc(SESSION_ID sessionNo, CNetPacket* packet, bool success);
 		bool			RedisProc();
+		bool			RatioProc();
 		void			BeginThreads();
 		void			LoadInitFile(const WCHAR* fileName);
 		void			FreePlayer(st_Player* player);
@@ -108,7 +109,6 @@ namespace procademy
 		DWORD			SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input);
 		void			MakeMonitorStr(WCHAR* s, int size);
 		void			MakeRatioMonitorStr(WCHAR* s, int size);
-		void			PrintRecvSendRatio();
 		void			ClearTPS();
 		void			Init();
 		void			RecordPerformence();
@@ -135,6 +135,7 @@ namespace procademy
 		HANDLE									mMonitoringThread;
 		HANDLE									mHeartbeatThread;
 		HANDLE									mRedisThread;
+		HANDLE									mRatioThread;
 		HANDLE									mIOCP;
 		HANDLE									mRedisIOCP;
 		cpp_redis::client						mRedis;
@@ -164,7 +165,6 @@ namespace procademy
 		bool									mSendToWorker = true;
 		bool									mGQCSEx;
 		bool									mbMonitoring;
-		bool									mbPrint;
 		bool									mbRedisMode;
 		bool									mbProfiler;
 		int										mServerNo;

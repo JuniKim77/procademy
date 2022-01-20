@@ -13,6 +13,7 @@
 #include "CProfiler.h"
 #include "CLanPacket.h"
 #include "MonitorProtocol.h"
+#include <algorithm>
 
 #define MAX_STR (30000)
 
@@ -217,10 +218,6 @@ void procademy::CChatServerSingle::RunningLoop()
 			wprintf(L"Print Profiler\n");
 			CProfiler::Print();
 			break;
-		case 'r':
-			mbPrint = true;
-			wprintf(L"Set Print Ratio\n");
-			break;
 		case 'd':
 			CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer Intended Crash");
 			CRASH();
@@ -279,6 +276,17 @@ unsigned int __stdcall procademy::CChatServerSingle::RedisFunc(LPVOID arg)
 	chatServer->RedisProc();
 
 	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Redis Thread End");
+
+	return 0;
+}
+
+unsigned int __stdcall procademy::CChatServerSingle::RatioFunc(LPVOID arg)
+{
+	CChatServerSingle* chatServer = (CChatServerSingle*)arg;
+
+	chatServer->RatioProc();
+
+	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Ratio Thread End");
 
 	return 0;
 }
@@ -571,11 +579,6 @@ bool procademy::CChatServerSingle::MonitoringProc()
 			MakeRatioMonitorStr(str, 2048);
 
 			wprintf(str);
-
-			if (mbPrint)
-			{
-				PrintRecvSendRatio();
-			}
 
 			ClearTPS();
 		}
@@ -948,13 +951,9 @@ bool procademy::CChatServerSingle::SendMessageProc(SESSION_ID sessionNo, CNetPac
 
 	GetSectorAround(player->curSectorX, player->curSectorY, &sectorAround);
 
-	mSector[player->curSectorY][player->curSectorX].recvCount++;
-
 	CNetPacket* response = MakeCSResMessage(player->accountNo, player->ID, player->nickName, messageLen, (WCHAR*)packet->GetFrontPtr());
 	{
-		DWORD count = SendMessageSectorAround(response, &sectorAround);
-		mSector[player->curSectorY][player->curSectorX].sendCount += count;
-		mRatioMonitor.sendMsgOutCount += count;
+		mRatioMonitor.sendMsgOutCount += SendMessageSectorAround(response, &sectorAround);
 	}
 	response->SubRef();
 
@@ -1218,12 +1217,38 @@ bool procademy::CChatServerSingle::RedisProc()
 	return true;
 }
 
+bool procademy::CChatServerSingle::RatioProc()
+{
+	HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
+
+	while (!mbExit)
+	{
+		DWORD retval = WaitForSingleObject(dummyevent, 100);
+
+		if (retval == WAIT_TIMEOUT)
+		{
+			for (int i = 0; i < 50; ++i)
+			{
+				for (int j = 0; j < 50; ++j)
+				{
+					mSector[i][j].playerCount.Enqueue(mSector[i][j].list.size());
+				}
+			}
+		}
+	}
+
+	CloseHandle(dummyevent);
+
+	return true;
+}
+
 void procademy::CChatServerSingle::BeginThreads()
 {
 	mUpdateThread = (HANDLE)_beginthreadex(nullptr, 0, UpdateFunc, this, 0, nullptr);
 	mMonitoringThread = (HANDLE)_beginthreadex(nullptr, 0, MonitorFunc, this, 0, nullptr);
 	mHeartbeatThread = (HANDLE)_beginthreadex(nullptr, 0, HeartbeatFunc, this, 0, nullptr);
 	mRedisThread = (HANDLE)_beginthreadex(nullptr, 0, RedisFunc, this, 0, nullptr);
+	mRatioThread = (HANDLE)_beginthreadex(nullptr, 0, RatioFunc, this, 0, nullptr);
 }
 
 procademy::st_Player* procademy::CChatServerSingle::FindPlayer(SESSION_ID sessionNo)
@@ -1295,16 +1320,14 @@ void procademy::CChatServerSingle::GetSectorAround(WORD x, WORD y, st_Sector_Aro
 
 DWORD procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input)
 {
-	DWORD ret = 0;
+	DWORD sum = 0;
 
 	for (int i = 0; i < input->count; ++i)
 	{
 		int curX = input->around[i].x;
 		int curY = input->around[i].y;
 
-		mSector[curY][curX].updateCount++;
-		mSector[curY][curX].playerCount += (DWORD)mSector[curY][curX].list.size();
-		ret += (DWORD)mSector[curY][curX].list.size();
+		sum += mSector[curY][curX].list.size();
 
 		for (std::list<st_Player*>::iterator iter = mSector[curY][curX].list.begin(); iter != mSector[curY][curX].list.end(); ++iter)
 		{
@@ -1316,7 +1339,7 @@ DWORD procademy::CChatServerSingle::SendMessageSectorAround(CNetPacket* packet, 
 		}
 	}
 
-	return ret;
+	return sum;
 }
 
 void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
@@ -1375,66 +1398,66 @@ void procademy::CChatServerSingle::MakeMonitorStr(WCHAR* s, int size)
 void procademy::CChatServerSingle::MakeRatioMonitorStr(WCHAR* s, int size)
 {
 	LONGLONG idx = 0;
+	double totalPlayerAvg = 0.0;
+	std::unordered_map<int, int> playerDistribute;
+	std::vector<std::pair<int, int>> sortedDist;
+
+	sortedDist.reserve(playerDistribute.size());
+
+	for (int i = 0; i < 50; ++i)
+	{
+		for (int j = 0; j < 50; ++j)
+		{
+			int len;
+			int sum = 0;
+
+			len = mSector[i][j].playerCount.GetUseSize();
+
+			for (int t = 0; t < len; ++t)
+			{
+				sum += mSector[i][j].playerCount.Dequeue();
+			}
+
+			double playerAvg = sum / (double)len;
+
+			playerDistribute[(int)playerAvg]++;
+
+			totalPlayerAvg += playerAvg;
+		}
+	}
+
+	totalPlayerAvg /= 2500.0;
+
 	long total = mRatioMonitor.joinCount + mRatioMonitor.leaveCount + mRatioMonitor.loginCount
-		+ mRatioMonitor.moveSectorCount + mRatioMonitor.sendMsgInCount;
+		+ mRatioMonitor.moveSectorCount;
 	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Join Ratio", total, mRatioMonitor.joinCount, total / (float)mRatioMonitor.joinCount);
 	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Leave Ratio", total, mRatioMonitor.leaveCount, total / (float)mRatioMonitor.leaveCount);
 	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"Login Ratio", total, mRatioMonitor.loginCount, total / (float)mRatioMonitor.loginCount);
 	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"MoveSector Ratio", total, mRatioMonitor.moveSectorCount, total / (float)mRatioMonitor.moveSectorCount);
 	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"SendReq Ratio", total, mRatioMonitor.sendMsgInCount, total / (float)mRatioMonitor.sendMsgInCount);
 	idx += swprintf_s(s + idx, size - idx, L"%22s : (%d / %d) %.2f\n", L"SendMsg Ratio", mRatioMonitor.sendMsgOutCount, mRatioMonitor.sendMsgInCount, mRatioMonitor.sendMsgOutCount / (float)mRatioMonitor.sendMsgInCount);
-	idx += swprintf_s(s + idx, size - idx, L"========================================\n");
-}
+	idx += swprintf_s(s + idx, size - idx, L"%22s : %.2f | ", L"Sector Player Avg", totalPlayerAvg);
 
-void procademy::CChatServerSingle::PrintRecvSendRatio()
-{
-	WCHAR* str = new WCHAR[MAX_STR];
-	mbPrint = false;
-
-	FILE* fout = nullptr;
-	int idx = 0;
-	st_Sector_Around sectorAround;
-
-	_wfopen_s(&fout, L"sectorRatio.csv", L"w");
-
-	if (fout == nullptr)
-		return;
-
-	for (int i = 0; i < 50; ++i)
+	for (auto& each : playerDistribute)
 	{
-		for (int j = 0; j < 50; ++j)
-		{
-			if (mSector[i][j].recvCount != 0)
-			{
-				GetSectorAround(j, i, &sectorAround);
-				double avgPlayers = 0.0;
-
-				for (int i = 0; i < sectorAround.count; ++i)
-				{
-					int curX = sectorAround.around[i].x;
-					int curY = sectorAround.around[i].y;
-
-					avgPlayers += mSector[curY][curX].playerCount / (double)mSector[curY][curX].updateCount;
-				}
-
-				idx += swprintf_s(str + idx, MAX_STR - (LONGLONG)idx, L"%.2lf<%.2lf>,",
-					mSector[i][j].sendCount / (double)mSector[i][j].recvCount,
-					avgPlayers);
-			}
-			else
-			{
-				idx += swprintf_s(str + idx, MAX_STR - (LONGLONG)idx, L"%6d,", 0);
-			}
-		}
-
-		idx += swprintf_s(str + idx, MAX_STR - (LONGLONG)idx, L"\n");
+		sortedDist.push_back({ each.first, each.second });
 	}
 
-	fwprintf_s(fout, str);
+	std::sort(sortedDist.begin(), sortedDist.end(), [](std::pair<int, int>& a, std::pair<int, int>& b)->bool
+		{
+			return a.second > b.second;
+		});
 
-	fclose(fout);
+	int len = sortedDist.size();
 
-	delete[] str;
+	len = len > 5 ? 5 : len;
+
+	for (int i = 0; i < len; ++i)
+	{
+		idx += swprintf_s(s + idx, size - idx, L"%d : %d | ", sortedDist[i].first, sortedDist[i].second);
+	}
+
+	idx += swprintf_s(s + idx, size - idx, L"\n========================================\n");
 }
 
 void procademy::CChatServerSingle::ClearTPS()
@@ -1442,20 +1465,9 @@ void procademy::CChatServerSingle::ClearTPS()
 	mUpdateTPS = 0;
 	mRedisTPS = 0;
 	mLoopCount = 0;
-	for (int i = 0; i < 50; ++i)
-	{
-		for (int j = 0; j < 50; ++j)
-		{
-			mSector[i][j].recvCount = 0;
-			mSector[i][j].sendCount = 0;
-			mSector[i][j].updateCount = 0;
-			mSector[i][j].playerCount = 0;
-		}
-	}
 
 	mRatioMonitor.joinCount = 0;
 	mRatioMonitor.loginCount = 0;
-	mRatioMonitor.inSectorCount = 0;
 	mRatioMonitor.leaveCount = 0;
 	mRatioMonitor.moveSectorCount = 0;
 	mRatioMonitor.sendMsgInCount = 0;
