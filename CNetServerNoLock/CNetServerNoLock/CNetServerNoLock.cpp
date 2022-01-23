@@ -177,7 +177,7 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Bind");
 
 		// 백로그 길이
-		int listenRet = listen(mListenSocket, mMaxClient);
+		int listenRet = listen(mListenSocket, SOMAXCONN_HINT(mMaxClient));
 
 		if (listenRet == SOCKET_ERROR)
 		{
@@ -251,7 +251,7 @@ namespace procademy
 			else
 			{
 				WaitForSingleObject(server->mBeginEvent, INFINITE);
-				server->mbBegin = true;
+				//server->mbBegin = true;
 			}
 		}
 
@@ -488,7 +488,7 @@ namespace procademy
 
 			if (err == WSAENOTSOCK || err == WSAEINTR)
 			{
-				CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Listen Socket Close [Error: %d]", err);
+				CLogger::_Log(dfLOG_LEVEL_ERROR, L"Listen Socket Close [Error: %d]", err);
 
 				return;
 			}
@@ -915,6 +915,8 @@ namespace procademy
 		{
 			return false;
 		}
+
+		mbBegin = true;
 
 		SetEvent(mBeginEvent);
 
