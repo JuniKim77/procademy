@@ -6,6 +6,9 @@
 #include "CCrashDump.h"
 #include "CProfiler.h"
 #include "TextParser.h"
+#include <timeapi.h>
+
+#pragma comment(lib, "winmm")
 
 //struct packetDebug
 //{
@@ -881,6 +884,8 @@ namespace procademy
 
 	CLF_NetServer::CLF_NetServer()
 	{
+		timeBeginPeriod(1);
+
 		WORD		version = MAKEWORD(2, 2);
 		WSADATA		data;
 
@@ -899,6 +904,8 @@ namespace procademy
 			_aligned_free(mSessionArray);
 		}
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServerNoLock End");
+
+		timeEndPeriod(1);
 	}
 
 	bool CLF_NetServer::Start()

@@ -3,9 +3,6 @@
 #include "CCrashDump.h"
 #include "CProfiler.h"
 #include "memoryDebug.h"
-#include <timeapi.h>
-
-#pragma comment(lib, "winmm")
 
 //#define dfTHREAD_NUM (3)
 #define dfSERVER_PORT (6000)
@@ -24,7 +21,6 @@ bool g_btn = false;
 
 int main()
 {
-	timeBeginPeriod(1);
 	InitializeSRWLock(&g_mapLock);
 
 	procademy::CCrashDump::SetHandlerDump();
@@ -32,8 +28,6 @@ int main()
 	server.BeginServer();
 
 	server.RunServer();
-
-	timeEndPeriod(1);
 
 	return 0;
 }
