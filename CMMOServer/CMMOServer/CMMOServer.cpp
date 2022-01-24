@@ -345,7 +345,7 @@ bool procademy::CMMOServer::CreateListenSocket()
 	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Bind");
 
 	// 백로그 길이
-	int listenRet = listen(mListenSocket, mMaxClient);
+	int listenRet = listen(mListenSocket, SOMAXCONN_HINT(mMaxClient));
 
 	if (listenRet == SOCKET_ERROR)
 	{
