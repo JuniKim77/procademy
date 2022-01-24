@@ -14,6 +14,7 @@ namespace procademy
 		CMMOEchoServer();
 		virtual ~CMMOEchoServer();
 		bool			BeginServer();
+		bool			RunServer();
 
 	private:
 		virtual void	AllocSessions(int num) override;
@@ -21,7 +22,7 @@ namespace procademy
 		virtual void	OnError(int errorcode, const WCHAR* log) override;
 		virtual void	OnAuth_Update() override;
 		virtual void	OnGame_Update() override;
-		void			WaitForThreadsFin();
+		void			RunningLoop();
 	
 		static unsigned int WINAPI MonitorThread(LPVOID arg);
 

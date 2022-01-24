@@ -13,9 +13,14 @@ namespace procademy
 	protected:
 		CMMOServer();
 		virtual ~CMMOServer();
+		void Begin();
 		bool Start();
 		void Stop();
 		void QuitServer();
+		void SetServerIP(const WCHAR* server);
+		void SetServerPort(USHORT port);
+		void SetMaxClient(USHORT num) { mMaxClient = num; }
+		void SetTimeOut(int num) { mTimeOut = num; }
 		void SetZeroCopy(bool on);
 		void SetNagle(bool on);
 		void SetSession(CSession* session);
@@ -35,7 +40,6 @@ namespace procademy
 		static unsigned int WINAPI SendThread(LPVOID arg);
 	
 		void Init();
-		void LoadInitFile(const WCHAR* fileName);
 		bool CreateIOCP();
 		bool CreateListenSocket();
 		bool BeginThreads();

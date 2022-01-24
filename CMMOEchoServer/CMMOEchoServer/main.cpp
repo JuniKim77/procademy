@@ -9,8 +9,7 @@ int main()
 	procademy::CMMOEchoServer server;
 
 	server.BeginServer();
-
-	CProfiler::DestroyProfiler();
+	server.RunServer();
 
 	return 0;
 }
