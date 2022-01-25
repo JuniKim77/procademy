@@ -5,13 +5,11 @@
 int main()
 {
 	procademy::CCrashDump::SetHandlerDump();
-	CProfiler::InitProfiler(20);
 
 	procademy::CMMOEchoServer server;
 
 	server.BeginServer();
-
-	CProfiler::DestroyProfiler();
+	server.RunServer();
 
 	return 0;
 }

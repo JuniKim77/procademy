@@ -15,5 +15,7 @@ int main()
 
 	server.BeginServer();
 
+	server.RunServer();
+
 	return 0;
 }

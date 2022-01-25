@@ -7,7 +7,6 @@
 #include "ChatServerDTO.h"
 #include "CCpuUsage.h"
 #include <cpp_redis/cpp_redis>
-#include "CSafeQueue.h"
 #include "ObjectPool_TLS.h"
 #include "CLanClient.h"
 #include "CMonitorClient.h"
@@ -21,12 +20,13 @@ namespace procademy
 	{
 		struct RatioMonitor
 		{
-			long			 joinCount;
-			alignas(64) long loginCount;
-			alignas(64) long leaveCount;
-			alignas(64) long moveSectorCount;
-			alignas(64) long sendMsgInCount;
-			alignas(64) long sendMsgOutCount;
+			long joinCount;
+			long loginCount;
+			long inSectorCount;
+			long leaveCount;
+			long moveSectorCount;
+			long sendMsgInCount;
+			long sendMsgOutCount;
 		};
 
 	private:
@@ -49,13 +49,15 @@ namespace procademy
 		virtual void	OnRecv(SESSION_ID SessionID, CNetPacket* packet) override;
 		virtual void	OnError(int errorcode, const WCHAR* log) override;
 		bool			BeginServer();
-		void			WaitForThreadsFin();
+		bool			RunServer();
+		void			RunningLoop();
 
 	private:
 		static unsigned int WINAPI UpdateFunc(LPVOID arg);
 		static unsigned int WINAPI MonitorFunc(LPVOID arg);
 		static unsigned int WINAPI HeartbeatFunc(LPVOID arg);
 		static unsigned int WINAPI RedisFunc(LPVOID arg);
+		static unsigned int WINAPI RatioFunc(LPVOID arg);
 
 		/// <summary>
 		/// OnRecv가 MsgQ에 넣을 때, 호출할 함수
@@ -88,6 +90,7 @@ namespace procademy
 		bool			CheckTimeOutProc();
 		bool			CompleteLoginProc(SESSION_ID sessionNo, CNetPacket* packet, bool success);
 		bool			RedisProc();
+		bool			RatioProc();
 		void			BeginThreads();
 		void			LoadInitFile(const WCHAR* fileName);
 		void			FreePlayer(st_Player* player);
@@ -106,7 +109,6 @@ namespace procademy
 		DWORD			SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input);
 		void			MakeMonitorStr(WCHAR* s, int size);
 		void			MakeRatioMonitorStr(WCHAR* s, int size);
-		void			PrintRecvSendRatio();
 		void			ClearTPS();
 		void			Init();
 		void			RecordPerformence();
@@ -133,6 +135,7 @@ namespace procademy
 		HANDLE									mMonitoringThread;
 		HANDLE									mHeartbeatThread;
 		HANDLE									mRedisThread;
+		HANDLE									mRatioThread;
 		HANDLE									mIOCP;
 		HANDLE									mRedisIOCP;
 		cpp_redis::client						mRedis;
@@ -144,7 +147,7 @@ namespace procademy
 		CMonitorClient							mMonitorClient;
 
 		ObjectPool_TLS<st_MSG>					mMsgPool;
-		TC_LFQueue64<st_MSG*>					mMsgQ;
+		TC_LFQueue<st_MSG*>						mMsgQ;
 
 		HANDLE									mUpdateEvent = INVALID_HANDLE_VALUE;
 
@@ -162,7 +165,6 @@ namespace procademy
 		bool									mSendToWorker = true;
 		bool									mGQCSEx;
 		bool									mbMonitoring;
-		bool									mbPrint;
 		bool									mbRedisMode;
 		bool									mbProfiler;
 		int										mServerNo;

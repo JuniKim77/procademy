@@ -21,6 +21,7 @@ namespace procademy
 		CMonitorServer();
 		virtual ~CMonitorServer();
 		bool	BeginServer();
+		bool	RunServer();
 		
 		
 	private:
@@ -35,7 +36,7 @@ namespace procademy
 		bool				DBProc();
 		void				LoadInitFile(const WCHAR* fileName);
 		void				BeginThreads();
-		void				WaitForThreadsFin();
+		void				RunningLoop();
 		void				MakeMonitorStr(WCHAR* s, int size);
 		void				ClearTPS();
 		bool				JoinProc(SESSION_ID sessionID);

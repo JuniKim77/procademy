@@ -55,7 +55,7 @@ namespace procademy
 		CSafeQueue<CNetPacket*>		recvCompleteQ;
 		CSafeQueue<CNetPacket*>		sendQ;
 		int							numSendingPacket = 0;
-		alignas(64) long			ioCount;
+		long						ioCount; // Interlock
 		bool						isSending = false;
 		SOCKET						socket = INVALID_SOCKET;
 		u_short						port;

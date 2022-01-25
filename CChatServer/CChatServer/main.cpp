@@ -27,7 +27,7 @@ int main()
 
 	server.BeginServer();
 
-	CProfiler::DestroyProfiler();
+	server.RunServer();
 
 	return 0;
 }

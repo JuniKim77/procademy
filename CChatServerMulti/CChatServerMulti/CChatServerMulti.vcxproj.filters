@@ -101,7 +101,7 @@
     <ClInclude Include="..\..\MemoryPool\MemoryPool\ObjectPool.h">
       <Filter>헤더 파일\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CChatServer\CChatServer\ChatServerDTO.h">
+    <ClInclude Include="MultiChatServerDTO.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

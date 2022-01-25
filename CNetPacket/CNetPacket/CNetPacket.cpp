@@ -52,6 +52,7 @@ namespace procademy
 	{
 		mFront = mBuffer + HEADER_MAX_SIZE;
 		mRear = mFront;
+		mbHeaderSet = false;
 	}
 
 	int CNetPacket::MoveFront(DWORD iSize)
@@ -425,6 +426,17 @@ namespace procademy
 			CProfiler::End(L"Free");
 #endif
 		}
+	}
+
+	void CNetPacket::ReadySend()
+	{
+		if (mbHeaderSet)
+			return;
+
+		SetHeader();
+		Encode();
+
+		mbHeaderSet = true;
 	}
 
 	void CNetPacket::SetHeader()

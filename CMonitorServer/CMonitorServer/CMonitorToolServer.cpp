@@ -6,8 +6,6 @@
 
 procademy::CMonitorToolServer::CMonitorToolServer()
 {
-	LoadInitFile(L"Server.cnf");
-	Init();
 }
 
 procademy::CMonitorToolServer::~CMonitorToolServer()
@@ -15,6 +13,15 @@ procademy::CMonitorToolServer::~CMonitorToolServer()
 }
 
 bool procademy::CMonitorToolServer::BeginServer()
+{
+	LoadInitFile(L"Server.cnf");
+	Begin();
+	Init();
+
+	return true;
+}
+
+bool procademy::CMonitorToolServer::RunServer()
 {
 	if (Start() == false)
 	{
@@ -188,10 +195,48 @@ void procademy::CMonitorToolServer::LoadInitFile(const WCHAR* fileName)
 	TextParser  tp;
 	int         num;
 	WCHAR       buffer[MAX_PARSER_LENGTH] = { 0, };
+	BYTE        code;
+	BYTE        key;
 
 	tp.LoadFile(fileName);
 
-	tp.GetValue(L"LOGIN_KEY", buffer);
+	// Server
+	tp.GetValue(L"BIND_IP", L"TOOL_SERVER", buffer);
+	SetServerIP(buffer);
+
+	tp.GetValue(L"BIND_PORT", L"TOOL_SERVER", &num);
+	SetServerPort(num);
+
+	tp.GetValue(L"IOCP_WORKER_THREAD", L"TOOL_SERVER", &num);
+	mWorkerThreadNum = (BYTE)num;
+
+	tp.GetValue(L"IOCP_ACTIVE_THREAD", L"TOOL_SERVER", &num);
+	mActiveThreadNum = (BYTE)num;
+
+	tp.GetValue(L"CLIENT_MAX", L"TOOL_SERVER", &num);
+	SetMaxClient(num);
+
+	tp.GetValue(L"NAGLE", L"TOOL_SERVER", buffer);
+	if (wcscmp(L"TRUE", buffer) == 0)
+		mbNagle = true;
+	else
+		mbNagle = false;
+
+	tp.GetValue(L"ZERO_COPY", L"TOOL_SERVER", buffer);
+	if (wcscmp(L"TRUE", buffer) == 0)
+		mbZeroCopy = true;
+	else
+		mbZeroCopy = false;
+
+	tp.GetValue(L"PACKET_CODE", L"TOOL_SERVER", &num);
+	code = (BYTE)num;
+	CNetPacket::SetCode(code);
+
+	tp.GetValue(L"PACKET_KEY", L"TOOL_SERVER", &num);
+	key = (BYTE)num;
+	CNetPacket::SetPacketKey(key);
+
+	tp.GetValue(L"LOGIN_KEY", L"TOOL_SERVER", buffer);
 	WideCharToMultiByte(CP_ACP, 0, buffer, -1, mLoginSessionKey, sizeof(mLoginSessionKey), NULL, NULL);
 }
 

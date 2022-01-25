@@ -15,5 +15,7 @@ void procademy::CSession::SendPacket(CNetPacket* packet)
 {
 	packet->AddRef();
 
+	packet->ReadySend();
+
 	sendQ.Enqueue(packet);
 }

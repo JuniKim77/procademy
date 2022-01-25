@@ -6,6 +6,9 @@
 #include "CCrashDump.h"
 #include "CProfiler.h"
 #include "TextParser.h"
+#include <timeapi.h>
+
+#pragma comment(lib, "winmm")
 
 //struct packetDebug
 //{
@@ -177,7 +180,7 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Bind");
 
 		// 백로그 길이
-		int listenRet = listen(mListenSocket, mMaxClient);
+		int listenRet = listen(mListenSocket, SOMAXCONN_HINT(mMaxClient));
 
 		if (listenRet == SOCKET_ERROR)
 		{
@@ -251,7 +254,7 @@ namespace procademy
 			else
 			{
 				WaitForSingleObject(server->mBeginEvent, INFINITE);
-				server->mbBegin = true;
+				//server->mbBegin = true;
 			}
 		}
 
@@ -488,7 +491,7 @@ namespace procademy
 
 			if (err == WSAENOTSOCK || err == WSAEINTR)
 			{
-				CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Listen Socket Close [Error: %d]", err);
+				CLogger::_Log(dfLOG_LEVEL_ERROR, L"Listen Socket Close [Error: %d]", err);
 
 				return;
 			}
@@ -592,13 +595,6 @@ namespace procademy
 				return;
 			}
 
-			if (pOverlapped == nullptr) // I/O Fail
-			{
-				OnError(10000, L"IOCP Error");
-
-				return;
-			}
-
 			session = (Session*)completionKey;
 
 			if (transferredSize != 0)
@@ -647,10 +643,9 @@ namespace procademy
 	{
 		session->recvQ.MoveRear(transferredSize);
 		CNetPacket::st_Header header;
-		DWORD count = 0;
 		bool status = true;
 
-		while (count < transferredSize)
+		while (1)
 		{
 			int useSize = session->recvQ.GetUseSize();
 
@@ -699,7 +694,6 @@ namespace procademy
 #endif			
 			OnRecv(session->sessionID, packet); // -> SendPacket
 
-			count += (ret + sizeof(SHORT));
 			packet->SubRef();
 		}
 #ifdef PROFILE
@@ -890,9 +884,12 @@ namespace procademy
 
 	CLF_NetServer::CLF_NetServer()
 	{
-		LoadInitFile(L"Server.cnf");
-		Init();
-		BeginThreads();
+		timeBeginPeriod(1);
+
+		WORD		version = MAKEWORD(2, 2);
+		WSADATA		data;
+
+		int ret = WSAStartup(version, &data);
 	}
 
 	CLF_NetServer::~CLF_NetServer()
@@ -907,6 +904,8 @@ namespace procademy
 			_aligned_free(mSessionArray);
 		}
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CNetServerNoLock End");
+
+		timeEndPeriod(1);
 	}
 
 	bool CLF_NetServer::Start()
@@ -923,6 +922,8 @@ namespace procademy
 		{
 			return false;
 		}
+
+		mbBegin = true;
 
 		SetEvent(mBeginEvent);
 
@@ -945,6 +946,22 @@ namespace procademy
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CNetServer");
 	}
 
+	void CLF_NetServer::Begin()
+	{
+		Init();
+		BeginThreads();
+	}
+
+	void CLF_NetServer::SetServerIP(const WCHAR* server)
+	{
+		wcscpy_s(mBindIP, _countof(mBindIP), server);
+	}
+
+	void CLF_NetServer::SetServerPort(USHORT port)
+	{
+		mPort = port;
+	}
+
 	bool CLF_NetServer::Disconnect(SESSION_ID SessionID)
 	{
 		Session* session = FindSession(SessionID);
@@ -960,8 +977,6 @@ namespace procademy
 		}
 
 		ret = CancelIoEx((HANDLE)session->socket, nullptr);
-
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Player[%llu] Disconnect", SessionID);
 
 		DecrementIOProc(session, 40040);
 
@@ -981,8 +996,8 @@ namespace procademy
 			g_sessionDebugs[ret] = packet;*/
 			return;
 		}
-		/*ioDebugLog(20010, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
+		
+		packet->ReadySend();
 		packet->AddRef();
 		session->sendQ.Enqueue(packet);
 
@@ -1010,8 +1025,8 @@ namespace procademy
 			g_sessionDebugs[ret] = packet;*/
 			return;
 		}
-		/*ioDebugLog(20010, GetCurrentThreadId(), session->sessionID & 0xffffffff,
-			session->ioBlock.releaseCount.count, session->ioBlock.releaseCount.isReleased);*/
+
+		packet->ReadySend();
 		packet->AddRef();
 		session->sendQ.Enqueue(packet);
 
@@ -1019,58 +1034,5 @@ namespace procademy
 		PostQueuedCompletionStatus(mHcp, 0, (ULONG_PTR)session, (LPOVERLAPPED)1);
 
 		DecrementIOProc(session, 20020);
-	}
-
-	void CLF_NetServer::LoadInitFile(const WCHAR* fileName)
-	{
-		TextParser  tp;
-		int         num;
-		WCHAR       buffer[MAX_PARSER_LENGTH];
-		BYTE        code;
-		BYTE        key;
-
-		tp.LoadFile(fileName);
-
-		tp.GetValue(L"BIND_IP", mBindIP);
-
-		tp.GetValue(L"BIND_PORT", &num);
-		mPort = (u_short)num;
-
-		tp.GetValue(L"PACKET_CODE", &num);
-		code = (BYTE)num;
-		CNetPacket::SetCode(code);
-
-		tp.GetValue(L"PACKET_KEY", &num);
-		key = (BYTE)num;
-		CNetPacket::SetPacketKey(key);
-
-		tp.GetValue(L"IOCP_WORKER_THREAD", &num);
-		mWorkerThreadNum = (BYTE)num;
-
-		tp.GetValue(L"IOCP_ACTIVE_THREAD", &num);
-		mActiveThreadNum = (BYTE)num;
-
-		tp.GetValue(L"CLIENT_MAX", &num);
-		mMaxClient = (u_short)num;
-
-		tp.GetValue(L"NAGLE", buffer);
-		if (wcscmp(L"TRUE", buffer) == 0)
-			mbNagle = true;
-		else
-			mbNagle = false;
-
-		tp.GetValue(L"ZERO_COPY", buffer);
-		if (wcscmp(L"TRUE", buffer) == 0)
-			mbZeroCopy = true;
-		else
-			mbZeroCopy = false;
-
-		tp.GetValue(L"LOG_LEVEL", buffer);
-		if (wcscmp(buffer, L"DEBUG") == 0)
-			CLogger::setLogLevel(dfLOG_LEVEL_DEBUG);
-		else if (wcscmp(buffer, L"WARNING") == 0)
-			CLogger::setLogLevel(dfLOG_LEVEL_SYSTEM);
-		else if (wcscmp(buffer, L"ERROR") == 0)
-			CLogger::setLogLevel(dfLOG_LEVEL_ERROR);
 	}
 }

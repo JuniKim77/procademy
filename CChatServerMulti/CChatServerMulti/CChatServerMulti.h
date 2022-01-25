@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <list>
 #include "TC_LFObjectPool.h"
-#include "ChatServerDTO.h"
+#include "MultiChatServerDTO.h"
 #include "CCpuUsage.h"
 #include <cpp_redis/cpp_redis>
 

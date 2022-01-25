@@ -4,15 +4,13 @@
 
 int main()
 {
-	CProfiler::InitProfiler(80);
-
 	procademy::CCrashDump::SetHandlerDump();
 
 	procademy::CNetLoginServer server;
 
 	server.BeginServer();
 
-	CProfiler::DestroyProfiler();
+	server.RunServer();
 
 	return 0;
 }

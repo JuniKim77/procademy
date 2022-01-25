@@ -1,27 +1,28 @@
 #pragma warning(disable:4101)
 #pragma warning(disable:6387)
 
-#include "CProfiler.h"
+#include "CProfilerClock.h"
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
 #include <wchar.h>
+#include <intrin.h>
 
-CProfiler CProfiler::s_profilers[PROFILE_MAX];
-LONG CProfiler::s_ProfilerIndex = 0;
-DWORD CProfiler::s_MultiProfiler;
-bool CProfiler::s_spinlock = false;
+procademy::CProfilerClock procademy::CProfilerClock::s_profilers[PROFILER_MAX];
+LONG procademy::CProfilerClock::s_ProfilerIndex = 0;
+DWORD procademy::CProfilerClock::s_MultiProfiler;
+bool procademy::CProfilerClock::s_spinlock = false;
 
-CProfiler::CProfiler()
+procademy::CProfilerClock::CProfilerClock()
 {
 	ProfileReset();
 }
 
-CProfiler::~CProfiler()
+procademy::CProfilerClock::~CProfilerClock()
 {
 }
 
-void CProfiler::ProfileBegin(const WCHAR* szName)
+void procademy::CProfilerClock::ProfileBegin(const WCHAR* szName)
 {
 	int idx = SearchName(szName);
 
@@ -35,17 +36,15 @@ void CProfiler::ProfileBegin(const WCHAR* szName)
 	if (mProfiles[idx].bFlag == false)
 	{
 		mProfiles[idx].bFlag = true;
-		mProfiles[idx].type = PROFILE_TYPE::MICRO_SECONDS;
 		wcscat_s(mProfiles[idx].szName, _countof(mProfiles[idx].szName), szName);
 	}
 
-	QueryPerformanceCounter(&mProfiles[idx].lStartTime);
+	mProfiles[idx].lStartTime = __rdtsc();
 }
 
-void CProfiler::ProfileEnd(const WCHAR* szName)
+void procademy::CProfilerClock::ProfileEnd(const WCHAR* szName)
 {
-	LARGE_INTEGER end;
-	QueryPerformanceCounter(&end);
+	unsigned __int64 end = __rdtsc();
 
 	int idx = SearchName(szName);
 
@@ -56,12 +55,12 @@ void CProfiler::ProfileEnd(const WCHAR* szName)
 		return;
 	}
 
-	if (mProfiles[idx].lStartTime.QuadPart == 0)
+	if (mProfiles[idx].lStartTime == 0)
 	{
 		return;
 	}
 
-	__int64 time = end.QuadPart - mProfiles[idx].lStartTime.QuadPart;
+	__int64 time = end - mProfiles[idx].lStartTime;
 
 	mProfiles[idx].iTotalTime += time;
 	++mProfiles[idx].iCall;
@@ -90,7 +89,7 @@ void CProfiler::ProfileEnd(const WCHAR* szName)
 	}
 }
 
-void CProfiler::ProfileSetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type)
+void procademy::CProfilerClock::ProfileSetRecord(const WCHAR* szName, unsigned __int64 data)
 {
 	int idx = SearchName(szName);
 
@@ -105,7 +104,6 @@ void CProfiler::ProfileSetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYP
 	{
 		mProfiles[idx].bFlag = true;
 		wcscat_s(mProfiles[idx].szName, _countof(mProfiles[idx].szName), szName);
-		mProfiles[idx].type = type;
 	}
 
 	mProfiles[idx].iTotalTime += data;
@@ -135,7 +133,7 @@ void CProfiler::ProfileSetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYP
 	}
 }
 
-void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
+void procademy::CProfilerClock::ProfileDataOutText(const WCHAR* szFileName)
 {
 	FILE* fout;
 
@@ -161,13 +159,10 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 		if (mProfiles[i].bFlag == false)
 			break;
 
-		LARGE_INTEGER f;
 		WCHAR line[200];
 
-		QueryPerformanceFrequency(&f);
-		__int64 time = mProfiles[i].iTotalTime;
+		unsigned __int64 time = mProfiles[i].iTotalTime;
 		double avg;
-		double freq = f.QuadPart / 1000000.0;
 
 		if (mProfiles[i].iCall > 4)
 		{
@@ -194,28 +189,9 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 		swprintf_s(threadIdTxt, _countof(threadIdTxt), L"%u |", mThreadId);
 		swprintf_s(nameTxt, _countof(nameTxt), L"%s |", mProfiles[i].szName);
 		swprintf_s(callTxt, _countof(callTxt), L"%lld |", mProfiles[i].iCall);
-
-		switch (mProfiles[i].type)
-		{
-		case PROFILE_TYPE::MICRO_SECONDS:
-			swprintf_s(avgTxt, _countof(avgTxt), L"%.4lfus |", avg / freq);
-			swprintf_s(minTxt, _countof(minTxt), L"%.4lfus |", mProfiles[i].iMin[0] / freq);
-			swprintf_s(maxTxt, _countof(maxTxt), L"%.4lfus |", mProfiles[i].iMax[0] / freq);
-			break;
-		case PROFILE_TYPE::PERCENT:
-			
-			swprintf_s(avgTxt, _countof(avgTxt), L"%.4lf%% |", avg);
-			swprintf_s(minTxt, _countof(minTxt), L"%.4lf%% |", (double)mProfiles[i].iMin[0]);
-			swprintf_s(maxTxt, _countof(maxTxt), L"%.4lf%% |", (double)mProfiles[i].iMax[0]);
-			break;
-		case PROFILE_TYPE::COUNT:
-			swprintf_s(avgTxt, _countof(avgTxt), L"%.4lf |", avg);
-			swprintf_s(minTxt, _countof(minTxt), L"%.4lf |", (double)mProfiles[i].iMin[0]);
-			swprintf_s(maxTxt, _countof(maxTxt), L"%.4lf |", (double)mProfiles[i].iMax[0]);
-			break;
-		default:
-			break;
-		}
+		swprintf_s(avgTxt, _countof(avgTxt), L"%.4lf |", avg);
+		swprintf_s(minTxt, _countof(minTxt), L"%llu |", mProfiles[i].iMin[0]);
+		swprintf_s(maxTxt, _countof(maxTxt), L"%llu |", mProfiles[i].iMax[0]);
 
 		swprintf_s(line, _countof(line), tableSet,
 			threadIdTxt,
@@ -232,39 +208,39 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 	fclose(fout);
 }
 
-void CProfiler::ProfilePrint()
-{
-	for (int i = 0; i < PROFILE_MAX; ++i)
-	{
-		if (mProfiles[i].bFlag == false)
-			break;
-
-		LARGE_INTEGER f;
-
-		QueryPerformanceFrequency(&f);
-		__int64 time = mProfiles[i].iTotalTime;
-		double freq = f.QuadPart / 1000.0;  // ms
-
-		wprintf_s(L"%s : %.3lfms\n", mProfiles[i].szName, time / freq);
-	}
-}
-
-void CProfiler::ProfileReset()
+void procademy::CProfilerClock::ProfileReset()
 {
 	memset(mProfiles, 0, sizeof(mProfiles));
 	for (int i = 0; i < PROFILE_MAX; ++i)
 	{
-		mProfiles[i].iMin[0] = MAXINT64;
-		mProfiles[i].iMin[1] = MAXINT64;
+		mProfiles[i].iMin[0] = MAXUINT64;
+		mProfiles[i].iMin[1] = MAXUINT64;
 	}
 }
 
-void CProfiler::SetThreadId()
+void procademy::CProfilerClock::SetThreadId()
 {
 	mThreadId = GetCurrentThreadId();
 }
 
-void CProfiler::SetProfileFileName(WCHAR* szFileName)
+int procademy::CProfilerClock::SearchName(const WCHAR* s)
+{
+	for (int i = 0; i < PROFILE_MAX; ++i)
+	{
+		if (mProfiles[i].bFlag == false)
+		{
+			return i;
+		}
+		if (wcscmp(mProfiles[i].szName, s) == 0)
+		{
+			return i;
+		}
+	}
+
+	return SEARCH_RESULT_FULL;
+}
+
+void procademy::CProfilerClock::SetProfileFileName(WCHAR* szFileName)
 {
 	tm t;
 	time_t newTime;
@@ -284,9 +260,9 @@ void CProfiler::SetProfileFileName(WCHAR* szFileName)
 	wcscat_s(szFileName, FILE_NAME_MAX, fileName);
 }
 
-void CProfiler::Begin(const WCHAR* szName)
+void procademy::CProfilerClock::Begin(const WCHAR* szName)
 {
-	CProfiler* profiler = (CProfiler*)TlsGetValue(s_MultiProfiler);
+	CProfilerClock* profiler = (CProfilerClock*)TlsGetValue(s_MultiProfiler);
 
 	if (profiler == nullptr)
 	{
@@ -304,16 +280,16 @@ void CProfiler::Begin(const WCHAR* szName)
 	profiler->ProfileBegin(szName);
 }
 
-void CProfiler::End(const WCHAR* szName)
+void procademy::CProfilerClock::End(const WCHAR* szName)
 {
-	CProfiler* profiler = (CProfiler*)TlsGetValue(s_MultiProfiler);
+	CProfilerClock* profiler = (CProfilerClock*)TlsGetValue(s_MultiProfiler);
 
 	profiler->ProfileEnd(szName);
 }
 
-void CProfiler::SetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type)
+void procademy::CProfilerClock::SetRecord(const WCHAR* szName, unsigned __int64 data)
 {
-	CProfiler* profiler = (CProfiler*)TlsGetValue(s_MultiProfiler);
+	CProfilerClock* profiler = (CProfilerClock*)TlsGetValue(s_MultiProfiler);
 
 	if (profiler == nullptr)
 	{
@@ -327,15 +303,15 @@ void CProfiler::SetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type)
 
 		s_spinlock = false;
 	}
-	
-	profiler->ProfileSetRecord(szName, data, type);	
+
+	profiler->ProfileSetRecord(szName, data);
 }
 
-void CProfiler::Print()
+void procademy::CProfilerClock::Print()
 {
 	WCHAR fileName[FILE_NAME_MAX] = L"Profile";
 
-	CProfiler::SetProfileFileName(fileName);
+	CProfilerClock::SetProfileFileName(fileName);
 
 	for (int i = 0; i < s_ProfilerIndex; ++i)
 	{
@@ -344,11 +320,11 @@ void CProfiler::Print()
 	}
 }
 
-void CProfiler::PrintAvg()
+void procademy::CProfilerClock::PrintAvg()
 {
 	WCHAR fileName[FILE_NAME_MAX] = L"Profile";
 
-	CProfiler::SetProfileFileName(fileName);
+	CProfilerClock::SetProfileFileName(fileName);
 
 	int curIndex = s_ProfilerIndex;
 
@@ -380,31 +356,13 @@ void CProfiler::PrintAvg()
 				avg = time / (s_profilers[i].mProfiles[j].iCall);
 			}
 
-			s_profilers[s_ProfilerIndex].SetRecord(s_profilers[i].mProfiles[j].szName, 
-				avg, PROFILE_TYPE::MICRO_SECONDS);
+			s_profilers[s_ProfilerIndex].SetRecord(s_profilers[i].mProfiles[j].szName, avg);
 		}
-		
+
 		s_profilers[i].ProfileDataOutText(fileName);
 		s_profilers[i].ProfileReset();
 	}
 
 	s_profilers[curIndex].ProfileDataOutText(fileName);
 	s_profilers[curIndex].ProfileReset();
-}
-
-int CProfiler::SearchName(const WCHAR* s)
-{
-	for (int i = 0; i < PROFILE_MAX; ++i)
-	{
-		if (mProfiles[i].bFlag == false)
-		{
-			return i;
-		}
-		if (wcscmp(mProfiles[i].szName, s) == 0)
-		{
-			return i;
-		}
-	}
-
-	return SEARCH_RESULT_FULL;
 }

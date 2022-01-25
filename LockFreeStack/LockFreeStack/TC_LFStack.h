@@ -83,7 +83,7 @@ public:
 	void linkCheck(int size);
 
 private:
-	alignas(64) t_Top	mTop;
+	t_Top	mTop; // Interlock
 	alignas(64) int		mSize = 0;
 	procademy::TC_LFObjectPool<Node> mMemoryPool;
 };

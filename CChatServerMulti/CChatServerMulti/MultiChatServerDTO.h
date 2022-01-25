@@ -1,7 +1,6 @@
 #pragma once
+#pragma once
 #pragma warning(disable:26495)
-
-#include "CSafeQueue.h"
 
 namespace procademy
 {
@@ -10,7 +9,8 @@ namespace procademy
 	struct st_Sector
 	{
 		std::list<st_Player*>	list;
-		CSafeQueue<int>			playerCount;
+		int						lockIndex;
+		SRWLOCK					sectorLock;
 	};
 
 	struct st_Coordinate
@@ -44,7 +44,7 @@ namespace procademy
 	struct st_MSG {
 		BYTE			type;
 		SESSION_ID		sessionNo;
-		CNetPacket*		packet;
+		CNetPacket* packet;
 		int				mCounter = 0;
 
 		st_MSG() {

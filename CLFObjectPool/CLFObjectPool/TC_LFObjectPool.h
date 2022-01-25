@@ -91,7 +91,7 @@ namespace procademy
 			LONG64			counter = 0;
 		};
 
-		alignas(64) long	mSize;
+		long	mSize; // Interlock
 		alignas(64) long	mCapacity;
 		bool mbPlacementNew;
 		// 스택 방식으로 반환된 (미사용) 오브젝트 블럭을 관리.
@@ -132,7 +132,7 @@ namespace procademy
 	template<typename DATA>
 	inline DATA* TC_LFObjectPool<DATA>::Alloc(void)
 	{
-		alignas(16) t_Top top;
+		t_Top top;
 		st_BLOCK_NODE* ret;
 		st_BLOCK_NODE* next;
 
@@ -198,7 +198,6 @@ namespace procademy
 	template<typename DATA>
 	inline void TC_LFObjectPool<DATA>::AllocMemory(int size)
 	{
-		//alignas(16) t_Top top;
 		st_BLOCK_NODE* top;
 		st_BLOCK_NODE* node = nullptr;
 

@@ -23,6 +23,7 @@ namespace procademy
 		CMonitorToolServer();
 		virtual ~CMonitorToolServer();
 		bool	BeginServer();
+		bool	RunServer();
 		void	QuitMonitorServer();
 		void	StopMonitorServer();
 		void	StartMonitorServer();
