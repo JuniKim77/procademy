@@ -124,7 +124,7 @@ bool procademy::CMonitorServer::DBProc()
 
     while (!mbExit)
     {
-        DWORD retval = WaitForSingleObjectEx(dummyevent, 60000, true);
+        DWORD retval = WaitForSingleObjectEx(dummyevent, mDBSavePeriod, true);
 
         switch (retval)
         {
@@ -197,6 +197,8 @@ void procademy::CMonitorServer::LoadInitFile(const WCHAR* fileName)
     tp.GetValue(L"LOG_DB_USER", L"DB_INFO", mLogDBUser);
     tp.GetValue(L"LOG_DB_PASS", L"DB_INFO", mLogDBPassword);
     tp.GetValue(L"LOG_DB_SCHEMA", L"DB_INFO", mLogDBSchema);
+
+    tp.GetValue(L"DB_SAVE_PERIOD", L"MONITOR_SERVER", &mDBSavePeriod);
 }
 
 void procademy::CMonitorServer::BeginThreads()
@@ -477,7 +479,6 @@ void procademy::CMonitorServer::DeleteServer(SESSION_ID sessionNo)
 
 void procademy::CMonitorServer::SaveMonitorData()
 {
-    st_DBData dbSets[DATA_SET_SZIE];
     WCHAR timeStr[64];
     WCHAR tableName[64];
     tm t;
@@ -490,7 +491,6 @@ void procademy::CMonitorServer::SaveMonitorData()
 
     swprintf_s(tableName, _countof(tableName), L"monitorLog_%d_%d", t.tm_year + 1900, t.tm_mon + 1);
 
-    LockServer();
     for (auto iter = mServerClients.begin(); iter != mServerClients.end(); ++iter)
     {
         for (int i = 1; i < DATA_SET_SZIE; ++i)
@@ -498,82 +498,72 @@ void procademy::CMonitorServer::SaveMonitorData()
             CSafeQueue<st_MonitorData*>* dataSet = &iter->second->dataSet[i];
 
             int sum = 0;
-            int timeVal = 0;
-            int count = dataSet->GetUseSize();
+            int _avg;
+            int _max;
+            int _min;
             
+            int count = dataSet->GetUseSize();
 
             for (int j = 0; j < count; ++j)
             {
                 st_MonitorData* data = dataSet->Dequeue();
 
                 sum += data->value;
-                timeVal = data->timeStamp;
 
                 mMonitorDataPool.Free(data);
             }
 
-            if (0 == count)
-            {
-                dbSets[i].serverNo = -1;
+            if (count == 0)
                 continue;
-            }
-            
+
+            _max = iter->second->max[i];
+            _min = iter->second->min[i];
+
             if (count > 2)
             {
-                dbSets[i].max = iter->second->max[i];
-                dbSets[i].min = iter->second->min[i];
-                dbSets[i].avg = (sum - dbSets[i].max - dbSets[i].min) / (count - 2);
-                dbSets[i].serverNo = iter->second->serverNo;
-                dbSets[i].type = i;
+                _avg = (sum - _max - _min) / (count - 2);
             }
             else
             {
-                dbSets[i].max = iter->second->max[i];
-                dbSets[i].min = iter->second->min[i];
-                dbSets[i].avg = sum / count;
-                dbSets[i].serverNo = iter->second->serverNo;
-                dbSets[i].type = i;
+                _avg = sum / count;
             }
+
+            do
+            {
+                bool retval = mDB->Query_Save(L"INSERT INTO logdb.`%s` (logtime, serverno, type, avr, min, max) VALUES (cast('%s' As datetime), %d, %d, %d, %d, %d)",
+                    tableName,
+                    timeStr,
+                    iter->second->serverNo,
+                    i,
+                    _avg,
+                    _min,
+                    _max);
+
+                if (false == retval)
+                {
+                    if (mDB->GetLastError() == 1146)
+                    {
+                        retval = mDB->Query_Save(L"CREATE TABLE logdb.`%s` LIKE logdb.`monitorlog`", tableName);
+
+                        if (false == retval)
+                        {
+                            CLogger::_Log(dfLOG_LEVEL_ERROR, mDB->GetLastErrorMsg());
+                        }
+
+                        continue;
+                    }
+                    else
+                    {
+                        CLogger::_Log(dfLOG_LEVEL_ERROR, mDB->GetLastErrorMsg());
+                    }
+                }
+
+                break;
+            } while (1);
 
             iter->second->max[i] = 0;
             iter->second->min[i] = MAXINT32;
         }
-    }
-    UnlockServer();
-
-    for (int i = 1; i < DATA_SET_SZIE;)
-    {
-        if (dbSets[i].serverNo >= 0)
-        {
-            bool retval = mDB->Query_Save(L"INSERT INTO logdb.`%s` (logtime, serverno, type, avr, min, max) VALUES (cast('%s' As datetime), %d, %d, %d, %d, %d)", 
-                tableName,
-                timeStr,
-                dbSets[i].serverNo,
-                dbSets[i].type,
-                dbSets[i].avg,
-                dbSets[i].min,
-                dbSets[i].max);
-
-            if (false == retval)
-            {
-                if (mDB->GetLastError() == 1146)
-                {
-                    retval = mDB->Query_Save(L"CREATE TABLE logdb.`%s` LIKE logdb.`monitorlog`", tableName);
-
-                    if (false == retval)
-                    {
-                        CLogger::_Log(dfLOG_LEVEL_ERROR, mDB->GetLastErrorMsg());
-                    }
-
-                    continue;
-                }
-                else
-                {
-                    CLogger::_Log(dfLOG_LEVEL_ERROR, mDB->GetLastErrorMsg());
-                }
-            }
-        }
-        i++;
     }
 }
 

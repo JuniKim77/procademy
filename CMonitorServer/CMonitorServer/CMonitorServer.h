@@ -76,5 +76,6 @@ namespace procademy
 		WCHAR												mLogDBUser[32];
 		WCHAR												mLogDBPassword[32];
 		WCHAR												mLogDBSchema[32];
+		int													mDBSavePeriod = 60000;
 	};
 }
