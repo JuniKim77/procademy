@@ -649,6 +649,8 @@ bool procademy::CChatServerSingle::CompleteMessage(SESSION_ID sessionNo, CNetPac
 
 	if (ret == false)
 	{
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Update Logic Error. [SessionNo: %llu]", sessionNo);
+
 		Disconnect(sessionNo);
 	}
 
@@ -1001,6 +1003,8 @@ bool procademy::CChatServerSingle::CheckTimeOutProc()
 			if (curTime - playerTime > mTimeOut) // 40000ms
 			{
 				SESSION_ID sessionNo = iter->second->sessionNo;
+
+				CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Time Out. [SessionNo: %llu]", sessionNo);
 
 				Disconnect(sessionNo);
 			}
@@ -1768,7 +1772,6 @@ void procademy::CChatServerSingle::LoadInitFile(const WCHAR* fileName)
 void procademy::CChatServerSingle::FreePlayer(st_Player* player)
 {
 	player->accountNo = 0;
-	player->lastRecvTime = 0;
 	player->curSectorX = -1;
 	player->curSectorY = -1;
 

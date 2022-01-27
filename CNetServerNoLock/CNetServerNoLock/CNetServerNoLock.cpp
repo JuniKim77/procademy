@@ -293,6 +293,11 @@ namespace procademy
 				return true;
 			}
 
+			if (err != WSAECONNRESET)
+			{
+				CLogger::_Log(dfLOG_LEVEL_ERROR, L"RecvPost Unusual [Error: %d]", err);
+			}
+
 			DecrementIOProc(session, 10050);
 
 			return false;
@@ -340,6 +345,11 @@ namespace procademy
 				if (err == WSA_IO_PENDING)
 				{
 					break;
+				}
+
+				if (err != WSAECONNRESET)
+				{
+					CLogger::_Log(dfLOG_LEVEL_ERROR, L"SendPost Unusual [Error: %d]", err);
 				}
 
 				DecrementIOProc(session, 20050);
@@ -454,7 +464,6 @@ namespace procademy
 		closesocket(session->socket);
 
 		session->isSending = false;
-
 
 		while (1)
 		{
@@ -653,12 +662,16 @@ namespace procademy
 			if (header.code != CNetPacket::sCode)
 			{
 				status = false;
+
+				//CLogger::_Log(dfLOG_LEVEL_ERROR, L"Session ID: %d - Code Error", session->sessionID);
 				break;
 			}
 
 			if (header.len > CNetPacket::eBUFFER_DEFAULT)
 			{
 				status = false;
+
+				//CLogger::_Log(dfLOG_LEVEL_ERROR, L"Session ID: %d - Header Len Error", session->sessionID);
 				break;
 			}
 
@@ -965,14 +978,26 @@ namespace procademy
 
 		IncrementIOProc(session, 40000);
 
-		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
+		while (1)
 		{
-			DecrementIOProc(session, 40020);
+			if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
+			{
+				CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Released Already. [SessionNo: %llu]", SessionID);
+				break;
+			}
 
-			return false;
-		}
+			if (session->ioBlock.ioCount == 1)
+			{
+				break;
+			}
 
-		ret = CancelIoEx((HANDLE)session->socket, nullptr);
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [SessionNo: %llu][io:%d][rel:%d]", 
+				SessionID, session->ioBlock.ioCount, session->ioBlock.releaseCount.isReleased);
+
+			ret = CancelIoEx((HANDLE)session->socket, nullptr);
+
+			Sleep(1);
+		}		
 
 		DecrementIOProc(session, 40040);
 
