@@ -423,9 +423,9 @@ bool procademy::CNetLoginServer::LeaveProc(SESSION_ID sessionNo)
 		return false;
 	}
 
-    FreePlayer(player);
-
 	DeletePlayer(sessionNo);
+
+    FreePlayer(player);
 
     return true;
 }
@@ -484,7 +484,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
     player->accountNo = AccountNo;
 
     // token verification
-    bool retval = TokenVerificationProc(AccountNo, SessionKey, player, dbBegin, redisBegin, redisEnd);
+    /*bool retval = TokenVerificationProc(AccountNo, SessionKey, player, dbBegin, redisBegin, redisEnd);
 
     if (retval == false)
     {
@@ -492,7 +492,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
             sessionNo, AccountNo);
 
         return false;
-    }
+    }*/
 
     response = MakeCSResLogin(1, player->accountNo, player->ID, player->nickName, player->dummyIndex);
     {
@@ -502,7 +502,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
 
     QueryPerformanceCounter(&loginEnd);
 
-    UpdateTimeInfo(loginBegin.QuadPart, dbBegin.QuadPart, redisBegin.QuadPart, redisEnd.QuadPart, loginEnd.QuadPart);
+    //UpdateTimeInfo(loginBegin.QuadPart, dbBegin.QuadPart, redisBegin.QuadPart, redisEnd.QuadPart, loginEnd.QuadPart);
 
     return true;
 }
@@ -530,6 +530,8 @@ bool procademy::CNetLoginServer::CheckHeartProc()
                         if (curTime - playerTime > mTimeOut) // 40000ms
                         {
                             releaseSessions.push(iter->second->sessionNo);
+                            //CLogger::_Log(dfLOG_LEVEL_ERROR, L"SessionNo: %llu, Dif Time: %llu, Last Time: %llu", 
+                            //    iter->second->sessionNo, curTime - playerTime, playerTime);
                         }
                     }
                 }

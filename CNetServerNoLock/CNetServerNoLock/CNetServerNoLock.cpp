@@ -592,6 +592,20 @@ namespace procademy
 			CProfiler::Begin(L"GQCS_Net");
 #endif // PROFILE
 
+			if (transferredSize == 0 && pOverlapped != (LPOVERLAPPED)1)
+			{
+				int err = WSAGetLastError();
+
+				if (err == ERROR_SEM_TIMEOUT)
+				{
+					CLogger::_Log(dfLOG_LEVEL_ERROR, L"Timeout 121 %d", err);
+				}
+				else if (err != ERROR_NETNAME_DELETED)
+				{
+					CLogger::_Log(dfLOG_LEVEL_ERROR, L"Else Timeout 121 %d", err);
+				}
+			}
+
 			// ECHO Server End
 			if (transferredSize == 0 && (PULONG_PTR)completionKey == nullptr && pOverlapped == nullptr)
 			{
@@ -977,27 +991,18 @@ namespace procademy
 		BOOL ret;
 
 		IncrementIOProc(session, 40000);
-
-		while (1)
+		
+		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
 		{
-			if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
-			{
-				//CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Released Already. [SessionNo: %llu]", SessionID);
-				break;
-			}
+			//CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Released Already. [SessionNo: %llu]", SessionID);
+			DecrementIOProc(session, 40040);
+			return false;
+		}
 
-			if (session->ioBlock.ioCount == 1)
-			{
-				break;
-			}
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [SessionNo: %llu][io:%d][rel:%d]",
+			SessionID, session->ioBlock.ioCount, session->ioBlock.releaseCount.isReleased);
 
-			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [SessionNo: %llu][io:%d][rel:%d]", 
-				SessionID, session->ioBlock.ioCount, session->ioBlock.releaseCount.isReleased);
-
-			ret = CancelIoEx((HANDLE)session->socket, nullptr);
-
-			Sleep(1);
-		}		
+		ret = CancelIoEx((HANDLE)session->socket, nullptr);
 
 		DecrementIOProc(session, 40040);
 
