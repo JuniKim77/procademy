@@ -469,7 +469,6 @@ namespace procademy
 
 		session->isSending = false;
 
-
 		while (1)
 		{
 			if (session->sendQ.Dequeue(&dummy) == false)
@@ -995,6 +994,9 @@ namespace procademy
 			{
 				break;
 			}
+
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [SessionNo: %llu][io:%d][rel:%d]", 
+				SessionID, session->ioBlock.ioCount, session->ioBlock.releaseCount.isReleased);
 
 			ret = CancelIoEx((HANDLE)session->socket, nullptr);
 
