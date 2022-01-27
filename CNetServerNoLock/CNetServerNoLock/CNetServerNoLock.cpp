@@ -982,7 +982,7 @@ namespace procademy
 		{
 			if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
 			{
-				CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Released Already. [SessionNo: %llu]", SessionID);
+				//CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Released Already. [SessionNo: %llu]", SessionID);
 				break;
 			}
 

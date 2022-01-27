@@ -8,6 +8,10 @@
 #include "TC_LFStack.h"
 #include <stdio.h>
 #include "CProfilerClock.h"
+#include <timeapi.h>
+#include "CSafeQueue.h"
+
+#pragma comment(lib, "winmm")
 
 #define dfTHREAD_MAX (32)
 //#define dfDEBUG
@@ -28,6 +32,7 @@ bool g_spinStack;
 TC_LFStack<int*> g_lfStack;
 
 queue<int*> g_stdQueue;
+procademy::CSafeQueue<int*> g_safeQ;
 SRWLOCK g_stdQueueLock;
 bool g_spinQueue;
 procademy::TC_LFQueue<int*> g_lfQueue;
@@ -71,6 +76,8 @@ void TestFunc(unsigned int WINAPI func(LPVOID arg));
 
 int main()
 {
+	timeBeginPeriod(1);
+
 	g_event = CreateEvent(nullptr, true, false, nullptr);
 
 	srand(time(NULL));
@@ -97,6 +104,8 @@ int main()
 	//CProfiler::PrintAvg();
 	procademy::CProfilerClock::PrintAvg();
 
+	timeEndPeriod(1);
+
 	return 0;
 }
 
@@ -115,12 +124,13 @@ unsigned int __stdcall stdQueue(LPVOID arg)
 #ifdef dfDEBUG
 		_log(DEBUG_TYPE::STL_Q);
 #endif		
-		localNums = g_stdQueue.front();
-		g_stdQueue.pop();
+		//localNums = g_stdQueue.front();
+		//g_stdQueue.pop();
+		localNums = g_safeQ.Dequeue();
 		ReleaseSRWLockExclusive(&g_stdQueueLock);
 		procademy::CProfilerClock::End(L"stdQ");
 		
-		for (int i = 0; i < 1000; ++i)
+		for (int i = 0; i < 100; ++i)
 		{
 			count++;
 		}
@@ -130,11 +140,12 @@ unsigned int __stdcall stdQueue(LPVOID arg)
 #ifdef dfDEBUG
 		_log(DEBUG_TYPE::STL_Q);
 #endif		
-		g_stdQueue.push(localNums);
+		//g_stdQueue.push(localNums);
+		g_safeQ.Enqueue(localNums);
 		ReleaseSRWLockExclusive(&g_stdQueueLock);
 		procademy::CProfilerClock::End(L"stdQ");
 
-		for (int i = 0; i < 1000; ++i)
+		for (int i = 0; i < 100; ++i)
 		{
 			count++;
 		}
@@ -184,8 +195,9 @@ unsigned int __stdcall spinQueue(LPVOID arg)
 #ifdef dfDEBUG
 		_log(DEBUG_TYPE::SPIN_Q);
 #endif	
-		localNums = g_stdQueue.front();
-		g_stdQueue.pop();
+		/*localNums = g_stdQueue.front();
+		g_stdQueue.pop();*/
+		localNums = g_safeQ.Dequeue();
 		g_spinQueue = false;
 		procademy::CProfilerClock::End(L"spinQ");
 
@@ -196,7 +208,8 @@ unsigned int __stdcall spinQueue(LPVOID arg)
 #ifdef dfDEBUG
 		_log(DEBUG_TYPE::SPIN_Q);
 #endif	
-		g_stdQueue.push(localNums);
+		//g_stdQueue.push(localNums);
+		g_safeQ.Enqueue(localNums);
 		g_spinQueue = false;
 		procademy::CProfilerClock::End(L"spinQ");
 	}
@@ -224,7 +237,7 @@ unsigned int __stdcall stdStack(LPVOID arg)
 		ReleaseSRWLockExclusive(&g_stdStackLock);
 		procademy::CProfilerClock::End(L"stdStack");
 
-		for (int i = 0; i < 1000; ++i)
+		for (int i = 0; i < 100; ++i)
 		{
 			count++;
 		}
@@ -238,7 +251,7 @@ unsigned int __stdcall stdStack(LPVOID arg)
 		ReleaseSRWLockExclusive(&g_stdStackLock);
 		procademy::CProfilerClock::End(L"stdStack");
 
-		for (int i = 0; i < 1000; ++i)
+		for (int i = 0; i < 100; ++i)
 		{
 			count++;
 		}
@@ -321,6 +334,7 @@ void init()
 		g_lfQueue.Enqueue(&g_data[i]);
 		g_stdStack.push(&g_data[i]);
 		g_lfStack.Push(&g_data[i]);
+		g_safeQ.Enqueue(&g_data[i]);
 	}
 }
 

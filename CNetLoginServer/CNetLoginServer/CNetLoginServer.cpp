@@ -362,6 +362,7 @@ void procademy::CNetLoginServer::LoadInitFile(const WCHAR* fileName)
 void procademy::CNetLoginServer::FreePlayer(st_Player* player)
 {
     player->accountNo = 0;
+    player->lastRecvTime = 0;
     player->sessionNo = 0;
 
     mPlayerPool.Free(player);
@@ -540,7 +541,7 @@ bool procademy::CNetLoginServer::CheckHeartProc()
                 SESSION_ID sessionNo = releaseSessions.top();
                 releaseSessions.pop();
 
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Time Out. [SessionNo: %llu]", sessionNo);
+                //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Time Out. [SessionNo: %llu]", sessionNo);
 
                 Disconnect(sessionNo);
             }
