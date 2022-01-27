@@ -500,7 +500,6 @@ void procademy::CMonitorServer::SaveMonitorData()
             int sum = 0;
             int timeVal = 0;
             int count = dataSet->GetUseSize();
-            
 
             for (int j = 0; j < count; ++j)
             {

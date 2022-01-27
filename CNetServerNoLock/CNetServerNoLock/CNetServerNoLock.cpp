@@ -76,10 +76,6 @@ namespace procademy
 {
 	void CLF_NetServer::Init()
 	{
-		WORD		version = MAKEWORD(2, 2);
-		WSADATA		data;
-
-		int ret = WSAStartup(version, &data);
 		CLogger::SetDirectory(L"_log");
 
 		mBeginEvent = (HANDLE)CreateEvent(nullptr, false, false, nullptr);
@@ -1030,8 +1026,11 @@ namespace procademy
 		packet->AddRef();
 		session->sendQ.Enqueue(packet);
 
-		IncrementIOProc(session, 20010);
-		PostQueuedCompletionStatus(mHcp, 0, (ULONG_PTR)session, (LPOVERLAPPED)1);
+		if (session->isSending == false)
+		{
+			IncrementIOProc(session, 20010);
+			PostQueuedCompletionStatus(mHcp, 0, (ULONG_PTR)session, (LPOVERLAPPED)1);
+		}
 
 		DecrementIOProc(session, 20020);
 	}
