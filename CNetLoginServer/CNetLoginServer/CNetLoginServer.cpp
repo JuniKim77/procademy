@@ -423,9 +423,11 @@ bool procademy::CNetLoginServer::LeaveProc(SESSION_ID sessionNo)
 		return false;
 	}
 
+    FreePlayer(player);
+
 	DeletePlayer(sessionNo);
 
-    FreePlayer(player);
+    //FreePlayer(player);
 
     return true;
 }
@@ -780,18 +782,15 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
         QueryPerformanceCounter(&beginRedisTime);
 
 		AcquireSRWLockExclusive(&mRedisLock);
-		do
+		if (ret)
 		{
-			if (ret)
-			{
-				mRedis.setex(szAccountNumber, 30, strKey);
-				mRedis.sync_commit();
-			}
-            else
-            {
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Verification Fail %s - %s", szAccountNumber, sessionKey);
-            }
-		} while (0);
+			mRedis.setex(szAccountNumber, 30, strKey);
+			mRedis.sync_commit();
+		}
+		else
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Verification Fail %s - %s", szAccountNumber, sessionKey);
+		}
 		ReleaseSRWLockExclusive(&mRedisLock);
 
         QueryPerformanceCounter(&endRedisTime);

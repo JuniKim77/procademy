@@ -179,9 +179,28 @@ void procademy::CChatServerSingle::RunningLoop()
 	while (1)
 	{
 		char ch = _getch();
+		int idx;
+		int count;
 
 		switch (ch)
 		{
+		case 'e':
+			idx = rand() % mPlayerMap.size();
+
+			count = 0;
+
+			for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end(); ++iter, ++count)
+			{
+				if (count == idx)
+				{
+					SESSION_ID sessionNo = iter->second->sessionNo;
+
+					CLogger::_Log(dfLOG_LEVEL_ERROR, L"Intended Disconnect. [SessionNo: %llu]", sessionNo);
+
+					Disconnect(sessionNo);
+				}
+			}
+			break;
 		case 'g':
 			mbNagle = !mbNagle;
 			SetNagle(mbNagle);
@@ -825,9 +844,11 @@ bool procademy::CChatServerSingle::LeaveProc(SESSION_ID sessionNo)
 
 	mRatioMonitor.leaveCount++;
 
-	FreePlayer(player);
+	//FreePlayer(player);
 
 	DeletePlayer(sessionNo);
+
+	FreePlayer(player);
 
 	return true;
 }

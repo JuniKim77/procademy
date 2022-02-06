@@ -594,15 +594,12 @@ namespace procademy
 
 			if (transferredSize == 0 && pOverlapped != (LPOVERLAPPED)1)
 			{
+				session = (Session*)completionKey;
 				int err = WSAGetLastError();
 
-				if (err == ERROR_SEM_TIMEOUT)
+				if (err == WSA_OPERATION_ABORTED || err == ERROR_CONNECTION_ABORTED)
 				{
-					CLogger::_Log(dfLOG_LEVEL_ERROR, L"Timeout 121 %d", err);
-				}
-				else if (err != ERROR_NETNAME_DELETED)
-				{
-					CLogger::_Log(dfLOG_LEVEL_ERROR, L"Else Timeout 121 %d", err);
+					CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [Session ID: %llu] %d", session->sessionID, err);
 				}
 			}
 
@@ -909,10 +906,12 @@ namespace procademy
 	{
 		timeBeginPeriod(1);
 
-		WORD		version = MAKEWORD(2, 2);
-		WSADATA		data;
+		WSADATA		wsa;
 
-		int ret = WSAStartup(version, &data);
+		if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"WSAStartup [Error: %d]", WSAGetLastError());
+		}
 	}
 
 	CLF_NetServer::~CLF_NetServer()
@@ -999,10 +998,10 @@ namespace procademy
 			return false;
 		}
 
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [SessionNo: %llu][io:%d][rel:%d]",
-			SessionID, session->ioBlock.ioCount, session->ioBlock.releaseCount.isReleased);
-
 		ret = CancelIoEx((HANDLE)session->socket, nullptr);
+
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [ReqSessionNo: %llu] [SessionID: %llu][io:%d][rel:%d]",
+			SessionID, session->sessionID, session->ioBlock.ioCount, session->ioBlock.releaseCount.isReleased);
 
 		DecrementIOProc(session, 40040);
 
