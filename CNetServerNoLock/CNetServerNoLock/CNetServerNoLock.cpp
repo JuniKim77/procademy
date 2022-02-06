@@ -10,67 +10,18 @@
 
 #pragma comment(lib, "winmm")
 
-//struct packetDebug
-//{
-//	int				logicId;
-//	DWORD			threadId;
-//	//void*		pChunk;
-//	int				allocCount;
-//	procademy::CNetPacket*		pPacket;
-//	//LONG		freeCount;
-//};
-//
-//struct ioDebug
-//{
-//	int			logicId;
-//	UINT64		sessionID;
-//	SHORT		released;
-//	SHORT		ioCount;
-//	DWORD		threadId;
-//};
-//
-//USHORT g_debugIdx = 0;
-//packetDebug g_packetDebugs[USHRT_MAX + 1] = { 0, };
-//USHORT g_debugPacket = 0;
-//procademy::CNetPacket* g_sessionDebugs[USHRT_MAX + 1] = { 0, };
-//USHORT g_ioIdx = 0;
-//ioDebug g_ioDebugs[USHRT_MAX + 1] = { 0, };
-//
-//void ioDebugLog(
-//	int			logicId,
-//	DWORD		threadId,
-//	UINT64		sessionID,
-//	SHORT		ioCount,
-//	SHORT		released
-//)
-//{
-//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_ioIdx);
-//
-//	g_ioDebugs[index].logicId = logicId;
-//	g_ioDebugs[index].sessionID = sessionID;
-//	g_ioDebugs[index].ioCount = ioCount;
-//	g_ioDebugs[index].released = released;
-//	g_ioDebugs[index].threadId = threadId;
-//}
-//
-//void packetLog(
-//	int			logicId = -9999,
-//	DWORD		threadId = 0,
-//	//void*		pChunk = nullptr,
-//	procademy::CNetPacket*		pPacket = nullptr,
-//	int			allocCount = -9999
-//	//LONG		freeCount = 9999
-//)
-//{
-//	USHORT index = (USHORT)InterlockedIncrement16((short*)&g_debugIdx);
-//
-//	g_packetDebugs[index].logicId = logicId;
-//	g_packetDebugs[index].threadId = threadId;
-//	//g_packetDebugs[index].pChunk = pChunk;
-//	g_packetDebugs[index].pPacket = pPacket;
-//	g_packetDebugs[index].allocCount = allocCount;
-//	//g_packetDebugs[index].freeCount = freeCount;
-//}
+struct sessionDebug;
+
+extern sessionDebug g_sessionLog[USHRT_MAX + 1];
+extern USHORT g_sessionIdx;
+
+extern void _sessionLog(
+	UINT64 playerNo,
+	UINT64 sessionNo,
+	DWORD lastTime,
+	DWORD threadId,
+	int type,
+	int loginID);
 
 namespace procademy
 {
@@ -599,6 +550,7 @@ namespace procademy
 
 				if (err == WSA_OPERATION_ABORTED || err == ERROR_CONNECTION_ABORTED)
 				{
+					_sessionLog(10, session->sessionID, 10, GetCurrentThreadId(), 1, 30000);
 					CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [Session ID: %llu] %d", session->sessionID, err);
 				}
 			}
@@ -994,12 +946,14 @@ namespace procademy
 		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
 		{
 			//CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Released Already. [SessionNo: %llu]", SessionID);
+			_sessionLog(SessionID, session->sessionID, 10, GetCurrentThreadId(), 1, 10000);
 			DecrementIOProc(session, 40040);
 			return false;
 		}
 
+		_sessionLog(SessionID, session->sessionID, 10, GetCurrentThreadId(), 1, 10010);
 		ret = CancelIoEx((HANDLE)session->socket, nullptr);
-
+		_sessionLog(SessionID, session->sessionID, 10, GetCurrentThreadId(), 1, 10020);
 		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [ReqSessionNo: %llu] [SessionID: %llu][io:%d][rel:%d]",
 			SessionID, session->sessionID, session->ioBlock.ioCount, session->ioBlock.releaseCount.isReleased);
 

@@ -14,6 +14,19 @@
 #include "CLanPacket.h"
 #include "MonitorProtocol.h"
 
+struct sessionDebug;
+
+extern sessionDebug g_sessionLog[USHRT_MAX + 1];
+extern USHORT g_sessionIdx;
+
+extern void _sessionLog(
+    UINT64 playerNo,
+    UINT64 sessionNo,
+    DWORD lastTime,
+    DWORD threadId,
+    int type,
+    int loginID);
+
 procademy::CNetLoginServer::CNetLoginServer()
 {
 }
@@ -531,6 +544,7 @@ bool procademy::CNetLoginServer::CheckHeartProc()
                     {
                         if (curTime - playerTime > mTimeOut) // 40000ms
                         {
+                            _sessionLog(iter->second->sessionNo, 10, iter->second->lastRecvTime, GetCurrentThreadId(), 1, 20000);
                             releaseSessions.push(iter->second->sessionNo);
                             //CLogger::_Log(dfLOG_LEVEL_ERROR, L"SessionNo: %llu, Dif Time: %llu, Last Time: %llu", 
                             //    iter->second->sessionNo, curTime - playerTime, playerTime);
