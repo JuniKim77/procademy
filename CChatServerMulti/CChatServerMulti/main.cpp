@@ -12,8 +12,7 @@ int main()
 	procademy::CCrashDump::SetHandlerDump();
 
 	server.BeginServer();
-
-	CProfiler::DestroyProfiler();
+	server.RunServer();
 
 	return 0;
 }

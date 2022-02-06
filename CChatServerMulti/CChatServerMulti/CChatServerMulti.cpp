@@ -19,9 +19,6 @@ WCHAR str[MAX_STR];
 
 procademy::CChatServerMulti::CChatServerMulti()
 {
-    LoadInitFile(L"Server.cnf");
-    Init();	
-	BeginThreads();
 }
 
 procademy::CChatServerMulti::~CChatServerMulti()
@@ -71,38 +68,48 @@ void procademy::CChatServerMulti::OnError(int errorcode, const WCHAR* log)
 
 bool procademy::CChatServerMulti::BeginServer()
 {
-	HANDLE handles[3] = { mMonitoringThread, mHeartbeatThread };
-
-	if (Start() == false)
-	{
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error");
-
-		return false;
-	}
-
-	WaitForThreadsFin();
-
-	DWORD ret = WaitForMultipleObjects(2, handles, true, INFINITE);
-
-	switch (ret)
-	{
-	case WAIT_FAILED:
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error");
-		break;
-	case WAIT_TIMEOUT:
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error");
-		break;
-	case WAIT_OBJECT_0:
-		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End");
-		break;
-	default:
-		break;
-	}
+    LoadInitFile(L"Server.cnf");
+    Begin();
+    Init();
+    BeginThreads();
 
 	return true;
 }
 
-void procademy::CChatServerMulti::WaitForThreadsFin()
+bool procademy::CChatServerMulti::RunServer()
+{
+    HANDLE handles[3] = { mMonitoringThread, mHeartbeatThread };
+
+    if (Start() == false)
+    {
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error");
+
+        return false;
+    }
+
+    RunningLoop();
+
+    DWORD ret = WaitForMultipleObjects(2, handles, true, INFINITE);
+
+    switch (ret)
+    {
+    case WAIT_FAILED:
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Handle Error");
+        break;
+    case WAIT_TIMEOUT:
+        CLogger::_Log(dfLOG_LEVEL_ERROR, L"ChatServer Thread Timeout Error");
+        break;
+    case WAIT_OBJECT_0:
+        CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"ChatServer End");
+        break;
+    default:
+        break;
+    }
+
+    return true;
+}
+
+void procademy::CChatServerMulti::RunningLoop()
 {
     while (1)
     {
@@ -471,11 +478,11 @@ bool procademy::CChatServerMulti::LeaveProc(SESSION_ID sessionNo)
         UnlockSector(curX, curY);
     }
 
-    FreePlayer(player);
-
     LockPlayerMap();
     DeletePlayer(sessionNo);
     UnlockPlayerMap();
+
+    FreePlayer(player);
 
     return true;
 }
@@ -601,8 +608,6 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
 
     short curX = player->curSectorX;
     short curY = player->curSectorY;
-    
-    mSector[curY][curX].recvCount++;
 
     GetSectorAround(curX, curY, &sectorAround);
     
@@ -610,7 +615,6 @@ bool procademy::CChatServerMulti::SendMessageProc(SESSION_ID sessionNo, CNetPack
     
     DWORD count = SendMessageSectorAround(response, &sectorAround);
 
-    mSector[curY][curX].sendCount += count;
     InterlockedAdd(&mRatioMonitor.sendMsgOutCount, count);
 
     response->SubRef();
@@ -648,8 +652,6 @@ bool procademy::CChatServerMulti::HeartUpdateProc(SESSION_ID sessionNo)
 
 void procademy::CChatServerMulti::BeginThreads()
 {
-    CProfiler::InitProfiler(30);
-
     mMonitoringThread = (HANDLE)_beginthreadex(nullptr, 0, MonitorFunc, this, 0, nullptr);
     mHeartbeatThread = (HANDLE)_beginthreadex(nullptr, 0, HeartbeatFunc, this, 0, nullptr);
 }
@@ -664,27 +666,47 @@ void procademy::CChatServerMulti::LoadInitFile(const WCHAR* fileName)
 
     tp.LoadFile(fileName);
 
-    tp.GetValue(L"PACKET_CODE", &num);
+    // Server
+    tp.GetValue(L"BIND_IP", L"SERVER", buffer);
+    SetServerIP(buffer);
+
+    tp.GetValue(L"BIND_PORT", L"SERVER", &num);
+    SetServerPort(num);
+
+    tp.GetValue(L"IOCP_WORKER_THREAD", L"SERVER", &num);
+    mWorkerThreadNum = (BYTE)num;
+
+    tp.GetValue(L"IOCP_ACTIVE_THREAD", L"SERVER", &num);
+    mActiveThreadNum = (BYTE)num;
+
+    tp.GetValue(L"CLIENT_MAX", L"SERVER", &num);
+    SetMaxClient(num);
+
+    tp.GetValue(L"PACKET_CODE", L"SERVER", &num);
     code = (BYTE)num;
     CNetPacket::SetCode(code);
 
-    tp.GetValue(L"PACKET_KEY", &num);
+    tp.GetValue(L"PACKET_KEY", L"SERVER", &num);
     key = (BYTE)num;
     CNetPacket::SetPacketKey(key);
 
+    // SERVICE
+
 #ifdef TLS_MEMORY_POOL_VER
-    tp.GetValue(L"POOL_SIZE_CHECK", buffer);
+    tp.GetValue(L"POOL_SIZE_CHECK", L"SERVICE", buffer);
     if (wcscmp(L"TRUE", buffer) == 0)
+    {
         CNetPacket::sPacketPool.OnOffCounting();
+    }
 #endif // TLS_MEMORY_POOL_VER
 
-    tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
+    tp.GetValue(L"TIMEOUT_DISCONNECT", L"SERVICE", &mTimeOut);
 
-    tp.GetValue(L"TOKEN_DB_IP", mTokenDBIP);
-    tp.GetValue(L"TOKEN_DB_PORT", &num);
+    tp.GetValue(L"TOKEN_DB_IP", L"SERVICE", mTokenDBIP);
+    tp.GetValue(L"TOKEN_DB_PORT", L"SERVICE", &num);
     mTokenDBPort = (USHORT)num;
 
-    tp.GetValue(L"REDIS_MODE", buffer);
+    tp.GetValue(L"REDIS_MODE", L"SERVICE", buffer);
     if (wcscmp(L"TRUE", buffer) == 0)
         mbRedisMode = true;
     else
@@ -694,7 +716,6 @@ void procademy::CChatServerMulti::LoadInitFile(const WCHAR* fileName)
 void procademy::CChatServerMulti::FreePlayer(st_Player* player)
 {
     player->accountNo = 0;
-    player->lastRecvTime = 0;
     player->curSectorX = -1;
     player->curSectorY = -1;
 
@@ -885,68 +906,9 @@ void procademy::CChatServerMulti::MakeRatioMonitorStr(WCHAR* s, int size)
     idx += swprintf_s(s + idx, size - idx, L"========================================\n");
 }
 
-void procademy::CChatServerMulti::PrintRecvSendRatio()
-{
-    mbPrint = false;
-
-    FILE* fout = nullptr;
-    int idx = 0;
-    st_Sector_Around sectorAround;
-
-    _wfopen_s(&fout, L"sectorRatio.csv", L"w");
-
-    if (fout == nullptr)
-        return;
-
-    for (int i = 0; i < 50; ++i)
-    {
-        for (int j = 0; j < 50; ++j)
-        {
-            if (mSector[i][j].recvCount != 0)
-            {
-                GetSectorAround(j, i, &sectorAround);
-                double avgPlayers = 0.0;
-
-                for (int i = 0; i < sectorAround.count; ++i)
-                {
-                    int curX = sectorAround.around[i].x;
-                    int curY = sectorAround.around[i].y;
-
-                    avgPlayers += mSector[curY][curX].playerCount / (double)mSector[curY][curX].updateCount;
-                }
-
-                idx += swprintf_s(str + idx, MAX_STR - (LONGLONG)idx, L"%.2lf<%.2lf>,",
-                    mSector[i][j].sendCount / (double)mSector[i][j].recvCount,
-                    avgPlayers);
-            }
-            else
-            {
-                idx += swprintf_s(str + idx, MAX_STR - (LONGLONG)idx, L"%6d,", 0);
-            }
-        }
-
-        idx += swprintf_s(str + idx, MAX_STR - (LONGLONG)idx, L"\n");
-    }
-
-    fwprintf_s(fout, str);
-
-    fclose(fout);
-}
-
 void procademy::CChatServerMulti::ClearTPS()
 {
     mUpdateTPS = 0;
-
-    for (int i = 0; i < 50; ++i)
-    {
-        for (int j = 0; j < 50; ++j)
-        {
-            mSector[i][j].recvCount = 0;
-            mSector[i][j].sendCount = 0;
-            mSector[i][j].updateCount = 0;
-            mSector[i][j].playerCount = 0;
-        }
-    }
 
     mRatioMonitor.joinCount = 0;
     mRatioMonitor.loginCount = 0;
