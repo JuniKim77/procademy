@@ -10,9 +10,21 @@
 #include "CProfiler.h"
 #include <conio.h>
 #include "Query.h"
-#include <stack>
 #include "CLanPacket.h"
 #include "MonitorProtocol.h"
+
+struct sessionDebug;
+
+extern sessionDebug g_sessionLog[USHRT_MAX + 1];
+extern USHORT g_sessionIdx;
+
+extern void _sessionLog(
+    UINT64 playerNo,
+    UINT64 sessionNo,
+    DWORD lastTime,
+    DWORD threadId,
+    int type,
+    int loginID);
 
 procademy::CNetLoginServer::CNetLoginServer()
 {
@@ -362,6 +374,7 @@ void procademy::CNetLoginServer::LoadInitFile(const WCHAR* fileName)
 void procademy::CNetLoginServer::FreePlayer(st_Player* player)
 {
     player->accountNo = 0;
+    player->lastRecvTime = 0;
     player->sessionNo = 0;
 
     mPlayerPool.Free(player);
@@ -426,6 +439,8 @@ bool procademy::CNetLoginServer::LeaveProc(SESSION_ID sessionNo)
 
 	DeletePlayer(sessionNo);
 
+    //FreePlayer(player);
+
     return true;
 }
 
@@ -483,7 +498,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
     player->accountNo = AccountNo;
 
     // token verification
-    bool retval = TokenVerificationProc(AccountNo, SessionKey, player, dbBegin, redisBegin, redisEnd);
+    /*bool retval = TokenVerificationProc(AccountNo, SessionKey, player, dbBegin, redisBegin, redisEnd);
 
     if (retval == false)
     {
@@ -491,7 +506,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
             sessionNo, AccountNo);
 
         return false;
-    }
+    }*/
 
     response = MakeCSResLogin(1, player->accountNo, player->ID, player->nickName, player->dummyIndex);
     {
@@ -501,7 +516,7 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
 
     QueryPerformanceCounter(&loginEnd);
 
-    UpdateTimeInfo(loginBegin.QuadPart, dbBegin.QuadPart, redisBegin.QuadPart, redisEnd.QuadPart, loginEnd.QuadPart);
+    //UpdateTimeInfo(loginBegin.QuadPart, dbBegin.QuadPart, redisBegin.QuadPart, redisEnd.QuadPart, loginEnd.QuadPart);
 
     return true;
 }
@@ -509,7 +524,6 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
 bool procademy::CNetLoginServer::CheckHeartProc()
 {
     HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
-    std::stack<SESSION_ID> releaseSessions;
 
     while (!mbExit)
     {
@@ -528,22 +542,15 @@ bool procademy::CNetLoginServer::CheckHeartProc()
                     {
                         if (curTime - playerTime > mTimeOut) // 40000ms
                         {
-                            releaseSessions.push(iter->second->sessionNo);
+                            _sessionLog(iter->second->sessionNo, 10, iter->second->lastRecvTime, GetCurrentThreadId(), 1, 20000);
+                            Disconnect(iter->second->sessionNo);
+                            //CLogger::_Log(dfLOG_LEVEL_ERROR, L"SessionNo: %llu, Dif Time: %llu, Last Time: %llu", 
+                            //    iter->second->sessionNo, curTime - playerTime, playerTime);
                         }
                     }
                 }
             }
             ReleaseSRWLockShared(&mPlayerMapLock);
-
-            while (!releaseSessions.empty())
-            {
-                SESSION_ID sessionNo = releaseSessions.top();
-                releaseSessions.pop();
-
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Time Out. [SessionNo: %llu]", sessionNo);
-
-                Disconnect(sessionNo);
-            }
         }
     }
 
@@ -777,18 +784,15 @@ bool procademy::CNetLoginServer::TokenVerificationProc(INT64 accountNo, char* se
         QueryPerformanceCounter(&beginRedisTime);
 
 		AcquireSRWLockExclusive(&mRedisLock);
-		do
+		if (ret)
 		{
-			if (ret)
-			{
-				mRedis.setex(szAccountNumber, 30, strKey);
-				mRedis.sync_commit();
-			}
-            else
-            {
-                CLogger::_Log(dfLOG_LEVEL_ERROR, L"Verification Fail %s - %s", szAccountNumber, sessionKey);
-            }
-		} while (0);
+			mRedis.setex(szAccountNumber, 30, strKey);
+			mRedis.sync_commit();
+		}
+		else
+		{
+			CLogger::_Log(dfLOG_LEVEL_ERROR, L"Verification Fail %s - %s", szAccountNumber, sessionKey);
+		}
 		ReleaseSRWLockExclusive(&mRedisLock);
 
         QueryPerformanceCounter(&endRedisTime);

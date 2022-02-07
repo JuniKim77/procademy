@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{e4631094-1c04-4ddd-b41f-1fbef75dbcf2}</ProjectGuid>
-    <RootNamespace>stackqueuetest</RootNamespace>
+    <ProjectGuid>{a6458d9b-eb36-437c-896a-c1d3a45563bd}</ProjectGuid>
+    <RootNamespace>stringcrtlremover</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -116,8 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\CLF_Queue\CLF_Queue;..\..\CSafeQueue\CSafeQueue;..\..\LockFreeStack\LockFreeStack;..\..\Multi_Profiler\Multi_Profiler;..\..\TextParser\TextParser;..\..\CLFObjectPool\CLFObjectPool;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\..\Multi_Profiler\Multi_Profiler;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,8 +131,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>..\..\CLF_Queue\CLF_Queue;..\..\CSafeQueue\CSafeQueue;..\..\LockFreeStack\LockFreeStack;..\..\Multi_Profiler\Multi_Profiler;..\..\TextParser\TextParser;..\..\CLFObjectPool\CLFObjectPool;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CProfilerClock\CProfilerClock;..\..\CSafeStack\CSafeStack;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Multi_Profiler\Multi_Profiler;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,25 +142,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp" />
-    <ClCompile Include="..\..\CProfilerClock\CProfilerClock\CProfilerClock.cpp" />
-    <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
     <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp" />
-    <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\CLFObjectPool\CLFObjectPool\TC_LFObjectPool.h" />
-    <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue.h" />
-    <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue64.h" />
-    <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
-    <ClInclude Include="..\..\CProfilerClock\CProfilerClock\CProfilerClock.h" />
-    <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
-    <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h" />
-    <ClInclude Include="..\..\CSafeStack\CSafeStack\CSafeStack.h" />
-    <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h" />
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h" />
-    <ClInclude Include="..\..\TextParser\TextParser\TextParser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
