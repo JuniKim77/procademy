@@ -76,7 +76,7 @@ namespace procademy
 		void SetServerPort(USHORT port);
 		void SetMaxClient(USHORT num) { mMaxClient = num; }
 
-		bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
+		void Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
 		void SendPacket(SESSION_ID SessionID, CNetPacket* packet); // SESSION_ID / HOST_ID
 		void SendPacketToWorker(SESSION_ID SessionID, CNetPacket* packet);
 		virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept Á÷ÈÄ
@@ -125,10 +125,11 @@ namespace procademy
 		SESSION_ID GenerateSessionID();
 		u_short GetIndexFromSessionNo(SESSION_ID sessionNo);
 		u_int64 GetLowNumFromSessionNo(SESSION_ID sessionNo);
+		void DisconnectProc(SESSION_ID SessionID);
 
 	private:
 		enum {
-			SEND_BUF_SIZE = 8192
+			SEND_BUF_SIZE = 8192,
 		};
 
 		SOCKET				mListenSocket = INVALID_SOCKET;

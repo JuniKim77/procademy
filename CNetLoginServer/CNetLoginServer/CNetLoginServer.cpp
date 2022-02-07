@@ -10,7 +10,6 @@
 #include "CProfiler.h"
 #include <conio.h>
 #include "Query.h"
-#include <stack>
 #include "CLanPacket.h"
 #include "MonitorProtocol.h"
 
@@ -525,7 +524,6 @@ bool procademy::CNetLoginServer::LoginProc(SESSION_ID sessionNo, CNetPacket* pac
 bool procademy::CNetLoginServer::CheckHeartProc()
 {
     HANDLE dummyevent = CreateEvent(nullptr, false, false, nullptr);
-    std::stack<SESSION_ID> releaseSessions;
 
     while (!mbExit)
     {
@@ -545,7 +543,7 @@ bool procademy::CNetLoginServer::CheckHeartProc()
                         if (curTime - playerTime > mTimeOut) // 40000ms
                         {
                             _sessionLog(iter->second->sessionNo, 10, iter->second->lastRecvTime, GetCurrentThreadId(), 1, 20000);
-                            releaseSessions.push(iter->second->sessionNo);
+                            Disconnect(iter->second->sessionNo);
                             //CLogger::_Log(dfLOG_LEVEL_ERROR, L"SessionNo: %llu, Dif Time: %llu, Last Time: %llu", 
                             //    iter->second->sessionNo, curTime - playerTime, playerTime);
                         }
@@ -553,16 +551,6 @@ bool procademy::CNetLoginServer::CheckHeartProc()
                 }
             }
             ReleaseSRWLockShared(&mPlayerMapLock);
-
-            while (!releaseSessions.empty())
-            {
-                SESSION_ID sessionNo = releaseSessions.top();
-                releaseSessions.pop();
-
-                //CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Time Out. [SessionNo: %llu]", sessionNo);
-
-                Disconnect(sessionNo);
-            }
         }
     }
 

@@ -537,35 +537,47 @@ namespace procademy
 			Session* completionKey = nullptr;
 			WSAOVERLAPPED* pOverlapped = nullptr;
 			Session* session = nullptr;
+			int err = 0;
 			
 			BOOL gqcsRet = GetQueuedCompletionStatus(mHcp, &transferredSize, (PULONG_PTR)&completionKey, &pOverlapped, INFINITE);
 #ifdef PROFILE
 			CProfiler::Begin(L"GQCS_Net");
 #endif // PROFILE
-
-			if (transferredSize == 0 && pOverlapped != (LPOVERLAPPED)1)
-			{
-				session = (Session*)completionKey;
-				int err = WSAGetLastError();
-
-				if (err == WSA_OPERATION_ABORTED || err == ERROR_CONNECTION_ABORTED)
-				{
-					_sessionLog(10, session->sessionID, 10, GetCurrentThreadId(), 1, 30000);
-					CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [Session ID: %llu] %d", session->sessionID, err);
-				}
-			}
-
-			// ECHO Server End
-			if (transferredSize == 0 && (PULONG_PTR)completionKey == nullptr && pOverlapped == nullptr)
-			{
-				PostQueuedCompletionStatus(mHcp, 0, 0, 0);
-
-				return;
-			}
-
 			session = (Session*)completionKey;
 
-			if (transferredSize != 0)
+			if (transferredSize == 0)
+			{
+				INT64 type = (INT64)pOverlapped;
+
+				switch (type)
+				{
+				case 0: // ECHO Server End
+					PostQueuedCompletionStatus(mHcp, 0, 0, 0);
+					return;
+				case 1: // SEND_TO_WORKER
+#ifdef PROFILE
+					CProfiler::Begin(L"SendPost");
+					SendPost(session);
+					CProfiler::End(L"SendPost");
+#else
+					SendPost(session);
+#endif // PROFILE
+					break;
+				case 2: // DISCONNECT
+					DisconnectProc((SESSION_ID)completionKey);
+					continue;
+				default:
+					err = WSAGetLastError();
+
+					if (err == WSA_OPERATION_ABORTED || err == ERROR_CONNECTION_ABORTED)
+					{
+						_sessionLog(10, session->sessionID, 10, GetCurrentThreadId(), 1, 30000);
+						CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [Session ID: %llu] %d", session->sessionID, err);
+					}
+					break;
+				}
+			}
+			else
 			{
 				if (pOverlapped == &session->recvOverlapped) // Recv
 				{
@@ -587,17 +599,6 @@ namespace procademy
 					CompleteSend(session, transferredSize);
 #endif // PROFILE
 				}
-			}
-
-			if (transferredSize == 0 && pOverlapped == (LPOVERLAPPED)1)
-			{
-#ifdef PROFILE
-				CProfiler::Begin(L"SendPost");
-				SendPost(session);
-				CProfiler::End(L"SendPost");
-#else
-				SendPost(session);
-#endif // PROFILE
 			}
 
 			DecrementIOProc(session, 10000);
@@ -747,6 +748,29 @@ namespace procademy
 	u_int64 CLF_NetServer::GetLowNumFromSessionNo(SESSION_ID sessionNo)
 	{
 		return sessionNo & 0xffffffffffff;
+	}
+
+	void CLF_NetServer::DisconnectProc(SESSION_ID SessionID)
+	{
+		Session* session = FindSession(SessionID);
+		BOOL ret;
+
+		IncrementIOProc(session, 40000);
+
+		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
+		{
+			_sessionLog(SessionID, session->sessionID, 10, GetCurrentThreadId(), 1, 10000);
+			DecrementIOProc(session, 40020);
+			return;
+		}
+
+		_sessionLog(SessionID, session->sessionID, 10, GetCurrentThreadId(), 1, 10010);
+		ret = CancelIoEx((HANDLE)session->socket, nullptr);
+		_sessionLog(SessionID, session->sessionID, 10, GetCurrentThreadId(), 1, 10020);
+		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [ReqSessionNo: %llu] [SessionID: %llu][io:%d][rel:%d]",
+			SessionID, session->sessionID, session->ioBlock.ioCount, session->ioBlock.releaseCount.isReleased);
+
+		DecrementIOProc(session, 40040);
 	}
 
 	ULONG CLF_NetServer::GetSessionIP(SESSION_ID sessionNo)
@@ -936,30 +960,9 @@ namespace procademy
 		mPort = port;
 	}
 
-	bool CLF_NetServer::Disconnect(SESSION_ID SessionID)
+	void CLF_NetServer::Disconnect(SESSION_ID SessionID)
 	{
-		Session* session = FindSession(SessionID);
-		BOOL ret;
-
-		IncrementIOProc(session, 40000);
-		
-		if (session->ioBlock.releaseCount.isReleased == 1 || SessionID != session->sessionID)
-		{
-			//CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect - Released Already. [SessionNo: %llu]", SessionID);
-			_sessionLog(SessionID, session->sessionID, 10, GetCurrentThreadId(), 1, 10000);
-			DecrementIOProc(session, 40040);
-			return false;
-		}
-
-		_sessionLog(SessionID, session->sessionID, 10, GetCurrentThreadId(), 1, 10010);
-		ret = CancelIoEx((HANDLE)session->socket, nullptr);
-		_sessionLog(SessionID, session->sessionID, 10, GetCurrentThreadId(), 1, 10020);
-		CLogger::_Log(dfLOG_LEVEL_ERROR, L"Disconnect [ReqSessionNo: %llu] [SessionID: %llu][io:%d][rel:%d]",
-			SessionID, session->sessionID, session->ioBlock.ioCount, session->ioBlock.releaseCount.isReleased);
-
-		DecrementIOProc(session, 40040);
-
-		return ret;
+		PostQueuedCompletionStatus(mHcp, 0, (ULONG_PTR)SessionID, (LPOVERLAPPED)2);
 	}
 
 	void CLF_NetServer::SendPacket(SESSION_ID SessionID, CNetPacket* packet)

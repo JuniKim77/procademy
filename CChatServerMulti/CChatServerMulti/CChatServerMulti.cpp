@@ -192,7 +192,6 @@ void procademy::CChatServerMulti::Init()
 
 bool procademy::CChatServerMulti::CheckHeartProc()
 {
-    std::stack<SESSION_ID>  stk;
     ULONGLONG               curTime;
     HANDLE                  dummyevent = CreateEvent(nullptr, false, false, nullptr);
     DWORD                   retval;
@@ -206,7 +205,7 @@ bool procademy::CChatServerMulti::CheckHeartProc()
         {
             curTime = GetTickCount64();
 
-            /*LockPlayerMap(false);
+            LockPlayerMap(false);
             {
                 for (auto iter = mPlayerMap.begin(); iter != mPlayerMap.end(); ++iter)
                 {
@@ -215,20 +214,12 @@ bool procademy::CChatServerMulti::CheckHeartProc()
                     {
                         if (curTime - playerTime > mTimeOut)
                         {
-                            stk.push(iter->second->sessionNo);
+                            Disconnect(iter->second->sessionNo);
                         }
                     }
                 }
             }
-            UnlockPlayerMap(false);*/
-
-            while (!stk.empty())
-            {
-                sessionNo = stk.top();
-                stk.pop();
-
-                Disconnect(sessionNo);
-            }
+            UnlockPlayerMap(false);
 
             return true;
         }
