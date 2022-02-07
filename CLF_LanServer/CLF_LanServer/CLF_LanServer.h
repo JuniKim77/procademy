@@ -69,6 +69,10 @@ namespace procademy
 		virtual ~CLF_LanServer();
 		bool Start();
 		void Stop();
+		void Begin();
+		void SetServerIP(const WCHAR* server);
+		void SetServerPort(USHORT port);
+		void SetMaxClient(USHORT num) { mMaxClient = num; }
 
 		bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
 		void SendPacket(SESSION_ID SessionID, CLanPacket* packet); // SESSION_ID / HOST_ID
@@ -77,7 +81,6 @@ namespace procademy
 
 		virtual void OnClientJoin(SESSION_ID SessionID) = 0; //< Accept 후 접속처리 완료 후 호출.
 		virtual void OnClientLeave(SESSION_ID SessionID) = 0; //< Release 후 호출
-		void LoadInitFile(const WCHAR* fileName);
 
 		virtual void OnRecv(SESSION_ID SessionID, CLanPacket* packet) = 0; //< 패킷 수신 완료 후
 		//	virtual void OnSend(SessionID, int sendsize) = 0;           < 패킷 송신 완료 후

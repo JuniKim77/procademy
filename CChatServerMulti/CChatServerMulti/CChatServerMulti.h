@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <list>
 #include "TC_LFObjectPool.h"
-#include "ChatServerDTO.h"
+#include "MultiChatServerDTO.h"
 #include "CCpuUsage.h"
 #include <cpp_redis/cpp_redis>
 
@@ -34,7 +34,8 @@ namespace procademy
 		virtual void				OnRecv(SESSION_ID SessionID, CNetPacket* packet) override;
 		virtual void				OnError(int errorcode, const WCHAR* log) override;
 		bool						BeginServer();
-		void						WaitForThreadsFin();
+		bool						RunServer();
+		void						RunningLoop();
 
 	private:
 		void						Init();
@@ -59,7 +60,6 @@ namespace procademy
 		DWORD						SendMessageSectorAround(CNetPacket* packet, st_Sector_Around* input);
 		void						MakeMonitorStr(WCHAR* s, int size);
 		void						MakeRatioMonitorStr(WCHAR* s, int size);
-		void						PrintRecvSendRatio();
 		void						ClearTPS();
 		void						RecordPerformentce();
 		void						LockSector(WORD x, WORD y, bool exclusive = true);

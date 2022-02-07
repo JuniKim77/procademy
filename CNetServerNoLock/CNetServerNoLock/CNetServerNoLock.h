@@ -6,8 +6,8 @@
 #include <WinSock2.h>
 #include "RingBuffer.h"
 #include "TC_LFStack.h"
-#include "TC_LFQueue64.h"
-//#include "TC_LFQueue.h"
+//#include "TC_LFQueue64.h"
+#include "TC_LFQueue.h"
 //#include "myNew.h"
 
 //#define PROFILE
@@ -38,8 +38,8 @@ namespace procademy
 			WSAOVERLAPPED							recvOverlapped;
 			WSAOVERLAPPED							sendOverlapped;
 			RingBuffer								recvQ;
-			TC_LFQueue64<CNetPacket*>				sendQ;
-			alignas(64) SessionIoCount				ioBlock;
+			TC_LFQueue<CNetPacket*>					sendQ;
+			alignas(64) SessionIoCount				ioBlock; // Interlock
 			alignas(64) bool						isSending;
 			int										numSendingPacket = 0;
 			SOCKET									socket = INVALID_SOCKET;
@@ -71,15 +71,18 @@ namespace procademy
 		virtual ~CLF_NetServer();
 		bool Start();
 		void Stop();
+		void Begin();
+		void SetServerIP(const WCHAR* server);
+		void SetServerPort(USHORT port);
+		void SetMaxClient(USHORT num) { mMaxClient = num; }
 
-		bool Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
+		void Disconnect(SESSION_ID SessionID);// SESSION_ID / HOST_ID
 		void SendPacket(SESSION_ID SessionID, CNetPacket* packet); // SESSION_ID / HOST_ID
 		void SendPacketToWorker(SESSION_ID SessionID, CNetPacket* packet);
 		virtual bool OnConnectionRequest(u_long IP, u_short Port) = 0; //< accept 직후
 
 		virtual void OnClientJoin(SESSION_ID SessionID) = 0; //< Accept 후 접속처리 완료 후 호출.
 		virtual void OnClientLeave(SESSION_ID SessionID) = 0; //< Release 후 호출
-		void LoadInitFile(const WCHAR* fileName);
 
 		virtual void OnRecv(SESSION_ID SessionID, CNetPacket* packet) = 0; //< 패킷 수신 완료 후
 		//	virtual void OnSend(SessionID, int sendsize) = 0;           < 패킷 송신 완료 후
@@ -122,10 +125,11 @@ namespace procademy
 		SESSION_ID GenerateSessionID();
 		u_short GetIndexFromSessionNo(SESSION_ID sessionNo);
 		u_int64 GetLowNumFromSessionNo(SESSION_ID sessionNo);
+		void DisconnectProc(SESSION_ID SessionID);
 
 	private:
 		enum {
-			SEND_BUF_SIZE = 8192
+			SEND_BUF_SIZE = 8192,
 		};
 
 		SOCKET				mListenSocket = INVALID_SOCKET;

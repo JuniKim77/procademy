@@ -3,7 +3,6 @@
 
 procademy::CMonitorClient::CMonitorClient()
 {
-	Start();
 }
 
 procademy::CMonitorClient::~CMonitorClient()
@@ -12,7 +11,14 @@ procademy::CMonitorClient::~CMonitorClient()
 
 bool procademy::CMonitorClient::BeginClient()
 {
-	return Start();
+	Begin();
+
+	return true;
+}
+
+void procademy::CMonitorClient::RunClient()
+{
+	Start();
 }
 
 void procademy::CMonitorClient::OnEnterJoinServer()

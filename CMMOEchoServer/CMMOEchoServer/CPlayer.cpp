@@ -138,9 +138,6 @@ procademy::CNetPacket* procademy::CPlayer::MakeCSGameResLogin(BYTE status, INT64
 
 	*packet << (WORD)en_PACKET_CS_GAME_RES_LOGIN << status << accountNo;
 
-	packet->SetHeader();
-	packet->Encode();
-
 	return packet;
 }
 
@@ -149,9 +146,6 @@ procademy::CNetPacket* procademy::CPlayer::MakeCSGameResEcho(INT64 accountNo, LO
 	CNetPacket* packet = CNetPacket::AllocAddRef();
 
 	*packet << (WORD)en_PACKET_CS_GAME_RES_ECHO << accountNo << sendTick;
-
-	packet->SetHeader();
-	packet->Encode();
 
 	return packet;
 }

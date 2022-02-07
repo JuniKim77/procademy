@@ -40,6 +40,15 @@ void procademy::CRedis_TLS::DestroyRedis_TLS()
 	delete[] s_RedisArray;
 }
 
+void procademy::CRedis_TLS::SetRedis(const char* key, int time, std::string& value)
+{
+	cpp_redis::client* redis = GetRedis();
+
+	//redis->set(key, value);
+	redis->setex(key, time, value);
+	redis->sync_commit();
+}
+
 cpp_redis::client* procademy::CRedis_TLS::GetRedis()
 {
 	cpp_redis::client* redis = (cpp_redis::client*)TlsGetValue(s_RedisTls);

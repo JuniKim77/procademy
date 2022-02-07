@@ -6,76 +6,19 @@
 #include <time.h>
 #include <string.h>
 #include <wchar.h>
-#include "TextParser.h"
 
-CProfiler** CProfiler::s_profilers;
+CProfiler CProfiler::s_profilers[PROFILE_MAX];
 LONG CProfiler::s_ProfilerIndex = 0;
 DWORD CProfiler::s_MultiProfiler;
-SRWLOCK CProfiler::s_lock;
+bool CProfiler::s_spinlock = false;
 
-CProfiler::CProfiler(const WCHAR* szmSettingFileName)
+CProfiler::CProfiler()
 {
-	ProfileInitialize(szmSettingFileName);
 	ProfileReset();
 }
 
 CProfiler::~CProfiler()
 {
-	if (mColumnSize != 0)
-	{
-		for (int i = 0; i < mColumnSize; ++i)
-		{
-			delete[] mSetting.colNames[i];
-		}
-
-		delete[] mSetting.colNames;
-		delete[] mSetting.colSize;
-	}
-
-	wprintf_s(L"Exit CProfiler\n");
-}
-
-void CProfiler::ProfileInitialize(const WCHAR* szmSettingFileName)
-{
-	TextParser	tp;
-	int			num;
-	WCHAR       buffer[MAX_PARSER_LENGTH];
-
-	tp.LoadFile(szmSettingFileName);
-
-	tp.GetValue(L"COLUMN_SIZE", &num);
-	mColumnSize = num;
-
-	mSetting.colNames = new WCHAR * [mColumnSize];
-	mSetting.colSize = new int[mColumnSize];
-
-	for (int i = 0; i < mColumnSize; ++i)
-	{
-		mSetting.colNames[i] = new WCHAR[NAME_MAX];
-	}
-	//COLUMN_NAME_1
-	for (int i = 0; i < mColumnSize; ++i)
-	{
-		WCHAR colName[NAME_MAX];
-
-		swprintf_s(colName, L"COLUMN_NAME_%d", i + 1);
-
-		tp.GetValue(colName, mSetting.colNames[i]);
-		
-		wcscat_s(mSetting.colNames[i], NAME_MAX, L"  |");
-	}
-
-	mSetting.totalSize = 2;
-
-	for (int i = 0; i < mColumnSize; ++i)
-	{
-		WCHAR colName[NAME_MAX];
-
-		swprintf_s(colName, L"COLUMN_SIZE_%d", i + 1);
-		tp.GetValue(colName, &mSetting.colSize[i]);
-
-		mSetting.totalSize += mSetting.colSize[i];
-	}
 }
 
 void CProfiler::ProfileBegin(const WCHAR* szName)
@@ -198,30 +141,17 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 
 	_wfopen_s(&fout, szFileName, L"a");
 
-	WCHAR* div = new WCHAR[mSetting.totalSize];
-	wmemset(div, L'-', mSetting.totalSize);
-	div[mSetting.totalSize - 2] = L'\n';
-	div[mSetting.totalSize - 1] = L'\0';
+	WCHAR div[126];
+	wmemset(div, L'-', _countof(div));
+	div[_countof(div) - 2] = L'\n';
+	div[_countof(div) - 1] = L'\0';
 
 	fwprintf_s(fout, L"%ls", div);
 
-	WCHAR* tableName = new WCHAR[mSetting.totalSize];
-	WCHAR tableSet[FILE_NAME_MAX];
-	swprintf_s(tableSet, FILE_NAME_MAX, L"%%%dls%%%dls%%%dls%%%dls%%%dls%%%dls",
-		mSetting.colSize[0],
-		mSetting.colSize[1],
-		mSetting.colSize[2],
-		mSetting.colSize[3],
-		mSetting.colSize[4],
-		mSetting.colSize[5]);
+	WCHAR tableName[126];
+	WCHAR tableSet[FILE_NAME_MAX] = L"%12s%25s%24s%24s%24s%15s";
 
-	swprintf_s(tableName, mSetting.totalSize, tableSet,
-		mSetting.colNames[0],
-		mSetting.colNames[1],
-		mSetting.colNames[2],
-		mSetting.colNames[3],
-		mSetting.colNames[4],
-		mSetting.colNames[5]);
+	swprintf_s(tableName, _countof(tableName), tableSet, L"ThreadID  |", L"Name  |", L"Average  |", L"Min  |", L"Max  |", L"Call  |");
 
 	fwprintf_s(fout, L"%ls\n", tableName);
 	fwprintf_s(fout, L"%ls", div);
@@ -300,9 +230,6 @@ void CProfiler::ProfileDataOutText(const WCHAR* szFileName)
 	fwprintf_s(fout, L"%ls\n", div);
 
 	fclose(fout);
-
-	delete[] div;
-	delete[] tableName;
 }
 
 void CProfiler::ProfilePrint()
@@ -357,39 +284,21 @@ void CProfiler::SetProfileFileName(WCHAR* szFileName)
 	wcscat_s(szFileName, FILE_NAME_MAX, fileName);
 }
 
-void CProfiler::InitProfiler(int num)
-{
-	s_MultiProfiler = TlsAlloc();
-	InitializeSRWLock(&s_lock);
-	s_profilers = new CProfiler * [num];
-
-	for (int i = 0; i < num; ++i)
-	{
-		s_profilers[i] = new CProfiler(L"MultiProf.cnf");
-	}
-}
-
-void CProfiler::DestroyProfiler()
-{
-	for (int i = 0; i < s_ProfilerIndex; ++i)
-	{
-		delete s_profilers[i];
-	}
-
-	delete[] s_profilers;
-}
-
 void CProfiler::Begin(const WCHAR* szName)
 {
 	CProfiler* profiler = (CProfiler*)TlsGetValue(s_MultiProfiler);
 
 	if (profiler == nullptr)
 	{
-		AcquireSRWLockExclusive(&s_lock);
-		profiler = s_profilers[s_ProfilerIndex++];
+		while (InterlockedExchange8((char*)&s_spinlock, true) == true)
+		{
+		}
+
+		profiler = &s_profilers[s_ProfilerIndex++];
 		TlsSetValue(s_MultiProfiler, profiler);
 		profiler->SetThreadId();
-		ReleaseSRWLockExclusive(&s_lock);
+
+		s_spinlock = false;
 	}
 
 	profiler->ProfileBegin(szName);
@@ -408,11 +317,15 @@ void CProfiler::SetRecord(const WCHAR* szName, LONGLONG data, PROFILE_TYPE type)
 
 	if (profiler == nullptr)
 	{
-		AcquireSRWLockExclusive(&s_lock);
-		profiler = s_profilers[s_ProfilerIndex++];
+		while (InterlockedExchange8((char*)&s_spinlock, true) == true)
+		{
+		}
+
+		profiler = &s_profilers[s_ProfilerIndex++];
 		TlsSetValue(s_MultiProfiler, profiler);
 		profiler->SetThreadId();
-		ReleaseSRWLockExclusive(&s_lock);
+
+		s_spinlock = false;
 	}
 	
 	profiler->ProfileSetRecord(szName, data, type);	
@@ -426,8 +339,8 @@ void CProfiler::Print()
 
 	for (int i = 0; i < s_ProfilerIndex; ++i)
 	{
-		s_profilers[i]->ProfileDataOutText(fileName);
-		s_profilers[i]->ProfileReset();
+		s_profilers[i].ProfileDataOutText(fileName);
+		s_profilers[i].ProfileReset();
 	}
 }
 
@@ -443,40 +356,40 @@ void CProfiler::PrintAvg()
 	{
 		for (int j = 0; j < PROFILE_MAX; ++j)
 		{
-			if (s_profilers[i]->mProfiles[j].bFlag == false)
+			if (s_profilers[i].mProfiles[j].bFlag == false)
 				break;
 
 			LARGE_INTEGER f;
 
 			QueryPerformanceFrequency(&f);
-			__int64 time = s_profilers[i]->mProfiles[j].iTotalTime;
+			__int64 time = s_profilers[i].mProfiles[j].iTotalTime;
 			double avg;
 
-			if (s_profilers[i]->mProfiles[j].iCall > 4)
+			if (s_profilers[i].mProfiles[j].iCall > 4)
 			{
 				for (int t = 0; t < 2; ++t)
 				{
-					time -= s_profilers[i]->mProfiles[j].iMax[t];
-					time -= s_profilers[i]->mProfiles[j].iMin[t];
+					time -= s_profilers[i].mProfiles[j].iMax[t];
+					time -= s_profilers[i].mProfiles[j].iMin[t];
 				}
 
-				avg = time / (s_profilers[i]->mProfiles[j].iCall - 4);
+				avg = time / (s_profilers[i].mProfiles[j].iCall - 4);
 			}
 			else
 			{
-				avg = time / (s_profilers[i]->mProfiles[j].iCall);
+				avg = time / (s_profilers[i].mProfiles[j].iCall);
 			}
 
-			s_profilers[s_ProfilerIndex]->SetRecord(s_profilers[i]->mProfiles[j].szName, 
+			s_profilers[s_ProfilerIndex].SetRecord(s_profilers[i].mProfiles[j].szName, 
 				avg, PROFILE_TYPE::MICRO_SECONDS);
 		}
 		
-		s_profilers[i]->ProfileDataOutText(fileName);
-		s_profilers[i]->ProfileReset();
+		s_profilers[i].ProfileDataOutText(fileName);
+		s_profilers[i].ProfileReset();
 	}
 
-	s_profilers[curIndex]->ProfileDataOutText(fileName);
-	s_profilers[curIndex]->ProfileReset();
+	s_profilers[curIndex].ProfileDataOutText(fileName);
+	s_profilers[curIndex].ProfileReset();
 }
 
 int CProfiler::SearchName(const WCHAR* s)

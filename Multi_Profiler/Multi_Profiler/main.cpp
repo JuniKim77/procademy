@@ -24,7 +24,6 @@ HANDLE g_hExitThreadEvent;
 
 int main()
 {
-	CProfiler::InitProfiler(dfTHREAD_NUM);
 	g_hExitThreadEvent = CreateEvent(NULL, false, false, nullptr);
 
 	HANDLE hThreads[dfTHREAD_NUM];
@@ -97,7 +96,7 @@ unsigned int __stdcall workerThread(LPVOID arg)
 
 		QueryPerformanceCounter(&end);
 
-		CProfiler::SetRecord(L"Test3", end.QuadPart - begin.QuadPart);
+		CProfiler::SetRecord(L"Test3", end.QuadPart - begin.QuadPart, CProfiler::PROFILE_TYPE::MICRO_SECONDS);
 	}
 
 	return 0;

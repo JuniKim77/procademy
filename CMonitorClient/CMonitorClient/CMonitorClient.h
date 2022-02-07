@@ -9,6 +9,7 @@ namespace procademy
 		CMonitorClient();
 		virtual ~CMonitorClient();
 		bool	BeginClient();
+		void	RunClient();
 		bool	IsLogin() { return mbLogin; }
 		bool	IsJoin() { return mbJoin; }
 		void	SetLogin() { mbLogin = true; }

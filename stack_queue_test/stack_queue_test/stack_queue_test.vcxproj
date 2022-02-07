@@ -133,7 +133,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>..\..\CLF_Queue\CLF_Queue;..\..\CSafeQueue\CSafeQueue;..\..\LockFreeStack\LockFreeStack;..\..\Multi_Profiler\Multi_Profiler;..\..\TextParser\TextParser;..\..\CLFObjectPool\CLFObjectPool;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\CLF_Queue\CLF_Queue;..\..\CSafeQueue\CSafeQueue;..\..\LockFreeStack\LockFreeStack;..\..\Multi_Profiler\Multi_Profiler;..\..\TextParser\TextParser;..\..\CLFObjectPool\CLFObjectPool;..\..\CLogger\CLogger;..\..\CrashDump\CrashDump;..\..\CProfilerClock\CProfilerClock;..\..\CSafeStack\CSafeStack;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\CLogger\CLogger\CLogger.cpp" />
+    <ClCompile Include="..\..\CProfilerClock\CProfilerClock\CProfilerClock.cpp" />
     <ClCompile Include="..\..\CrashDump\CrashDump\CCrashDump.cpp" />
     <ClCompile Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.cpp" />
     <ClCompile Include="..\..\TextParser\TextParser\TextParser.cpp" />
@@ -154,8 +155,10 @@
     <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue.h" />
     <ClInclude Include="..\..\CLF_Queue\CLF_Queue\TC_LFQueue64.h" />
     <ClInclude Include="..\..\CLogger\CLogger\CLogger.h" />
+    <ClInclude Include="..\..\CProfilerClock\CProfilerClock\CProfilerClock.h" />
     <ClInclude Include="..\..\CrashDump\CrashDump\CCrashDump.h" />
     <ClInclude Include="..\..\CSafeQueue\CSafeQueue\CSafeQueue.h" />
+    <ClInclude Include="..\..\CSafeStack\CSafeStack\CSafeStack.h" />
     <ClInclude Include="..\..\LockFreeStack\LockFreeStack\TC_LFStack.h" />
     <ClInclude Include="..\..\Multi_Profiler\Multi_Profiler\CProfiler.h" />
     <ClInclude Include="..\..\TextParser\TextParser\TextParser.h" />

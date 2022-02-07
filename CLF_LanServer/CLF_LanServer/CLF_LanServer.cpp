@@ -813,9 +813,6 @@ namespace procademy
 
 	CLF_LanServer::CLF_LanServer()
 	{
-		LoadInitFile(L"Server.cnf");
-		Init();
-		BeginThreads();
 	}
 
 	CLF_LanServer::~CLF_LanServer()
@@ -866,6 +863,22 @@ namespace procademy
 		}
 
 		CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CLanServer");
+	}
+
+	void CLF_LanServer::Begin()
+	{
+		Init();
+		BeginThreads();
+	}
+
+	void CLF_LanServer::SetServerIP(const WCHAR* server)
+	{
+		wcscpy_s(mBindIP, _countof(mBindIP), server);
+	}
+
+	void CLF_LanServer::SetServerPort(USHORT port)
+	{
+		mPort = port;
 	}
 
 	bool CLF_LanServer::Disconnect(SESSION_ID SessionID)
@@ -940,48 +953,5 @@ namespace procademy
 		PostQueuedCompletionStatus(mHcp, 0, (ULONG_PTR)session, (LPOVERLAPPED)1);
 
 		DecrementIOProc(session, 20020);
-	}
-
-	void CLF_LanServer::LoadInitFile(const WCHAR* fileName)
-	{
-		TextParser  tp;
-		int         num;
-		WCHAR       buffer[MAX_PARSER_LENGTH];
-
-		tp.LoadFile(fileName);
-
-		tp.GetValue(L"LAN_BIND_IP", mBindIP);
-
-		tp.GetValue(L"LAN_BIND_PORT", &num);
-		mPort = (u_short)num;
-
-		tp.GetValue(L"LAN_IOCP_WORKER_THREAD", &num);
-		mWorkerThreadNum = (BYTE)num;
-
-		tp.GetValue(L"LAN_IOCP_ACTIVE_THREAD", &num);
-		mActiveThreadNum = (BYTE)num;
-
-		tp.GetValue(L"LAN_CLIENT_MAX", &num);
-		mMaxClient = (u_short)num;
-
-		tp.GetValue(L"LAN_NAGLE", buffer);
-		if (wcscmp(L"TRUE", buffer) == 0)
-			mbNagle = true;
-		else
-			mbNagle = false;
-
-		tp.GetValue(L"LAN_ZERO_COPY", buffer);
-		if (wcscmp(L"TRUE", buffer) == 0)
-			mbZeroCopy = true;
-		else
-			mbZeroCopy = false;
-
-		tp.GetValue(L"LAN_LOG_LEVEL", buffer);
-		if (wcscmp(buffer, L"DEBUG") == 0)
-			CLogger::setLogLevel(dfLOG_LEVEL_DEBUG);
-		else if (wcscmp(buffer, L"WARNING") == 0)
-			CLogger::setLogLevel(dfLOG_LEVEL_SYSTEM);
-		else if (wcscmp(buffer, L"ERROR") == 0)
-			CLogger::setLogLevel(dfLOG_LEVEL_ERROR);
 	}
 }

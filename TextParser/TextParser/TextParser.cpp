@@ -36,13 +36,18 @@ bool TextParser::LoadFile(const WCHAR* fileName)
 	return result == 1;
 }
 
-bool TextParser::GetValue(const WCHAR* key, int* value)
+bool TextParser::GetValue(const WCHAR* key, const WCHAR* _namespace, int* value)
 {
 	WCHAR* pCurrent = pBuffer;
 	WCHAR chWord[MAX_PARSER_LENGTH];
 	int length;
 
 	chWord[0] = '\0';
+
+	if (FindNamespace(&pCurrent, _namespace) == false)
+	{
+		return false;
+	}
 
 	while (GetNextWord(&pCurrent, &length))
 	{
@@ -78,13 +83,18 @@ bool TextParser::GetValue(const WCHAR* key, int* value)
 	return false;
 }
 
-bool TextParser::GetValue(const WCHAR* key, WCHAR* value)
+bool TextParser::GetValue(const WCHAR* key, const WCHAR* _namespace, WCHAR* value)
 {
 	WCHAR* pCurrent = pBuffer;
 	WCHAR chWord[MAX_PARSER_LENGTH];
 	int length;
 
 	chWord[0] = '\0';
+
+	if (FindNamespace(&pCurrent, _namespace) == false)
+	{
+		return false;
+	}
 
 	while (GetNextWord(&pCurrent, &length))
 	{
@@ -267,4 +277,35 @@ void TextParser::GetEndStringWord(WCHAR** retBuffer)
 		}
 		++(*retBuffer);
 	}
+}
+
+bool TextParser::FindNamespace(WCHAR** retBuffer, const WCHAR* _namespace)
+{
+	WCHAR chWord[MAX_PARSER_LENGTH];
+
+	while (1)
+	{
+		if (**retBuffer == L':')
+		{
+			++(*retBuffer);
+
+			WCHAR* pBuf = *retBuffer;
+			WCHAR* pWord = chWord;
+
+			while (*pBuf != L'\n')
+			{
+				*pWord++ = *pBuf++;
+			}
+
+			*pWord = L'\0';
+
+			if (wcscmp(chWord, _namespace) == 0)
+			{
+				return true;
+			}
+		}
+		++(*retBuffer);
+	}
+
+	return false;
 }

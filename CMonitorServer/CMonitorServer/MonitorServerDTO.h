@@ -21,13 +21,13 @@ namespace procademy
 		int								min[DATA_SET_SZIE];
 	};
 
-	struct st_DBData
-	{
-		int		serverNo;
-		int		logtime;
-		int		type;
-		int		avg;
-		int		min;
-		int		max;
-	};
+	//struct st_DBData
+	//{
+	//	int		serverNo;
+	//	int		logtime;
+	//	int		type;
+	//	int		avg;
+	//	int		min;
+	//	int		max;
+	//};
 }

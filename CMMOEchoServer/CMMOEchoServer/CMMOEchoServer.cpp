@@ -12,25 +12,22 @@
 
 procademy::CMMOEchoServer::CMMOEchoServer()
 {
-    LoadInitFile(L"Server.cnf");
-    Init();
-    BeginThreads();
 }
 
 procademy::CMMOEchoServer::~CMMOEchoServer()
 {
-    //delete[] mPlayers;
-    _aligned_free(mPlayers);
+    delete[] mPlayers;
+    //_aligned_free(mPlayers);
 }
 
 void procademy::CMMOEchoServer::AllocSessions(int num)
 {
-    //mPlayers = new CPlayer[num];
-    mPlayers = (CPlayer*)_aligned_malloc(sizeof(CPlayer) * num, 64);
+    mPlayers = new CPlayer[num];
+    //mPlayers = (CPlayer*)_aligned_malloc(sizeof(CPlayer) * num, 64);
 
     for (int i = 0; i < num; ++i)
     {
-		new (&mPlayers[i]) CPlayer;
+		//new (&mPlayers[i]) CPlayer;
         mPlayers[i].SetServer(this);
         SetSession(&mPlayers[i]);
     }
@@ -55,6 +52,18 @@ void procademy::CMMOEchoServer::OnGame_Update()
 
 bool procademy::CMMOEchoServer::BeginServer()
 {
+    LoadInitFile(L"Server.cnf");
+    Begin();
+    Init();
+    BeginThreads();
+    mMonitorClient.BeginClient();
+    mMonitorClient.RunClient();
+
+    return true;
+}
+
+bool procademy::CMMOEchoServer::RunServer()
+{
     if (Start() == false)
     {
         CLogger::_Log(dfLOG_LEVEL_ERROR, L"Begin Server Error");
@@ -62,7 +71,7 @@ bool procademy::CMMOEchoServer::BeginServer()
         return false;
     }
 
-    WaitForThreadsFin();
+    RunningLoop();
 
     // 종료 코드
 
@@ -86,7 +95,7 @@ bool procademy::CMMOEchoServer::BeginServer()
     return true;
 }
 
-void procademy::CMMOEchoServer::WaitForThreadsFin()
+void procademy::CMMOEchoServer::RunningLoop()
 {
     while (1)
     {
@@ -155,8 +164,6 @@ unsigned int __stdcall procademy::CMMOEchoServer::MonitorThread(LPVOID arg)
 
 void procademy::CMMOEchoServer::BeginThreads()
 {
-    CProfiler::InitProfiler(30);
-
     mMonitorThread = (HANDLE)_beginthreadex(nullptr, 0, MonitorThread, this, 0, nullptr);
 }
 
@@ -164,16 +171,72 @@ void procademy::CMMOEchoServer::LoadInitFile(const WCHAR* fileName)
 {
     TextParser  tp;
     int         num;
-    //WCHAR       buffer[MAX_PARSER_LENGTH];
+    BYTE        code;
+    BYTE        key;
+    WCHAR       buffer[MAX_PARSER_LENGTH];
 
     tp.LoadFile(fileName);
 
-    tp.GetValue(L"MONITOR_SERVER_IP", mMonitorIP);
+    //Server
+    tp.GetValue(L"BIND_IP", L"SERVER", buffer);
+    SetServerIP(buffer);
 
-    tp.GetValue(L"MONITOR_SERVER_PORT", &num);
+    tp.GetValue(L"BIND_PORT", L"SERVER", &num);
+    SetServerPort(num);
+
+    tp.GetValue(L"PACKET_CODE", L"SERVER", &num);
+    code = (BYTE)num;
+    CNetPacket::SetCode(code);
+
+    tp.GetValue(L"PACKET_KEY", L"SERVER", &num);
+    key = (BYTE)num;
+    CNetPacket::SetPacketKey(key);
+
+    tp.GetValue(L"IOCP_WORKER_THREAD", L"SERVER", &num);
+    mWorkerThreadNum = (BYTE)num;
+
+    tp.GetValue(L"IOCP_ACTIVE_THREAD", L"SERVER", &num);
+    mActiveThreadNum = (BYTE)num;
+
+    tp.GetValue(L"CLIENT_MAX", L"SERVER", &num);
+    SetMaxClient(num);
+
+    tp.GetValue(L"AUTH_MAX_TRANSFER", L"SERVER", &mMaxTransferToAuth);
+    tp.GetValue(L"GAME_MAX_TRANSFER", L"SERVER", &mMaxTransferToGame);
+
+    tp.GetValue(L"NAGLE", L"SERVER", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        mbNagle = true;
+    else
+        mbNagle = false;
+
+    tp.GetValue(L"ZERO_COPY", L"SERVER", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        mbZeroCopy = true;
+    else
+        mbZeroCopy = false;
+
+    tp.GetValue(L"TIMEOUT_DISCONNECT", L"SERVER", &num);
+    SetTimeOut(num);
+
+    tp.GetValue(L"LOG_LEVEL", L"SERVER", buffer);
+    if (wcscmp(buffer, L"DEBUG") == 0)
+        CLogger::setLogLevel(dfLOG_LEVEL_DEBUG);
+    else if (wcscmp(buffer, L"WARNING") == 0)
+        CLogger::setLogLevel(dfLOG_LEVEL_SYSTEM);
+    else if (wcscmp(buffer, L"ERROR") == 0)
+        CLogger::setLogLevel(dfLOG_LEVEL_ERROR);
+
+    tp.GetValue(L"MONITOR_SERVER_IP", L"SERVICE", mMonitorIP);
+
+    tp.GetValue(L"MONITOR_SERVER_PORT", L"SERVICE", &num);
     mMonitorPort = (u_short)num;
 
-    tp.GetValue(L"MONITOR_NO", &mServerNo);
+    tp.GetValue(L"MONITOR_NO", L"SERVICE", &mServerNo);
+
+    tp.GetValue(L"POOL_SIZE_CHECK", L"SERVICE", buffer);
+    if (wcscmp(L"TRUE", buffer) == 0)
+        CNetPacket::sPacketPool.OnOffCounting();
 }
 
 void procademy::CMMOEchoServer::Init()

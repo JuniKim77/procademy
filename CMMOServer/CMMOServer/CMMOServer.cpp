@@ -5,12 +5,13 @@
 #include "TextParser.h"
 #include "CNetPacket.h"
 #include "CFrameSkipper.h"
+#include <timeapi.h>
+
+#pragma comment(lib, "winmm")
 
 procademy::CMMOServer::CMMOServer()
 {
-	LoadInitFile(L"Server.cnf");
-	Init();
-	BeginThreads();
+	timeBeginPeriod(1);
 }
 
 procademy::CMMOServer::~CMMOServer()
@@ -26,6 +27,14 @@ procademy::CMMOServer::~CMMOServer()
 		delete[] mSessionArray;
 	}
 	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"CMMOServer End");
+
+	timeEndPeriod(1);
+}
+
+void procademy::CMMOServer::Begin()
+{
+	Init();
+	BeginThreads();
 }
 
 bool procademy::CMMOServer::Start()
@@ -67,68 +76,6 @@ void procademy::CMMOServer::Stop()
 	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Stop CMMOServer");
 }
 
-void procademy::CMMOServer::LoadInitFile(const WCHAR* fileName)
-{
-	TextParser  tp;
-	int         num;
-	WCHAR       buffer[MAX_PARSER_LENGTH];
-	BYTE        code;
-	BYTE        key;
-
-	tp.LoadFile(fileName);
-
-	tp.GetValue(L"BIND_IP", mBindIP);
-
-	tp.GetValue(L"BIND_PORT", &num);
-	mPort = (u_short)num;
-
-	tp.GetValue(L"PACKET_CODE", &num);
-	code = (BYTE)num;
-	CNetPacket::SetCode(code);
-
-	tp.GetValue(L"PACKET_KEY", &num);
-	key = (BYTE)num;
-	CNetPacket::SetPacketKey(key);
-
-	tp.GetValue(L"IOCP_WORKER_THREAD", &num);
-	mWorkerThreadNum = (BYTE)num;
-
-	tp.GetValue(L"IOCP_ACTIVE_THREAD", &num);
-	mActiveThreadNum = (BYTE)num;
-
-	tp.GetValue(L"CLIENT_MAX", &num);
-	mMaxClient = (u_short)num;
-
-	tp.GetValue(L"AUTH_MAX_TRANSFER", &mMaxTransferToAuth);
-	tp.GetValue(L"GAME_MAX_TRANSFER", &mMaxTransferToGame);
-
-	tp.GetValue(L"NAGLE", buffer);
-	if (wcscmp(L"TRUE", buffer) == 0)
-		mbNagle = true;
-	else
-		mbNagle = false;
-
-	tp.GetValue(L"ZERO_COPY", buffer);
-	if (wcscmp(L"TRUE", buffer) == 0)
-		mbZeroCopy = true;
-	else
-		mbZeroCopy = false;
-
-	tp.GetValue(L"TIMEOUT_DISCONNECT", &mTimeOut);
-
-	tp.GetValue(L"POOL_SIZE_CHECK", buffer);
-	if (wcscmp(L"TRUE", buffer) == 0)
-		CNetPacket::sPacketPool.OnOffCounting();
-
-	tp.GetValue(L"LOG_LEVEL", buffer);
-	if (wcscmp(buffer, L"DEBUG") == 0)
-		CLogger::setLogLevel(dfLOG_LEVEL_DEBUG);
-	else if (wcscmp(buffer, L"WARNING") == 0)
-		CLogger::setLogLevel(dfLOG_LEVEL_SYSTEM);
-	else if (wcscmp(buffer, L"ERROR") == 0)
-		CLogger::setLogLevel(dfLOG_LEVEL_ERROR);
-}
-
 void procademy::CMMOServer::QuitServer()
 {
 	mbExit = true;
@@ -157,6 +104,16 @@ void procademy::CMMOServer::QuitServer()
 	}
 
 	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Quit CMMOServer");
+}
+
+void procademy::CMMOServer::SetServerIP(const WCHAR* server)
+{
+	wcscpy_s(mBindIP, _countof(mBindIP), server);
+}
+
+void procademy::CMMOServer::SetServerPort(USHORT port)
+{
+	mPort = port;
 }
 
 void procademy::CMMOServer::SetZeroCopy(bool on)
@@ -388,7 +345,7 @@ bool procademy::CMMOServer::CreateListenSocket()
 	CLogger::_Log(dfLOG_LEVEL_SYSTEM, L"Listen Socket Bind");
 
 	// 백로그 길이
-	int listenRet = listen(mListenSocket, mMaxClient);
+	int listenRet = listen(mListenSocket, SOMAXCONN_HINT(mMaxClient));
 
 	if (listenRet == SOCKET_ERROR)
 	{
@@ -499,7 +456,7 @@ void procademy::CMMOServer::MonitorProc()
 		if (retval == WAIT_TIMEOUT)
 		{
 			mMonitor.prevRecvTPS = recvTPS;
-			mMonitor.prevSendTPS = sendTPS;
+			mMonitor.prevSendTPS = maSendTPS;
 			mMonitor.acceptTotal = acceptTotal;
 			mMonitor.acceptTPS = acceptTPS;
 			mMonitor.prevSendLoopCount = sendLoopCount;
@@ -510,7 +467,7 @@ void procademy::CMMOServer::MonitorProc()
 			authLoopCount = 0;
 			gameLoopCount = 0;
 			recvTPS = 0;
-			sendTPS = 0;
+			maSendTPS = 0;
 			acceptTPS = 0;
 		}
 	}
@@ -536,13 +493,6 @@ void procademy::CMMOServer::GQCSProc()
 		if (transferredSize == 0 && (PULONG_PTR)completionKey == nullptr && pOverlapped == nullptr)
 		{
 			PostQueuedCompletionStatus(mIOCP, 0, 0, 0);
-
-			return;
-		}
-
-		if (pOverlapped == nullptr) // I/O Fail
-		{
-			OnError(10000, L"IOCP Error");
 
 			return;
 		}
@@ -712,10 +662,9 @@ void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSiz
 {
 	session->recvQ.MoveRear(transferredSize);
 	CNetPacket::st_Header header;
-	DWORD count = 0;
 	bool status = true;
 
-	while (count < transferredSize)
+	while (1)
 	{
 		int useSize = session->recvQ.GetUseSize();
 
@@ -768,7 +717,6 @@ void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSiz
 			CRASH();
 		}
 
-		count += (ret + CNetPacket::HEADER_MAX_SIZE);
 		packet->SubRef();
 	}
 
@@ -781,7 +729,7 @@ void procademy::CMMOServer::CompleteRecv(CSession* session, DWORD transferredSiz
 void procademy::CMMOServer::CompleteSend(CSession* session, DWORD transferredSize)
 {
 	CNetPacket* packet;
-	InterlockedAdd((LONG*)&sendTPS, session->numSendingPacket);
+	InterlockedAdd((LONG*)&maSendTPS, session->numSendingPacket);
 	for (int i = 0; i < session->numSendingPacket; ++i)
 	{
 		packet = session->sendQ.Dequeue();
