@@ -1,29 +1,25 @@
 #include "CRedis_TLS.h"
 #include "CDBConnector_TLS.h"
-#include <string.h>
 #include "CLogger.h"
 #include <wtypes.h>
 #include <process.h>
 #include "CProfiler.h"
 #include <time.h>
 #include <queue>
+#include <string>
 
 #define dfTHREAD_NUM (20)
 #define dfCHUNK_SIZE (1000)
 
 unsigned int WINAPI workerThread(LPVOID arg); 
 
-CProfiler g_profiler(L"MultiProf.cnf");
-
 int g_counter = 0;
 
 int main()
 {
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 	procademy::CDBConnector db(L"127.0.0.1", L"root", L"123456789", L"accountdb", 3306);
-	WCHAR temp[10];
 	MYSQL_ROW sql_row;
-	bool ret;
 	cpp_redis::client	curRedis;
 	char				szAccountNumber[20] = { 0, };
 	char				value[20] = { 0, };
@@ -34,7 +30,7 @@ int main()
 
 	//CProfiler::Begin(L"SINGLE_DB_SELECT");
 	curRedis.connect();
-	g_profiler.ProfileBegin(L"SINGLE_DB_REDIS_SELECT");
+	CProfiler::Begin(L"SINGLE_DB_REDIS_SELECT");
 
 	while (count < (dfCHUNK_SIZE * dfTHREAD_NUM))
 	{
@@ -58,7 +54,7 @@ int main()
 		count++;
 		num++;
 	}
-	g_profiler.ProfileEnd(L"SINGLE_DB_REDIS_SELECT");
+	CProfiler::End(L"SINGLE_DB_REDIS_SELECT");
 	//CProfiler::End(L"SINGLE_DB_SELECT");
 
 	//CLogger::_Log(dfLOG_LEVEL_DEBUG, L"Main Count: %d | Result: %d\n", count, result);
@@ -71,7 +67,7 @@ int main()
 
 	HANDLE handles[dfTHREAD_NUM];
 
-	g_profiler.ProfileBegin(L"MULTI_DB_REDIS_SELECT");
+	CProfiler::Begin(L"MULTI_DB_REDIS_SELECT");
 	//CProfiler::Begin(L"MULTI_DB_SELECT");
 
 	for (int i = 0; i < dfTHREAD_NUM; ++i)
@@ -81,7 +77,9 @@ int main()
 
 	DWORD retval = WaitForMultipleObjects(dfTHREAD_NUM, handles, true, INFINITE);
 
-	g_profiler.ProfileDataOutText(L"Profile.txt");
+	CProfiler::End(L"MULTI_DB_REDIS_SELECT");
+
+	CProfiler::Print();
 
 	switch (retval)
 	{
@@ -124,24 +122,16 @@ unsigned int __stdcall workerThread(LPVOID arg)
 			result++;
 
 			_itoa_s(result, value, 20, 10);
+			std::string str(value);
 			strcpy_s(szAccountNumber, 20, sql_row[0]);
 
-			redis = procademy::CRedis_TLS::GetRedis();
-
-			redis->setex(szAccountNumber, 30, value);
+			procademy::CRedis_TLS::SetRedis(szAccountNumber, 30, str);
 		}
 
 		procademy::CDBConnector_TLS::FreeResult();
 
 		count++;
 		num++;
-	}
-
-	int ret = InterlockedIncrement((long*)&g_counter);
-
-	if (ret == dfTHREAD_NUM)
-	{
-		g_profiler.ProfileEnd(L"MULTI_DB_REDIS_SELECT");
 	}
 
 	int temp = 1;
@@ -153,6 +143,8 @@ unsigned int __stdcall workerThread(LPVOID arg)
 	{
 		_itoa_s(temp, szAccountNumber, 20, 10);
 		_itoa_s(temp, buffer, 12, 10);
+
+		redis = procademy::CRedis_TLS::GetRedis();
 
 		redis->get(szAccountNumber, [szAccountNumber, buffer, &countReids](cpp_redis::reply& reply) {
 			if (reply.is_string())

@@ -435,11 +435,11 @@ bool procademy::CNetLoginServer::LeaveProc(SESSION_ID sessionNo)
 		return false;
 	}
 
-    FreePlayer(player);
+    //FreePlayer(player);
 
 	DeletePlayer(sessionNo);
 
-    //FreePlayer(player);
+    FreePlayer(player);
 
     return true;
 }
@@ -543,7 +543,7 @@ bool procademy::CNetLoginServer::CheckHeartProc()
                         if (curTime - playerTime > mTimeOut) // 40000ms
                         {
                             _sessionLog(iter->second->sessionNo, 10, iter->second->lastRecvTime, GetCurrentThreadId(), 1, 20000);
-                            Disconnect(iter->second->sessionNo);
+                            //Disconnect(iter->second->sessionNo);
                             //CLogger::_Log(dfLOG_LEVEL_ERROR, L"SessionNo: %llu, Dif Time: %llu, Last Time: %llu", 
                             //    iter->second->sessionNo, curTime - playerTime, playerTime);
                         }
